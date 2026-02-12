@@ -1,0 +1,346 @@
+$schema: "https://json-schema.org/draft/2020-12/schema"
+$id: "https://casehub.io/schemas/0.1.0/casehub.yaml"
+title: "CaseHub"
+description: >
+  Case Hub schema for coordination and observability of Cases.
+
+  The Reactor is the minimal core: it manages state, publishes events,
+  detects milestones, and provides observability. It does NOT initiate
+  work, assign tasks, or make decisions on behalf of participants.
+
+  Workers are autonomous participants. They observe CaseContext and events,
+  make local decisions, and act based on their own capabilities.
+
+  Case Hub is choreography-oriented by default.
+type: object
+required: [ apiVersion, metadata, version, spec ]
+unevaluatedProperties: true
+
+properties:
+  dsl:
+    type: string
+    pattern: ^(0|[1-9]\d*)\.(0|[1-9]\d*)\.(0|[1-9]\d*)(?:-((?:0|[1-9]\d*|\d*[a-zA-Z-][0-9a-zA-Z-]*)(?:\.(?:0|[1-9]\d*|\d*[a-zA-Z-][0-9a-zA-Z-]*))*))?(?:\+([0-9a-zA-Z-]+(?:\.[0-9a-zA-Z-]+)*))?$
+    title: CaseHubDSL
+    description: The version of the DSL used by the CaseHub.
+  namespace:
+    type: string
+    pattern: ^[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?$
+    title: CaseHubNamespace
+    description: The CaseHub's namespace.
+  name:
+    type: string
+    pattern: ^[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?$
+    title: CaseHubName
+    description: The CaseHub's name.
+  version:
+    type: string
+    pattern: ^(0|[1-9]\d*)\.(0|[1-9]\d*)\.(0|[1-9]\d*)(?:-((?:0|[1-9]\d*|\d*[a-zA-Z-][0-9a-zA-Z-]*)(?:\.(?:0|[1-9]\d*|\d*[a-zA-Z-][0-9a-zA-Z-]*))*))?(?:\+([0-9a-zA-Z-]+(?:\.[0-9a-zA-Z-]+)*))?$
+    title: CaseHubVersion
+    description: The CaseHub's semantic version.
+  title:
+    type: string
+    title: CaseHubTitle
+    description: The CaseHub's title.
+  summary:
+    type: string
+    title: CaseHubSummary
+    description: The CaseHub's Markdown summary.
+  tags:
+    type: object
+    title: CaseHubTags
+    description: A key/value mapping of the CaseHub's tags, if any.
+    additionalProperties: true
+  metadata:
+    type: object
+    title: CaseHubMetadata
+    description: Holds additional information about the CaseHub.
+    additionalProperties: true
+  spec:
+    $ref: "#/$defs/CaseDefinitionSpec"
+  required: [ dsl, namespace, name, version ]
+$defs:
+  CaseDefinitionSpec:
+    type: object
+    unevaluatedProperties: true
+    properties:
+      milestones:
+        type: array
+        description: >
+          Observable progress markers derived from CaseContext.
+          The Reactor evaluates milestone conditions on every context
+          change and publishes MilestoneReached events.
+          Milestones provide visibility, not control flow.
+        items:
+          $ref: "#/$defs/Milestone"
+      capabilities:
+        type: array
+        description: >
+          Capabilities define what Workers can do.
+          A capability is a declared competence with a defined input/output
+          contract and shared vocabulary for discovery.
+        items:
+          $ref: "#/$defs/Capability"
+      goals:
+        type: array
+        description: >
+          Desired end-states expressed as JQ predicates over the CaseContext.
+          Goals provide outcome-oriented observability and can be used to
+          determine Case completion (success/failure), without prescribing
+          control flow or assigning work.
+        items:
+          $ref: "#/$defs/Goal"
+      completion:
+        $ref: "#/$defs/CaseCompletion"
+        description: >
+          Defines when a Case instance is considered terminally completed
+          (success) or terminally failed based on Goal satisfaction and/or a
+          direct JQ predicate. The Reactor evaluates completion on every
+          CaseContext change and may emit CaseCompleted/CaseFailed events.
+      rules:
+        type: array
+        description: >
+          Rules define when and how to invoke capabilities based on context
+          changes and events. They are the "glue" that connects Workers to
+          Cases and orchestrates interactions.
+        items:
+          $ref: "#/$defs/DispatchRule"
+      workers:
+        type: array
+        description: >
+          Autonomous participants that observe CaseContext and events,
+          make local decisions, and perform work.
+        items:
+          $ref: "#/$defs/Worker"
+
+  Capability:
+    description: >
+      A capability that a Worker can perform.
+      It declares what a Worker is able to do and defines the contract
+      (input/output schema) for that capability.
+    type: object
+    required: [ name ]
+    unevaluatedProperties: false
+    properties:
+      name:
+        type: string
+        title: CapabilityName
+        description: "Unique capability identifier"
+      description:
+        type: string
+        title: CapabilityDescription
+        description: "What this capability represents"
+      inputSchema:
+        { type: string, description: "JQ producing capability input" }
+      outputSchema:
+        { type: string, description: "JQ producing capability output" }
+
+  DispatchRule:
+    type: object
+    required: [ on, capability ]
+    unevaluatedProperties: false
+    properties:
+      name: { type: string }
+      on: { $ref: "#/$defs/Trigger" }
+      when: { type: string, description: "JQ over context and/or event" }
+      capability: { type: string }
+
+  Goal:
+    type: object
+    required: [ name, condition ]
+    unevaluatedProperties: false
+    properties:
+      name:
+        type: string
+        description: "Unique goal identifier"
+      description:
+        type: string
+      kind:
+        type: string
+        enum: [ success, failure ]
+        default: success
+        description: "Success goal contributes to resolution; failure goal contributes to terminal failure"
+      condition:
+        type: string
+        description: "JQ predicate over CaseContext"
+      terminal:
+        type: boolean
+        default: false
+        description: "If true, achieving this goal can close the case (depending on completion policy)"
+
+  CaseCompletion:
+    type: object
+    unevaluatedProperties: false
+    properties:
+      success:
+        $ref: "#/$defs/GoalExpression"
+      failure:
+        $ref: "#/$defs/GoalExpression"
+      doneWhen:
+        type: string
+        description: "Optional JQ predicate over CaseContext as an override/shortcut"
+
+  ContextChangeTrigger:
+    type: object
+    description: "Fires when CaseContext changes."
+    unevaluatedProperties: false
+    properties:
+      filter:
+        type: string
+        description: "JQ predicate over { context, event } where event is a synthetic ContextChanged envelope"
+    additionalProperties: false
+
+  CloudEventTrigger:
+    description: "Fires on matching CloudEvents."
+    oneOf:
+      - type: string
+        description: "CloudEvent type exact match"
+      - type: object
+        required: [ type ]
+        unevaluatedProperties: false
+        properties:
+          type:
+            type: string
+            description: "CloudEvent type exact match"
+          source:
+            type: string
+            description: "Optional exact match on CloudEvent source"
+          subject:
+            type: string
+            description: "Optional exact match on CloudEvent subject"
+          filter:
+            type: string
+            description: "JQ predicate over { context, event } where event is the CloudEvent envelope"
+        additionalProperties: false
+
+  ExecutionPolicy:
+    type: object
+    unevaluatedProperties: false
+    properties:
+      timeoutMs:
+        type: integer
+        minimum: 1
+        description: "Default timeout for a single work execution/invocation"
+      retries:
+        $ref: "#/$defs/RetryPolicy"
+        description: "Default retry policy"
+
+  GoalExpression:
+    type: object
+    unevaluatedProperties: false
+    oneOf:
+      - required: [ allOf ]
+      - required: [ anyOf ]
+    properties:
+      allOf:
+        type: array
+        items: { type: string } # refs to Goal.name
+        minItems: 1
+      anyOf:
+        type: array
+        items: { type: string }
+        minItems: 1
+
+  Milestone:
+    description: >
+      Observable progress marker. The Reactor evaluates milestone
+      conditions on every context change and publishes MilestoneReached
+      events. Milestones provide visibility, not control flow.
+    type: object
+    required: [ name, condition ]
+    unevaluatedProperties: false
+    properties:
+      name:
+        type: string
+        title: MilestoneName
+        description: "Milestone name"
+      description:
+        type: string
+        title: MilestoneDescription
+        description: "What this milestone represents"
+      condition:
+        type: string
+        title: MilestoneCondition
+        description: "JQ expression — true means milestone is reached"
+
+  RetryPolicy:
+    type: object
+    unevaluatedProperties: false
+    properties:
+      maxAttempts:
+        type: integer
+        minimum: 1
+        default: 1
+        description: "Total attempts including the first one"
+
+  ScheduleTrigger:
+    type: object
+    description: "Time-based trigger."
+    unevaluatedProperties: false
+    oneOf:
+      - required: [ cron ]
+      - required: [ every ]
+    properties:
+      cron:
+        type: string
+        description: "Cron expression (define the dialect in docs: e.g. cron/Quartz)."
+      every:
+        type: string
+        description: "ISO-8601 duration, e.g. PT5M."
+      timezone:
+        type: string
+        description: "IANA TZ, e.g. America/Vancouver"
+    additionalProperties: false
+
+  Trigger:
+    type: object
+    description: >
+      Defines what the Worker observes. Exactly one of: contextChange, cloudEvent, schedule.
+    unevaluatedProperties: false
+    oneOf:
+      - required: [ contextChange ]
+      - required: [ cloudEvent ]
+      - required: [ schedule ]
+    properties:
+      contextChange:
+        $ref: "#/$defs/ContextChangeTrigger"
+      cloudEvent:
+        $ref: "#/$defs/CloudEventTrigger"
+      schedule:
+        $ref: "#/$defs/ScheduleTrigger"
+
+  Worker:
+    description: >
+      A Worker is an autonomous participant that owns one or more capabilities.
+      Workers observe CaseContext and events, make local decisions,
+      and perform work independently.
+
+      A Worker may be a person, a service, a workflow, a rule,
+      or an autonomous agent.
+    allOf:
+      - type: object
+        required: [ name, capabilities ]
+        unevaluatedProperties: false
+        properties:
+          name:
+            type: string
+            title: WorkerName
+            description: "Worker name"
+          description:
+            type: string
+            title: WorkerDescription
+            description: "What this worker does"
+          capabilities:
+            type: array
+            title: WorkerCapabilities
+            description: "Capabilities this Worker owns and can perform"
+            minItems: 1
+            items:
+              type: string
+          executionPolicy:
+            $ref: "#/$defs/ExecutionPolicy"
+            description: >
+              Default execution policy for this Worker. These are defaults and may be
+              overridden by workflow/state-specific settings (if present).
+      - anyOf:
+          - $ref: "https://raw.githubusercontent.com/serverlessworkflow/specification/main/schema/workflow.yaml"
+          - type: string
