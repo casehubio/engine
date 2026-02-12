@@ -1,0 +1,270 @@
+##
+## Example: Document Processing Case
+##
+## Scenario: A customer submits a document that needs to be scanned (OCR),
+## classified, and reviewed by a human before the case can be closed.
+##
+## Architecture:
+##   - Worker: registered executor with capabilities + contract + workflow.
+##     All execution logic lives inside Workers. Workers do NOT know CaseContext.
+##   - Binding: connects a trigger to a Worker via capability lookup.
+##     Triggers: ContextChange (when), External Event (event), Scheduled (schedule).
+##     Bindings have NO workflow — only trigger + capability ref + data mapping.
+##   - Milestone: observable progress marker. Passive — no execution.
+##
+
+apiVersion: casehub.io/v1
+kind: CaseDefinition
+metadata:
+  name: document-processing
+version: "1.0.0"
+
+spec:
+
+  ## ─── Workers ───────────────────────────────────────────────────────
+  ## Registered executors. Each Worker declares capabilities, a contract
+  ## (inputSchema/outputSchema), and a Serverless Workflow for execution.
+  ## Workers do NOT know about CaseContext — they work with contract types.
+
+  workers:
+    - name: ocr-worker
+      description: "Extracts text from document images using OCR"
+      capabilities: [ "ocr" ]
+      inputSchema:
+        type: object
+        properties:
+          image: { type: string, description: "Base64-encoded document image" }
+      outputSchema:
+        type: object
+        properties:
+          text:       { type: string, description: "Extracted text content" }
+          confidence: { type: number, description: "OCR confidence score (0.0–1.0)" }
+      document:
+        dsl: "1.0.0"
+        namespace: casehub.workers
+        name: ocr-workflow
+        version: "1.0.0"
+      do:
+        - extractText:
+            call: http
+            with:
+              method: POST
+              endpoint:
+                uri: https://ocr-service.internal/api/extract
+              body:
+                image: "${ .image }"
+
+    - name: classifier-worker
+      description: "Classifies documents by type and content"
+      capabilities: [ "document-classification" ]
+      inputSchema:
+        type: object
+        properties:
+          text: { type: string, description: "Document text to classify" }
+      outputSchema:
+        type: object
+        properties:
+          category: { type: string, description: "Document category" }
+          tags:     { type: array, items: { type: string } }
+      document:
+        dsl: "1.0.0"
+        namespace: casehub.workers
+        name: classifier-workflow
+        version: "1.0.0"
+      do:
+        - classify:
+            call: http
+            with:
+              method: POST
+              endpoint:
+                uri: https://classifier-service.internal/api/classify
+              body:
+                text: "${ .text }"
+
+    - name: notification-worker
+      description: "Sends notifications via email or Slack"
+      capabilities: [ "notify" ]
+      inputSchema:
+        type: object
+        properties:
+          channel:   { type: string, description: "Notification channel (email, slack)" }
+          recipient: { type: string }
+          message:   { type: string }
+      outputSchema:
+        type: object
+        properties:
+          delivered: { type: boolean }
+      document:
+        dsl: "1.0.0"
+        namespace: casehub.workers
+        name: notification-workflow
+        version: "1.0.0"
+      do:
+        - send:
+            call: http
+            with:
+              method: POST
+              endpoint:
+                uri: https://notifications.internal/api/send
+              body:
+                channel:   "${ .channel }"
+                recipient: "${ .recipient }"
+                message:   "${ .message }"
+
+    - name: validator-worker
+      description: "Validates document format and structure"
+      capabilities: [ "validate-format" ]
+      inputSchema:
+        type: object
+        properties:
+          contentType: { type: string }
+          size:        { type: number }
+      outputSchema:
+        type: object
+        properties:
+          valid:  { type: boolean }
+          reason: { type: string }
+      document:
+        dsl: "1.0.0"
+        namespace: casehub.workers
+        name: validate-format
+        version: "1.0.0"
+      do:
+        - checkFormat:
+            call: http
+            with:
+              method: POST
+              endpoint:
+                uri: https://validator.internal/api/check
+              body:
+                contentType: "${ .contentType }"
+                size: "${ .size }"
+
+    - name: archive-worker
+      description: "Archives case data to long-term storage"
+      capabilities: [ "archive" ]
+      inputSchema:
+        type: object
+        properties:
+          caseId: { type: string }
+          data:   { type: object }
+      outputSchema:
+        type: object
+        properties:
+          archived: { type: boolean }
+          location: { type: string }
+      document:
+        dsl: "1.0.0"
+        namespace: casehub.workers
+        name: archive-case
+        version: "1.0.0"
+      do:
+        - archive:
+            call: http
+            with:
+              method: POST
+              endpoint:
+                uri: https://archive.internal/api/store
+              body:
+                caseId: "${ .caseId }"
+                data: "${ .data }"
+
+  ## ─── Bindings ──────────────────────────────────────────────────────
+  ## Connect triggers to Workers. Each Binding:
+  ##   1. Defines a trigger (when / event / schedule)
+  ##   2. References a capability → system finds a Worker
+  ##   3. Maps data: CaseContext → Worker input (input.from)
+  ##                  Worker output → CaseContext (output.as)
+
+  bindings:
+    ## ContextChange: document uploaded → validate format
+    - name: validate-on-upload
+      description: "Validate document format when uploaded"
+      when: ".document != null and .document.validated == null"
+      capability: "validate-format"
+      input:
+        from:
+          contentType: "${ .document.contentType }"
+          size: "${ .document.size }"
+      output:
+        as: "${ { document: (.document + { validated: .valid }) } }"
+
+    ## ContextChange: document validated → OCR
+    - name: extract-text
+      description: "Extract text from document using OCR"
+      when: ".document.validated == true and .ocrResult == null"
+      capability: "ocr"
+      input:
+        from:
+          image: "${ .document.base64 }"
+      output:
+        as: "${ { ocrResult: . } }"
+
+    ## ContextChange: text extracted → classify
+    - name: classify-document
+      description: "Classify document after text extraction"
+      when: ".ocrResult != null and .classification == null"
+      capability: "document-classification"
+      input:
+        from:
+          text: "${ .ocrResult.text }"
+      output:
+        as: "${ { classification: . } }"
+
+    ## ContextChange: classified → notify reviewers
+    - name: notify-ready-for-review
+      description: "Notify reviewers when document is classified"
+      when: ".classification != null and .notified == null"
+      capability: "notify"
+      input:
+        from:
+          channel: "slack"
+          recipient: "#case-review"
+          message: >-
+            ${ "Document " + .document.name
+               + " classified as " + .classification.category
+               + ". Ready for review." }
+      output:
+        as: "${ { notified: true } }"
+
+    ## ContextChange: resolved → archive
+    - name: archive-on-resolve
+      description: "Archive case when resolved"
+      when: ".status == \"resolved\" and .archived == null"
+      capability: "archive"
+      input:
+        from:
+          caseId: "${ .caseId }"
+          data: "${ . }"
+      output:
+        as: "${ { archived: true } }"
+
+    ## External Event: document from upload service
+    - name: on-external-document
+      description: "Handle document received via external system"
+      event:
+        type: "document.received"
+        source: "upload-service"
+      capability: "validate-format"
+      input:
+        from:
+          contentType: "${ .event.data.contentType }"
+          size: "${ .event.data.size }"
+      output:
+        as: "${ { document: { validated: .valid } } }"
+
+  ## ─── Milestones ────────────────────────────────────────────────────
+  ## Observable progress markers — no execution, just tracking.
+
+  milestones:
+    - name: text-extracted
+      description: "Document text has been successfully extracted"
+      condition: ".ocrResult != null and .ocrResult.confidence > 0.8"
+
+    - name: document-classified
+      description: "Document has been classified and is ready for human review"
+      condition: ".classification != null"
+
+    - name: human-review-complete
+      description: "Human reviewer has completed their assessment"
+      condition: ".humanReview != null"
