@@ -218,7 +218,7 @@ $defs:
     properties:
       timeoutMs:
         type: integer
-        minimum: 1
+        minimum: 60000
         description: "Default timeout for a single work execution/invocation"
       retries:
         $ref: "#/$defs/RetryPolicy"
@@ -269,8 +269,13 @@ $defs:
       maxAttempts:
         type: integer
         minimum: 1
-        default: 1
+        default: 3
         description: "Total attempts including the first one"
+      delayMs:
+        type: integer
+        minimum: 0
+        default: 100
+        description: "Delay in milliseconds between retry attempts"
 
   ScheduleTrigger:
     type: object

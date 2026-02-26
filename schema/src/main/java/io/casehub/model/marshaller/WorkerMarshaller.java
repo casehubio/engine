@@ -9,6 +9,7 @@ import com.fasterxml.jackson.databind.JsonSerializer;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SerializerProvider;
 import com.fasterxml.jackson.databind.node.ObjectNode;
+import io.casehub.model.ExecutionPolicy;
 import io.casehub.model.Worker;
 import io.serverlessworkflow.api.types.Workflow;
 
@@ -34,6 +35,9 @@ public class WorkerMarshaller {
       }
       if (value.getOutputSchema() != null) {
         gen.writeObjectField("outputSchema", value.getOutputSchema());
+      }
+      if (value.getExecutionPolicy() != null) {
+        gen.writeObjectField("executionPolicy", value.getExecutionPolicy());
       }
 
       // Serialize workflow field
@@ -96,6 +100,10 @@ public class WorkerMarshaller {
       }
       if (root.has("outputSchema")) {
         worker.setOutputSchema(root.get("outputSchema"));
+      }
+      if (root.has("executionPolicy")) {
+        ExecutionPolicy executionPolicy = mapper.treeToValue(root.get("executionPolicy"), ExecutionPolicy.class);
+        worker.setExecutionPolicy(executionPolicy);
       }
 
       // Deserialize workflow field
