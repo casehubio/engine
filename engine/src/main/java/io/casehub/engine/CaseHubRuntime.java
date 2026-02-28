@@ -8,9 +8,7 @@ import java.util.concurrent.CompletionStage;
 
 public interface CaseHubRuntime {
 
-  CompletionStage<UUID> submitCase(CaseHubDefinition definition);
+  CompletionStage<UUID> startCase(CaseHubDefinition definition);
 
-  CompletionStage<Void> startCase(UUID caseId);
-
-  CompletionStage<Void> startCase(StateContext context, UUID caseId);
+  CompletionStage<UUID> startCase(CaseHubDefinition definition, StateContext context);
 }

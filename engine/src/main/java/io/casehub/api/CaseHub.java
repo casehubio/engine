@@ -17,18 +17,10 @@ public abstract class CaseHub {
   public abstract CaseHubDefinition getDefinition();
 
   public CompletionStage<UUID> startCase() {
-    return runtime.submitCase(getDefinition())
-                    .thenCompose(caseId ->
-                            runtime.startCase(caseId)
-                                    .thenApply(v -> caseId)
-                    );
+    return runtime.startCase(getDefinition());
   }
 
   public CompletionStage<UUID> startCase(Map<String, Object> inputData) {
-    return runtime.submitCase(getDefinition())
-            .thenCompose(caseId ->
-                    runtime.startCase(new StateContextImpl(inputData), caseId)
-                            .thenApply(v -> caseId)
-            );
+    return runtime.startCase(getDefinition(), new StateContextImpl(inputData));
   }
 }
