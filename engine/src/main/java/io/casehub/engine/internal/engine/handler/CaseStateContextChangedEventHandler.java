@@ -1,7 +1,6 @@
 package io.casehub.engine.internal.engine.handler;
 
 import io.casehub.engine.internal.engine.CaseDefinitionRegistry;
-import io.casehub.engine.internal.event.CaseStartedEvent;
 import io.casehub.engine.internal.event.CaseStateContextChangedEvent;
 import io.casehub.engine.internal.event.EventBusAddresses;
 import io.casehub.engine.internal.event.GoalReachedEvent;
@@ -11,6 +10,7 @@ import io.casehub.engine.internal.jq.JQEvaluator;
 import io.casehub.engine.internal.jq.ValidationResult;
 import io.casehub.engine.internal.model.CaseDefinition;
 import io.casehub.engine.internal.model.CaseInstance;
+import io.casehub.engine.internal.model.CaseState;
 import io.casehub.model.Capability;
 import io.casehub.model.CaseHubDefinition;
 import io.casehub.model.ContextChangeTrigger;
@@ -46,6 +46,10 @@ public class CaseStateContextChangedEventHandler {
   @ConsumeEvent(value = EventBusAddresses.CONTEXT_CHANGED)
   public Uni<Void> onCaseStateContextChangedEventHandler(CaseStateContextChangedEvent event) {
     CaseInstance caseInstance = event.instance();
+    if(!caseInstance.getState().equals(CaseState.ACTIVE)){
+      return Uni.createFrom().voidItem();
+    }
+
     CaseDefinition caseDefinition = caseInstance.getCaseDefinition();
     CaseHubDefinition caseHubDefinition = caseDefinitionRegistry.getCaseDefinition(caseDefinition);
 

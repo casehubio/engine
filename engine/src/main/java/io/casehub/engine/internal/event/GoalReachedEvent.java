@@ -1,4 +1,7 @@
 package io.casehub.engine.internal.event;
 
-public record GoalReachedEvent(io.casehub.engine.internal.model.CaseInstance caseInstance, io.casehub.model.Goal goal) {
+import io.casehub.engine.internal.model.CaseInstance;
+import io.casehub.model.Goal;
+
+public record GoalReachedEvent(CaseInstance caseInstance, Goal goal) {
 }
