@@ -51,12 +51,9 @@ public class CaseHubReactor {
                               caseInstanceCache.put(instance);
 
                               return instance.<CaseInstance>persist();
-                              // .replaceWith(caseId);
                             })
             ).invoke(instance -> {
-
-              System.out.println("Publishing CaseStartedEvent for caseId: " + instance.getUuid());
-
+              LOG.info("Case started with caseId: " + instance.getUuid());
               eventBus.publish(CASE_STARTED, new CaseStartedEvent(instance));
             })
             .onItem()
