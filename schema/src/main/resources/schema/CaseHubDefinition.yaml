@@ -21,25 +21,35 @@ properties:
     type: string
     pattern: ^(0|[1-9]\d*)\.(0|[1-9]\d*)\.(0|[1-9]\d*)(?:-((?:0|[1-9]\d*|\d*[a-zA-Z-][0-9a-zA-Z-]*)(?:\.(?:0|[1-9]\d*|\d*[a-zA-Z-][0-9a-zA-Z-]*))*))?(?:\+([0-9a-zA-Z-]+(?:\.[0-9a-zA-Z-]+)*))?$
     title: CaseHubDSL
+    minLength: 1
+    maxLength: 50
     description: The version of the DSL used by the CaseHub.
   namespace:
     type: string
     pattern: ^[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?$
     title: CaseHubNamespace
+    minLength: 1
+    maxLength: 255
     description: The CaseHub's namespace.
   name:
     type: string
     pattern: ^[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?$
     title: CaseHubName
+    minLength: 1
+    maxLength: 255
     description: The CaseHub's name.
   version:
     type: string
     pattern: ^(0|[1-9]\d*)\.(0|[1-9]\d*)\.(0|[1-9]\d*)(?:-((?:0|[1-9]\d*|\d*[a-zA-Z-][0-9a-zA-Z-]*)(?:\.(?:0|[1-9]\d*|\d*[a-zA-Z-][0-9a-zA-Z-]*))*))?(?:\+([0-9a-zA-Z-]+(?:\.[0-9a-zA-Z-]+)*))?$
     title: CaseHubVersion
+    minLength: 1
+    maxLength: 50
     description: The CaseHub's semantic version.
   title:
     type: string
     title: CaseHubTitle
+    minLength: 0
+    maxLength: 500
     description: The CaseHub's title.
   summary:
     type: string
@@ -218,7 +228,7 @@ $defs:
     properties:
       timeoutMs:
         type: integer
-        minimum: 1
+        minimum: 60000
         description: "Default timeout for a single work execution/invocation"
       retries:
         $ref: "#/$defs/RetryPolicy"
@@ -269,8 +279,13 @@ $defs:
       maxAttempts:
         type: integer
         minimum: 1
-        default: 1
+        default: 3
         description: "Total attempts including the first one"
+      delayMs:
+        type: integer
+        minimum: 0
+        default: 100
+        description: "Delay in milliseconds between retry attempts"
 
   ScheduleTrigger:
     type: object
@@ -324,6 +339,8 @@ $defs:
           name:
             type: string
             title: WorkerName
+            minLength: 1
+            maxLength: 255
             description: "Worker name"
           description:
             type: string

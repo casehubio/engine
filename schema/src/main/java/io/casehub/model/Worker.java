@@ -18,6 +18,8 @@ public class Worker {
   private JsonNode inputSchema;
   private JsonNode outputSchema;
 
+  private ExecutionPolicy executionPolicy = new ExecutionPolicy();
+
   /**
    * Workflow definition: either String (path to external workflow file) OR Workflow object (embedded).
    * Type: String | Workflow
@@ -38,6 +40,9 @@ public class Worker {
 
   public JsonNode getOutputSchema() { return outputSchema; }
   public void setOutputSchema(JsonNode outputSchema) { this.outputSchema = outputSchema; }
+
+  public ExecutionPolicy getExecutionPolicy() { return executionPolicy; }
+  public void setExecutionPolicy(ExecutionPolicy executionPolicy) { this.executionPolicy = executionPolicy; }
 
   public Object getWorkflow() { return workflow; }
   public void setWorkflow(Object workflow) { this.workflow = workflow; }

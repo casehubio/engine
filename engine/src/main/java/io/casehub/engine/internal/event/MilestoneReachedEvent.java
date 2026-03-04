@@ -1,31 +1,27 @@
 package io.casehub.engine.internal.event;
 
-import io.casehub.engine.internal.model.CaseHubInstanceRunState;
+import io.casehub.engine.internal.model.CaseInstance;
 import io.casehub.model.Milestone;
 
-import java.time.Instant;
-import java.util.UUID;
+import java.util.Objects;
 
-/**
- * Event published when a Milestone is reached.
- * <p>
- * Milestones are observable progress markers that indicate significant
- * intermediate or final results in a Case. The Reactor evaluates milestone
- * conditions on every context change and publishes this event when a
- * milestone condition evaluates to true.
- * <p>
- * Milestones provide visibility and progress tracking, not control flow.
- */
-public record MilestoneReachedEvent(
-        CaseHubInstanceRunState runState,
-        Milestone milestone,
-        String timestamp
-) {
-    public MilestoneReachedEvent(CaseHubInstanceRunState runState, Milestone milestone) {
-        this(runState, milestone, Instant.now().toString());
-    }
+public record MilestoneReachedEvent(CaseInstance caseInstance,
+                                    Milestone milestone) {
 
-    public UUID getRunId() {
-        return runState.getRunId();
-    }
+  public MilestoneReachedEvent(CaseInstance caseInstance,
+                               Milestone milestone) {
+    this.caseInstance = Objects.requireNonNull(caseInstance, "Instance cannot be null");
+    this.milestone = Objects.requireNonNull(milestone, "Milestone cannot be null");
+  }
+
+  @Override
+  public boolean equals(Object o) {
+    if (!(o instanceof MilestoneReachedEvent that)) return false;
+    return Objects.equals(milestone, that.milestone) && Objects.equals(caseInstance, that.caseInstance);
+  }
+
+  @Override
+  public int hashCode() {
+    return Objects.hash(caseInstance, milestone);
+  }
 }

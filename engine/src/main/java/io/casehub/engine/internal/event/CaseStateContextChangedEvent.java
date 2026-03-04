@@ -4,13 +4,9 @@ import io.casehub.engine.internal.model.CaseInstance;
 
 import java.util.Objects;
 
-/**
- * Event fired when a CaseHub instance run is started.
- * Contains the initial StateContext created by the Reactor.
- */
-public record CaseStartedEvent(CaseInstance instance) {
+public record CaseStateContextChangedEvent(CaseInstance instance) {
 
-  public CaseStartedEvent(CaseInstance instance) {
+  public CaseStateContextChangedEvent(CaseInstance instance) {
     this.instance = Objects.requireNonNull(instance, "instance cannot be null");
   }
 
@@ -18,13 +14,13 @@ public record CaseStartedEvent(CaseInstance instance) {
   public boolean equals(Object o) {
     if (this == o) return true;
     if (o == null || getClass() != o.getClass()) return false;
-    CaseStartedEvent that = (CaseStartedEvent) o;
+    CaseStateContextChangedEvent that = (CaseStateContextChangedEvent) o;
     return Objects.equals(instance, that.instance);
   }
 
   @Override
   public String toString() {
-    return "CaseStartedEvent{" +
+    return "CaseStateContextChangedEvent{" +
             "uuid=" + instance.getUuid() +
             '}';
   }
