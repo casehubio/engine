@@ -1,7 +1,7 @@
 package io.casehub.engine.internal.event;
 
 import io.casehub.engine.internal.model.CaseInstance;
-import io.casehub.model.Worker;
+import io.casehub.api.model.Worker;
 
 import java.util.Map;
 

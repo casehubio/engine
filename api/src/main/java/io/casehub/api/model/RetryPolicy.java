@@ -5,7 +5,7 @@ public class RetryPolicy {
   private final Integer maxAttempts;
   private final Integer delayMs;
 
-  private RetryPolicy(Integer maxAttempts, Integer delayMs) {
+  public RetryPolicy(Integer maxAttempts, Integer delayMs) {
     this.maxAttempts = maxAttempts;
     this.delayMs = delayMs;
   }

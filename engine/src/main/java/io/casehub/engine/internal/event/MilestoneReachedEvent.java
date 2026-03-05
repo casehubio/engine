@@ -1,7 +1,7 @@
 package io.casehub.engine.internal.event;
 
 import io.casehub.engine.internal.model.CaseInstance;
-import io.casehub.model.Milestone;
+import io.casehub.api.model.Milestone;
 
 import java.util.Objects;
 

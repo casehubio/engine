@@ -3,7 +3,7 @@ package io.casehub.engine.internal.engine;
 import io.casehub.api.context.StateContext;
 import io.casehub.engine.CaseHubRuntime;
 import io.casehub.engine.internal.context.StateContextImpl;
-import io.casehub.model.CaseHubDefinition;
+import io.casehub.api.model.CaseHubDefinition;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
 

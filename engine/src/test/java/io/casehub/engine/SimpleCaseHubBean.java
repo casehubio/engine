@@ -1,17 +1,18 @@
 package io.casehub.engine;
 
 import io.casehub.api.CaseHub;
-import io.casehub.model.Capability;
-import io.casehub.model.CaseCompletion;
-import io.casehub.model.CaseDefinitionSpec;
-import io.casehub.model.CaseHubDefinition;
-import io.casehub.model.ContextChangeTrigger;
-import io.casehub.model.DispatchRule;
-import io.casehub.model.Goal;
-import io.casehub.model.GoalExpression;
-import io.casehub.model.Milestone;
-import io.casehub.model.Trigger;
-import io.casehub.model.Worker;
+import io.casehub.api.model.AllOfGoalExpression;
+import io.casehub.api.model.Capability;
+import io.casehub.api.model.CaseHubDefinition;
+import io.casehub.api.model.ContextChangeTrigger;
+import io.casehub.api.model.DispatchRule;
+import io.casehub.api.model.Goal;
+import io.casehub.api.model.GoalBasedCompletion;
+import io.casehub.api.model.GoalKind;
+import io.casehub.api.model.Milestone;
+import io.casehub.api.model.Worker;
+import io.casehub.engine.internal.worker.WorkflowFunction;
+import io.casehub.api.model.evaluator.JQExpressionEvaluator;
 import io.serverlessworkflow.api.types.Workflow;
 import io.serverlessworkflow.fluent.func.FuncWorkflowBuilder;
 import jakarta.enterprise.context.ApplicationScoped;
@@ -27,26 +28,15 @@ public class SimpleCaseHubBean extends CaseHub {
 
   @Override
   public CaseHubDefinition getDefinition() {
-    CaseHubDefinition definition = new CaseHubDefinition();
+    CaseHubDefinition definition = new CaseHubDefinition("test", "Document Processing Test", "1.0.0");
     definition.setDsl("0.1");
-    definition.setVersion("1.0.0");
-    definition.setName("Document Processing Test");
-    definition.setNamespace("test");
     definition.setTitle("Test Case with Worker and Capability");
 
-    CaseDefinitionSpec spec = new CaseDefinitionSpec();
-
-    Capability capability = new Capability();
-    capability.setName("processDocument");
+    Capability capability = new Capability("processDocument",
+            "{ documentId: .documentId, status: .status }",
+            "{ processedDocument: ., status: .status }");
     capability.setDescription("Process a document from the case context");
-    capability.setInputSchema("{ documentId: .documentId, status: .status }");
-    capability.setOutputSchema("{ processedDocument: ., status: .status }");
-    spec.setCapabilities(List.of(capability));
-
-    Worker worker = new Worker();
-    worker.setName("document-processor");
-    worker.setDescription("Processes documents and updates case context");
-    worker.setCapabilities(List.of("processDocument"));
+    definition.getCapabilities().add(capability);
 
     Workflow wf =
             FuncWorkflowBuilder.workflow("step-function-export")
@@ -69,41 +59,29 @@ public class SimpleCaseHubBean extends CaseHub {
                             }, Map.class))
                     .build();
 
-    worker.setWorkflow(wf);
+    Worker worker = new Worker("document-processor", List.of(capability), new WorkflowFunction(wf));
+    worker.setDescription("Processes documents and updates case context");
+    definition.getWorkers().add(worker);
 
-    spec.setWorkers(List.of(worker));
+    ContextChangeTrigger contextChangeTrigger = new ContextChangeTrigger(
+            new JQExpressionEvaluator(".status == \"processing\""));
 
-    DispatchRule rule = new DispatchRule();
-    rule.setName("trigger-on-processing-status");
-    rule.setCapability("processDocument");
+    DispatchRule rule = new DispatchRule("trigger-on-processing-status", capability, contextChangeTrigger, null);
+    definition.getRules().add(rule);
 
-    Trigger trigger = new Trigger();
-    ContextChangeTrigger contextChangeTrigger = new ContextChangeTrigger();
-    contextChangeTrigger.setFilter(".status == \"processing\"");
-    trigger.setContextChange(contextChangeTrigger);
-    rule.setOn(trigger);
-
-    spec.setRules(List.of(rule));
-
-    Milestone milestone = new Milestone();
-    milestone.setName("documentProcessed");
+    Milestone milestone = new Milestone("documentProcessed",
+            new JQExpressionEvaluator(".status == \"processed\""));
     milestone.setDescription("Milestone reached when document is processed");
-    milestone.setCondition(".status == \"processed\"");
-    spec.setMilestones(List.of(milestone));
+    definition.getMilestones().add(milestone);
 
-    Goal goal = new Goal();
-    goal.setName("documentProcessingComplete");
+    Goal goal = new Goal("documentProcessingComplete",
+            new JQExpressionEvaluator(".status == \"processed\""), GoalKind.SUCCESS);
     goal.setDescription("Goal achieved when document processing is complete");
-    goal.setCondition(".status == \"processed\"");
-    spec.setGoals(List.of(goal));
+    definition.getGoals().add(goal);
 
-    CaseCompletion caseCompletion = new CaseCompletion();
-    GoalExpression completionCondition = new GoalExpression();
-    completionCondition.setAllOf(List.of("documentProcessingComplete"));
-    caseCompletion.setSuccess(completionCondition);
-
-    spec.setCompletion(caseCompletion);
-    definition.setSpec(spec);
+    GoalBasedCompletion completion = new GoalBasedCompletion(
+            new AllOfGoalExpression(List.of(goal)), null);
+    definition.setCompletion(completion);
 
     return definition;
   }

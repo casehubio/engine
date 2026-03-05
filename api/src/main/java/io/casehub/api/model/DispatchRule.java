@@ -1,13 +1,15 @@
 package io.casehub.api.model;
 
+import io.casehub.api.model.evaluator.ExpressionEvaluator;
+
 public class DispatchRule {
 
   private final Capability capability;
   private final String name;
   private final Trigger on;
-  private final String when;
+  private final ExpressionEvaluator when;
 
-  private DispatchRule(String name, Capability capability, Trigger on, String when) {
+  public DispatchRule(String name, Capability capability, Trigger on, ExpressionEvaluator when) {
     this.name = name;
     this.capability = capability;
     this.on = on;
@@ -26,7 +28,7 @@ public class DispatchRule {
     return on;
   }
 
-  public String getWhen() {
+  public ExpressionEvaluator getWhen() {
     return when;
   }
 }

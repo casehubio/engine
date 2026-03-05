@@ -7,7 +7,7 @@ public class AnyOfGoalExpression implements GoalExpression {
 
   private final List<Goal> anyOf;
 
-  private AnyOfGoalExpression(List<Goal> anyOf) {
+  public AnyOfGoalExpression(List<Goal> anyOf) {
     this.anyOf = anyOf;
   }
 

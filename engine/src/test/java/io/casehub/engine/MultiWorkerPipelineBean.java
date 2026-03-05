@@ -1,17 +1,18 @@
 package io.casehub.engine;
 
 import io.casehub.api.CaseHub;
-import io.casehub.model.Capability;
-import io.casehub.model.CaseCompletion;
-import io.casehub.model.CaseDefinitionSpec;
-import io.casehub.model.CaseHubDefinition;
-import io.casehub.model.ContextChangeTrigger;
-import io.casehub.model.DispatchRule;
-import io.casehub.model.Goal;
-import io.casehub.model.GoalExpression;
-import io.casehub.model.Milestone;
-import io.casehub.model.Trigger;
-import io.casehub.model.Worker;
+import io.casehub.api.model.AllOfGoalExpression;
+import io.casehub.api.model.Capability;
+import io.casehub.api.model.CaseHubDefinition;
+import io.casehub.api.model.ContextChangeTrigger;
+import io.casehub.api.model.DispatchRule;
+import io.casehub.api.model.Goal;
+import io.casehub.api.model.GoalBasedCompletion;
+import io.casehub.api.model.GoalKind;
+import io.casehub.api.model.Milestone;
+import io.casehub.api.model.Worker;
+import io.casehub.engine.internal.worker.WorkflowFunction;
+import io.casehub.api.model.evaluator.JQExpressionEvaluator;
 import io.serverlessworkflow.api.types.Workflow;
 import io.serverlessworkflow.fluent.func.FuncWorkflowBuilder;
 import jakarta.enterprise.context.ApplicationScoped;
@@ -26,43 +27,30 @@ public class MultiWorkerPipelineBean extends CaseHub {
 
   @Override
   public CaseHubDefinition getDefinition() {
-    CaseHubDefinition definition = new CaseHubDefinition();
+    CaseHubDefinition definition = new CaseHubDefinition("test", "Multi-Worker Document Pipeline", "1.0.0");
     definition.setDsl("0.1");
-    definition.setVersion("1.0.0");
-    definition.setName("Multi-Worker Document Pipeline");
-    definition.setNamespace("test");
     definition.setTitle("Three-step document processing pipeline");
-
-    CaseDefinitionSpec spec = new CaseDefinitionSpec();
 
     // --- Capabilities ---
 
-    Capability validateCap = new Capability();
-    validateCap.setName("validateDocument");
+    Capability validateCap = new Capability("validateDocument",
+            "{ documentId: .documentId, step: .step }",
+            "{ valid: .valid, step: .step }");
     validateCap.setDescription("Validate a received document");
-    validateCap.setInputSchema("{ documentId: .documentId, step: .step }");
-    validateCap.setOutputSchema("{ valid: .valid, step: .step }");
 
-    Capability enrichCap = new Capability();
-    enrichCap.setName("enrichDocument");
+    Capability enrichCap = new Capability("enrichDocument",
+            "{ documentId: .documentId, valid: .valid }",
+            "{ enrichedData: .enrichedData, step: .step }");
     enrichCap.setDescription("Enrich a validated document with metadata");
-    enrichCap.setInputSchema("{ documentId: .documentId, valid: .valid }");
-    enrichCap.setOutputSchema("{ enrichedData: .enrichedData, step: .step }");
 
-    Capability publishCap = new Capability();
-    publishCap.setName("publishDocument");
+    Capability publishCap = new Capability("publishDocument",
+            "{ documentId: .documentId, enrichedData: .enrichedData }",
+            "{ publishedUrl: .publishedUrl, step: .step }");
     publishCap.setDescription("Publish an enriched document");
-    publishCap.setInputSchema("{ documentId: .documentId, enrichedData: .enrichedData }");
-    publishCap.setOutputSchema("{ publishedUrl: .publishedUrl, step: .step }");
 
-    spec.setCapabilities(List.of(validateCap, enrichCap, publishCap));
+    definition.getCapabilities().addAll(List.of(validateCap, enrichCap, publishCap));
 
     // --- Workers ---
-
-    Worker validator = new Worker();
-    validator.setName("document-validator");
-    validator.setDescription("Validates incoming documents");
-    validator.setCapabilities(List.of("validateDocument"));
 
     Workflow validateWf =
             FuncWorkflowBuilder.workflow("validate-document")
@@ -78,12 +66,9 @@ public class MultiWorkerPipelineBean extends CaseHub {
                               );
                             }, Map.class))
                     .build();
-    validator.setWorkflow(validateWf);
 
-    Worker enricher = new Worker();
-    enricher.setName("document-enricher");
-    enricher.setDescription("Enriches validated documents with metadata");
-    enricher.setCapabilities(List.of("enrichDocument"));
+    Worker validator = new Worker("document-validator", List.of(validateCap), new WorkflowFunction(validateWf));
+    validator.setDescription("Validates incoming documents");
 
     Workflow enrichWf =
             FuncWorkflowBuilder.workflow("enrich-document")
@@ -103,12 +88,9 @@ public class MultiWorkerPipelineBean extends CaseHub {
                               );
                             }, Map.class))
                     .build();
-    enricher.setWorkflow(enrichWf);
 
-    Worker publisher = new Worker();
-    publisher.setName("document-publisher");
-    publisher.setDescription("Publishes enriched documents");
-    publisher.setCapabilities(List.of("publishDocument"));
+    Worker enricher = new Worker("document-enricher", List.of(enrichCap), new WorkflowFunction(enrichWf));
+    enricher.setDescription("Enriches validated documents with metadata");
 
     Workflow publishWf =
             FuncWorkflowBuilder.workflow("publish-document")
@@ -124,75 +106,52 @@ public class MultiWorkerPipelineBean extends CaseHub {
                               );
                             }, Map.class))
                     .build();
-    publisher.setWorkflow(publishWf);
 
-    spec.setWorkers(List.of(validator, enricher, publisher));
+    Worker publisher = new Worker("document-publisher", List.of(publishCap), new WorkflowFunction(publishWf));
+    publisher.setDescription("Publishes enriched documents");
+
+    definition.getWorkers().addAll(List.of(validator, enricher, publisher));
 
     // --- Dispatch Rules ---
 
-    DispatchRule ruleValidate = new DispatchRule();
-    ruleValidate.setName("trigger-on-received");
-    ruleValidate.setCapability("validateDocument");
-    Trigger triggerValidate = new Trigger();
-    ContextChangeTrigger ctxValidate = new ContextChangeTrigger();
-    ctxValidate.setFilter(".step == \"received\"");
-    triggerValidate.setContextChange(ctxValidate);
-    ruleValidate.setOn(triggerValidate);
+    DispatchRule ruleValidate = new DispatchRule("trigger-on-received", validateCap,
+            new ContextChangeTrigger(new JQExpressionEvaluator(".step == \"received\"")), null);
 
-    DispatchRule ruleEnrich = new DispatchRule();
-    ruleEnrich.setName("trigger-on-validated");
-    ruleEnrich.setCapability("enrichDocument");
-    Trigger triggerEnrich = new Trigger();
-    ContextChangeTrigger ctxEnrich = new ContextChangeTrigger();
-    ctxEnrich.setFilter(".step == \"validated\" and .valid == true");
-    triggerEnrich.setContextChange(ctxEnrich);
-    ruleEnrich.setOn(triggerEnrich);
+    DispatchRule ruleEnrich = new DispatchRule("trigger-on-validated", enrichCap,
+            new ContextChangeTrigger(new JQExpressionEvaluator(".step == \"validated\" and .valid == true")), null);
 
-    DispatchRule rulePublish = new DispatchRule();
-    rulePublish.setName("trigger-on-enriched");
-    rulePublish.setCapability("publishDocument");
-    Trigger triggerPublish = new Trigger();
-    ContextChangeTrigger ctxPublish = new ContextChangeTrigger();
-    ctxPublish.setFilter(".step == \"enriched\"");
-    triggerPublish.setContextChange(ctxPublish);
-    rulePublish.setOn(triggerPublish);
+    DispatchRule rulePublish = new DispatchRule("trigger-on-enriched", publishCap,
+            new ContextChangeTrigger(new JQExpressionEvaluator(".step == \"enriched\"")), null);
 
-    spec.setRules(List.of(ruleValidate, ruleEnrich, rulePublish));
+    definition.getRules().addAll(List.of(ruleValidate, ruleEnrich, rulePublish));
 
     // --- Milestones ---
 
-    Milestone msValidated = new Milestone();
-    msValidated.setName("documentValidated");
+    Milestone msValidated = new Milestone("documentValidated",
+            new JQExpressionEvaluator(".step == \"validated\""));
     msValidated.setDescription("Document has been validated");
-    msValidated.setCondition(".step == \"validated\"");
 
-    Milestone msEnriched = new Milestone();
-    msEnriched.setName("documentEnriched");
+    Milestone msEnriched = new Milestone("documentEnriched",
+            new JQExpressionEvaluator(".step == \"enriched\""));
     msEnriched.setDescription("Document has been enriched");
-    msEnriched.setCondition(".step == \"enriched\"");
 
-    Milestone msPublished = new Milestone();
-    msPublished.setName("documentPublished");
+    Milestone msPublished = new Milestone("documentPublished",
+            new JQExpressionEvaluator(".step == \"published\""));
     msPublished.setDescription("Document has been published");
-    msPublished.setCondition(".step == \"published\"");
 
-    spec.setMilestones(List.of(msValidated, msEnriched, msPublished));
+    definition.getMilestones().addAll(List.of(msValidated, msEnriched, msPublished));
 
     // --- Goal and Completion ---
 
-    Goal goal = new Goal();
-    goal.setName("pipelineComplete");
+    Goal goal = new Goal("pipelineComplete",
+            new JQExpressionEvaluator(".step == \"published\""), GoalKind.SUCCESS);
     goal.setDescription("All pipeline steps completed successfully");
-    goal.setCondition(".step == \"published\"");
-    spec.setGoals(List.of(goal));
+    definition.getGoals().add(goal);
 
-    CaseCompletion completion = new CaseCompletion();
-    GoalExpression successExpr = new GoalExpression();
-    successExpr.setAllOf(List.of("pipelineComplete"));
-    completion.setSuccess(successExpr);
-    spec.setCompletion(completion);
+    GoalBasedCompletion completion = new GoalBasedCompletion(
+            new AllOfGoalExpression(List.of(goal)), null);
+    definition.setCompletion(completion);
 
-    definition.setSpec(spec);
     return definition;
   }
 }

@@ -5,7 +5,7 @@ import io.casehub.engine.internal.engine.cache.CaseInstanceCache;
 import io.casehub.engine.internal.event.CaseStartedEvent;
 import io.casehub.engine.internal.model.CaseInstance;
 import io.casehub.engine.internal.model.CaseState;
-import io.casehub.model.CaseHubDefinition;
+import io.casehub.api.model.CaseHubDefinition;
 import io.vertx.mutiny.core.eventbus.EventBus;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;

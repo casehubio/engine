@@ -1,15 +1,15 @@
 package io.casehub.engine.internal.worker;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import io.casehub.api.model.Capability;
+import io.casehub.api.model.CaseHubDefinition;
+import io.casehub.api.model.Worker;
 import io.casehub.engine.internal.context.StateContextImpl;
 import io.casehub.engine.internal.engine.CaseDefinitionRegistry;
 import io.casehub.engine.internal.engine.cache.CaseInstanceCache;
 import io.casehub.engine.internal.event.WorkflowExecutionCompleted;
 import io.casehub.engine.internal.history.EventLog;
 import io.casehub.engine.internal.model.CaseInstance;
-import io.casehub.model.Capability;
-import io.casehub.model.CaseHubDefinition;
-import io.casehub.model.Worker;
 import io.quarkus.vertx.core.runtime.context.VertxContextSafetyToggle;
 import io.serverlessworkflow.api.types.Workflow;
 import io.serverlessworkflow.impl.WorkflowModel;
@@ -75,7 +75,7 @@ public class WorkflowExecutionTask implements Job {
     String capabilityName = eventLog.getMetadata().get("capabilityName").asText();
 
     //TODO use map
-    Worker worker = definition.getSpec()
+    Worker worker = definition
             .getWorkers()
             .stream()
             .filter(w -> w.getName().equals(workflowId))
@@ -83,15 +83,18 @@ public class WorkflowExecutionTask implements Job {
             .orElseThrow(() -> new RuntimeException("Worker not found in case definition: " + workflowId));
 
     //TODO use map
-    Capability capability = definition.getSpec()
+    Capability capability = definition
             .getCapabilities()
             .stream()
             .filter(c -> c.getName().equals(capabilityName))
             .findFirst()
             .orElseThrow(() -> new RuntimeException("Capability not found in case definition: " + capabilityName));
 
+    if (!(worker.getFunction() instanceof WorkflowFunction wf)) {
+      throw new RuntimeException("Worker workflow is not a WorkflowFunction: " + worker.getName());
+    }
 
-    Workflow workflow = resolveWorkflow(worker.getWorkflow());
+    Workflow workflow = wf.getWorkflow();
     CompletableFuture<WorkflowModel> cf = workflowExecutor.execute(workflow, inputData);
     WorkflowModel workflowModel = cf.join(); //TODO handle exception + join() in a non-blocking way
     Map<String, Object> outputData = workflowModel.asMap().orElseThrow(() -> new RuntimeException("Failed to convert workflow model to map"));
@@ -120,15 +123,6 @@ public class WorkflowExecutionTask implements Job {
     } catch (Exception e) {
       throw new JobExecutionException("Failed to load EventLog id=" + eventLogId, e);
     }
-  }
-
-  private Workflow resolveWorkflow(Object asObject) {
-    if (asObject instanceof Workflow workflow) {
-      return workflow;
-    } else if (asObject instanceof String path) {
-      throw new RuntimeException("Workflow definition as file path is not supported yet: " + path);
-    }
-    throw new RuntimeException("Unsupported workflow definition format: " + asObject);
   }
 
 }

@@ -1,10 +1,13 @@
 package io.casehub.engine;
 
-import io.casehub.model.CaseHubDefinition;
-import io.casehub.model.CaseDefinitionSpec;
+import io.casehub.api.model.AllOfGoalExpression;
+import io.casehub.api.model.CaseHubDefinition;
+import io.casehub.api.model.ContextChangeTrigger;
+import io.casehub.api.model.GoalBasedCompletion;
+import io.casehub.engine.internal.worker.WorkflowFunction;
+import io.casehub.api.model.evaluator.JQExpressionEvaluator;
 import io.quarkus.test.junit.QuarkusTest;
 import jakarta.inject.Inject;
-import org.junit.jupiter.api.Test;
 
 import static org.junit.jupiter.api.Assertions.*;
 
@@ -25,44 +28,45 @@ public class YamlSimpleCaseHubBeanTest {
     assertEquals("test", def.getNamespace());
     assertEquals("Test Case with Worker and Capability", def.getTitle());
 
-    CaseDefinitionSpec spec = def.getSpec();
-    assertNotNull(spec);
-
     // capabilities
-    assertEquals(1, spec.getCapabilities().size());
-    assertEquals("processDocument", spec.getCapabilities().get(0).getName());
-    assertEquals("{ documentId: .documentId, status: .status }", spec.getCapabilities().get(0).getInputSchema());
-    assertEquals("{ processedDocument: ., status: .status }", spec.getCapabilities().get(0).getOutputSchema());
+    assertEquals(1, def.getCapabilities().size());
+    assertEquals("processDocument", def.getCapabilities().get(0).getName());
+    assertEquals("{ documentId: .documentId, status: .status }", def.getCapabilities().get(0).getInputSchema());
+    assertEquals("{ processedDocument: ., status: .status }", def.getCapabilities().get(0).getOutputSchema());
 
     // workers
-    assertEquals(1, spec.getWorkers().size());
-    assertEquals("document-processor", spec.getWorkers().get(0).getName());
-    assertEquals(1, spec.getWorkers().get(0).getCapabilities().size());
-    assertEquals("processDocument", spec.getWorkers().get(0).getCapabilities().get(0));
-    assertTrue(spec.getWorkers().get(0).isEmbeddedWorkflow());
+    assertEquals(1, def.getWorkers().size());
+    assertEquals("document-processor", def.getWorkers().get(0).getName());
+    assertEquals(1, def.getWorkers().get(0).getCapabilities().size());
+    assertEquals("processDocument", def.getWorkers().get(0).getCapabilities().get(0).getName());
+    assertInstanceOf(WorkflowFunction.class, def.getWorkers().get(0).getFunction());
 
     // rules
-    assertEquals(1, spec.getRules().size());
-    assertEquals("trigger-on-processing-status", spec.getRules().get(0).getName());
-    assertEquals("processDocument", spec.getRules().get(0).getCapability());
-    assertNotNull(spec.getRules().get(0).getOn().getContextChange());
-    assertEquals(".status == \"processing\"", spec.getRules().get(0).getOn().getContextChange().getFilter());
+    assertEquals(1, def.getRules().size());
+    assertEquals("trigger-on-processing-status", def.getRules().get(0).getName());
+    assertEquals("processDocument", def.getRules().get(0).getCapability().getName());
+    assertInstanceOf(ContextChangeTrigger.class, def.getRules().get(0).getOn());
+    ContextChangeTrigger cct = (ContextChangeTrigger) def.getRules().get(0).getOn();
+    assertEquals(".status == \"processing\"", ((JQExpressionEvaluator) cct.getFilter()).expression());
 
     // milestones
-    assertEquals(1, spec.getMilestones().size());
-    assertEquals("documentProcessed", spec.getMilestones().get(0).getName());
-    assertEquals(".status == \"processed\"", spec.getMilestones().get(0).getCondition());
+    assertEquals(1, def.getMilestones().size());
+    assertEquals("documentProcessed", def.getMilestones().get(0).getName());
+    assertEquals(".status == \"processed\"", ((JQExpressionEvaluator) def.getMilestones().get(0).getCondition()).expression());
 
     // goals
-    assertEquals(1, spec.getGoals().size());
-    assertEquals("documentProcessingComplete", spec.getGoals().get(0).getName());
-    assertEquals(".status == \"processed\"", spec.getGoals().get(0).getCondition());
+    assertEquals(1, def.getGoals().size());
+    assertEquals("documentProcessingComplete", def.getGoals().get(0).getName());
+    assertEquals(".status == \"processed\"", ((JQExpressionEvaluator) def.getGoals().get(0).getCondition()).expression());
 
     // completion
-    assertNotNull(spec.getCompletion());
-    assertNotNull(spec.getCompletion().getSuccess());
-    assertEquals(1, spec.getCompletion().getSuccess().getAllOf().size());
-    assertEquals("documentProcessingComplete", spec.getCompletion().getSuccess().getAllOf().get(0));
+    assertNotNull(def.getCompletion());
+    assertInstanceOf(GoalBasedCompletion.class, def.getCompletion());
+    GoalBasedCompletion completion = (GoalBasedCompletion) def.getCompletion();
+    assertNotNull(completion.getSuccess());
+    assertInstanceOf(AllOfGoalExpression.class, completion.getSuccess());
+    assertEquals(1, completion.getSuccess().getGoals().size());
+    assertEquals("documentProcessingComplete", completion.getSuccess().getGoals().iterator().next().getName());
   }
 
 }

@@ -1,14 +1,16 @@
 package io.casehub.api.model;
 
+import io.casehub.api.model.evaluator.ExpressionEvaluator;
+
 public class PredicateBasedCompletion implements CaseCompletion {
 
-  private final String doneWhen;
+  private final ExpressionEvaluator doneWhen;
 
-  private PredicateBasedCompletion(String doneWhen) {
+  public PredicateBasedCompletion(ExpressionEvaluator doneWhen) {
     this.doneWhen = doneWhen;
   }
 
-  public String getDoneWhen() {
+  public ExpressionEvaluator getDoneWhen() {
     return doneWhen;
   }
 }

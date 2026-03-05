@@ -1,14 +1,16 @@
 package io.casehub.api.model;
 
+import io.casehub.api.model.evaluator.ExpressionEvaluator;
+
 import java.util.Objects;
 
 public class Milestone {
 
   private final String name;
-  private final String condition;
+  private final ExpressionEvaluator condition;
   private String description;
 
-  private Milestone(String name, String condition) {
+  public Milestone(String name, ExpressionEvaluator condition) {
     this.name = name;
     this.condition = condition;
   }
@@ -17,7 +19,7 @@ public class Milestone {
     return name;
   }
 
-  public String getCondition() {
+  public ExpressionEvaluator getCondition() {
     return condition;
   }
 
