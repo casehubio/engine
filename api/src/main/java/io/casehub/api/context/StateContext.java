@@ -1,15 +1,12 @@
-package io.casehub.context;
+package io.casehub.api.context;
 
 import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
-import io.casehub.engine.internal.context.StateContextImpl;
 
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.function.Function;
 
-@JsonDeserialize(as = StateContextImpl.class)
 public interface StateContext {
 
     Map<String, Object> getData();

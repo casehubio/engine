@@ -1,6 +1,6 @@
 package io.casehub.engine;
 
-import io.casehub.context.StateContext;
+import io.casehub.api.context.StateContext;
 import io.casehub.model.CaseHubDefinition;
 
 import java.util.UUID;

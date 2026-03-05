@@ -46,6 +46,11 @@
     <dependencies>
         <dependency>
             <groupId>io.casehub</groupId>
+            <artifactId>api</artifactId>
+            <version>${project.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>io.casehub</groupId>
             <artifactId>schema</artifactId>
             <version>${project.version}</version>
         </dependency>
