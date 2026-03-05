@@ -1,7 +1,7 @@
 package io.casehub.engine.internal.engine;
 
 import io.casehub.engine.internal.model.CaseDefinition;
-import io.casehub.model.CaseHubDefinition;
+import io.casehub.api.model.CaseHubDefinition;
 import io.quarkus.hibernate.reactive.panache.Panache;
 import io.smallrye.mutiny.Uni;
 import jakarta.enterprise.context.ApplicationScoped;

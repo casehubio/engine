@@ -1,14 +1,16 @@
 package io.casehub.api.model;
 
+import io.casehub.api.model.evaluator.ExpressionEvaluator;
+
 public class ContextChangeTrigger implements Trigger {
 
-  private final String filter;
+  private final ExpressionEvaluator filter;
 
-  private ContextChangeTrigger(String filter) {
+  public ContextChangeTrigger(ExpressionEvaluator filter) {
     this.filter = filter;
   }
 
-  public String getFilter() {
+  public ExpressionEvaluator getFilter() {
     return filter;
   }
 }

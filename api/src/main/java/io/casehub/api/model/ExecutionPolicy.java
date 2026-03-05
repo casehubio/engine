@@ -5,7 +5,7 @@ public class ExecutionPolicy {
   private final Integer timeoutMs;
   private final RetryPolicy retries;
 
-  private ExecutionPolicy(Integer timeoutMs, RetryPolicy retries) {
+  public ExecutionPolicy(Integer timeoutMs, RetryPolicy retries) {
     this.timeoutMs = timeoutMs;
     this.retries = retries;
   }

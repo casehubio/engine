@@ -7,7 +7,7 @@ public class Capability {
   private final String outputSchema;
   private String description;
 
-  private Capability(String name, String inputSchema, String outputSchema) {
+  public Capability(String name, String inputSchema, String outputSchema) {
     this.name = name;
     this.inputSchema = inputSchema;
     this.outputSchema = outputSchema;

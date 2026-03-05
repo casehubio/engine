@@ -1,27 +1,28 @@
 package io.casehub.api.model;
 
+import io.casehub.api.model.evaluator.ExpressionEvaluator;
+
 import java.util.Objects;
 
 public class Goal {
 
   private final String name;
-  private final String condition;
+  private final ExpressionEvaluator condition;
   private final GoalKind kind;
-  private final Boolean terminal;
+  private boolean terminal;
   private String description;
 
-  private Goal(String name, String condition, GoalKind kind, Boolean terminal) {
+  public Goal(String name, ExpressionEvaluator condition, GoalKind kind) {
     this.name = name;
     this.condition = condition;
     this.kind = kind;
-    this.terminal = terminal;
   }
 
   public String getName() {
     return name;
   }
 
-  public String getCondition() {
+  public ExpressionEvaluator getCondition() {
     return condition;
   }
 
@@ -39,6 +40,10 @@ public class Goal {
 
   public Boolean getTerminal() {
     return terminal;
+  }
+
+  public void setTerminal(boolean terminal) {
+    this.terminal = terminal;
   }
 
   @Override

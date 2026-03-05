@@ -6,7 +6,7 @@ public class AllOfGoalExpression implements GoalExpression {
 
   private final Collection<Goal> allOf;
 
-  private AllOfGoalExpression(Collection<Goal> allOf) {
+  public AllOfGoalExpression(Collection<Goal> allOf) {
     this.allOf = allOf;
   }
 

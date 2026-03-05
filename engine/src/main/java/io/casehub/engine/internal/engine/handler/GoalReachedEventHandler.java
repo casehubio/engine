@@ -1,6 +1,11 @@
 package io.casehub.engine.internal.engine.handler;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import io.casehub.api.model.CaseHubDefinition;
+import io.casehub.api.model.CaseCompletion;
+import io.casehub.api.model.Goal;
+import io.casehub.api.model.GoalBasedCompletion;
+import io.casehub.api.model.GoalExpression;
 import io.casehub.engine.internal.engine.CaseDefinitionRegistry;
 import io.casehub.engine.internal.event.CaseStatusChanged;
 import io.casehub.engine.internal.event.EventBusAddresses;
@@ -9,10 +14,6 @@ import io.casehub.engine.internal.history.EventLog;
 import io.casehub.engine.internal.history.EventStreamType;
 import io.casehub.engine.internal.model.CaseInstance;
 import io.casehub.engine.internal.model.CaseState;
-import io.casehub.model.CaseCompletion;
-import io.casehub.model.CaseHubDefinition;
-import io.casehub.model.Goal;
-import io.casehub.model.GoalExpression;
 import io.quarkus.hibernate.reactive.panache.Panache;
 import io.quarkus.vertx.ConsumeEvent;
 import io.smallrye.mutiny.Uni;
@@ -22,7 +23,6 @@ import jakarta.inject.Inject;
 import org.jboss.logging.Logger;
 
 import java.time.Instant;
-import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
 
@@ -55,11 +55,11 @@ public class GoalReachedEventHandler {
     eventLog.setMetadata(OBJECT_MAPPER.createObjectNode()
             .put("name", goal.getName())
             .put("description", goal.getDescription())
-            .put("kind", goal.getKind().name())
+            .put("kind", goal.getKind().value())
             .put("isTerminal", goal.getTerminal())
     );
 
-    CaseCompletion completion = definition.getSpec().getCompletion();
+    CaseCompletion completion = definition.getCompletion();
 
     return Panache.withTransaction(eventLog::persist)
             .chain(() -> evaluateCompletion(caseInstance, completion));
@@ -67,6 +67,10 @@ public class GoalReachedEventHandler {
 
   private Uni<Void> evaluateCompletion(CaseInstance caseInstance, CaseCompletion completion) {
     if (completion == null) {
+      return Uni.createFrom().voidItem();
+    }
+
+    if (!(completion instanceof GoalBasedCompletion goalBasedCompletion)) {
       return Uni.createFrom().voidItem();
     }
 
@@ -82,14 +86,14 @@ public class GoalReachedEventHandler {
 
       String oldStatus = caseInstance.getState().name();
 
-      if (completion.getFailure() != null && isGoalExpressionSatisfied(completion.getFailure(), reachedGoals)) {
+      if (goalBasedCompletion.getFailure() != null && isGoalExpressionSatisfied(goalBasedCompletion.getFailure(), reachedGoals)) {
         LOG.infof("Case FAILED: caseId=%s", caseInstance.getUuid());
         eventBus.publish(EventBusAddresses.CASE_STATUS_CHANGED,
                 new CaseStatusChanged(caseInstance, oldStatus, CaseState.FAILED.name()));
         return Uni.createFrom().voidItem();
       }
 
-      if (completion.getSuccess() != null && isGoalExpressionSatisfied(completion.getSuccess(), reachedGoals)) {
+      if (goalBasedCompletion.getSuccess() != null && isGoalExpressionSatisfied(goalBasedCompletion.getSuccess(), reachedGoals)) {
         LOG.infof("Case COMPLETED: caseId=%s", caseInstance.getUuid());
         eventBus.publish(EventBusAddresses.CASE_STATUS_CHANGED,
                 new CaseStatusChanged(caseInstance, oldStatus, CaseState.COMPLETED.name()));
@@ -101,14 +105,20 @@ public class GoalReachedEventHandler {
   }
 
   private boolean isGoalExpressionSatisfied(GoalExpression expression, Set<String> reachedGoals) {
-    List<String> allOf = expression.getAllOf();
-    if (allOf != null && !allOf.isEmpty()) {
-      return reachedGoals.containsAll(allOf);
+    if (expression == null || expression.getGoals() == null || expression.getGoals().isEmpty()) {
+      return false;
     }
 
-    List<String> anyOf = expression.getAnyOf();
-    if (anyOf != null && !anyOf.isEmpty()) {
-      return anyOf.stream().anyMatch(reachedGoals::contains);
+    Set<String> expressionGoalNames = expression.getGoals().stream()
+            .map(Goal::getName)
+            .collect(Collectors.toSet());
+
+    if (expression instanceof io.casehub.api.model.AllOfGoalExpression) {
+      return reachedGoals.containsAll(expressionGoalNames);
+    }
+
+    if (expression instanceof io.casehub.api.model.AnyOfGoalExpression) {
+      return expressionGoalNames.stream().anyMatch(reachedGoals::contains);
     }
 
     return false;

@@ -1,7 +1,7 @@
 package io.casehub.engine;
 
 import io.casehub.api.context.StateContext;
-import io.casehub.model.CaseHubDefinition;
+import io.casehub.api.model.CaseHubDefinition;
 
 import java.util.UUID;
 import java.util.concurrent.CompletionStage;
