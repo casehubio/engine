@@ -1,6 +1,6 @@
 package io.casehub.engine.internal.model;
 
-import io.casehub.context.StateContext;
+import io.casehub.api.context.StateContext;
 import io.quarkus.hibernate.reactive.panache.PanacheEntity;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;

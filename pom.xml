@@ -8,6 +8,7 @@
     <packaging>pom</packaging>
 
     <modules>
+        <module>api</module>
         <module>codegen</module>
         <module>schema</module>
         <module>engine</module>

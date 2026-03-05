@@ -1,6 +1,6 @@
 package io.casehub.engine.internal.engine;
 
-import io.casehub.context.StateContext;
+import io.casehub.api.context.StateContext;
 import io.casehub.engine.internal.engine.cache.CaseInstanceCache;
 import io.casehub.engine.internal.event.CaseStartedEvent;
 import io.casehub.engine.internal.model.CaseInstance;

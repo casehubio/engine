@@ -16,10 +16,12 @@ import com.fasterxml.jackson.annotation.JsonAnySetter;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 
-import io.casehub.context.StateContext;
+import io.casehub.api.context.StateContext;
 import io.fabric8.zjsonpatch.JsonDiff;
 
+@JsonDeserialize(as = StateContextImpl.class)
 public class StateContextImpl implements StateContext {
 
   private static final ObjectMapper mapper = new ObjectMapper();
