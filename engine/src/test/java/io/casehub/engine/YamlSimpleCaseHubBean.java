@@ -16,9 +16,7 @@ import io.casehub.api.model.GoalKind;
 import io.casehub.api.model.Milestone;
 import io.casehub.api.model.Trigger;
 import io.casehub.api.model.Worker;
-import io.casehub.engine.internal.worker.WorkflowFunction;
 import io.casehub.api.model.evaluator.JQExpressionEvaluator;
-import io.serverlessworkflow.api.types.Workflow;
 import jakarta.enterprise.context.ApplicationScoped;
 
 import java.io.IOException;
@@ -69,12 +67,7 @@ public class YamlSimpleCaseHubBean extends CaseHub {
                 .map(capabilityMap::get)
                 .collect(Collectors.toList());
 
-        WorkflowFunction wf = null;
-        if (sw.isEmbeddedWorkflow()) {
-          wf = new WorkflowFunction(sw.getWorkflowAsEmbedded());
-        }
-
-        Worker worker = new Worker(sw.getName(), workerCaps, null, wf);
+        Worker worker = new Worker(sw.getName(), workerCaps, sw.getWorkflowAsEmbedded());
         worker.setDescription(sw.getDescription());
         def.getWorkers().add(worker);
       }
@@ -89,7 +82,7 @@ public class YamlSimpleCaseHubBean extends CaseHub {
           trigger = new ContextChangeTrigger(
                   new JQExpressionEvaluator(sr.getOn().getContextChange().getFilter()));
         }
-        DispatchRule rule = new DispatchRule(sr.getName(), cap, trigger, null);
+        DispatchRule rule = new DispatchRule(sr.getName(), cap, trigger);
         def.getRules().add(rule);
       }
     }

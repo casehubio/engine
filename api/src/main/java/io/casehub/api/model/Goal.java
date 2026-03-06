@@ -1,6 +1,7 @@
 package io.casehub.api.model;
 
 import io.casehub.api.model.evaluator.ExpressionEvaluator;
+import io.casehub.api.model.evaluator.JQExpressionEvaluator;
 
 import java.util.Objects;
 
@@ -44,6 +45,64 @@ public class Goal {
 
   public void setTerminal(boolean terminal) {
     this.terminal = terminal;
+  }
+
+  public static Builder builder() {
+    return new Builder();
+  }
+
+  public static class Builder {
+
+    private String name;
+    private ExpressionEvaluator condition;
+    private GoalKind kind;
+    private boolean terminal;
+    private String description;
+
+    private Builder() {
+
+    }
+
+    public Builder name(String name) {
+      this.name = name;
+      return this;
+    }
+
+    public Builder condition(ExpressionEvaluator condition) {
+      this.condition = condition;
+      return this;
+    }
+
+    public Builder condition(String condition) {
+      this.condition = new JQExpressionEvaluator(condition);
+      return this;
+    }
+
+    public Builder kind(GoalKind kind) {
+      this.kind = kind;
+      return this;
+    }
+
+    public Builder terminal(boolean terminal) {
+      this.terminal = terminal;
+      return this;
+    }
+
+    public Builder description(String description) {
+      this.description = description;
+      return this;
+    }
+
+    public Goal build() {
+      Goal goal = new Goal(
+              Objects.requireNonNull(name),
+              Objects.requireNonNull(condition),
+              Objects.requireNonNull(kind)
+      );
+      goal.setTerminal(terminal);
+      goal.setDescription(description);
+      return goal;
+    }
   }
 
   @Override
