@@ -5,9 +5,9 @@ import java.util.List;
 
 public class AnyOfGoalExpression implements GoalExpression {
 
-  private final List<Goal> anyOf;
+  private final Collection<Goal> anyOf;
 
-  public AnyOfGoalExpression(List<Goal> anyOf) {
+  public AnyOfGoalExpression(Collection<Goal> anyOf) {
     this.anyOf = anyOf;
   }
 

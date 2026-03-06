@@ -1,7 +1,10 @@
 package io.casehub.api.model;
 
+import io.casehub.api.model.evaluator.JQExpressionEvaluator;
+
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
 
 public class CaseHubDefinition {
 
@@ -22,7 +25,6 @@ public class CaseHubDefinition {
     this.namespace = namespace;
     this.name = name;
     this.version = version;
-
     this.capabilities = new ArrayList<>();
     this.rules = new ArrayList<>();
     this.milestones = new ArrayList<>();
@@ -92,5 +94,149 @@ public class CaseHubDefinition {
 
   public void setCompletion(CaseCompletion completion) {
     this.completion = completion;
+  }
+
+  public static Builder builder() {
+    return new Builder();
+  }
+
+  public static class Builder {
+
+    private String namespace;
+    private String name;
+    private String version;
+    private String title;
+    private String summary;
+    private List<Capability> capabilities;
+    private List<Worker> workers;
+    private List<DispatchRule> rules;
+    private List<Milestone> milestones;
+    private List<Goal> goals;
+    private CaseCompletion completion;
+
+
+    private Builder() {
+
+    }
+
+    public Builder namespace(String namespace) {
+      this.namespace = namespace;
+      return this;
+    }
+
+    public Builder name(String name) {
+      this.name = name;
+      return this;
+    }
+
+    public Builder version(String version) {
+      this.version = version;
+      return this;
+    }
+
+    public Builder title(String title) {
+      this.title = title;
+      return this;
+    }
+
+    public Builder summary(String summary) {
+      this.summary = summary;
+      return this;
+    }
+
+    public Builder capabilities(List<Capability> capabilities) {
+      this.capabilities = capabilities;
+      return this;
+    }
+
+    public Builder capabilities(Capability... capabilities) {
+      this.capabilities = List.of(capabilities);
+      return this;
+    }
+
+    public Builder workers(List<Worker> workers) {
+      this.workers = workers;
+      return this;
+    }
+
+    public Builder workers(Worker... workers) {
+      this.workers = List.of(workers);
+      return this;
+    }
+
+    public Builder rules(List<DispatchRule> rules) {
+      this.rules = rules;
+      return this;
+    }
+
+    public Builder rules(DispatchRule... rules) {
+      this.rules = List.of(rules);
+      return this;
+    }
+
+    public Builder milestones(List<Milestone> milestones) {
+      this.milestones = milestones;
+      return this;
+    }
+
+    public Builder milestones(Milestone... milestones) {
+      this.milestones = List.of(milestones);
+      return this;
+    }
+
+    public Builder goals(List<Goal> goals) {
+      this.goals = goals;
+      return this;
+    }
+
+    public Builder goals(Goal... goals) {
+      this.goals = List.of(goals);
+      return this;
+    }
+
+    public Builder completion(GoalExpression success) {
+      return completion(success, null);
+    }
+
+    public Builder completion(GoalExpression success, GoalExpression failure) {
+      this.completion = new GoalBasedCompletion(success, failure);
+      return this;
+    }
+
+    public Builder completion(String when) {
+      this.completion = new PredicateBasedCompletion(new JQExpressionEvaluator(when));
+      return this;
+    }
+
+    public CaseHubDefinition build() {
+      CaseHubDefinition caseHubDefinition = new CaseHubDefinition(
+              Objects.requireNonNull(namespace),
+              Objects.requireNonNull(name),
+              Objects.requireNonNull(version)
+      );
+      caseHubDefinition.setTitle(title);
+      caseHubDefinition.setSummary(summary);
+      if (capabilities != null) {
+        caseHubDefinition.capabilities.addAll(capabilities);
+      }
+      if (workers != null) {
+        caseHubDefinition.workers.addAll(workers);
+      }
+      if (rules != null) {
+        caseHubDefinition.rules.addAll(rules);
+      }
+      if (milestones != null) {
+        caseHubDefinition.milestones.addAll(milestones);
+      }
+      if (milestones != null) {
+        caseHubDefinition.milestones.addAll(milestones);
+      }
+      if (goals != null) {
+        caseHubDefinition.goals.addAll(goals);
+      }
+      caseHubDefinition.setCompletion(completion);
+
+      return caseHubDefinition;
+    }
   }
 }

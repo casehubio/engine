@@ -27,12 +27,11 @@ import org.quartz.JobExecutionException;
 import java.time.Duration;
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
+import java.util.function.Function;
 
 import static io.casehub.engine.internal.event.EventBusAddresses.WORKER_EXECUTION_FINISHED;
 
 @SuppressWarnings("unchecked")
-
-
 @ApplicationScoped
 public class WorkflowExecutionTask implements Job {
 
@@ -90,14 +89,14 @@ public class WorkflowExecutionTask implements Job {
             .findFirst()
             .orElseThrow(() -> new RuntimeException("Capability not found in case definition: " + capabilityName));
 
-    if (!(worker.getFunction() instanceof WorkflowFunction wf)) {
-      throw new RuntimeException("Worker workflow is not a WorkflowFunction: " + worker.getName());
+    Map<String, Object> outputData;
+    if (worker.getFunction().getValue() instanceof Workflow workflow ) {
+      outputData = workflow(workflow, inputData);
+    } else if (worker.getFunction().getValue() instanceof Function function) {
+      outputData = function(function, inputData);
+    } else {
+      throw new RuntimeException("Worker function is not a workflow: " + worker.getName() + " " + worker.getFunction().getValue().getClass().getCanonicalName());
     }
-
-    Workflow workflow = wf.getWorkflow();
-    CompletableFuture<WorkflowModel> cf = workflowExecutor.execute(workflow, inputData);
-    WorkflowModel workflowModel = cf.join(); //TODO handle exception + join() in a non-blocking way
-    Map<String, Object> outputData = workflowModel.asMap().orElseThrow(() -> new RuntimeException("Failed to convert workflow model to map"));
 
     Map<String, Object> toContextOutputData = new StateContextImpl(outputData).evalObjectTemplate(capability.getOutputSchema());
 
@@ -108,6 +107,16 @@ public class WorkflowExecutionTask implements Job {
             toContextOutputData
     );
     eventBus.publish(WORKER_EXECUTION_FINISHED, event);
+  }
+
+  private Map<String, Object> workflow(Workflow workflow, Map<String, Object> inputData) {
+    CompletableFuture<WorkflowModel> cf = workflowExecutor.execute(workflow, inputData);
+    WorkflowModel workflowModel = cf.join(); //TODO handle exception + join() in a non-blocking way
+    return workflowModel.asMap().orElseThrow(() -> new RuntimeException("Failed to convert workflow model to map"));
+  }
+
+  private Map<String, Object> function(Function<Map<String, Object>, Map<String, Object>> function, Map<String, Object> inputData) {
+    return function.apply(inputData);
   }
 
   private EventLog findEventLog(Long eventLogId) throws JobExecutionException {

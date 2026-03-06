@@ -97,6 +97,11 @@
             <version>${quarkus.flow.version}</version>
         </dependency>
         <dependency>
+            <groupId>io.serverlessworkflow</groupId>
+            <artifactId>serverlessworkflow-experimental-fluent-func</artifactId>
+            <version>${io.serverlessworkflow.version}</version>
+        </dependency>
+        <dependency>
             <groupId>io.fabric8</groupId>
             <artifactId>zjsonpatch</artifactId>
             <version>${io.fabric8.zjsonpatch.version}</version>
@@ -120,11 +125,6 @@
             <groupId>org.awaitility</groupId>
             <artifactId>awaitility</artifactId>
             <scope>test</scope>
-        </dependency>
-        <dependency>
-            <groupId>io.serverlessworkflow</groupId>
-            <artifactId>serverlessworkflow-experimental-fluent-func</artifactId>
-            <version>${io.serverlessworkflow.version}</version>
         </dependency>
         <dependency>
             <groupId>io.quarkiverse.langchain4j</groupId>

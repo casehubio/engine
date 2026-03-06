@@ -4,9 +4,9 @@ import io.casehub.api.model.AllOfGoalExpression;
 import io.casehub.api.model.CaseHubDefinition;
 import io.casehub.api.model.ContextChangeTrigger;
 import io.casehub.api.model.GoalBasedCompletion;
-import io.casehub.engine.internal.worker.WorkflowFunction;
 import io.casehub.api.model.evaluator.JQExpressionEvaluator;
 import io.quarkus.test.junit.QuarkusTest;
+import io.serverlessworkflow.api.types.Workflow;
 import jakarta.inject.Inject;
 
 import static org.junit.jupiter.api.Assertions.*;
@@ -39,7 +39,7 @@ public class YamlSimpleCaseHubBeanTest {
     assertEquals("document-processor", def.getWorkers().get(0).getName());
     assertEquals(1, def.getWorkers().get(0).getCapabilities().size());
     assertEquals("processDocument", def.getWorkers().get(0).getCapabilities().get(0).getName());
-    assertInstanceOf(WorkflowFunction.class, def.getWorkers().get(0).getFunction());
+    assertInstanceOf(Workflow.class, def.getWorkers().get(0).getFunction().getValue());
 
     // rules
     assertEquals(1, def.getRules().size());
