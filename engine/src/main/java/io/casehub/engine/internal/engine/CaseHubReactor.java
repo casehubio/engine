@@ -13,6 +13,7 @@ import org.hibernate.reactive.mutiny.Mutiny;
 import org.jboss.logging.Logger;
 
 import java.util.UUID;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
 
 import static io.casehub.engine.internal.event.EventBusAddresses.CASE_STARTED;
@@ -59,5 +60,27 @@ public class CaseHubReactor {
             .onItem()
             .transform(CaseInstance::getUuid)
             .subscribeAsCompletionStage();
+  }
+
+  public CompletionStage<Object> query(UUID caseId, String path) {
+    return CompletableFuture.supplyAsync(() -> {
+      if(caseInstanceCache.get(caseId) == null) {
+        throw new RuntimeException("Case instance not found for caseId: " + caseId);
+      }
+      return caseInstanceCache.get(caseId).getStateContext().getPath(path);
+    });
+  }
+
+  @SuppressWarnings("unchecked")
+  public <T> CompletionStage<T> query(UUID caseId, String path, Class<T> clazz) {
+    return query(caseId, path).thenApply(result -> {
+      if (result == null) {
+        return null;
+      }
+      if (clazz.isInstance(result)) {
+        return clazz.cast(result);
+      }
+      throw new ClassCastException("Cannot cast " + result.getClass().getName() + " to " + clazz.getName());
+    });
   }
 }

@@ -1,7 +1,7 @@
 package io.casehub.engine.internal.engine;
 
 import io.casehub.api.context.StateContext;
-import io.casehub.engine.CaseHubRuntime;
+import io.casehub.api.engine.CaseHubRuntime;
 import io.casehub.engine.internal.context.StateContextImpl;
 import io.casehub.api.model.CaseHubDefinition;
 import jakarta.enterprise.context.ApplicationScoped;
@@ -24,5 +24,15 @@ class CaseHubRuntimeImpl implements CaseHubRuntime {
   @Override
   public CompletionStage<UUID> startCase(CaseHubDefinition definition, StateContext context) {
     return reactor.startCase(definition, context);
+  }
+
+  @Override
+  public CompletionStage<Object> query(UUID caseId, String path) {
+    return reactor.query(caseId, path);
+  }
+
+  @Override
+  public <T> CompletionStage<T> query(UUID caseId, String path, Class<T> clazz) {
+    return reactor.query(caseId, path, clazz);
   }
 }
