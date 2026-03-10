@@ -28,8 +28,10 @@ public class CaseDefinitionRegistry {
     definition.setNamespace(model.getNamespace());
     definition.setVersion(model.getVersion());
 
-    if (registry.containsKey(definition)) {
-      return Uni.createFrom().item(definition);
+    for (CaseDefinition registered : registry.keySet()) {
+      if (registered.equals(definition)) {
+        return Uni.createFrom().item(registered);
+      }
     }
 
     return CaseDefinition.find(

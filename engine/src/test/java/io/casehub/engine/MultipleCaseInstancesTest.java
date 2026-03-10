@@ -1,0 +1,117 @@
+package io.casehub.engine;
+
+import io.casehub.engine.internal.engine.cache.CaseInstanceCache;
+import io.casehub.engine.internal.model.CaseState;
+import io.quarkus.test.junit.QuarkusTest;
+import jakarta.inject.Inject;
+import org.junit.jupiter.api.Test;
+
+import java.util.Map;
+import java.util.UUID;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicReference;
+
+import static org.awaitility.Awaitility.await;
+import static org.junit.jupiter.api.Assertions.*;
+
+@QuarkusTest
+public class MultipleCaseInstancesTest {
+
+  @Inject
+  SimpleCaseHubBean bean;
+
+  @Inject
+  CaseInstanceCache caseInstanceCache;
+
+  @Test
+  public void testTwoSequentialCasesFromSameDefinition() {
+    UUID caseId1 = startCaseAndAwait("doc-001");
+    UUID caseId2 = startCaseAndAwait("doc-002");
+
+    assertNotEquals(caseId1, caseId2, "Each case should have a unique id");
+
+    await().atMost(10, TimeUnit.SECONDS).untilAsserted(() -> {
+      var instance1 = caseInstanceCache.get(caseId1);
+      var instance2 = caseInstanceCache.get(caseId2);
+
+      assertNotNull(instance1);
+      assertNotNull(instance2);
+      assertEquals(CaseState.COMPLETED, instance1.getState());
+      assertEquals(CaseState.COMPLETED, instance2.getState());
+
+      assertEquals(instance1.getCaseDefinition().getId(),
+              instance2.getCaseDefinition().getId(),
+              "Both cases should share the same CaseDefinition");
+    });
+  }
+
+  @Test
+  public void testThreeConcurrentCasesFromSameDefinition() {
+    AtomicReference<UUID> ref1 = new AtomicReference<>();
+    AtomicReference<UUID> ref2 = new AtomicReference<>();
+    AtomicReference<UUID> ref3 = new AtomicReference<>();
+    AtomicReference<Throwable> err = new AtomicReference<>();
+
+    bean.startCase(contextWith("doc-A"))
+            .thenAccept(ref1::set)
+            .exceptionally(ex -> { err.set(ex); return null; });
+    bean.startCase(contextWith("doc-B"))
+            .thenAccept(ref2::set)
+            .exceptionally(ex -> { err.set(ex); return null; });
+    bean.startCase(contextWith("doc-C"))
+            .thenAccept(ref3::set)
+            .exceptionally(ex -> { err.set(ex); return null; });
+
+    await().atMost(15, TimeUnit.SECONDS).untilAsserted(() -> {
+      if (err.get() != null) throw new AssertionError(err.get());
+      assertNotNull(ref1.get());
+      assertNotNull(ref2.get());
+      assertNotNull(ref3.get());
+    });
+
+    await().atMost(15, TimeUnit.SECONDS).untilAsserted(() -> {
+      assertEquals(CaseState.COMPLETED, caseInstanceCache.get(ref1.get()).getState());
+      assertEquals(CaseState.COMPLETED, caseInstanceCache.get(ref2.get()).getState());
+      assertEquals(CaseState.COMPLETED, caseInstanceCache.get(ref3.get()).getState());
+    });
+
+    Long defId = caseInstanceCache.get(ref1.get()).getCaseDefinition().getId();
+    assertEquals(defId, caseInstanceCache.get(ref2.get()).getCaseDefinition().getId());
+    assertEquals(defId, caseInstanceCache.get(ref3.get()).getCaseDefinition().getId());
+  }
+
+  @Test
+  public void testQueryIsolationBetweenCases() {
+    UUID caseId1 = startCaseAndAwait("doc-X");
+    UUID caseId2 = startCaseAndAwait("doc-Y");
+
+    await().atMost(10, TimeUnit.SECONDS).untilAsserted(() -> {
+      String result1 = bean.query(caseId1, "documentId")
+              .toCompletableFuture().get(1, TimeUnit.SECONDS).toString();
+      String result2 = bean.query(caseId2, "documentId")
+              .toCompletableFuture().get(1, TimeUnit.SECONDS).toString();
+
+      assertNotEquals(result1, result2, "Each case should have its own context data");
+    });
+  }
+
+  private UUID startCaseAndAwait(String documentId) {
+    AtomicReference<UUID> ref = new AtomicReference<>();
+    AtomicReference<Throwable> err = new AtomicReference<>();
+
+    bean.startCase(contextWith(documentId))
+            .thenAccept(ref::set)
+            .exceptionally(ex -> { err.set(ex); return null; });
+
+    await().atMost(10, TimeUnit.SECONDS).untilAsserted(() -> {
+      if (err.get() != null) throw new AssertionError(err.get());
+      assertNotNull(ref.get());
+    });
+
+    return ref.get();
+  }
+
+  private Map<String, Object> contextWith(String documentId) {
+    return Map.of("documentId", documentId, "status", "processing");
+  }
+}
