@@ -48,7 +48,6 @@ public class EventLog extends PanacheEntity {
   @Column(columnDefinition = "jsonb")
   private JsonNode metadata;
 
-
   public UUID getCaseId() {
     return caseId;
   }

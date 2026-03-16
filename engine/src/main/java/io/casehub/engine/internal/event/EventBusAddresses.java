@@ -16,9 +16,10 @@ public final class EventBusAddresses {
 
     public static final String CONTEXT_CHANGED = "casehub.context.changed";
 
-    public static final String SCHEDULE_WORKER = "casehub.worker.schedule";
+    public static final String WORKER_SCHEDULE = "casehub.worker.schedule";
     public static final String WORKER_EXECUTION_STARTED = "casehub.worker.start";
     public static final String WORKER_EXECUTION_FINISHED = "casehub.worker.finished";
+    public static final String WORKER_RETRIES_EXHAUSTED = "casehub.worker.retries.exhausted";
 
     public static final String MILESTONE_REACHED = "casehub.milestone.reached";
 

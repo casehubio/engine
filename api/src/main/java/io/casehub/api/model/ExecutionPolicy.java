@@ -1,20 +1,9 @@
 package io.casehub.api.model;
 
-public class ExecutionPolicy {
+public record ExecutionPolicy(Integer timeoutMs, RetryPolicy retries) {
 
-  private final Integer timeoutMs;
-  private final RetryPolicy retries;
+    public ExecutionPolicy() {
+        this(60000, new RetryPolicy());
+    }
 
-  public ExecutionPolicy(Integer timeoutMs, RetryPolicy retries) {
-    this.timeoutMs = timeoutMs;
-    this.retries = retries;
-  }
-
-  public Integer getTimeoutMs() {
-    return timeoutMs;
-  }
-
-  public RetryPolicy getRetries() {
-    return retries;
-  }
 }
