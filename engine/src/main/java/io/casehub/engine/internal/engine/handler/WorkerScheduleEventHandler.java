@@ -3,7 +3,6 @@ package io.casehub.engine.internal.engine.handler;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import io.casehub.engine.internal.engine.CaseDefinitionRegistry;
 import io.casehub.engine.internal.event.EventBusAddresses;
 import io.casehub.engine.internal.event.WorkerScheduleEvent;
 import io.casehub.engine.internal.history.CaseHubEventType;
@@ -34,13 +33,9 @@ public class WorkerScheduleEventHandler {
   private static final ObjectMapper OBJECT_MAPPER = new ObjectMapper();
 
   @Inject
-  CaseDefinitionRegistry caseDefinitionRegistry;
-
-  @Inject
   WorkflowExecutionManager workflowExecutionManager; //TODO refactor to publish events instead of calling manager directly
 
-
-  @ConsumeEvent(value = EventBusAddresses.SCHEDULE_WORKER)
+  @ConsumeEvent(value = EventBusAddresses.WORKER_SCHEDULE)
   public Uni<Void> onWorkerScheduleEventHandler(WorkerScheduleEvent event) {
     CaseInstance instance = event.caseInstance();
     Worker worker = event.worker();

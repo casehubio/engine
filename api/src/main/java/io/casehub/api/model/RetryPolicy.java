@@ -1,20 +1,9 @@
 package io.casehub.api.model;
 
-public class RetryPolicy {
+public record RetryPolicy(Integer maxAttempts, Integer delayMs) {
 
-  private final Integer maxAttempts;
-  private final Integer delayMs;
+    public RetryPolicy() {
+        this(3, 10000);
+    }
 
-  public RetryPolicy(Integer maxAttempts, Integer delayMs) {
-    this.maxAttempts = maxAttempts;
-    this.delayMs = delayMs;
-  }
-
-  public Integer getMaxAttempts() {
-    return maxAttempts;
-  }
-
-  public Integer getDelayMs() {
-    return delayMs;
-  }
 }

@@ -193,7 +193,7 @@ public class CaseStateContextChangedEventHandler {
               worker.getName(), capability.getName(), rule.getName());
 
       eventBus.publish(
-              EventBusAddresses.SCHEDULE_WORKER,
+              EventBusAddresses.WORKER_SCHEDULE,
               new WorkerScheduleEvent(caseInstance, worker, capability)
       );
     }
