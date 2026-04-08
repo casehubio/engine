@@ -3,6 +3,7 @@ package io.casehub.engine.internal.engine;
 import io.casehub.api.context.StateContext;
 import io.casehub.engine.internal.engine.cache.CaseInstanceCache;
 import io.casehub.engine.internal.event.CaseStartedEvent;
+import io.casehub.engine.internal.event.SignalReceivedEvent;
 import io.casehub.engine.internal.model.CaseInstance;
 import io.casehub.engine.internal.model.CaseMetaModel;
 import io.casehub.engine.internal.model.CaseState;
@@ -18,7 +19,7 @@ import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
 
-import static io.casehub.engine.internal.event.EventBusAddresses.CASE_STARTED;
+import static io.casehub.engine.internal.event.EventBusAddresses.*;
 
 @ApplicationScoped
 class CaseHubReactor {
@@ -61,6 +62,10 @@ class CaseHubReactor {
 
         caseInstanceCache.put(instance);
         return sessionFactory.withTransaction(session -> instance.persist());
+    }
+
+    void signal(UUID caseId, String path, Object value) {
+        eventBus.publish(SIGNAL_RECEIVED, new SignalReceivedEvent(caseId, path, value));
     }
 
     CompletionStage<Object> query(UUID caseId, String path) {

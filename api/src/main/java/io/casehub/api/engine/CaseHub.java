@@ -22,6 +22,10 @@ public abstract class CaseHub {
     return runtime.startCase(getDefinition(), inputData);
   }
 
+  public void signal(UUID caseId, String path, Object value) {
+      runtime.signal(caseId, path, value);
+  }
+
   public CompletionStage<Object> query(UUID caseId, String path) {
     return runtime.query(caseId, path);
   }

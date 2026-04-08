@@ -69,6 +69,8 @@ public interface StateContext {
 
     JsonNode diff(StateContext other);
 
+    void applyDiff(JsonNode diff);
+
     long getVersion();
 
     Map<String, Object> evalObjectTemplate(String template);
