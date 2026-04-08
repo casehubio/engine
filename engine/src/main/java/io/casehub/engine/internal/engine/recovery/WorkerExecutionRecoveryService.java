@@ -123,7 +123,8 @@ public class WorkerExecutionRecoveryService {
                                 .setParameter("caseId", caseId)
                                 .setParameter("eventTypes", EnumSet.of(
                                         CaseHubEventType.CASE_STARTED,
-                                        CaseHubEventType.WORKER_EXECUTION_COMPLETED
+                                        CaseHubEventType.WORKER_EXECUTION_COMPLETED,
+                                        CaseHubEventType.SIGNAL_RECEIVED
                                 ))
                                 .getResultList()
                 )
@@ -137,8 +138,15 @@ public class WorkerExecutionRecoveryService {
 
                 if (eventLog.getEventType() == CaseHubEventType.CASE_STARTED) {
                     stateContext = new StateContextImpl(payload);
-                } else {
+                } else if (eventLog.getEventType() == CaseHubEventType.SIGNAL_RECEIVED) {
+                    JsonNode patch = eventLog.getPayload();
+                    if (patch != null) {
+                        stateContext.applyDiff(patch);
+                    }
+                } else if (eventLog.getEventType() == CaseHubEventType.WORKER_EXECUTION_COMPLETED) {
                     stateContext.setAll(payload);
+                } else {
+                    LOG.warnf("Unexpected event type in rebuildStateContext: %s", eventLog.getEventType());
                 }
             }
             return stateContext;

@@ -27,6 +27,11 @@ class CaseHubRuntimeImpl implements CaseHubRuntime {
   }
 
   @Override
+  public void signal(UUID caseId, String path, Object value) {
+    reactor.signal(caseId, path, value);
+  }
+
+  @Override
   public CompletionStage<Object> query(UUID caseId, String path) {
     return reactor.query(caseId, path);
   }

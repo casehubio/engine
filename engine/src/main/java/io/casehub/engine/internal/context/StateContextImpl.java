@@ -20,6 +20,7 @@ import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 
 import io.casehub.api.context.StateContext;
 import io.fabric8.zjsonpatch.JsonDiff;
+import io.fabric8.zjsonpatch.JsonPatch;
 
 @JsonDeserialize(as = StateContextImpl.class)
 public class StateContextImpl implements StateContext {
@@ -482,7 +483,23 @@ public class StateContextImpl implements StateContext {
     }
   }
 
-  @Override
+    @Override
+    public void applyDiff(JsonNode diff) {
+        lock.writeLock().lock();
+        try {
+            JsonNode current = mapper.convertValue(data, JsonNode.class);
+            JsonNode patched = JsonPatch.apply(diff, current);
+            Map<String, Object> updated = mapper.convertValue(patched, mapper.getTypeFactory()
+                    .constructMapType(LinkedHashMap.class, String.class, Object.class));
+            data.clear();
+            data.putAll(updated);
+            version++;
+        } finally {
+            lock.writeLock().unlock();
+        }
+    }
+
+    @Override
   public long getVersion() {
     lock.readLock().lock();
     try {
