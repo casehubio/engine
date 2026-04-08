@@ -1,6 +1,6 @@
 package io.casehub.engine;
 
-import io.casehub.api.CaseHub;
+import io.casehub.api.engine.CaseHub;
 import io.casehub.api.model.Capability;
 import io.casehub.api.model.CaseHubDefinition;
 import io.casehub.api.model.ContextChangeTrigger;
@@ -11,6 +11,7 @@ import io.casehub.api.model.GoalKind;
 import io.casehub.api.model.Milestone;
 import io.casehub.api.model.Worker;
 import jakarta.enterprise.context.ApplicationScoped;
+import jakarta.inject.Inject;
 
 import static io.serverlessworkflow.fluent.func.FuncWorkflowBuilder.workflow;
 import static io.serverlessworkflow.fluent.func.dsl.FuncDSL.agent;
@@ -19,7 +20,10 @@ import static io.serverlessworkflow.fluent.func.dsl.FuncDSL.get;
 @ApplicationScoped
 public class AgentPipelineBean extends CaseHub {
 
+
+  @Inject
   Agents.SentimentAnalysisAgent sentimentAgent;
+  @Inject
   Agents.ContentSummarizerAgent summarizerAgent;
 
   public void setAgents(Agents.SentimentAnalysisAgent sentimentAgent,

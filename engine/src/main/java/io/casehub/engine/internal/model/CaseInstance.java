@@ -14,58 +14,60 @@ import java.util.UUID;
 @Entity(name = "case_instance")
 public class CaseInstance extends PanacheEntity {
 
-  @ManyToOne(optional = false, fetch = FetchType.LAZY)
-  @JoinColumn(name = "case_definition_id", nullable = false)
-  private CaseDefinition caseDefinition;
+    @ManyToOne(optional = false, fetch = FetchType.LAZY)
+    @JoinColumn(name = "case_definition_id", nullable = false)
+    private CaseMetaModel caseMetaModel;
 
-  @Column(name = "uuid", nullable = false, unique = true, updatable = false)
-  private UUID uuid;
+    @Column(name = "uuid", nullable = false, unique = true, updatable = false)
+    private UUID uuid;
 
-  @Transient
-  private long version = 0L;
+    //TODO sync version with stateContext version
+    @Transient
+    private long version = 0L;
 
-  @Transient
-  private StateContext stateContext;
+    @Transient
+    private StateContext stateContext;
 
-  private CaseState state;
+    private CaseState state;
 
-  public CaseDefinition getCaseDefinition() {
-    return caseDefinition;
-  }
+    public CaseMetaModel getCaseMetaModel() {
+        return caseMetaModel;
+    }
 
-  public void setCaseDefinition(CaseDefinition caseDefinition) {
-    this.caseDefinition = caseDefinition;
-  }
+    public void setCaseMetaModel(CaseMetaModel caseMetaModel) {
+        this.caseMetaModel = caseMetaModel;
+    }
 
-  public UUID getUuid() {
-    return uuid;
-  }
+    public UUID getUuid() {
+        return uuid;
+    }
 
-  public void setUuid(UUID uuid) {
-    this.uuid = uuid;
-  }
+    public void setUuid(UUID uuid) {
+        this.uuid = uuid;
+    }
 
-  public long getVersion() {
-    return version;
-  }
+    public long getVersion() {
+        return version;
+    }
 
-  public void setVersion(long version) {
-    this.version = version;
-  }
+    public void setVersion(long version) {
+        this.version = version;
+    }
 
-  public StateContext getStateContext() {
-    return stateContext;
-  }
+    public StateContext getStateContext() {
+        return stateContext;
+    }
 
-  public void setStateContext(StateContext stateContext) {
-    this.stateContext = stateContext;
-  }
+    public void setStateContext(StateContext stateContext) {
+        this.stateContext = stateContext;
+    }
 
-  public CaseState getState() {
-    return state;
-  }
+    public CaseState getState() {
+        return state;
+    }
 
-  public void setState(CaseState state) {
-    this.state = state;
-  }
+    public void setState(CaseState state) {
+        this.state = state;
+    }
+
 }

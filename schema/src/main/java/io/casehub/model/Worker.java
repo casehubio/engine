@@ -12,6 +12,8 @@ import java.util.List;
 @JsonDeserialize(using = WorkerMarshaller.Deserializer.class)
 public class Worker {
 
+  // PENDING → PROCESSING → COMPLETED → FAILED
+
   private String name;
   private String description;
   private List<String> capabilities;

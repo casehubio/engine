@@ -1,7 +1,6 @@
 package io.casehub.engine;
 
-import io.casehub.api.CaseHub;
-import io.casehub.api.context.StateContext;
+import io.casehub.api.engine.CaseHub;
 import io.casehub.api.model.*;
 import io.quarkus.test.junit.QuarkusTest;
 import jakarta.enterprise.context.ApplicationScoped;

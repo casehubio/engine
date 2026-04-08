@@ -16,7 +16,7 @@ import io.casehub.engine.internal.event.MilestoneReachedEvent;
 import io.casehub.engine.internal.event.WorkerScheduleEvent;
 import io.casehub.engine.internal.jq.JQEvaluator;
 import io.casehub.engine.internal.jq.ValidationResult;
-import io.casehub.engine.internal.model.CaseDefinition;
+import io.casehub.engine.internal.model.CaseMetaModel;
 import io.casehub.engine.internal.model.CaseInstance;
 import io.casehub.engine.internal.model.CaseState;
 import io.quarkus.vertx.ConsumeEvent;
@@ -50,8 +50,8 @@ public class CaseStateContextChangedEventHandler {
       return Uni.createFrom().voidItem();
     }
 
-    CaseDefinition caseDefinition = caseInstance.getCaseDefinition();
-    CaseHubDefinition caseHubDefinition = caseDefinitionRegistry.getCaseDefinition(caseDefinition);
+    CaseMetaModel caseMetaModel = caseInstance.getCaseMetaModel();
+    CaseHubDefinition caseHubDefinition = caseDefinitionRegistry.getCaseDefinition(caseMetaModel);
 
     if (caseHubDefinition == null) {
       return Uni.createFrom().failure(

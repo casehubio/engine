@@ -7,7 +7,7 @@ import jakarta.inject.Inject;
 import org.quartz.*;
 
 @ApplicationScoped
-public class WorkflowExecutionScheduler {
+public class WorkerExecutionScheduler {
 
     @Inject
     Scheduler quartz;

@@ -21,4 +21,8 @@ public class CaseInstanceCache {
     return cache.get(caseId);
   }
 
+  public void clear() {
+    cache.clear();
+  }
+
 }

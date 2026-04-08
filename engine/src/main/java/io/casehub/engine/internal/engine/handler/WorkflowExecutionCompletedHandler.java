@@ -70,7 +70,7 @@ public class WorkflowExecutionCompletedHandler {
     eventLog.setPayload(OBJECT_MAPPER.valueToTree(output == null ? Map.of() : output));
 
     eventLog.setMetadata(OBJECT_MAPPER.createObjectNode()
-            .put("idempotency", idempotency)
+            .put("inputDataHash", idempotency)
     );
 
     return eventLog;

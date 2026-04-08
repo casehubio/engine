@@ -1,16 +1,25 @@
 package io.casehub.engine.internal.engine;
 
-import io.casehub.engine.internal.model.CaseDefinition;
+import io.casehub.api.engine.CaseHub;
+import io.casehub.engine.internal.model.CaseMetaModel;
 import io.casehub.api.model.CaseHubDefinition;
-import io.quarkus.hibernate.reactive.panache.Panache;
+import io.casehub.engine.internal.util.ReactiveUtils;
+import io.quarkus.runtime.StartupEvent;
+import io.smallrye.mutiny.Multi;
 import io.smallrye.mutiny.Uni;
+import io.vertx.core.Vertx;
+import jakarta.annotation.Priority;
 import jakarta.enterprise.context.ApplicationScoped;
-import jakarta.transaction.Transactional;
+import jakarta.enterprise.event.Observes;
+import jakarta.enterprise.inject.Instance;
+import jakarta.inject.Inject;
+import org.hibernate.reactive.mutiny.Mutiny;
+import org.jboss.logging.Logger;
 
+import java.time.Duration;
 import java.time.Instant;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
-
 
 /**
  * Registry for case definitions.
@@ -20,39 +29,82 @@ import java.util.concurrent.ConcurrentHashMap;
 @ApplicationScoped
 public class CaseDefinitionRegistry {
 
-  private final Map<CaseDefinition, CaseHubDefinition> registry = new ConcurrentHashMap<>();
+    private final Map<CaseMetaModel, CaseHubDefinition> registry = new ConcurrentHashMap<>();
 
-  Uni<CaseDefinition> registerCaseDefinition(CaseHubDefinition model) {
-    CaseDefinition definition = new CaseDefinition();
-    definition.setName(model.getName());
-    definition.setNamespace(model.getNamespace());
-    definition.setVersion(model.getVersion());
+    private static final Logger LOG = Logger.getLogger(CaseDefinitionRegistry.class);
 
-    for (CaseDefinition registered : registry.keySet()) {
-      if (registered.equals(definition)) {
-        return Uni.createFrom().item(registered);
-      }
+    @Inject
+    Instance<CaseHub> caseHubInstance;
+
+    @Inject
+    Mutiny.SessionFactory sessionFactory;
+
+    @Inject
+    Vertx vertx;
+
+    //TODO this must be reworked
+    void onStart(@Observes @Priority(10) StartupEvent ev) {
+        ReactiveUtils.runOnSafeVertxContext(vertx, this::registerKnownDefinitions)
+                .await().atMost(Duration.ofSeconds(30));
     }
 
-    return CaseDefinition.find(
-                    "namespace = ?1 and name = ?2 and version = ?3",
-                    model.getNamespace(), model.getName(), model.getVersion()
-            ).firstResult()
-            .onItem().transformToUni(existing -> {
-              if (existing != null) {
-                registry.put(definition, model);
-                return Uni.createFrom().voidItem();
-              }
-              definition.setDsl(model.getDsl());
-              definition.setCreatedAt(Instant.now());
+    Uni<Void> registerKnownDefinitions() {
+        return sessionFactory.withSession(session ->
+                Multi.createFrom().iterable(caseHubInstance)
+                        .onItem().transformToUniAndConcatenate(hub ->
+                                registerCaseDefinition(hub.getDefinition())
+                        )
+                        .collect().last()
+                        .replaceWithVoid()
+        );
+    }
 
-              return definition.persist()
-                      .invoke(() -> registry.put(definition, model));
-            }).replaceWith(definition);
-  }
 
-  public CaseHubDefinition getCaseDefinition(CaseDefinition definition) {
-    return registry.get(definition);
-  }
+    private Uni<CaseMetaModel> registerCaseDefinition(CaseHubDefinition model) {
+        LOG.info("Registering case: " + model.getName() + " version: " + model.getVersion() + " namespace: " + model.getNamespace());
+
+        CaseMetaModel definition = new CaseMetaModel();
+        definition.setName(model.getName());
+        definition.setNamespace(model.getNamespace());
+        definition.setVersion(model.getVersion());
+
+        for (CaseMetaModel registered : registry.keySet()) {
+            if (registered.equals(definition)) {
+                return Uni.createFrom().item(registered);
+            }
+        }
+
+        return CaseMetaModel.<CaseMetaModel>find(
+                        "namespace = ?1 and name = ?2 and version = ?3",
+                        model.getNamespace(), model.getName(), model.getVersion()
+                ).firstResult()
+                .onItem()
+                .transformToUni(existing -> {
+                    if (existing != null) {
+                        registry.put(existing, model);
+                        return Uni.createFrom().item(existing);
+                    }
+
+                    definition.setDsl(model.getDsl());
+                    definition.setCreatedAt(Instant.now());
+
+                    return definition.persistAndFlush()
+                            .replaceWith(definition)
+                            .invoke(persisted -> registry.put(persisted, model));
+                });
+    }
+
+    public CaseHubDefinition getCaseDefinition(CaseMetaModel definition) {
+        return registry.get(definition);
+    }
+
+    public CaseMetaModel getCaseMetaModel(CaseHubDefinition caseDefinition) {
+        for (Map.Entry<CaseMetaModel, CaseHubDefinition> entry : registry.entrySet()) {
+            if (entry.getValue().equals(caseDefinition)) {
+                return entry.getKey();
+            }
+        }
+        throw new RuntimeException("CaseMetaModel not found for caseDefinition: " + caseDefinition.getNamespace() + "." + caseDefinition.getName() + ":" + caseDefinition.getVersion());
+    }
 
 }
