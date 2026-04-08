@@ -1,7 +1,5 @@
-package io.casehub.api;
+package io.casehub.api.engine;
 
-import io.casehub.api.engine.CaseHubRuntime;
-import io.casehub.engine.internal.context.StateContextImpl;
 import io.casehub.api.model.CaseHubDefinition;
 import jakarta.inject.Inject;
 
@@ -21,7 +19,7 @@ public abstract class CaseHub {
   }
 
   public CompletionStage<UUID> startCase(Map<String, Object> inputData) {
-    return runtime.startCase(getDefinition(), new StateContextImpl(inputData));
+    return runtime.startCase(getDefinition(), inputData);
   }
 
   public CompletionStage<Object> query(UUID caseId, String path) {

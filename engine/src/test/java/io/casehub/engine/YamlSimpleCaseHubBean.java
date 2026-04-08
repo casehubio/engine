@@ -2,7 +2,7 @@ package io.casehub.engine;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.dataformat.yaml.YAMLFactory;
-import io.casehub.api.CaseHub;
+import io.casehub.api.engine.CaseHub;
 import io.casehub.api.model.AllOfGoalExpression;
 import io.casehub.api.model.AnyOfGoalExpression;
 import io.casehub.api.model.Capability;

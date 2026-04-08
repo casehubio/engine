@@ -44,7 +44,7 @@ public class GoalReachedEventHandler {
   @ConsumeEvent(value = EventBusAddresses.GOAL_REACHED)
   public Uni<Void> onGoalReachedEventHandler(GoalReachedEvent event) {
     CaseInstance caseInstance = event.caseInstance();
-    CaseHubDefinition definition = caseDefinitionRegistry.getCaseDefinition(caseInstance.getCaseDefinition());
+    CaseHubDefinition definition = caseDefinitionRegistry.getCaseDefinition(caseInstance.getCaseMetaModel());
     Goal goal = event.goal();
 
     EventLog eventLog = new EventLog();

@@ -1,6 +1,6 @@
 package io.casehub.engine;
 
-import io.casehub.api.CaseHub;
+import io.casehub.api.engine.CaseHub;
 import io.casehub.api.model.Capability;
 import io.casehub.api.model.CaseHubDefinition;
 import io.casehub.api.model.ContextChangeTrigger;

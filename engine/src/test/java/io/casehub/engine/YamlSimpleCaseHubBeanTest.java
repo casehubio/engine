@@ -8,6 +8,7 @@ import io.casehub.api.model.evaluator.JQExpressionEvaluator;
 import io.quarkus.test.junit.QuarkusTest;
 import io.serverlessworkflow.api.types.Workflow;
 import jakarta.inject.Inject;
+import org.junit.jupiter.api.Test;
 
 import static org.junit.jupiter.api.Assertions.*;
 
@@ -17,7 +18,7 @@ public class YamlSimpleCaseHubBeanTest {
   @Inject
   YamlSimpleCaseHubBean yamlSimpleCaseHubBean;
 
-  //@Test
+  @Test
   public void test() {
     CaseHubDefinition def = yamlSimpleCaseHubBean.getDefinition();
     assertNotNull(def);

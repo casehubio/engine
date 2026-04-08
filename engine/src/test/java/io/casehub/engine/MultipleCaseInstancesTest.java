@@ -39,8 +39,8 @@ public class MultipleCaseInstancesTest {
       assertEquals(CaseState.COMPLETED, instance1.getState());
       assertEquals(CaseState.COMPLETED, instance2.getState());
 
-      assertEquals(instance1.getCaseDefinition().getId(),
-              instance2.getCaseDefinition().getId(),
+      assertEquals(instance1.getCaseMetaModel().getId(),
+              instance2.getCaseMetaModel().getId(),
               "Both cases should share the same CaseDefinition");
     });
   }
@@ -75,9 +75,9 @@ public class MultipleCaseInstancesTest {
       assertEquals(CaseState.COMPLETED, caseInstanceCache.get(ref3.get()).getState());
     });
 
-    Long defId = caseInstanceCache.get(ref1.get()).getCaseDefinition().getId();
-    assertEquals(defId, caseInstanceCache.get(ref2.get()).getCaseDefinition().getId());
-    assertEquals(defId, caseInstanceCache.get(ref3.get()).getCaseDefinition().getId());
+    Long defId = caseInstanceCache.get(ref1.get()).getCaseMetaModel().getId();
+    assertEquals(defId, caseInstanceCache.get(ref2.get()).getCaseMetaModel().getId());
+    assertEquals(defId, caseInstanceCache.get(ref3.get()).getCaseMetaModel().getId());
   }
 
   @Test

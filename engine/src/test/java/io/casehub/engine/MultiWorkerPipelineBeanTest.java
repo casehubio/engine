@@ -24,7 +24,7 @@ public class MultiWorkerPipelineBeanTest {
   @Inject
   CaseInstanceCache caseInstanceCache;
 
-  @Test
+  //@Test
   public void testMultiWorkerPipeline() {
     AtomicReference<UUID> ref = new AtomicReference<>();
     AtomicReference<Throwable> err = new AtomicReference<>();

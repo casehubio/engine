@@ -12,10 +12,10 @@ import java.util.List;
 import java.util.Objects;
 
 @Entity
-@Table(name = "case_definition", uniqueConstraints = {
+@Table(name = "case_meta_model", uniqueConstraints = {
         @UniqueConstraint(columnNames = {"namespace", "name", "version"})
 })
-public class CaseDefinition extends PanacheEntity {
+public class CaseMetaModel extends PanacheEntity {
 
   @Column(nullable = false, length = 255)
   private String name;
@@ -39,7 +39,7 @@ public class CaseDefinition extends PanacheEntity {
   @Column(name = "created_at", nullable = false)
   private Instant createdAt;
 
-  @OneToMany(mappedBy = "caseDefinition", cascade = CascadeType.ALL, orphanRemoval = true)
+  @OneToMany(mappedBy = "caseMetaModel", cascade = CascadeType.ALL, orphanRemoval = true)
   private List<CaseInstance> caseInstance = new ArrayList<>();
 
   @PrePersist
@@ -126,7 +126,7 @@ public class CaseDefinition extends PanacheEntity {
   public boolean equals(Object o) {
     if (this == o) return true;
     if (o == null || getClass() != o.getClass()) return false;
-    CaseDefinition caseHub = (CaseDefinition) o;
+    CaseMetaModel caseHub = (CaseMetaModel) o;
     return Objects.equals(namespace, caseHub.namespace) &&
             Objects.equals(name, caseHub.name) &&
             Objects.equals(version, caseHub.version);

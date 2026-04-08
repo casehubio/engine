@@ -48,7 +48,7 @@ public class WorkerRetriesExhaustedEventHandler {
         eventLog.setWorkerId(event.workerId());
         eventLog.setMetadata(OBJECT_MAPPER.createObjectNode()
                 .put("workerId", event.workerId())
-                .put("idempotency", event.idempotency()));
+                .put("inputDataHash", event.idempotency()));
 
         return Panache.withTransaction(() ->
                         caseInstance.persist()
