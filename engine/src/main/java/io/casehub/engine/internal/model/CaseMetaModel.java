@@ -1,20 +1,40 @@
+/*
+ * Copyright 2026-Present The Case Hub Authors
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ * http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 package io.casehub.engine.internal.model;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import io.quarkus.hibernate.reactive.panache.PanacheEntity;
-import jakarta.persistence.*;
-import org.hibernate.annotations.JdbcTypeCode;
-import org.hibernate.type.SqlTypes;
-
+import jakarta.persistence.CascadeType;
+import jakarta.persistence.Column;
+import jakarta.persistence.Entity;
+import jakarta.persistence.OneToMany;
+import jakarta.persistence.PrePersist;
+import jakarta.persistence.Table;
+import jakarta.persistence.UniqueConstraint;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
+import org.hibernate.annotations.JdbcTypeCode;
+import org.hibernate.type.SqlTypes;
 
 @Entity
-@Table(name = "case_meta_model", uniqueConstraints = {
-        @UniqueConstraint(columnNames = {"namespace", "name", "version"})
-})
+@Table(
+    name = "case_meta_model",
+    uniqueConstraints = {@UniqueConstraint(columnNames = {"namespace", "name", "version"})})
 public class CaseMetaModel extends PanacheEntity {
 
   @Column(nullable = false, length = 255)
@@ -127,9 +147,9 @@ public class CaseMetaModel extends PanacheEntity {
     if (this == o) return true;
     if (o == null || getClass() != o.getClass()) return false;
     CaseMetaModel caseHub = (CaseMetaModel) o;
-    return Objects.equals(namespace, caseHub.namespace) &&
-            Objects.equals(name, caseHub.name) &&
-            Objects.equals(version, caseHub.version);
+    return Objects.equals(namespace, caseHub.namespace)
+        && Objects.equals(name, caseHub.name)
+        && Objects.equals(version, caseHub.version);
   }
 
   @Override
@@ -139,14 +159,26 @@ public class CaseMetaModel extends PanacheEntity {
 
   @Override
   public String toString() {
-    return "CaseHub{" +
-            "id=" + id +
-            ", namespace='" + namespace + '\'' +
-            ", name='" + name + '\'' +
-            ", version='" + version + '\'' +
-            ", title='" + title + '\'' +
-            ", dsl='" + dsl + '\'' +
-            ", createdAt=" + createdAt +
-            '}';
+    return "CaseHub{"
+        + "id="
+        + id
+        + ", namespace='"
+        + namespace
+        + '\''
+        + ", name='"
+        + name
+        + '\''
+        + ", version='"
+        + version
+        + '\''
+        + ", title='"
+        + title
+        + '\''
+        + ", dsl='"
+        + dsl
+        + '\''
+        + ", createdAt="
+        + createdAt
+        + '}';
   }
 }

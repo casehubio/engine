@@ -11,25 +11,17 @@
     </parent>
 
     <artifactId>schema</artifactId>
-
-    <properties>
-        <maven.compiler.release>17</maven.compiler.release>
-        <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-
-        <org.jsonschema2pojo.version>1.3.3</org.jsonschema2pojo.version>
-        <quarkus.flow.version>0.4.1</quarkus.flow.version>
-    </properties>
+    <name>Case Hub :: Schema</name>
+    <description>JSON Schema and generated model classes for declarative YAML case definitions</description>
 
     <dependencies>
         <dependency>
             <groupId>org.jsonschema2pojo</groupId>
             <artifactId>jsonschema2pojo-core</artifactId>
-            <version>${org.jsonschema2pojo.version}</version>
         </dependency>
         <dependency>
             <groupId>io.quarkiverse.flow</groupId>
             <artifactId>quarkus-flow</artifactId>
-            <version>${quarkus.flow.version}</version>
         </dependency>
     </dependencies>
 
@@ -38,7 +30,6 @@
             <plugin>
                 <groupId>org.codehaus.mojo</groupId>
                 <artifactId>exec-maven-plugin</artifactId>
-                <version>3.5.0</version>
                 <executions>
                     <execution>
                         <id>generate-casehub-pojos</id>
@@ -68,7 +59,6 @@
             <plugin>
                 <groupId>org.codehaus.mojo</groupId>
                 <artifactId>build-helper-maven-plugin</artifactId>
-                <version>3.6.0</version>
                 <executions>
                     <execution>
                         <id>add-generated-sources</id>

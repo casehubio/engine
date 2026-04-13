@@ -10,32 +10,21 @@
     </parent>
 
     <artifactId>api</artifactId>
-
-    <properties>
-        <maven.compiler.source>17</maven.compiler.source>
-        <maven.compiler.target>17</maven.compiler.target>
-        <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-
-        <jackson.databind.version>2.18.2</jackson.databind.version>
-        <jakarta.inject.version>2.0.1</jakarta.inject.version>
-        <io.serverlessworkflow.version>7.13.4.Final</io.serverlessworkflow.version>
-    </properties>
+    <name>Case Hub :: API</name>
+    <description>Public API for Case Hub — CaseHub base class, CaseHubDefinition, Workers, Goals, Milestones, and DispatchRules</description>
 
     <dependencies>
         <dependency>
             <groupId>com.fasterxml.jackson.core</groupId>
             <artifactId>jackson-databind</artifactId>
-            <version>${jackson.databind.version}</version>
         </dependency>
         <dependency>
             <groupId>io.serverlessworkflow</groupId>
             <artifactId>serverlessworkflow-experimental-fluent-func</artifactId>
-            <version>${io.serverlessworkflow.version}</version>
         </dependency>
         <dependency>
             <groupId>jakarta.inject</groupId>
             <artifactId>jakarta.inject-api</artifactId>
-            <version>${jakarta.inject.version}</version>
         </dependency>
     </dependencies>
 
