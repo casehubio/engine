@@ -1,8 +1,22 @@
+/*
+ * Copyright 2026-Present The Case Hub Authors
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ * http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 package io.casehub.api.model;
 
 import io.casehub.api.model.evaluator.ExpressionEvaluator;
 import io.casehub.api.model.evaluator.JQExpressionEvaluator;
-
 import java.util.Objects;
 
 public class Goal {
@@ -59,9 +73,7 @@ public class Goal {
     private boolean terminal;
     private String description;
 
-    private Builder() {
-
-    }
+    private Builder() {}
 
     public Builder name(String name) {
       this.name = name;
@@ -94,11 +106,11 @@ public class Goal {
     }
 
     public Goal build() {
-      Goal goal = new Goal(
+      Goal goal =
+          new Goal(
               Objects.requireNonNull(name),
               Objects.requireNonNull(condition),
-              Objects.requireNonNull(kind)
-      );
+              Objects.requireNonNull(kind));
       goal.setTerminal(terminal);
       goal.setDescription(description);
       return goal;
@@ -108,7 +120,11 @@ public class Goal {
   @Override
   public boolean equals(Object o) {
     if (!(o instanceof Goal goal)) return false;
-    return Objects.equals(name, goal.name) && Objects.equals(condition, goal.condition) && kind == goal.kind && Objects.equals(terminal, goal.terminal) && Objects.equals(description, goal.description);
+    return Objects.equals(name, goal.name)
+        && Objects.equals(condition, goal.condition)
+        && kind == goal.kind
+        && Objects.equals(terminal, goal.terminal)
+        && Objects.equals(description, goal.description);
   }
 
   @Override

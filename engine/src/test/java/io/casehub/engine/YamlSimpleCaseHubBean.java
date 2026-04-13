@@ -1,3 +1,18 @@
+/*
+ * Copyright 2026-Present The Case Hub Authors
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ * http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 package io.casehub.engine;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -18,7 +33,6 @@ import io.casehub.api.model.Trigger;
 import io.casehub.api.model.Worker;
 import io.casehub.api.model.evaluator.JQExpressionEvaluator;
 import jakarta.enterprise.context.ApplicationScoped;
-
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.List;
@@ -32,12 +46,13 @@ public class YamlSimpleCaseHubBean extends CaseHub {
 
   @Override
   public CaseHubDefinition getDefinition() {
-    try (InputStream is = Thread.currentThread().getContextClassLoader()
-            .getResourceAsStream("casehub/simple.yaml")) {
+    try (InputStream is =
+        Thread.currentThread().getContextClassLoader().getResourceAsStream("casehub/simple.yaml")) {
       if (is == null) {
         throw new IllegalStateException("Resource casehub/simple.yaml not found on classpath");
       }
-      io.casehub.model.CaseHubDefinition schema = YAML_MAPPER.readValue(is, io.casehub.model.CaseHubDefinition.class);
+      io.casehub.model.CaseHubDefinition schema =
+          YAML_MAPPER.readValue(is, io.casehub.model.CaseHubDefinition.class);
       return convertToApiModel(schema);
     } catch (IOException e) {
       throw new RuntimeException("Failed to load CaseHub definition from casehub/simple.yaml", e);
@@ -45,7 +60,8 @@ public class YamlSimpleCaseHubBean extends CaseHub {
   }
 
   private CaseHubDefinition convertToApiModel(io.casehub.model.CaseHubDefinition schema) {
-    CaseHubDefinition def = new CaseHubDefinition(schema.getNamespace(), schema.getName(), schema.getVersion());
+    CaseHubDefinition def =
+        new CaseHubDefinition(schema.getNamespace(), schema.getName(), schema.getVersion());
     def.setDsl(schema.getDsl());
     def.setTitle(schema.getTitle());
 
@@ -63,9 +79,8 @@ public class YamlSimpleCaseHubBean extends CaseHub {
     // Convert workers
     if (schema.getSpec().getWorkers() != null) {
       for (io.casehub.model.Worker sw : schema.getSpec().getWorkers()) {
-        List<Capability> workerCaps = sw.getCapabilities().stream()
-                .map(capabilityMap::get)
-                .collect(Collectors.toList());
+        List<Capability> workerCaps =
+            sw.getCapabilities().stream().map(capabilityMap::get).collect(Collectors.toList());
 
         Worker worker = new Worker(sw.getName(), workerCaps, sw.getWorkflowAsEmbedded());
         worker.setDescription(sw.getDescription());
@@ -79,7 +94,8 @@ public class YamlSimpleCaseHubBean extends CaseHub {
         Capability cap = capabilityMap.get(sr.getCapability());
         Trigger trigger = null;
         if (sr.getOn() != null && sr.getOn().getContextChange() != null) {
-          trigger = new ContextChangeTrigger(
+          trigger =
+              new ContextChangeTrigger(
                   new JQExpressionEvaluator(sr.getOn().getContextChange().getFilter()));
         }
         DispatchRule rule = new DispatchRule(sr.getName(), cap, trigger);
@@ -90,8 +106,8 @@ public class YamlSimpleCaseHubBean extends CaseHub {
     // Convert milestones
     if (schema.getSpec().getMilestones() != null) {
       for (io.casehub.model.Milestone sm : schema.getSpec().getMilestones()) {
-        Milestone milestone = new Milestone(sm.getName(),
-                new JQExpressionEvaluator(sm.getCondition()));
+        Milestone milestone =
+            new Milestone(sm.getName(), new JQExpressionEvaluator(sm.getCondition()));
         milestone.setDescription(sm.getDescription());
         def.getMilestones().add(milestone);
       }
@@ -101,8 +117,8 @@ public class YamlSimpleCaseHubBean extends CaseHub {
     Map<String, Goal> goalMap = new java.util.LinkedHashMap<>();
     if (schema.getSpec().getGoals() != null) {
       for (io.casehub.model.Goal sg : schema.getSpec().getGoals()) {
-        Goal goal = new Goal(sg.getName(),
-                new JQExpressionEvaluator(sg.getCondition()), GoalKind.SUCCESS);
+        Goal goal =
+            new Goal(sg.getName(), new JQExpressionEvaluator(sg.getCondition()), GoalKind.SUCCESS);
         goal.setDescription(sg.getDescription());
         goalMap.put(sg.getName(), goal);
         def.getGoals().add(goal);
@@ -120,20 +136,17 @@ public class YamlSimpleCaseHubBean extends CaseHub {
     return def;
   }
 
-  private GoalExpression convertGoalExpression(io.casehub.model.GoalExpression expr, Map<String, Goal> goalMap) {
+  private GoalExpression convertGoalExpression(
+      io.casehub.model.GoalExpression expr, Map<String, Goal> goalMap) {
     if (expr == null) return null;
 
     if (expr.getAllOf() != null && !expr.getAllOf().isEmpty()) {
-      List<Goal> goals = expr.getAllOf().stream()
-              .map(goalMap::get)
-              .collect(Collectors.toList());
+      List<Goal> goals = expr.getAllOf().stream().map(goalMap::get).collect(Collectors.toList());
       return new AllOfGoalExpression(goals);
     }
 
     if (expr.getAnyOf() != null && !expr.getAnyOf().isEmpty()) {
-      List<Goal> goals = expr.getAnyOf().stream()
-              .map(goalMap::get)
-              .collect(Collectors.toList());
+      List<Goal> goals = expr.getAnyOf().stream().map(goalMap::get).collect(Collectors.toList());
       return new AnyOfGoalExpression(goals);
     }
 

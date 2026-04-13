@@ -1,11 +1,25 @@
+/*
+ * Copyright 2026-Present The Case Hub Authors
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ * http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 package io.casehub.engine.internal.engine;
 
 import io.casehub.api.engine.CaseHubRuntime;
-import io.casehub.engine.internal.context.StateContextImpl;
 import io.casehub.api.model.CaseHubDefinition;
+import io.casehub.engine.internal.context.StateContextImpl;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
-
 import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.CompletionStage;
@@ -13,8 +27,7 @@ import java.util.concurrent.CompletionStage;
 @ApplicationScoped
 class CaseHubRuntimeImpl implements CaseHubRuntime {
 
-  @Inject
-  CaseHubReactor reactor;
+  @Inject CaseHubReactor reactor;
 
   @Override
   public CompletionStage<UUID> startCase(CaseHubDefinition definition) {
@@ -22,7 +35,8 @@ class CaseHubRuntimeImpl implements CaseHubRuntime {
   }
 
   @Override
-  public CompletionStage<UUID> startCase(CaseHubDefinition definition, Map<String, Object> inputData) {
+  public CompletionStage<UUID> startCase(
+      CaseHubDefinition definition, Map<String, Object> inputData) {
     return reactor.startCase(definition, new StateContextImpl(inputData));
   }
 

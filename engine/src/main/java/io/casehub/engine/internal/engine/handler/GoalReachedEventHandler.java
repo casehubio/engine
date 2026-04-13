@@ -1,8 +1,25 @@
+/*
+ * Copyright 2026-Present The Case Hub Authors
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ * http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 package io.casehub.engine.internal.engine.handler;
 
+import static io.casehub.engine.internal.history.CaseHubEventType.GOAL_REACHED;
+
 import com.fasterxml.jackson.databind.ObjectMapper;
-import io.casehub.api.model.CaseHubDefinition;
 import io.casehub.api.model.CaseCompletion;
+import io.casehub.api.model.CaseHubDefinition;
 import io.casehub.api.model.Goal;
 import io.casehub.api.model.GoalBasedCompletion;
 import io.casehub.api.model.GoalExpression;
@@ -20,31 +37,27 @@ import io.smallrye.mutiny.Uni;
 import io.vertx.mutiny.core.eventbus.EventBus;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
-import org.jboss.logging.Logger;
-
 import java.time.Instant;
 import java.util.Set;
 import java.util.stream.Collectors;
-
-import static io.casehub.engine.internal.history.CaseHubEventType.GOAL_REACHED;
+import org.jboss.logging.Logger;
 
 @ApplicationScoped
 public class GoalReachedEventHandler {
 
   private static final Logger LOG = Logger.getLogger(GoalReachedEventHandler.class);
 
-  @Inject
-  CaseDefinitionRegistry caseDefinitionRegistry;
+  @Inject CaseDefinitionRegistry caseDefinitionRegistry;
 
-  @Inject
-  EventBus eventBus;
+  @Inject EventBus eventBus;
 
   private static final ObjectMapper OBJECT_MAPPER = new ObjectMapper();
 
   @ConsumeEvent(value = EventBusAddresses.GOAL_REACHED)
   public Uni<Void> onGoalReachedEventHandler(GoalReachedEvent event) {
     CaseInstance caseInstance = event.caseInstance();
-    CaseHubDefinition definition = caseDefinitionRegistry.getCaseDefinition(caseInstance.getCaseMetaModel());
+    CaseHubDefinition definition =
+        caseDefinitionRegistry.getCaseDefinition(caseInstance.getCaseMetaModel());
     Goal goal = event.goal();
 
     EventLog eventLog = new EventLog();
@@ -52,17 +65,18 @@ public class GoalReachedEventHandler {
     eventLog.setEventType(GOAL_REACHED);
     eventLog.setStreamType(EventStreamType.CASE);
     eventLog.setTimestamp(Instant.now());
-    eventLog.setMetadata(OBJECT_MAPPER.createObjectNode()
+    eventLog.setMetadata(
+        OBJECT_MAPPER
+            .createObjectNode()
             .put("name", goal.getName())
             .put("description", goal.getDescription())
             .put("kind", goal.getKind().value())
-            .put("isTerminal", goal.getTerminal())
-    );
+            .put("isTerminal", goal.getTerminal()));
 
     CaseCompletion completion = definition.getCompletion();
 
     return Panache.withTransaction(eventLog::persist)
-            .chain(() -> evaluateCompletion(caseInstance, completion));
+        .chain(() -> evaluateCompletion(caseInstance, completion));
   }
 
   private Uni<Void> evaluateCompletion(CaseInstance caseInstance, CaseCompletion completion) {
@@ -74,34 +88,44 @@ public class GoalReachedEventHandler {
       return Uni.createFrom().voidItem();
     }
 
-    return Panache.withTransaction(() ->
-            EventLog.find("caseId = ?1 and eventType = ?2", caseInstance.getUuid(), GOAL_REACHED)
-                    .<EventLog>list()
-    ).chain(eventLogs -> {
-      Set<String> reachedGoals = eventLogs.stream()
-              .map(el -> el.getMetadata().get("name").asText())
-              .collect(Collectors.toSet());
+    return Panache.withTransaction(
+            () ->
+                EventLog.find(
+                        "caseId = ?1 and eventType = ?2", caseInstance.getUuid(), GOAL_REACHED)
+                    .<EventLog>list())
+        .chain(
+            eventLogs -> {
+              Set<String> reachedGoals =
+                  eventLogs.stream()
+                      .map(el -> el.getMetadata().get("name").asText())
+                      .collect(Collectors.toSet());
 
-      LOG.infof("Evaluating completion for caseId=%s, reachedGoals=%s", caseInstance.getUuid(), reachedGoals);
+              LOG.infof(
+                  "Evaluating completion for caseId=%s, reachedGoals=%s",
+                  caseInstance.getUuid(), reachedGoals);
 
-      String oldStatus = caseInstance.getState().name();
+              String oldStatus = caseInstance.getState().name();
 
-      if (goalBasedCompletion.getFailure() != null && isGoalExpressionSatisfied(goalBasedCompletion.getFailure(), reachedGoals)) {
-        LOG.infof("Case FAILED: caseId=%s", caseInstance.getUuid());
-        eventBus.publish(EventBusAddresses.CASE_STATUS_CHANGED,
-                new CaseStatusChanged(caseInstance, oldStatus, CaseState.FAILED.name()));
-        return Uni.createFrom().voidItem();
-      }
+              if (goalBasedCompletion.getFailure() != null
+                  && isGoalExpressionSatisfied(goalBasedCompletion.getFailure(), reachedGoals)) {
+                LOG.infof("Case FAILED: caseId=%s", caseInstance.getUuid());
+                eventBus.publish(
+                    EventBusAddresses.CASE_STATUS_CHANGED,
+                    new CaseStatusChanged(caseInstance, oldStatus, CaseState.FAILED.name()));
+                return Uni.createFrom().voidItem();
+              }
 
-      if (goalBasedCompletion.getSuccess() != null && isGoalExpressionSatisfied(goalBasedCompletion.getSuccess(), reachedGoals)) {
-        LOG.infof("Case COMPLETED: caseId=%s", caseInstance.getUuid());
-        eventBus.publish(EventBusAddresses.CASE_STATUS_CHANGED,
-                new CaseStatusChanged(caseInstance, oldStatus, CaseState.COMPLETED.name()));
-        return Uni.createFrom().voidItem();
-      }
+              if (goalBasedCompletion.getSuccess() != null
+                  && isGoalExpressionSatisfied(goalBasedCompletion.getSuccess(), reachedGoals)) {
+                LOG.infof("Case COMPLETED: caseId=%s", caseInstance.getUuid());
+                eventBus.publish(
+                    EventBusAddresses.CASE_STATUS_CHANGED,
+                    new CaseStatusChanged(caseInstance, oldStatus, CaseState.COMPLETED.name()));
+                return Uni.createFrom().voidItem();
+              }
 
-      return Uni.createFrom().voidItem();
-    });
+              return Uni.createFrom().voidItem();
+            });
   }
 
   private boolean isGoalExpressionSatisfied(GoalExpression expression, Set<String> reachedGoals) {
@@ -109,9 +133,8 @@ public class GoalReachedEventHandler {
       return false;
     }
 
-    Set<String> expressionGoalNames = expression.getGoals().stream()
-            .map(Goal::getName)
-            .collect(Collectors.toSet());
+    Set<String> expressionGoalNames =
+        expression.getGoals().stream().map(Goal::getName).collect(Collectors.toSet());
 
     if (expression instanceof io.casehub.api.model.AllOfGoalExpression) {
       return reachedGoals.containsAll(expressionGoalNames);
