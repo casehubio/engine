@@ -1,3 +1,18 @@
+/*
+ * Copyright 2026-Present The Case Hub Authors
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ * http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 package io.casehub.codegen;
 
 import com.fasterxml.jackson.databind.JsonNode;
@@ -8,27 +23,27 @@ import org.jsonschema2pojo.rules.RuleFactory;
 
 public class CasehubRuleFactory extends RuleFactory {
 
-    private static final String WORKER_FQCN = "io.casehub.model.Worker";
+  private static final String WORKER_FQCN = "io.casehub.model.Worker";
 
-    @Override
-    public Rule<JClassContainer, JType> getSchemaRule() {
-        Rule<JClassContainer, JType> defaultRule = super.getSchemaRule();
-        return (nodeName, node, parent, jPackage, schema) -> {
-            if (matches(nodeName, node, "Worker")) {
-                return jPackage.owner().directClass(WORKER_FQCN);
-            }
-            return defaultRule.apply(nodeName, node, parent, jPackage, schema);
-        };
-    }
+  @Override
+  public Rule<JClassContainer, JType> getSchemaRule() {
+    Rule<JClassContainer, JType> defaultRule = super.getSchemaRule();
+    return (nodeName, node, parent, jPackage, schema) -> {
+      if (matches(nodeName, node, "Worker")) {
+        return jPackage.owner().directClass(WORKER_FQCN);
+      }
+      return defaultRule.apply(nodeName, node, parent, jPackage, schema);
+    };
+  }
 
-    private static boolean matches(String nodeName, JsonNode node, String typeName) {
-        if (typeName.equals(nodeName)) {
-            return true;
-        }
-        if (node.has("$ref")) {
-            String ref = node.get("$ref").asText();
-            return ref.endsWith("/" + typeName) || ref.equals("#/$defs/" + typeName);
-        }
-        return false;
+  private static boolean matches(String nodeName, JsonNode node, String typeName) {
+    if (typeName.equals(nodeName)) {
+      return true;
     }
+    if (node.has("$ref")) {
+      String ref = node.get("$ref").asText();
+      return ref.endsWith("/" + typeName) || ref.equals("#/$defs/" + typeName);
+    }
+    return false;
+  }
 }

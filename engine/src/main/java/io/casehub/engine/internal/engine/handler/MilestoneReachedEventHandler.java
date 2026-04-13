@@ -1,20 +1,34 @@
+/*
+ * Copyright 2026-Present The Case Hub Authors
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ * http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 package io.casehub.engine.internal.engine.handler;
 
+import static io.casehub.engine.internal.history.CaseHubEventType.MILESTONE_REACHED;
+
 import com.fasterxml.jackson.databind.ObjectMapper;
+import io.casehub.api.model.Milestone;
 import io.casehub.engine.internal.event.EventBusAddresses;
 import io.casehub.engine.internal.event.MilestoneReachedEvent;
 import io.casehub.engine.internal.history.EventLog;
 import io.casehub.engine.internal.history.EventStreamType;
 import io.casehub.engine.internal.model.CaseInstance;
-import io.casehub.api.model.Milestone;
 import io.quarkus.hibernate.reactive.panache.Panache;
 import io.quarkus.vertx.ConsumeEvent;
 import io.smallrye.mutiny.Uni;
 import jakarta.enterprise.context.ApplicationScoped;
-
 import java.time.Instant;
-
-import static io.casehub.engine.internal.history.CaseHubEventType.MILESTONE_REACHED;
 
 @ApplicationScoped
 public class MilestoneReachedEventHandler {
@@ -31,12 +45,12 @@ public class MilestoneReachedEventHandler {
     eventLog.setEventType(MILESTONE_REACHED);
     eventLog.setStreamType(EventStreamType.CASE);
     eventLog.setTimestamp(Instant.now());
-    eventLog.setMetadata(OBJECT_MAPPER.createObjectNode()
+    eventLog.setMetadata(
+        OBJECT_MAPPER
+            .createObjectNode()
             .put("name", milestone.getName())
-            .put("description", milestone.getDescription())
-    );
+            .put("description", milestone.getDescription()));
 
-    return Panache.withTransaction(eventLog::persist)
-            .replaceWithVoid();
+    return Panache.withTransaction(eventLog::persist).replaceWithVoid();
   }
 }

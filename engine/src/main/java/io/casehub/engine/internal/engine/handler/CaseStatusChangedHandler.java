@@ -1,3 +1,18 @@
+/*
+ * Copyright 2026-Present The Case Hub Authors
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ * http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 package io.casehub.engine.internal.engine.handler;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -14,9 +29,8 @@ import io.smallrye.mutiny.Uni;
 import io.vertx.mutiny.core.eventbus.EventBus;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
-import org.jboss.logging.Logger;
-
 import java.time.Instant;
+import org.jboss.logging.Logger;
 
 @ApplicationScoped
 public class CaseStatusChangedHandler {
@@ -24,8 +38,7 @@ public class CaseStatusChangedHandler {
   private static final Logger LOG = Logger.getLogger(CaseStatusChangedHandler.class);
   private static final ObjectMapper OBJECT_MAPPER = new ObjectMapper();
 
-  @Inject
-  EventBus eventBus;
+  @Inject EventBus eventBus;
 
   @ConsumeEvent(value = EventBusAddresses.CASE_STATUS_CHANGED)
   public Uni<Void> onCaseStatusChangedHandler(CaseStatusChanged event) {
@@ -33,7 +46,9 @@ public class CaseStatusChangedHandler {
     CaseState newState = CaseState.valueOf(event.newStatus());
     String oldStatus = event.oldStatus();
 
-    LOG.infof("Case status changed: caseId=%s, %s -> %s", caseInstance.getUuid(), oldStatus, event.newStatus());
+    LOG.infof(
+        "Case status changed: caseId=%s, %s -> %s",
+        caseInstance.getUuid(), oldStatus, event.newStatus());
 
     CaseHubEventType eventType = resolveState(newState);
 
@@ -42,23 +57,27 @@ public class CaseStatusChangedHandler {
     eventLog.setEventType(eventType);
     eventLog.setStreamType(EventStreamType.CASE);
     eventLog.setTimestamp(Instant.now());
-    eventLog.setMetadata(OBJECT_MAPPER.createObjectNode()
+    eventLog.setMetadata(
+        OBJECT_MAPPER
+            .createObjectNode()
             .put("oldStatus", oldStatus)
-            .put("newStatus", event.newStatus())
-    );
+            .put("newStatus", event.newStatus()));
 
     caseInstance.setState(newState);
 
-    return Panache.withTransaction(() ->
-            Panache.getSession()
+    return Panache.withTransaction(
+            () ->
+                Panache.getSession()
                     .chain(session -> session.merge(caseInstance))
-                    .chain(merged -> eventLog.persist())
-    ).invoke(() -> {
-      String eventBusAddress = resolveStateAsString(newState);
-      if (eventBusAddress != null) {
-        eventBus.publish(eventBusAddress, caseInstance);
-      }
-    }).replaceWithVoid();
+                    .chain(merged -> eventLog.persist()))
+        .invoke(
+            () -> {
+              String eventBusAddress = resolveStateAsString(newState);
+              if (eventBusAddress != null) {
+                eventBus.publish(eventBusAddress, caseInstance);
+              }
+            })
+        .replaceWithVoid();
   }
 
   private CaseHubEventType resolveState(CaseState state) {

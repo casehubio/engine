@@ -1,5 +1,29 @@
+/*
+ * Copyright 2026-Present The Case Hub Authors
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ * http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 package io.casehub.engine.internal.context;
 
+import com.fasterxml.jackson.annotation.JsonAnyGetter;
+import com.fasterxml.jackson.annotation.JsonAnySetter;
+import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
+import io.casehub.api.context.StateContext;
+import io.fabric8.zjsonpatch.JsonDiff;
+import io.fabric8.zjsonpatch.JsonPatch;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.LinkedHashMap;
@@ -11,17 +35,6 @@ import java.util.concurrent.locks.ReadWriteLock;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 import java.util.function.Function;
 
-import com.fasterxml.jackson.annotation.JsonAnyGetter;
-import com.fasterxml.jackson.annotation.JsonAnySetter;
-import com.fasterxml.jackson.annotation.JsonIgnore;
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
-
-import io.casehub.api.context.StateContext;
-import io.fabric8.zjsonpatch.JsonDiff;
-import io.fabric8.zjsonpatch.JsonPatch;
-
 @JsonDeserialize(as = StateContextImpl.class)
 public class StateContextImpl implements StateContext {
 
@@ -31,8 +44,7 @@ public class StateContextImpl implements StateContext {
   private final ReadWriteLock lock = new ReentrantReadWriteLock();
   private long version = 0L;
 
-  public StateContextImpl() {
-  }
+  public StateContextImpl() {}
 
   public StateContextImpl(Map<String, Object> initial) {
     if (initial != null) {
@@ -89,8 +101,7 @@ public class StateContextImpl implements StateContext {
     lock.readLock().lock();
     try {
       Object value = data.get(key);
-      if (value == null)
-        return null;
+      if (value == null) return null;
       if (type.isInstance(value)) {
         return type.cast(value);
       }
@@ -195,40 +206,32 @@ public class StateContextImpl implements StateContext {
   @Override
   public Integer getInt(String key) {
     Object v = get(key);
-    if (v == null)
-      return null;
-    if (v instanceof Number n)
-      return n.intValue();
+    if (v == null) return null;
+    if (v instanceof Number n) return n.intValue();
     return Integer.parseInt(v.toString());
   }
 
   @Override
   public Long getLong(String key) {
     Object v = get(key);
-    if (v == null)
-      return null;
-    if (v instanceof Number n)
-      return n.longValue();
+    if (v == null) return null;
+    if (v instanceof Number n) return n.longValue();
     return Long.parseLong(v.toString());
   }
 
   @Override
   public Double getDouble(String key) {
     Object v = get(key);
-    if (v == null)
-      return null;
-    if (v instanceof Number n)
-      return n.doubleValue();
+    if (v == null) return null;
+    if (v instanceof Number n) return n.doubleValue();
     return Double.parseDouble(v.toString());
   }
 
   @Override
   public Boolean getBoolean(String key) {
     Object v = get(key);
-    if (v == null)
-      return null;
-    if (v instanceof Boolean b)
-      return b;
+    if (v == null) return null;
+    if (v instanceof Boolean b) return b;
     return Boolean.parseBoolean(v.toString());
   }
 
@@ -237,12 +240,9 @@ public class StateContextImpl implements StateContext {
     lock.readLock().lock();
     try {
       Object v = data.get(key);
-      if (v == null)
-        return null;
+      if (v == null) return null;
       if (v instanceof List<?> list) {
-        return list.stream()
-                .map(item -> mapper.convertValue(item, elementType))
-                .toList();
+        return list.stream().map(item -> mapper.convertValue(item, elementType)).toList();
       }
       return null;
     } finally {
@@ -277,8 +277,7 @@ public class StateContextImpl implements StateContext {
       } else {
         return null;
       }
-      if (current == null)
-        return null;
+      if (current == null) return null;
     }
     return current;
   }
@@ -300,8 +299,7 @@ public class StateContextImpl implements StateContext {
         if (next instanceof Map) {
           current = (Map<String, Object>) next;
         } else {
-          throw new IllegalStateException(
-                  "Cannot set path: " + parts[i] + " is not a Map");
+          throw new IllegalStateException("Cannot set path: " + parts[i] + " is not a Map");
         }
       }
       String leaf = parts[parts.length - 1];
@@ -318,8 +316,7 @@ public class StateContextImpl implements StateContext {
 
   @Override
   public StateContext setAll(Map<String, Object> values) {
-    if (values == null || values.isEmpty())
-      return this;
+    if (values == null || values.isEmpty()) return this;
     lock.writeLock().lock();
     try {
       boolean changed = false;
@@ -439,8 +436,7 @@ public class StateContextImpl implements StateContext {
 
   @Override
   public StateContext merge(StateContext other) {
-    if (other == null)
-      return this;
+    if (other == null) return this;
     lock.writeLock().lock();
     try {
       Map<String, Object> otherData = other.getData();
@@ -483,23 +479,27 @@ public class StateContextImpl implements StateContext {
     }
   }
 
-    @Override
-    public void applyDiff(JsonNode diff) {
-        lock.writeLock().lock();
-        try {
-            JsonNode current = mapper.convertValue(data, JsonNode.class);
-            JsonNode patched = JsonPatch.apply(diff, current);
-            Map<String, Object> updated = mapper.convertValue(patched, mapper.getTypeFactory()
-                    .constructMapType(LinkedHashMap.class, String.class, Object.class));
-            data.clear();
-            data.putAll(updated);
-            version++;
-        } finally {
-            lock.writeLock().unlock();
-        }
+  @Override
+  public void applyDiff(JsonNode diff) {
+    lock.writeLock().lock();
+    try {
+      JsonNode current = mapper.convertValue(data, JsonNode.class);
+      JsonNode patched = JsonPatch.apply(diff, current);
+      Map<String, Object> updated =
+          mapper.convertValue(
+              patched,
+              mapper
+                  .getTypeFactory()
+                  .constructMapType(LinkedHashMap.class, String.class, Object.class));
+      data.clear();
+      data.putAll(updated);
+      version++;
+    } finally {
+      lock.writeLock().unlock();
     }
+  }
 
-    @Override
+  @Override
   public long getVersion() {
     lock.readLock().lock();
     try {
@@ -538,10 +538,8 @@ public class StateContextImpl implements StateContext {
 
   @Override
   public boolean equals(Object o) {
-    if (this == o)
-      return true;
-    if (!(o instanceof StateContextImpl that))
-      return false;
+    if (this == o) return true;
+    if (!(o instanceof StateContextImpl that)) return false;
     Map<String, Object> thisData = this.getData();
     Map<String, Object> thatData = that.getData();
     return thisData.equals(thatData);
@@ -628,7 +626,8 @@ public class StateContextImpl implements StateContext {
     // allow quoted keys: "documentId": .documentId
     if ((k.startsWith("\"") && k.endsWith("\"")) || (k.startsWith("'") && k.endsWith("'"))) {
       // normalize to JSON double quotes for parsing
-      String json = k.startsWith("'")
+      String json =
+          k.startsWith("'")
               ? "\"" + k.substring(1, k.length() - 1).replace("\"", "\\\"") + "\""
               : k;
       try {
@@ -703,11 +702,18 @@ public class StateContextImpl implements StateContext {
       if (inStr) {
         if (esc) esc = false;
         else if (c == '\\') esc = true;
-        else if (c == strQuote) { inStr = false; strQuote = 0; }
+        else if (c == strQuote) {
+          inStr = false;
+          strQuote = 0;
+        }
         continue;
       }
 
-      if (c == '"' || c == '\'') { inStr = true; strQuote = c; continue; }
+      if (c == '"' || c == '\'') {
+        inStr = true;
+        strQuote = c;
+        continue;
+      }
 
       if (c == '{' || c == '[' || c == '(') depth++;
       else if (c == '}' || c == ']' || c == ')') depth = Math.max(0, depth - 1);
