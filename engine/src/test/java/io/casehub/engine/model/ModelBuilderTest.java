@@ -280,8 +280,6 @@ class ModelBuilderTest {
     @Test
     @DisplayName("null ExpressionEvaluator condition throws NullPointerException")
     void nullEvaluatorCondition_throws() {
-      // condition(String null) wraps null in JQExpressionEvaluator (non-null object) — that path
-      // does not throw. condition(ExpressionEvaluator) with null does hit requireNonNull at build.
       assertThrows(
           NullPointerException.class,
           () ->
@@ -289,6 +287,14 @@ class ModelBuilderTest {
                   .name("m")
                   .condition((io.casehub.api.model.evaluator.ExpressionEvaluator) null)
                   .build());
+    }
+
+    @Test
+    @DisplayName("null String condition throws NullPointerException")
+    void nullStringCondition_throws() {
+      assertThrows(
+          NullPointerException.class,
+          () -> Milestone.builder().name("m").condition((String) null).build());
     }
 
     @Test
@@ -361,8 +367,6 @@ class ModelBuilderTest {
     @Test
     @DisplayName("null ExpressionEvaluator condition throws NullPointerException")
     void nullEvaluatorCondition_throws() {
-      // condition(String null) wraps null in JQExpressionEvaluator (non-null object) so does not
-      // throw. Passing a null ExpressionEvaluator directly hits requireNonNull at build time.
       assertThrows(
           NullPointerException.class,
           () ->
@@ -371,6 +375,14 @@ class ModelBuilderTest {
                   .condition((io.casehub.api.model.evaluator.ExpressionEvaluator) null)
                   .kind(GoalKind.SUCCESS)
                   .build());
+    }
+
+    @Test
+    @DisplayName("null String condition throws NullPointerException")
+    void nullStringCondition_throws() {
+      assertThrows(
+          NullPointerException.class,
+          () -> Goal.builder().name("g").condition((String) null).kind(GoalKind.SUCCESS).build());
     }
 
     @Test
