@@ -17,6 +17,7 @@ package io.casehub.engine.internal.engine.handler;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import io.casehub.api.engine.LoopControl;
+import io.casehub.api.engine.PlanExecutionContext;
 import io.casehub.api.model.Binding;
 import io.casehub.api.model.Capability;
 import io.casehub.api.model.CaseDefinition;
@@ -119,7 +120,9 @@ public class CaseContextChangedEventHandler {
     }
 
     // LoopControl decides which eligible rules to fire (default: all of them)
-    List<Binding> selected = loopControl.select(caseInstance.getCaseContext(), eligible);
+    PlanExecutionContext planCtx =
+        new PlanExecutionContext(caseInstance.getUuid(), definition, caseInstance.getCaseContext());
+    List<Binding> selected = loopControl.select(planCtx, eligible);
 
     List<Uni<Void>> unis = new ArrayList<>(selected.size());
     for (Binding b : selected) {
