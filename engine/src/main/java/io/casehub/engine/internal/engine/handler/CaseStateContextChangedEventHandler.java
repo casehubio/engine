@@ -15,6 +15,7 @@
  */
 package io.casehub.engine.internal.engine.handler;
 
+import com.fasterxml.jackson.databind.JsonNode;
 import io.casehub.api.model.Capability;
 import io.casehub.api.model.CaseHubDefinition;
 import io.casehub.api.model.ContextChangeTrigger;
@@ -57,6 +58,7 @@ public class CaseStateContextChangedEventHandler {
   @ConsumeEvent(value = EventBusAddresses.CONTEXT_CHANGED)
   public Uni<Void> onCaseStateContextChangedEventHandler(CaseStateContextChangedEvent event) {
     CaseInstance caseInstance = event.instance();
+    JsonNode contextSnapshot = event.contextSnapshot();
     if (!caseInstance.getState().equals(CaseState.ACTIVE)) {
       return Uni.createFrom().voidItem();
     }
@@ -73,9 +75,9 @@ public class CaseStateContextChangedEventHandler {
 
     LOG.infof("Handling CaseStateContextChangedEvent for caseId: %s", caseInstance.getUuid());
 
-    return rules(caseInstance, caseHubDefinition)
-        .chain(() -> milestones(caseInstance, caseHubDefinition))
-        .chain(() -> goals(caseInstance, caseHubDefinition))
+    return rules(caseInstance, contextSnapshot, caseHubDefinition)
+        .chain(() -> milestones(caseInstance, contextSnapshot, caseHubDefinition))
+        .chain(() -> goals(caseInstance, contextSnapshot, caseHubDefinition))
         .invoke(
             () ->
                 LOG.debugf(
@@ -87,7 +89,8 @@ public class CaseStateContextChangedEventHandler {
                     t, "Failed handling context changed for caseId: %s", caseInstance.getUuid()));
   }
 
-  private Uni<Void> rules(CaseInstance caseInstance, CaseHubDefinition definition) {
+  private Uni<Void> rules(
+      CaseInstance caseInstance, JsonNode contextSnapshot, CaseHubDefinition definition) {
     List<DispatchRule> rules = definition.getRules();
     if (rules == null || rules.isEmpty()) {
       return Uni.createFrom().voidItem();
@@ -104,8 +107,7 @@ public class CaseStateContextChangedEventHandler {
 
       String jqExpression = normalizeJqFilter(rule, cct);
 
-      ValidationResult matches =
-          jqEvaluator.eval(jqExpression, caseInstance.getStateContext().asJsonNode());
+      ValidationResult matches = jqEvaluator.eval(jqExpression, contextSnapshot);
       if (!matches.ok() || !matches.isTrue()) {
         continue;
       }
@@ -126,7 +128,8 @@ public class CaseStateContextChangedEventHandler {
     return Uni.combine().all().unis(unis).discardItems();
   }
 
-  private Uni<Void> milestones(CaseInstance caseInstance, CaseHubDefinition definition) {
+  private Uni<Void> milestones(
+      CaseInstance caseInstance, JsonNode contextSnapshot, CaseHubDefinition definition) {
     List<Milestone> milestones = definition.getMilestones();
     if (milestones == null || milestones.isEmpty()) {
       return Uni.createFrom().voidItem();
@@ -137,8 +140,7 @@ public class CaseStateContextChangedEventHandler {
       String conditionExpr = ((JQExpressionEvaluator) milestone.getCondition()).expression();
       if (conditionExpr == null || conditionExpr.isBlank()) continue;
 
-      ValidationResult result =
-          jqEvaluator.eval(conditionExpr, caseInstance.getStateContext().asJsonNode());
+      ValidationResult result = jqEvaluator.eval(conditionExpr, contextSnapshot);
       if (!result.ok() || !result.isTrue()) continue;
 
       LOG.infof("Milestone '%s' REACHED! Publishing MilestoneReachedEvent", milestone.getName());
@@ -150,7 +152,8 @@ public class CaseStateContextChangedEventHandler {
     return Uni.createFrom().voidItem();
   }
 
-  private Uni<Void> goals(CaseInstance caseInstance, CaseHubDefinition definition) {
+  private Uni<Void> goals(
+      CaseInstance caseInstance, JsonNode contextSnapshot, CaseHubDefinition definition) {
     List<Goal> goals = definition.getGoals();
     if (goals == null || goals.isEmpty()) {
       return Uni.createFrom().voidItem();
@@ -161,8 +164,7 @@ public class CaseStateContextChangedEventHandler {
       String conditionExpr = ((JQExpressionEvaluator) goal.getCondition()).expression();
       if (conditionExpr == null || conditionExpr.isBlank()) continue;
 
-      ValidationResult result =
-          jqEvaluator.eval(conditionExpr, caseInstance.getStateContext().asJsonNode());
+      ValidationResult result = jqEvaluator.eval(conditionExpr, contextSnapshot);
       if (!result.ok() || !result.isTrue()) continue;
 
       LOG.infof("Goal '%s' REACHED! Publishing GoalReachedEvent", goal.getName());

@@ -37,7 +37,6 @@ import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
-import org.junit.Ignore;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
@@ -97,7 +96,6 @@ public class SignalTest {
    * prevent double execution.
    */
   @Test
-  @Ignore // TODO
   void workerRunsOnceOnDuplicateSignal() {
     UUID caseId = bean.startCase(Map.of("orderId", "order-dedup")).toCompletableFuture().join();
 
