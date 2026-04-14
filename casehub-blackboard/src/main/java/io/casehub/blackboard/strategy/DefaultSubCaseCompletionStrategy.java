@@ -18,8 +18,10 @@ package io.casehub.blackboard.strategy;
 import io.casehub.api.context.CaseContext;
 import io.casehub.api.model.CaseStatus;
 import io.casehub.blackboard.plan.PlanItemStatus;
+import jakarta.enterprise.context.ApplicationScoped;
 
 /** Default: COMPLETED→COMPLETED, FAULTED→FAULTED, everything else→TERMINATED. */
+@ApplicationScoped
 public class DefaultSubCaseCompletionStrategy implements SubCaseCompletionStrategy {
 
   @Override

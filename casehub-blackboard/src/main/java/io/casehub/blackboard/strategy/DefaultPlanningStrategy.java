@@ -17,11 +17,13 @@ package io.casehub.blackboard.strategy;
 
 import io.casehub.api.context.CaseContext;
 import io.casehub.blackboard.plan.PlanItem;
+import jakarta.enterprise.context.ApplicationScoped;
 import java.util.List;
 
 /**
  * Default: fires all eligible PlanItems — orchestration at Stage level, choreography within Stage.
  */
+@ApplicationScoped
 public class DefaultPlanningStrategy implements PlanningStrategy {
 
   @Override
