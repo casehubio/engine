@@ -54,7 +54,7 @@ public class WorkerScheduleEventHandler {
     Capability capability = event.capability();
 
     Map<String, Object> inputData =
-        instance.getStateContext().evalObjectTemplate(capability.getInputSchema());
+        instance.getCaseContext().evalObjectTemplate(capability.getInputSchema());
     String inputDataHash =
         WorkerExecutionKeys.inputDataHash(worker.getName(), capability.getName(), inputData);
     EventLog eventLog = buildEventLog(instance, worker, capability, inputData, inputDataHash);

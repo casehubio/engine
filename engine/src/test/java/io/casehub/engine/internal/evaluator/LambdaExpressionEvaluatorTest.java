@@ -20,7 +20,7 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import io.casehub.api.model.evaluator.LambdaExpressionEvaluator;
-import io.casehub.engine.internal.context.StateContextImpl;
+import io.casehub.engine.internal.context.CaseContextImpl;
 import java.util.Map;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -39,7 +39,7 @@ class LambdaExpressionEvaluatorTest {
   @Test
   @DisplayName("test() returns true when predicate matches")
   void test_returnsTrueWhenPredicateMatches() {
-    final var context = new StateContextImpl(Map.of("status", "ready"));
+    final var context = new CaseContextImpl(Map.of("status", "ready"));
     final var evaluator = new LambdaExpressionEvaluator(ctx -> "ready".equals(ctx.get("status")));
 
     assertTrue(evaluator.test(context));
@@ -48,7 +48,7 @@ class LambdaExpressionEvaluatorTest {
   @Test
   @DisplayName("test() returns false when predicate does not match")
   void test_returnsFalseWhenPredicateDoesNotMatch() {
-    final var context = new StateContextImpl(Map.of("status", "pending"));
+    final var context = new CaseContextImpl(Map.of("status", "pending"));
     final var evaluator = new LambdaExpressionEvaluator(ctx -> "ready".equals(ctx.get("status")));
 
     assertFalse(evaluator.test(context));
@@ -57,7 +57,7 @@ class LambdaExpressionEvaluatorTest {
   @Test
   @DisplayName("test() receives the exact context passed in")
   void test_receivesExactContext() {
-    final var context = new StateContextImpl(Map.of("count", 42));
+    final var context = new CaseContextImpl(Map.of("count", 42));
     final var evaluator = new LambdaExpressionEvaluator(ctx -> ctx.get("count") != null);
 
     assertTrue(evaluator.test(context));

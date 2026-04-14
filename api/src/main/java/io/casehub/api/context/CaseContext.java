@@ -21,11 +21,11 @@ import java.util.Map;
 import java.util.Set;
 import java.util.function.Function;
 
-public interface StateContext {
+public interface CaseContext {
 
   Map<String, Object> getData();
 
-  StateContext set(String key, Object value);
+  CaseContext set(String key, Object value);
 
   Object get(String key);
 
@@ -39,7 +39,7 @@ public interface StateContext {
 
   boolean compareAndSet(String key, Object expected, Object newValue);
 
-  StateContext update(String key, Function<Object, Object> updateFunction);
+  CaseContext update(String key, Function<Object, Object> updateFunction);
 
   String getString(String key);
 
@@ -57,17 +57,17 @@ public interface StateContext {
 
   String getPathAsString(String path);
 
-  StateContext setPath(String path, Object value);
+  CaseContext setPath(String path, Object value);
 
-  StateContext setAll(Map<String, Object> values);
+  CaseContext setAll(Map<String, Object> values);
 
   Map<String, Object> getAll(String... keys);
 
   boolean contains(String key);
 
-  StateContext remove(String key);
+  CaseContext remove(String key);
 
-  StateContext clear();
+  CaseContext clear();
 
   Set<String> getKeys();
 
@@ -77,11 +77,11 @@ public interface StateContext {
 
   JsonNode asJsonNode();
 
-  StateContext merge(StateContext other);
+  CaseContext merge(CaseContext other);
 
-  StateContext snapshot();
+  CaseContext snapshot();
 
-  JsonNode diff(StateContext other);
+  JsonNode diff(CaseContext other);
 
   void applyDiff(JsonNode diff);
 

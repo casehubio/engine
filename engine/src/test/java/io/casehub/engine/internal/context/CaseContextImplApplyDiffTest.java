@@ -24,7 +24,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import io.casehub.api.context.StateContext;
+import io.casehub.api.context.CaseContext;
 import java.util.List;
 import java.util.Map;
 import org.junit.jupiter.api.DisplayName;
@@ -32,7 +32,7 @@ import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 
 @DisplayName("StateContextImpl.applyDiff")
-class StateContextImplApplyDiffTest {
+class CaseContextImplApplyDiffTest {
 
   private static final ObjectMapper MAPPER = new ObjectMapper();
 
@@ -45,7 +45,7 @@ class StateContextImplApplyDiffTest {
   // ------------------------------------------------------------------ //
 
   /** Produces a patch that transforms {@code before} into {@code after}. */
-  private JsonNode diffFromSnapshots(StateContextImpl before, StateContextImpl after) {
+  private JsonNode diffFromSnapshots(CaseContextImpl before, CaseContextImpl after) {
     return before.snapshot().diff(after);
   }
 
@@ -58,7 +58,7 @@ class StateContextImplApplyDiffTest {
     @Test
     @DisplayName("should add a new string field to an empty context")
     void addStringToEmpty() throws Exception {
-      StateContextImpl ctx = new StateContextImpl();
+      CaseContextImpl ctx = new CaseContextImpl();
       ctx.applyDiff(patch("[{\"op\":\"add\",\"path\":\"/status\",\"value\":\"active\"}]"));
 
       assertEquals("active", ctx.getString("status"));
@@ -67,7 +67,7 @@ class StateContextImplApplyDiffTest {
     @Test
     @DisplayName("should add a new integer field")
     void addInteger() throws Exception {
-      StateContextImpl ctx = new StateContextImpl();
+      CaseContextImpl ctx = new CaseContextImpl();
       ctx.applyDiff(patch("[{\"op\":\"add\",\"path\":\"/amount\",\"value\":42}]"));
 
       assertEquals(42, ctx.getInt("amount"));
@@ -76,7 +76,7 @@ class StateContextImplApplyDiffTest {
     @Test
     @DisplayName("should add a boolean field")
     void addBoolean() throws Exception {
-      StateContextImpl ctx = new StateContextImpl();
+      CaseContextImpl ctx = new CaseContextImpl();
       ctx.applyDiff(patch("[{\"op\":\"add\",\"path\":\"/approved\",\"value\":true}]"));
 
       assertTrue(ctx.getBoolean("approved"));
@@ -85,7 +85,7 @@ class StateContextImplApplyDiffTest {
     @Test
     @DisplayName("should add a null field")
     void addNull() throws Exception {
-      StateContextImpl ctx = new StateContextImpl(Map.of("x", "y"));
+      CaseContextImpl ctx = new CaseContextImpl(Map.of("x", "y"));
       ctx.applyDiff(patch("[{\"op\":\"add\",\"path\":\"/empty\",\"value\":null}]"));
 
       assertTrue(ctx.contains("empty"));
@@ -95,7 +95,7 @@ class StateContextImplApplyDiffTest {
     @Test
     @DisplayName("should add a nested object field")
     void addNestedObject() throws Exception {
-      StateContextImpl ctx = new StateContextImpl();
+      CaseContextImpl ctx = new CaseContextImpl();
       ctx.applyDiff(
           patch(
               """
@@ -111,7 +111,7 @@ class StateContextImplApplyDiffTest {
     @Test
     @DisplayName("should add a list field")
     void addList() throws Exception {
-      StateContextImpl ctx = new StateContextImpl();
+      CaseContextImpl ctx = new CaseContextImpl();
       ctx.applyDiff(patch("[{\"op\":\"add\",\"path\":\"/tags\",\"value\":[\"a\",\"b\"]}]"));
 
       List<?> tags = ctx.getList("tags", Object.class);
@@ -122,7 +122,7 @@ class StateContextImplApplyDiffTest {
     @Test
     @DisplayName("should add multiple fields in one patch")
     void addMultipleFields() throws Exception {
-      StateContextImpl ctx = new StateContextImpl();
+      CaseContextImpl ctx = new CaseContextImpl();
       ctx.applyDiff(
           patch(
               """
@@ -146,7 +146,7 @@ class StateContextImplApplyDiffTest {
     @Test
     @DisplayName("should replace an existing string field")
     void replaceString() throws Exception {
-      StateContextImpl ctx = new StateContextImpl(Map.of("status", "pending"));
+      CaseContextImpl ctx = new CaseContextImpl(Map.of("status", "pending"));
       ctx.applyDiff(patch("[{\"op\":\"replace\",\"path\":\"/status\",\"value\":\"active\"}]"));
 
       assertEquals("active", ctx.getString("status"));
@@ -155,7 +155,7 @@ class StateContextImplApplyDiffTest {
     @Test
     @DisplayName("should replace an integer field")
     void replaceInteger() throws Exception {
-      StateContextImpl ctx = new StateContextImpl(Map.of("count", 1));
+      CaseContextImpl ctx = new CaseContextImpl(Map.of("count", 1));
       ctx.applyDiff(patch("[{\"op\":\"replace\",\"path\":\"/count\",\"value\":99}]"));
 
       assertEquals(99, ctx.getInt("count"));
@@ -164,7 +164,7 @@ class StateContextImplApplyDiffTest {
     @Test
     @DisplayName("should replace a field with a nested object")
     void replaceWithObject() throws Exception {
-      StateContextImpl ctx = new StateContextImpl(Map.of("data", "simple"));
+      CaseContextImpl ctx = new CaseContextImpl(Map.of("data", "simple"));
       ctx.applyDiff(patch("[{\"op\":\"replace\",\"path\":\"/data\",\"value\":{\"key\":\"val\"}}]"));
 
       @SuppressWarnings("unchecked")
@@ -175,7 +175,7 @@ class StateContextImplApplyDiffTest {
     @Test
     @DisplayName("should not affect other fields when replacing one")
     void replaceDoesNotAffectOthers() throws Exception {
-      StateContextImpl ctx = new StateContextImpl(Map.of("a", "1", "b", "2"));
+      CaseContextImpl ctx = new CaseContextImpl(Map.of("a", "1", "b", "2"));
       ctx.applyDiff(patch("[{\"op\":\"replace\",\"path\":\"/a\",\"value\":\"updated\"}]"));
 
       assertEquals("updated", ctx.getString("a"));
@@ -192,7 +192,7 @@ class StateContextImplApplyDiffTest {
     @Test
     @DisplayName("should remove an existing field")
     void removeField() throws Exception {
-      StateContextImpl ctx = new StateContextImpl(Map.of("status", "active", "other", "keep"));
+      CaseContextImpl ctx = new CaseContextImpl(Map.of("status", "active", "other", "keep"));
       ctx.applyDiff(patch("[{\"op\":\"remove\",\"path\":\"/status\"}]"));
 
       assertFalse(ctx.contains("status"));
@@ -202,7 +202,7 @@ class StateContextImplApplyDiffTest {
     @Test
     @DisplayName("should leave context empty when removing the only field")
     void removeOnlyField() throws Exception {
-      StateContextImpl ctx = new StateContextImpl(Map.of("x", "y"));
+      CaseContextImpl ctx = new CaseContextImpl(Map.of("x", "y"));
       ctx.applyDiff(patch("[{\"op\":\"remove\",\"path\":\"/x\"}]"));
 
       assertTrue(ctx.isEmpty());
@@ -218,7 +218,7 @@ class StateContextImplApplyDiffTest {
     @Test
     @DisplayName("should leave context unchanged for empty patch array")
     void emptyPatchLeavesContextUnchanged() throws Exception {
-      StateContextImpl ctx = new StateContextImpl(Map.of("status", "original"));
+      CaseContextImpl ctx = new CaseContextImpl(Map.of("status", "original"));
       ctx.applyDiff(patch("[]"));
 
       assertEquals("original", ctx.getString("status"));
@@ -228,7 +228,7 @@ class StateContextImplApplyDiffTest {
     @Test
     @DisplayName("should still increment version for empty patch")
     void emptyPatchIncrementsVersion() throws Exception {
-      StateContextImpl ctx = new StateContextImpl();
+      CaseContextImpl ctx = new CaseContextImpl();
       long before = ctx.getVersion();
       ctx.applyDiff(patch("[]"));
 
@@ -245,7 +245,7 @@ class StateContextImplApplyDiffTest {
     @Test
     @DisplayName("should increment version on each applyDiff call")
     void versionIncrementsEachCall() throws Exception {
-      StateContextImpl ctx = new StateContextImpl();
+      CaseContextImpl ctx = new CaseContextImpl();
       long initial = ctx.getVersion();
 
       ctx.applyDiff(patch("[{\"op\":\"add\",\"path\":\"/a\",\"value\":1}]"));
@@ -268,13 +268,13 @@ class StateContextImplApplyDiffTest {
     @Test
     @DisplayName("add field roundtrip")
     void addFieldRoundtrip() {
-      StateContextImpl original = new StateContextImpl(Map.of("x", "1"));
-      StateContext snapshot = original.snapshot();
+      CaseContextImpl original = new CaseContextImpl(Map.of("x", "1"));
+      CaseContext snapshot = original.snapshot();
 
       original.set("y", "2");
       JsonNode patch = snapshot.diff(original);
 
-      StateContextImpl replica = new StateContextImpl(Map.of("x", "1"));
+      CaseContextImpl replica = new CaseContextImpl(Map.of("x", "1"));
       replica.applyDiff(patch);
 
       assertEquals("1", replica.getString("x"));
@@ -284,13 +284,13 @@ class StateContextImplApplyDiffTest {
     @Test
     @DisplayName("replace field roundtrip")
     void replaceFieldRoundtrip() {
-      StateContextImpl original = new StateContextImpl(Map.of("status", "pending"));
-      StateContext snapshot = original.snapshot();
+      CaseContextImpl original = new CaseContextImpl(Map.of("status", "pending"));
+      CaseContext snapshot = original.snapshot();
 
       original.set("status", "active");
       JsonNode patch = snapshot.diff(original);
 
-      StateContextImpl replica = new StateContextImpl(Map.of("status", "pending"));
+      CaseContextImpl replica = new CaseContextImpl(Map.of("status", "pending"));
       replica.applyDiff(patch);
 
       assertEquals("active", replica.getString("status"));
@@ -299,13 +299,13 @@ class StateContextImplApplyDiffTest {
     @Test
     @DisplayName("remove field roundtrip")
     void removeFieldRoundtrip() {
-      StateContextImpl original = new StateContextImpl(Map.of("a", "1", "b", "2"));
-      StateContext snapshot = original.snapshot();
+      CaseContextImpl original = new CaseContextImpl(Map.of("a", "1", "b", "2"));
+      CaseContext snapshot = original.snapshot();
 
       original.remove("b");
       JsonNode patch = snapshot.diff(original);
 
-      StateContextImpl replica = new StateContextImpl(Map.of("a", "1", "b", "2"));
+      CaseContextImpl replica = new CaseContextImpl(Map.of("a", "1", "b", "2"));
       replica.applyDiff(patch);
 
       assertTrue(replica.contains("a"));
@@ -315,15 +315,15 @@ class StateContextImplApplyDiffTest {
     @Test
     @DisplayName("multiple changes roundtrip")
     void multipleChangesRoundtrip() {
-      StateContextImpl original = new StateContextImpl(Map.of("a", "old", "b", "keep"));
-      StateContext snapshot = original.snapshot();
+      CaseContextImpl original = new CaseContextImpl(Map.of("a", "old", "b", "keep"));
+      CaseContext snapshot = original.snapshot();
 
       original.set("a", "new");
       original.set("c", "added");
       original.remove("b");
       JsonNode patch = snapshot.diff(original);
 
-      StateContextImpl replica = new StateContextImpl(Map.of("a", "old", "b", "keep"));
+      CaseContextImpl replica = new CaseContextImpl(Map.of("a", "old", "b", "keep"));
       replica.applyDiff(patch);
 
       assertEquals("new", replica.getString("a"));
@@ -334,21 +334,21 @@ class StateContextImplApplyDiffTest {
     @Test
     @DisplayName("sequential patches reconstruct state correctly")
     void sequentialPatches() {
-      StateContextImpl source = new StateContextImpl(Map.of("step", 0));
+      CaseContextImpl source = new CaseContextImpl(Map.of("step", 0));
 
       // patch 1: step 0 → 1
-      StateContext snap1 = source.snapshot();
+      CaseContext snap1 = source.snapshot();
       source.set("step", 1);
       JsonNode patch1 = snap1.diff(source);
 
       // patch 2: step 1 → 2 + add field
-      StateContext snap2 = source.snapshot();
+      CaseContext snap2 = source.snapshot();
       source.set("step", 2);
       source.set("done", true);
       JsonNode patch2 = snap2.diff(source);
 
       // replay on fresh context
-      StateContextImpl replica = new StateContextImpl(Map.of("step", 0));
+      CaseContextImpl replica = new CaseContextImpl(Map.of("step", 0));
       replica.applyDiff(patch1);
       replica.applyDiff(patch2);
 
@@ -359,13 +359,13 @@ class StateContextImplApplyDiffTest {
     @Test
     @DisplayName("signal roundtrip: setPath → diff → applyDiff")
     void signalSetPathRoundtrip() {
-      StateContextImpl original = new StateContextImpl(Map.of("balance", 100));
-      StateContext snapshot = original.snapshot();
+      CaseContextImpl original = new CaseContextImpl(Map.of("balance", 100));
+      CaseContext snapshot = original.snapshot();
 
       original.setPath("payment.amount", 250);
       JsonNode patch = snapshot.diff(original);
 
-      StateContextImpl replica = new StateContextImpl(Map.of("balance", 100));
+      CaseContextImpl replica = new CaseContextImpl(Map.of("balance", 100));
       replica.applyDiff(patch);
 
       assertEquals(100, replica.getInt("balance"));
@@ -382,7 +382,7 @@ class StateContextImplApplyDiffTest {
     @Test
     @DisplayName("should preserve pre-existing fields when adding new ones")
     void preservesExistingOnAdd() throws Exception {
-      StateContextImpl ctx = new StateContextImpl(Map.of("existing", "value"));
+      CaseContextImpl ctx = new CaseContextImpl(Map.of("existing", "value"));
       ctx.applyDiff(patch("[{\"op\":\"add\",\"path\":\"/new\",\"value\":\"field\"}]"));
 
       assertEquals("value", ctx.getString("existing"));
@@ -393,7 +393,7 @@ class StateContextImplApplyDiffTest {
     @DisplayName("should preserve all fields on empty patch")
     void preservesAllOnEmptyPatch() throws Exception {
       Map<String, Object> initial = Map.of("a", "1", "b", 2, "c", true);
-      StateContextImpl ctx = new StateContextImpl(initial);
+      CaseContextImpl ctx = new CaseContextImpl(initial);
       ctx.applyDiff(patch("[]"));
 
       assertEquals("1", ctx.getString("a"));
@@ -411,7 +411,7 @@ class StateContextImplApplyDiffTest {
     @Test
     @DisplayName("should throw when patch references a non-existent path for replace")
     void replaceNonExistentThrows() throws Exception {
-      StateContextImpl ctx = new StateContextImpl();
+      CaseContextImpl ctx = new CaseContextImpl();
       JsonNode badPatch = patch("[{\"op\":\"replace\",\"path\":\"/missing\",\"value\":\"x\"}]");
 
       assertThrows(Exception.class, () -> ctx.applyDiff(badPatch));
@@ -420,7 +420,7 @@ class StateContextImplApplyDiffTest {
     @Test
     @DisplayName("should silently ignore remove of a non-existent path (library is lenient)")
     void removeNonExistentIsIgnored() throws Exception {
-      StateContextImpl ctx = new StateContextImpl(Map.of("existing", "value"));
+      CaseContextImpl ctx = new CaseContextImpl(Map.of("existing", "value"));
       ctx.applyDiff(patch("[{\"op\":\"remove\",\"path\":\"/missing\"}]"));
 
       // context unchanged — library ignores the no-op
@@ -431,7 +431,7 @@ class StateContextImplApplyDiffTest {
     @Test
     @DisplayName("should not mutate context state when patch fails (replace on non-existent)")
     void contextUnchangedOnFailure() throws Exception {
-      StateContextImpl ctx = new StateContextImpl(Map.of("status", "original"));
+      CaseContextImpl ctx = new CaseContextImpl(Map.of("status", "original"));
       JsonNode badPatch = patch("[{\"op\":\"replace\",\"path\":\"/nonexistent\",\"value\":\"x\"}]");
 
       assertThrows(Exception.class, () -> ctx.applyDiff(badPatch));
