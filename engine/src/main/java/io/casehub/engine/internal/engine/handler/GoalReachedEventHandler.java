@@ -20,6 +20,7 @@ import static io.casehub.engine.internal.history.CaseHubEventType.GOAL_REACHED;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.casehub.api.model.CaseCompletion;
 import io.casehub.api.model.CaseDefinition;
+import io.casehub.api.model.CaseStatus;
 import io.casehub.api.model.Goal;
 import io.casehub.api.model.GoalBasedCompletion;
 import io.casehub.api.model.GoalExpression;
@@ -30,7 +31,6 @@ import io.casehub.engine.internal.event.GoalReachedEvent;
 import io.casehub.engine.internal.history.EventLog;
 import io.casehub.engine.internal.history.EventStreamType;
 import io.casehub.engine.internal.model.CaseInstance;
-import io.casehub.engine.internal.model.CaseState;
 import io.quarkus.hibernate.reactive.panache.Panache;
 import io.quarkus.vertx.ConsumeEvent;
 import io.smallrye.mutiny.Uni;
@@ -111,7 +111,7 @@ public class GoalReachedEventHandler {
                 LOG.infof("Case FAILED: caseId=%s", caseInstance.getUuid());
                 eventBus.publish(
                     EventBusAddresses.CASE_STATUS_CHANGED,
-                    new CaseStatusChanged(caseInstance, oldStatus, CaseState.FAILED.name()));
+                    new CaseStatusChanged(caseInstance, oldStatus, CaseStatus.FAULTED.name()));
                 return Uni.createFrom().voidItem();
               }
 
@@ -120,7 +120,7 @@ public class GoalReachedEventHandler {
                 LOG.infof("Case COMPLETED: caseId=%s", caseInstance.getUuid());
                 eventBus.publish(
                     EventBusAddresses.CASE_STATUS_CHANGED,
-                    new CaseStatusChanged(caseInstance, oldStatus, CaseState.COMPLETED.name()));
+                    new CaseStatusChanged(caseInstance, oldStatus, CaseStatus.COMPLETED.name()));
                 return Uni.createFrom().voidItem();
               }
 

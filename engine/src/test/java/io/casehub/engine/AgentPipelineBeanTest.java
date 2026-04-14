@@ -23,8 +23,8 @@ import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+import io.casehub.api.model.CaseStatus;
 import io.casehub.engine.internal.engine.cache.CaseInstanceCache;
-import io.casehub.engine.internal.model.CaseState;
 import io.quarkus.test.InjectMock;
 import io.quarkus.test.junit.QuarkusTest;
 import jakarta.inject.Inject;
@@ -117,7 +117,7 @@ public class AgentPipelineBeanTest {
             () -> {
               var instance = caseInstanceCache.get(ref.get());
               assertNotNull(instance);
-              assertEquals(CaseState.COMPLETED, instance.getState());
+              assertEquals(CaseStatus.COMPLETED, instance.getState());
             });
 
     assertEquals(1, mockServer.getRequestCount());

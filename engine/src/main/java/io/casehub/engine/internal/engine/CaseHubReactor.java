@@ -20,12 +20,12 @@ import static io.casehub.engine.internal.event.EventBusAddresses.SIGNAL_RECEIVED
 
 import io.casehub.api.context.StateContext;
 import io.casehub.api.model.CaseDefinition;
+import io.casehub.api.model.CaseStatus;
 import io.casehub.engine.internal.engine.cache.CaseInstanceCache;
 import io.casehub.engine.internal.event.CaseStartedEvent;
 import io.casehub.engine.internal.event.SignalReceivedEvent;
 import io.casehub.engine.internal.model.CaseInstance;
 import io.casehub.engine.internal.model.CaseMetaModel;
-import io.casehub.engine.internal.model.CaseState;
 import io.smallrye.mutiny.Uni;
 import io.vertx.mutiny.core.eventbus.EventBus;
 import jakarta.enterprise.context.ApplicationScoped;
@@ -68,7 +68,7 @@ class CaseHubReactor {
     instance.setUuid(UUID.randomUUID());
     instance.setCaseMetaModel(model);
     instance.setVersion(0L);
-    instance.setState(CaseState.ACTIVE);
+    instance.setState(CaseStatus.RUNNING);
     instance.setStateContext(context);
 
     caseInstanceCache.put(instance);

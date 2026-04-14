@@ -20,8 +20,8 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 
+import io.casehub.api.model.CaseStatus;
 import io.casehub.engine.internal.engine.cache.CaseInstanceCache;
-import io.casehub.engine.internal.model.CaseState;
 import io.quarkus.test.junit.QuarkusTest;
 import jakarta.inject.Inject;
 import java.util.Map;
@@ -53,8 +53,8 @@ public class MultipleCaseInstancesTest {
 
               assertNotNull(instance1);
               assertNotNull(instance2);
-              assertEquals(CaseState.COMPLETED, instance1.getState());
-              assertEquals(CaseState.COMPLETED, instance2.getState());
+              assertEquals(CaseStatus.COMPLETED, instance1.getState());
+              assertEquals(CaseStatus.COMPLETED, instance2.getState());
 
               assertEquals(
                   instance1.getCaseMetaModel().getId(),
@@ -106,9 +106,9 @@ public class MultipleCaseInstancesTest {
         .atMost(15, TimeUnit.SECONDS)
         .untilAsserted(
             () -> {
-              assertEquals(CaseState.COMPLETED, caseInstanceCache.get(ref1.get()).getState());
-              assertEquals(CaseState.COMPLETED, caseInstanceCache.get(ref2.get()).getState());
-              assertEquals(CaseState.COMPLETED, caseInstanceCache.get(ref3.get()).getState());
+              assertEquals(CaseStatus.COMPLETED, caseInstanceCache.get(ref1.get()).getState());
+              assertEquals(CaseStatus.COMPLETED, caseInstanceCache.get(ref2.get()).getState());
+              assertEquals(CaseStatus.COMPLETED, caseInstanceCache.get(ref3.get()).getState());
             });
 
     Long defId = caseInstanceCache.get(ref1.get()).getCaseMetaModel().getId();
