@@ -23,10 +23,10 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import io.casehub.api.engine.CaseHub;
+import io.casehub.api.model.Binding;
 import io.casehub.api.model.Capability;
-import io.casehub.api.model.CaseHubDefinition;
+import io.casehub.api.model.CaseDefinition;
 import io.casehub.api.model.ContextChangeTrigger;
-import io.casehub.api.model.DispatchRule;
 import io.casehub.api.model.Worker;
 import io.casehub.engine.internal.engine.cache.CaseInstanceCache;
 import io.casehub.engine.internal.engine.recovery.WorkerExecutionRecoveryService;
@@ -279,8 +279,8 @@ public class SignalPersistenceAndDedupTest {
             .build();
 
     @Override
-    public CaseHubDefinition getDefinition() {
-      return CaseHubDefinition.builder()
+    public CaseDefinition getDefinition() {
+      return CaseDefinition.builder()
           .namespace("test-signal-persistence")
           .name("Signal Persistence Test")
           .version("1.0.0")
@@ -298,8 +298,8 @@ public class SignalPersistenceAndDedupTest {
                             "status", "processed", "lastProcessedAmount", amount.intValue());
                       })
                   .build())
-          .rules(
-              DispatchRule.builder()
+          .bindings(
+              Binding.builder()
                   .name("on-payment-received")
                   .capability(paymentCapability)
                   .on(new ContextChangeTrigger(".payment != null"))
