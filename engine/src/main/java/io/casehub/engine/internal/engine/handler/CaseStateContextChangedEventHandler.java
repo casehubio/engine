@@ -15,6 +15,7 @@
  */
 package io.casehub.engine.internal.engine.handler;
 
+import io.casehub.api.engine.LoopControl;
 import io.casehub.api.model.Capability;
 import io.casehub.api.model.CaseHubDefinition;
 import io.casehub.api.model.ContextChangeTrigger;
@@ -53,6 +54,8 @@ public class CaseStateContextChangedEventHandler {
   @Inject CaseDefinitionRegistry caseDefinitionRegistry;
 
   @Inject JQEvaluator jqEvaluator;
+
+  @Inject LoopControl loopControl;
 
   @ConsumeEvent(value = EventBusAddresses.CONTEXT_CHANGED)
   public Uni<Void> onCaseStateContextChangedEventHandler(CaseStateContextChangedEvent event) {
@@ -95,28 +98,34 @@ public class CaseStateContextChangedEventHandler {
 
     List<Worker> workers = definition.getWorkers();
 
-    List<Uni<Void>> unis = new ArrayList<>();
-
+    // Evaluate trigger conditions to find eligible rules
+    List<DispatchRule> eligible = new ArrayList<>();
     for (DispatchRule rule : rules) {
       if (!(rule.getOn() instanceof ContextChangeTrigger cct)) {
         continue;
       }
 
-      String jqExpression = normalizeJqFilter(rule, cct);
-
       ValidationResult matches =
-          jqEvaluator.eval(jqExpression, caseInstance.getStateContext().asJsonNode());
+          jqEvaluator.eval(
+              normalizeJqFilter(rule, cct), caseInstance.getStateContext().asJsonNode());
       if (!matches.ok() || !matches.isTrue()) {
         continue;
       }
 
-      Capability capability = rule.getCapability();
-      if (capability == null) {
+      if (rule.getCapability() == null) {
         LOG.warnf("Capability referenced by rule '%s' is null", rule.getName());
         continue;
       }
 
-      unis.add(publishWorkerSchedules(caseInstance, workers, rule, capability));
+      eligible.add(rule);
+    }
+
+    // LoopControl decides which eligible rules to fire (default: all of them)
+    List<DispatchRule> selected = loopControl.select(caseInstance.getStateContext(), eligible);
+
+    List<Uni<Void>> unis = new ArrayList<>(selected.size());
+    for (DispatchRule rule : selected) {
+      unis.add(publishWorkerSchedules(caseInstance, workers, rule, rule.getCapability()));
     }
 
     if (unis.isEmpty()) {
