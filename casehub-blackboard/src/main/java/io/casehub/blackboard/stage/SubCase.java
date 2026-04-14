@@ -16,6 +16,77 @@
 package io.casehub.blackboard.stage;
 
 import io.casehub.api.plan.PlanElement;
+import io.casehub.blackboard.strategy.DefaultSubCaseCompletionStrategy;
+import io.casehub.blackboard.strategy.SubCaseCompletionStrategy;
+import java.util.Objects;
 
-/** Stub — full implementation in Task 7. */
-public class SubCase implements PlanElement {}
+/** Reference to a child case to spawn as a sub-case PlanItem. */
+public class SubCase implements PlanElement {
+
+  private final String namespace;
+  private final String name;
+  private final String version;
+  private final SubCaseCompletionStrategy completionStrategy;
+
+  private SubCase(Builder b) {
+    this.namespace = b.namespace;
+    this.name = b.name;
+    this.version = b.version;
+    this.completionStrategy = b.completionStrategy;
+  }
+
+  public String getNamespace() {
+    return namespace;
+  }
+
+  public String getName() {
+    return name;
+  }
+
+  public String getVersion() {
+    return version;
+  }
+
+  public SubCaseCompletionStrategy getCompletionStrategy() {
+    return completionStrategy;
+  }
+
+  public static Builder builder() {
+    return new Builder();
+  }
+
+  public static class Builder {
+
+    private String namespace;
+    private String name;
+    private String version;
+    private SubCaseCompletionStrategy completionStrategy = new DefaultSubCaseCompletionStrategy();
+
+    public Builder namespace(String namespace) {
+      this.namespace = namespace;
+      return this;
+    }
+
+    public Builder name(String name) {
+      this.name = name;
+      return this;
+    }
+
+    public Builder version(String version) {
+      this.version = version;
+      return this;
+    }
+
+    public Builder completionStrategy(SubCaseCompletionStrategy strategy) {
+      this.completionStrategy = strategy;
+      return this;
+    }
+
+    public SubCase build() {
+      Objects.requireNonNull(namespace, "namespace must not be null");
+      Objects.requireNonNull(name, "name must not be null");
+      Objects.requireNonNull(version, "version must not be null");
+      return new SubCase(this);
+    }
+  }
+}
