@@ -154,23 +154,28 @@ public class WorkerExecutionRecoveryService {
         .map(
             eventLogs -> {
               StateContext stateContext = new StateContextImpl();
-              for (EventLog eventLog : eventLogs) {
-                Map<String, Object> payload =
-                    OBJECT_MAPPER.convertValue(
-                        eventLog.getPayload() == null
-                            ? OBJECT_MAPPER.createObjectNode()
-                            : eventLog.getPayload(),
-                        Map.class);
+              EventLog caseStartedEvent =
+                  eventLogs.stream()
+                      .filter(eventLog -> eventLog.getEventType() == CaseHubEventType.CASE_STARTED)
+                      .findFirst()
+                      .orElse(null);
 
+              if (caseStartedEvent != null) {
+                stateContext = new StateContextImpl(payloadAsMap(caseStartedEvent.getPayload()));
+              }
+
+              for (EventLog eventLog : eventLogs) {
                 if (eventLog.getEventType() == CaseHubEventType.CASE_STARTED) {
-                  stateContext = new StateContextImpl(payload);
-                } else if (eventLog.getEventType() == CaseHubEventType.SIGNAL_RECEIVED) {
-                  JsonNode patch = eventLog.getPayload();
+                  continue;
+                }
+
+                if (eventLog.getEventType() == CaseHubEventType.SIGNAL_RECEIVED) {
+                  JsonNode patch = payloadAsPatch(eventLog.getPayload());
                   if (patch != null) {
                     stateContext.applyDiff(patch);
                   }
                 } else if (eventLog.getEventType() == CaseHubEventType.WORKER_EXECUTION_COMPLETED) {
-                  stateContext.setAll(payload);
+                  stateContext.setAll(payloadAsMap(eventLog.getPayload()));
                 } else {
                   LOG.warnf(
                       "Unexpected event type in rebuildStateContext: %s", eventLog.getEventType());
@@ -178,6 +183,20 @@ public class WorkerExecutionRecoveryService {
               }
               return stateContext;
             });
+  }
+
+  @SuppressWarnings("unchecked")
+  private Map<String, Object> payloadAsMap(JsonNode payload) {
+    return OBJECT_MAPPER.convertValue(
+        payload == null ? OBJECT_MAPPER.createObjectNode() : payload, Map.class);
+  }
+
+  private JsonNode payloadAsPatch(JsonNode payload) {
+    if (payload == null || payload.isNull()) {
+      return null;
+    }
+    JsonNode patch = payload.get("patch");
+    return patch != null && patch.isArray() ? patch : null;
   }
 
   // TODO fix it

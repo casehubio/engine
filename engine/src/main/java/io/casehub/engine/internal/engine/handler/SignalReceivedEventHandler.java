@@ -18,6 +18,7 @@ package io.casehub.engine.internal.engine.handler;
 import static io.casehub.engine.internal.event.EventBusAddresses.CONTEXT_CHANGED;
 
 import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import io.casehub.api.context.StateContext;
 import io.casehub.engine.internal.engine.cache.CaseInstanceCache;
 import io.casehub.engine.internal.engine.recovery.WorkerExecutionRecoveryService;
@@ -41,6 +42,7 @@ import org.jboss.logging.Logger;
 public class SignalReceivedEventHandler {
 
   private static final Logger LOG = Logger.getLogger(SignalReceivedEventHandler.class);
+  private static final ObjectMapper OBJECT_MAPPER = new ObjectMapper();
 
   @Inject EventBus eventBus;
 
@@ -64,6 +66,7 @@ public class SignalReceivedEventHandler {
     StateContext before = instance.getStateContext().snapshot();
     instance.getStateContext().setPath(event.path(), event.value());
     JsonNode diff = before.diff(instance.getStateContext());
+    JsonNode contextSnapshot = instance.getStateContext().asJsonNode();
 
     if (diff.isEmpty()) {
       LOG.debugf(
@@ -80,7 +83,8 @@ public class SignalReceivedEventHandler {
                   .invoke(
                       () ->
                           eventBus.publish(
-                              CONTEXT_CHANGED, new CaseStateContextChangedEvent(instance)));
+                              CONTEXT_CHANGED,
+                              new CaseStateContextChangedEvent(instance, contextSnapshot)));
             })
         .replaceWithVoid()
         .onFailure()
@@ -99,7 +103,7 @@ public class SignalReceivedEventHandler {
     eventLog.setEventType(CaseHubEventType.SIGNAL_RECEIVED);
     eventLog.setStreamType(EventStreamType.CASE);
     eventLog.setTimestamp(Instant.now());
-    eventLog.setPayload(diff);
+    eventLog.setPayload(OBJECT_MAPPER.createObjectNode().set("patch", diff.deepCopy()));
     return eventLog;
   }
 }
