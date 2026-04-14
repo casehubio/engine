@@ -17,6 +17,11 @@ package io.casehub.engine.internal.engine;
 
 import io.casehub.api.engine.CaseHub;
 import io.casehub.api.model.CaseHubDefinition;
+import io.casehub.api.model.ContextChangeTrigger;
+import io.casehub.api.model.DispatchRule;
+import io.casehub.api.model.Goal;
+import io.casehub.api.model.Milestone;
+import io.casehub.api.model.PredicateBasedCompletion;
 import io.casehub.engine.internal.model.CaseMetaModel;
 import io.casehub.engine.internal.util.ReactiveUtils;
 import io.quarkus.runtime.StartupEvent;
@@ -52,6 +57,8 @@ public class CaseDefinitionRegistry {
 
   @Inject Vertx vertx;
 
+  @Inject ExpressionEngineRegistry expressionEngineRegistry;
+
   // TODO this must be reworked
   void onStart(@Observes @Priority(10) StartupEvent ev) {
     ReactiveUtils.runOnSafeVertxContext(vertx, this::registerKnownDefinitions)
@@ -72,6 +79,13 @@ public class CaseDefinitionRegistry {
   }
 
   private Uni<CaseMetaModel> registerCaseDefinition(CaseHubDefinition model) {
+    try {
+      validateExpressions(model);
+    } catch (IllegalArgumentException e) {
+      LOG.errorf("Case definition '%s' rejected: %s", model.getName(), e.getMessage());
+      return Uni.createFrom().failure(e);
+    }
+
     LOG.info(
         "Registering case: "
             + model.getName()
@@ -117,6 +131,30 @@ public class CaseDefinitionRegistry {
 
   public CaseHubDefinition getCaseDefinition(CaseMetaModel definition) {
     return registry.get(definition);
+  }
+
+  private void validateExpressions(CaseHubDefinition definition) {
+    if (definition.getRules() != null) {
+      for (DispatchRule rule : definition.getRules()) {
+        if (rule.getOn() instanceof ContextChangeTrigger cct) {
+          expressionEngineRegistry.validate(cct.getFilter());
+        }
+        expressionEngineRegistry.validate(rule.getWhen());
+      }
+    }
+    if (definition.getMilestones() != null) {
+      for (Milestone milestone : definition.getMilestones()) {
+        expressionEngineRegistry.validate(milestone.getCondition());
+      }
+    }
+    if (definition.getGoals() != null) {
+      for (Goal goal : definition.getGoals()) {
+        expressionEngineRegistry.validate(goal.getCondition());
+      }
+    }
+    if (definition.getCompletion() instanceof PredicateBasedCompletion pbc) {
+      expressionEngineRegistry.validate(pbc.getDoneWhen());
+    }
   }
 
   public CaseMetaModel getCaseMetaModel(CaseHubDefinition caseDefinition) {

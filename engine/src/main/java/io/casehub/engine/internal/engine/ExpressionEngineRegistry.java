@@ -57,4 +57,26 @@ public class ExpressionEngineRegistry {
     }
     throw new IllegalArgumentException("No ExpressionEngine registered for type '" + type + "'");
   }
+
+  /**
+   * Validates the expression syntax without evaluating it against any context. Blocks case
+   * definition registration if the expression is invalid.
+   *
+   * @param evaluator the expression to validate; no-op if {@code null}
+   * @throws IllegalArgumentException if the expression is syntactically invalid or no engine is
+   *     registered for the evaluator type
+   */
+  public void validate(final ExpressionEvaluator evaluator) {
+    if (evaluator == null) {
+      return;
+    }
+    final String type = evaluator.type();
+    for (ExpressionEngine engine : engines) {
+      if (engine.type().equals(type)) {
+        engine.validate(evaluator);
+        return;
+      }
+    }
+    throw new IllegalArgumentException("No ExpressionEngine registered for type '" + type + "'");
+  }
 }
