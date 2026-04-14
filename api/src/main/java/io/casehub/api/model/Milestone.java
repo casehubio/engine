@@ -19,6 +19,47 @@ import io.casehub.api.model.evaluator.ExpressionEvaluator;
 import io.casehub.api.model.evaluator.JQExpressionEvaluator;
 import java.util.Objects;
 
+/**
+ * A named waypoint that a case passes through on its way to a {@link Goal}.
+ *
+ * <p>Milestones and goals answer different questions:
+ *
+ * <ul>
+ *   <li><b>Milestones</b> — where are we? A milestone marks a point of progress. It has no
+ *       success/failure polarity; it is a neutral checkpoint that the case either has or has not
+ *       reached. You <em>pass</em> milestones.
+ *   <li><b>Goals</b> — what outcome are we trying to achieve? A goal carries {@link GoalKind}
+ *       (SUCCESS or FAILURE) and drives case completion. You <em>achieve</em> goals.
+ * </ul>
+ *
+ * <p>Example — loan application case:
+ *
+ * <pre>{@code
+ * // Milestones: intermediate waypoints
+ * Milestone.builder().name("documents-received").condition(".docsUploaded == true").build()
+ * Milestone.builder().name("credit-check-complete").condition(".creditScore != null").build()
+ * Milestone.builder().name("underwriting-done").condition(".underwritingStatus == \"complete\"").build()
+ *
+ * // Goals: terminal outcomes
+ * Goal.builder().name("loan-approved").condition(".decision == \"approved\"").kind(GoalKind.SUCCESS).build()
+ * Goal.builder().name("loan-rejected").condition(".decision == \"rejected\"").kind(GoalKind.FAILURE).build()
+ * }</pre>
+ *
+ * <h3>Lightweight use</h3>
+ *
+ * <p>By default, when the condition becomes true, a {@code MilestoneReachedEvent} is published on
+ * the event bus and recorded in the {@link io.casehub.engine.internal.history.EventLog} as {@code
+ * MILESTONE_REACHED}. No further tracking occurs. This is sufficient for observability, dashboards,
+ * and audit trails.
+ *
+ * <h3>Lifecycle use (Phase 2 — with {@code CasePlanModel})</h3>
+ *
+ * <p>When a {@code CasePlanModel} is present (the CMMN/Blackboard layer), milestones are promoted
+ * to lifecycle-tracked achievement markers with PENDING → ACHIEVED states. The {@code
+ * MilestoneReachedEvent} triggers the PENDING → ACHIEVED transition, and the achieved state can be
+ * referenced in stage exit criteria and case completion logic. The {@code Milestone} class itself
+ * does not change — the lifecycle tracking is a {@code CasePlanModel} concern.
+ */
 public class Milestone {
 
   private final String name;
