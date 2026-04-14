@@ -24,15 +24,13 @@ import io.casehub.api.model.ContextChangeTrigger;
 import io.casehub.api.model.Goal;
 import io.casehub.api.model.Milestone;
 import io.casehub.api.model.Worker;
-import io.casehub.api.model.evaluator.JQExpressionEvaluator;
 import io.casehub.engine.internal.engine.CaseDefinitionRegistry;
+import io.casehub.engine.internal.engine.ExpressionEngineRegistry;
 import io.casehub.engine.internal.event.CaseStateContextChangedEvent;
 import io.casehub.engine.internal.event.EventBusAddresses;
 import io.casehub.engine.internal.event.GoalReachedEvent;
 import io.casehub.engine.internal.event.MilestoneReachedEvent;
 import io.casehub.engine.internal.event.WorkerScheduleEvent;
-import io.casehub.engine.internal.jq.JQEvaluator;
-import io.casehub.engine.internal.jq.ValidationResult;
 import io.casehub.engine.internal.model.CaseInstance;
 import io.casehub.engine.internal.model.CaseMetaModel;
 import io.casehub.engine.internal.model.CaseState;
@@ -54,7 +52,7 @@ public class CaseStateContextChangedEventHandler {
 
   @Inject CaseDefinitionRegistry caseDefinitionRegistry;
 
-  @Inject JQEvaluator jqEvaluator;
+  @Inject ExpressionEngineRegistry expressionEngineRegistry;
 
   @Inject LoopControl loopControl;
 
@@ -108,8 +106,7 @@ public class CaseStateContextChangedEventHandler {
         continue;
       }
 
-      ValidationResult matches = jqEvaluator.eval(normalizeJqFilter(binding, cct), contextSnapshot);
-      if (!matches.ok() || !matches.isTrue()) {
+      if (!expressionEngineRegistry.evaluate(cct.getFilter(), caseInstance.getStateContext())) {
         continue;
       }
 
@@ -125,8 +122,8 @@ public class CaseStateContextChangedEventHandler {
     List<Binding> selected = loopControl.select(caseInstance.getStateContext(), eligible);
 
     List<Uni<Void>> unis = new ArrayList<>(selected.size());
-    for (Binding binding : selected) {
-      unis.add(publishWorkerSchedules(caseInstance, workers, binding, binding.getCapability()));
+    for (Binding b : selected) {
+      unis.add(publishWorkerSchedules(caseInstance, workers, b, b.getCapability()));
     }
 
     if (unis.isEmpty()) {
@@ -144,12 +141,8 @@ public class CaseStateContextChangedEventHandler {
     }
 
     for (Milestone milestone : milestones) {
-      if (milestone.getCondition() == null) continue;
-      String conditionExpr = ((JQExpressionEvaluator) milestone.getCondition()).expression();
-      if (conditionExpr == null || conditionExpr.isBlank()) continue;
-
-      ValidationResult result = jqEvaluator.eval(conditionExpr, contextSnapshot);
-      if (!result.ok() || !result.isTrue()) continue;
+      if (!expressionEngineRegistry.evaluate(
+          milestone.getCondition(), caseInstance.getStateContext())) continue;
 
       LOG.infof("Milestone '%s' REACHED! Publishing MilestoneReachedEvent", milestone.getName());
 
@@ -168,12 +161,8 @@ public class CaseStateContextChangedEventHandler {
     }
 
     for (Goal goal : goals) {
-      if (goal.getCondition() == null) continue;
-      String conditionExpr = ((JQExpressionEvaluator) goal.getCondition()).expression();
-      if (conditionExpr == null || conditionExpr.isBlank()) continue;
-
-      ValidationResult result = jqEvaluator.eval(conditionExpr, contextSnapshot);
-      if (!result.ok() || !result.isTrue()) continue;
+      if (!expressionEngineRegistry.evaluate(goal.getCondition(), caseInstance.getStateContext()))
+        continue;
 
       LOG.infof("Goal '%s' REACHED! Publishing GoalReachedEvent", goal.getName());
 
@@ -181,19 +170,6 @@ public class CaseStateContextChangedEventHandler {
     }
 
     return Uni.createFrom().voidItem();
-  }
-
-  private String normalizeJqFilter(Binding binding, ContextChangeTrigger cct) {
-    if (cct.getFilter() == null) {
-      LOG.debugf("Rule '%s' has no JQ filter defined, treating as always true", binding.getName());
-      return ".";
-    }
-    String jqExpression = ((JQExpressionEvaluator) cct.getFilter()).expression();
-    if (jqExpression == null || jqExpression.isBlank()) {
-      LOG.debugf("Rule '%s' has no JQ filter defined, treating as always true", binding.getName());
-      return ".";
-    }
-    return jqExpression;
   }
 
   private Uni<Void> publishWorkerSchedules(

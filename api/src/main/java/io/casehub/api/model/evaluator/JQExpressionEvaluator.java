@@ -15,4 +15,12 @@
  */
 package io.casehub.api.model.evaluator;
 
-public record JQExpressionEvaluator(String expression) implements ExpressionEvaluator {}
+public record JQExpressionEvaluator(String expression) implements ExpressionEvaluator {
+
+  public static final String TYPE = "jq";
+
+  @Override
+  public String type() {
+    return TYPE;
+  }
+}
