@@ -59,6 +59,10 @@ public class StateContextImpl implements StateContext {
     this.version = version;
   }
 
+  public StateContextImpl(JsonNode asNode) {
+    this(mapper.convertValue(asNode == null ? mapper.createObjectNode() : asNode, Map.class));
+  }
+
   @JsonAnyGetter
   @Override
   public Map<String, Object> getData() {

@@ -62,13 +62,6 @@ class StateContextImplTest {
       // version stays 0 because the constructor doesn't call set()
       assertEquals(0, ctx.getVersion());
     }
-
-    @Test
-    @DisplayName("null map constructor produces empty context")
-    void nullMapConstructor_empty() {
-      final var ctx = new StateContextImpl(null);
-      assertTrue(ctx.isEmpty());
-    }
   }
 
   // ================================================================== //

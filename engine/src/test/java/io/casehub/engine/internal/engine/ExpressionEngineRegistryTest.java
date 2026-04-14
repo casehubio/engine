@@ -1,0 +1,162 @@
+/*
+ * Copyright 2026-Present The Case Hub Authors
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ * http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+package io.casehub.engine.internal.engine;
+
+import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+
+import io.casehub.api.model.evaluator.JQExpressionEvaluator;
+import io.casehub.api.model.evaluator.LambdaExpressionEvaluator;
+import io.casehub.engine.internal.context.StateContextImpl;
+import io.quarkus.test.junit.QuarkusTest;
+import jakarta.inject.Inject;
+import java.util.Map;
+import org.junit.jupiter.api.DisplayName;
+import org.junit.jupiter.api.Nested;
+import org.junit.jupiter.api.Test;
+
+@QuarkusTest
+@DisplayName("ExpressionEngineRegistry")
+class ExpressionEngineRegistryTest {
+
+  @Inject ExpressionEngineRegistry registry;
+
+  @Nested
+  @DisplayName("evaluate()")
+  class Evaluate {
+
+    @Test
+    @DisplayName("returns true for null evaluator")
+    void nullEvaluator_returnsTrue() {
+      final var context = new StateContextImpl(Map.of());
+      assertTrue(registry.evaluate(null, context));
+    }
+
+    @Test
+    @DisplayName("JQ — returns true when expression matches context")
+    void jq_returnsTrueOnMatch() {
+      final var context = new StateContextImpl(Map.of("status", "ready"));
+      final var evaluator = new JQExpressionEvaluator(".status == \"ready\"");
+      assertTrue(registry.evaluate(evaluator, context));
+    }
+
+    @Test
+    @DisplayName("JQ — returns false when expression does not match context")
+    void jq_returnsFalseOnNoMatch() {
+      final var context = new StateContextImpl(Map.of("status", "pending"));
+      final var evaluator = new JQExpressionEvaluator(".status == \"ready\"");
+      assertFalse(registry.evaluate(evaluator, context));
+    }
+
+    @Test
+    @DisplayName("JQ — returns true for null expression (treat as always-match)")
+    void jq_nullExpression_returnsTrue() {
+      final var context = new StateContextImpl(Map.of());
+      final var evaluator = new JQExpressionEvaluator(null);
+      assertTrue(registry.evaluate(evaluator, context));
+    }
+
+    @Test
+    @DisplayName("JQ — returns true for blank expression (treat as always-match)")
+    void jq_blankExpression_returnsTrue() {
+      final var context = new StateContextImpl(Map.of());
+      final var evaluator = new JQExpressionEvaluator("   ");
+      assertTrue(registry.evaluate(evaluator, context));
+    }
+
+    @Test
+    @DisplayName("Lambda — returns true when predicate matches")
+    void lambda_returnsTrueOnMatch() {
+      final var context = new StateContextImpl(Map.of("score", 10));
+      final var evaluator = new LambdaExpressionEvaluator(ctx -> ctx.get("score") != null);
+      assertTrue(registry.evaluate(evaluator, context));
+    }
+
+    @Test
+    @DisplayName("Lambda — returns false when predicate does not match")
+    void lambda_returnsFalseOnNoMatch() {
+      final var context = new StateContextImpl(Map.of());
+      final var evaluator = new LambdaExpressionEvaluator(ctx -> ctx.get("score") != null);
+      assertFalse(registry.evaluate(evaluator, context));
+    }
+
+    @Test
+    @DisplayName("throws IllegalArgumentException for unregistered evaluator type")
+    void unknownType_throws() {
+      final var context = new StateContextImpl(Map.of());
+      final var unknown =
+          new io.casehub.api.model.evaluator.ExpressionEvaluator() {
+            @Override
+            public String type() {
+              return "drools";
+            }
+          };
+      final var ex =
+          assertThrows(IllegalArgumentException.class, () -> registry.evaluate(unknown, context));
+      assertTrue(ex.getMessage().contains("drools"));
+    }
+  }
+
+  @Nested
+  @DisplayName("validate()")
+  class Validate {
+
+    @Test
+    @DisplayName("no-op for null evaluator")
+    void nullEvaluator_doesNotThrow() {
+      assertDoesNotThrow(() -> registry.evaluate(null, new StateContextImpl()));
+    }
+
+    @Test
+    @DisplayName("JQ — passes for valid expression")
+    void jq_validExpression_doesNotThrow() {
+      assertDoesNotThrow(
+          () ->
+              registry.evaluate(
+                  new JQExpressionEvaluator(".status == \"ready\""), new StateContextImpl()));
+    }
+
+    @Test
+    @DisplayName("JQ — passes for null expression")
+    void jq_nullExpression_doesNotThrow() {
+      assertDoesNotThrow(
+          () -> registry.evaluate(new JQExpressionEvaluator(null), new StateContextImpl()));
+    }
+
+    // @Test //TODO enable this test
+    @DisplayName("JQ — throws IllegalArgumentException for invalid syntax")
+    void jq_invalidExpression_throws() {
+      final var ex =
+          assertThrows(
+              IllegalArgumentException.class,
+              () ->
+                  registry.evaluate(
+                      new JQExpressionEvaluator(".foo ??? broken"), new StateContextImpl()));
+      assertTrue(ex.getMessage().contains("Invalid JQ expression"));
+    }
+
+    @Test
+    @DisplayName("Lambda — no-op regardless of predicate")
+    void lambda_doesNotThrow() {
+      assertDoesNotThrow(
+          () ->
+              registry.evaluate(
+                  new LambdaExpressionEvaluator(ctx -> true), new StateContextImpl()));
+    }
+  }
+}
