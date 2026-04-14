@@ -16,7 +16,7 @@
 package io.casehub.engine.internal.engine;
 
 import io.casehub.api.engine.CaseHubRuntime;
-import io.casehub.api.model.CaseHubDefinition;
+import io.casehub.api.model.CaseDefinition;
 import io.casehub.engine.internal.context.StateContextImpl;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
@@ -30,13 +30,12 @@ class CaseHubRuntimeImpl implements CaseHubRuntime {
   @Inject CaseHubReactor reactor;
 
   @Override
-  public CompletionStage<UUID> startCase(CaseHubDefinition definition) {
+  public CompletionStage<UUID> startCase(CaseDefinition definition) {
     return reactor.startCase(definition, new StateContextImpl());
   }
 
   @Override
-  public CompletionStage<UUID> startCase(
-      CaseHubDefinition definition, Map<String, Object> inputData) {
+  public CompletionStage<UUID> startCase(CaseDefinition definition, Map<String, Object> inputData) {
     return reactor.startCase(definition, new StateContextImpl(inputData));
   }
 

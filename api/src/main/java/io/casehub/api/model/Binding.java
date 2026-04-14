@@ -19,14 +19,14 @@ import io.casehub.api.model.evaluator.ExpressionEvaluator;
 import io.casehub.api.model.evaluator.JQExpressionEvaluator;
 import java.util.Objects;
 
-public class DispatchRule {
+public class Binding {
 
   private final Capability capability;
   private final String name;
   private final Trigger on;
   private ExpressionEvaluator when;
 
-  public DispatchRule(String name, Capability capability, Trigger on) {
+  public Binding(String name, Capability capability, Trigger on) {
     this.name = name;
     this.capability = capability;
     this.on = on;
@@ -90,9 +90,9 @@ public class DispatchRule {
       return this;
     }
 
-    public DispatchRule build() {
-      DispatchRule rule =
-          new DispatchRule(
+    public Binding build() {
+      Binding rule =
+          new Binding(
               Objects.requireNonNull(name),
               Objects.requireNonNull(capability),
               Objects.requireNonNull(on));

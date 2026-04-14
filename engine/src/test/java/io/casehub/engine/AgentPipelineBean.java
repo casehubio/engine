@@ -20,10 +20,10 @@ import static io.serverlessworkflow.fluent.func.dsl.FuncDSL.agent;
 import static io.serverlessworkflow.fluent.func.dsl.FuncDSL.get;
 
 import io.casehub.api.engine.CaseHub;
+import io.casehub.api.model.Binding;
 import io.casehub.api.model.Capability;
-import io.casehub.api.model.CaseHubDefinition;
+import io.casehub.api.model.CaseDefinition;
 import io.casehub.api.model.ContextChangeTrigger;
-import io.casehub.api.model.DispatchRule;
 import io.casehub.api.model.Goal;
 import io.casehub.api.model.GoalExpression;
 import io.casehub.api.model.GoalKind;
@@ -45,7 +45,7 @@ public class AgentPipelineBean extends CaseHub {
   }
 
   @Override
-  public CaseHubDefinition getDefinition() {
+  public CaseDefinition getDefinition() {
 
     // --- Capabilities ---
 
@@ -81,7 +81,7 @@ public class AgentPipelineBean extends CaseHub {
             .description("Document review is complete with sentiment and summary")
             .build();
 
-    return CaseHubDefinition.builder()
+    return CaseDefinition.builder()
         .namespace("test")
         .name("Agent Document Review Pipeline")
         .version("1.0.0")
@@ -124,18 +124,18 @@ public class AgentPipelineBean extends CaseHub {
                         .build())
                 .description("Summarizes document content via LLM")
                 .build())
-        .rules(
-            DispatchRule.builder()
+        .bindings(
+            Binding.builder()
                 .name("trigger-on-submitted")
                 .capability(fetchCap)
                 .on(new ContextChangeTrigger(".step == \"submitted\""))
                 .build(),
-            DispatchRule.builder()
+            Binding.builder()
                 .name("trigger-on-fetched")
                 .capability(sentimentCap)
                 .on(new ContextChangeTrigger(".step == \"fetched\""))
                 .build(),
-            DispatchRule.builder()
+            Binding.builder()
                 .name("trigger-on-analyzed")
                 .capability(summaryCap)
                 .on(new ContextChangeTrigger(".step == \"analyzed\""))

@@ -19,6 +19,40 @@ import io.casehub.api.model.evaluator.ExpressionEvaluator;
 import io.casehub.api.model.evaluator.JQExpressionEvaluator;
 import java.util.Objects;
 
+/**
+ * A named outcome that a case is trying to achieve, with success or failure polarity.
+ *
+ * <p>Milestones and goals answer different questions:
+ *
+ * <ul>
+ *   <li><b>Goals</b> — what outcome are we trying to achieve? A goal carries {@link GoalKind}
+ *       (SUCCESS or FAILURE) and drives case completion via {@link
+ *       io.casehub.api.model.GoalBasedCompletion}. You <em>achieve</em> goals.
+ *   <li><b>Milestones</b> — where are we? A milestone marks a neutral point of progress on the way
+ *       to a goal. It has no success/failure polarity. You <em>pass</em> milestones.
+ * </ul>
+ *
+ * <p>Example — loan application case:
+ *
+ * <pre>{@code
+ * // Milestones: intermediate waypoints (no polarity)
+ * Milestone.builder().name("documents-received").condition(".docsUploaded == true").build()
+ * Milestone.builder().name("credit-check-complete").condition(".creditScore != null").build()
+ *
+ * // Goals: terminal outcomes (SUCCESS or FAILURE)
+ * Goal.builder().name("loan-approved").condition(".decision == \"approved\"").kind(GoalKind.SUCCESS).build()
+ * Goal.builder().name("loan-rejected").condition(".decision == \"rejected\"").kind(GoalKind.FAILURE).build()
+ * }</pre>
+ *
+ * <p>When a goal's condition becomes true, a {@code GoalReachedEvent} is published and recorded in
+ * the {@link io.casehub.engine.internal.history.EventLog}. If the goal is referenced by a {@link
+ * io.casehub.api.model.GoalBasedCompletion}, the engine evaluates whether the case should
+ * transition to COMPLETED or FAILED.
+ *
+ * <p>Non-terminal goals — goals not referenced in completion logic — behave as observable
+ * checkpoints with polarity. Use {@link Milestone} instead when the checkpoint has no
+ * success/failure meaning.
+ */
 public class Goal {
 
   private final String name;

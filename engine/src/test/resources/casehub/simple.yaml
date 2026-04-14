@@ -21,7 +21,7 @@ spec:
                 id: ${ .documentId }
                 content: ${ "Processed content for document " + .documentId }
               status: processed
-  rules:
+  bindings:
     - name: trigger-on-processing-status
       capability: processDocument
       on:

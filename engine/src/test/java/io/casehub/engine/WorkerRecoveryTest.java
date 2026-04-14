@@ -20,7 +20,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.casehub.api.engine.CaseHub;
 import io.casehub.api.model.Capability;
-import io.casehub.api.model.CaseHubDefinition;
+import io.casehub.api.model.CaseDefinition;
 import io.casehub.api.model.Worker;
 import io.casehub.engine.internal.engine.cache.CaseInstanceCache;
 import io.casehub.engine.internal.engine.recovery.WorkerExecutionRecoveryService;
@@ -124,8 +124,8 @@ public class WorkerRecoveryTest {
             .build();
 
     @Override
-    public CaseHubDefinition getDefinition() {
-      return CaseHubDefinition.builder()
+    public CaseDefinition getDefinition() {
+      return CaseDefinition.builder()
           .namespace("test-worker-recovery")
           .name("Worker Recovery Test")
           .version("1.0.0")

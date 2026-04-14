@@ -20,7 +20,7 @@ import static org.quartz.TriggerBuilder.newTrigger;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import io.casehub.api.model.CaseHubDefinition;
+import io.casehub.api.model.CaseDefinition;
 import io.casehub.api.model.ExecutionPolicy;
 import io.casehub.api.model.RetryPolicy;
 import io.casehub.api.model.Worker;
@@ -191,11 +191,11 @@ public class WorkerExecutionJobListener implements JobListener {
   }
 
   private RetryPolicy resolveRetryPolicy(String jobName, CaseInstance instance, String workerId) {
-    CaseHubDefinition definition =
+    CaseDefinition definition =
         caseDefinitionRegistry.getCaseDefinition(instance.getCaseMetaModel());
     if (definition == null) {
-      LOG.errorf("Cannot reschedule job %s: CaseHubDefinition not found", jobName);
-      throw new RuntimeException("CaseHubDefinition not found for caseId=" + instance.getUuid());
+      LOG.errorf("Cannot reschedule job %s: CaseDefinition not found", jobName);
+      throw new RuntimeException("CaseDefinition not found for caseId=" + instance.getUuid());
     }
 
     Worker worker =
