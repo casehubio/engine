@@ -83,6 +83,7 @@
         <module>codegen</module>
         <module>schema</module>
         <module>engine</module>
+        <module>casehub-blackboard</module>
     </modules>
 
     <dependencyManagement>
