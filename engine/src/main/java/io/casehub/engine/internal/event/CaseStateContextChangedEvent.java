@@ -15,13 +15,16 @@
  */
 package io.casehub.engine.internal.event;
 
+import com.fasterxml.jackson.databind.JsonNode;
 import io.casehub.engine.internal.model.CaseInstance;
 import java.util.Objects;
 
-public record CaseStateContextChangedEvent(CaseInstance instance) {
+public record CaseStateContextChangedEvent(CaseInstance instance, JsonNode contextSnapshot) {
 
-  public CaseStateContextChangedEvent(CaseInstance instance) {
-    this.instance = Objects.requireNonNull(instance, "instance cannot be null");
+  public CaseStateContextChangedEvent {
+    instance = Objects.requireNonNull(instance, "instance cannot be null");
+    contextSnapshot =
+        Objects.requireNonNull(contextSnapshot, "contextSnapshot cannot be null").deepCopy();
   }
 
   @Override
@@ -29,7 +32,8 @@ public record CaseStateContextChangedEvent(CaseInstance instance) {
     if (this == o) return true;
     if (o == null || getClass() != o.getClass()) return false;
     CaseStateContextChangedEvent that = (CaseStateContextChangedEvent) o;
-    return Objects.equals(instance, that.instance);
+    return Objects.equals(instance, that.instance)
+        && Objects.equals(contextSnapshot, that.contextSnapshot);
   }
 
   @Override
