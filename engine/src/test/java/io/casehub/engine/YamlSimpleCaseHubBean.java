@@ -99,7 +99,7 @@ public class YamlSimpleCaseHubBean extends CaseHub {
                   new JQExpressionEvaluator(sr.getOn().getContextChange().getFilter()));
         }
         Binding rule = new Binding(sr.getName(), cap, trigger);
-        def.getRules().add(rule);
+        def.getBindings().add(rule);
       }
     }
 

@@ -88,8 +88,8 @@ public class CaseStateContextChangedEventHandler {
   }
 
   private Uni<Void> rules(CaseInstance caseInstance, CaseDefinition definition) {
-    List<Binding> rules = definition.getRules();
-    if (rules == null || rules.isEmpty()) {
+    List<Binding> bindings = definition.getBindings();
+    if (bindings == null || bindings.isEmpty()) {
       return Uni.createFrom().voidItem();
     }
 
@@ -97,7 +97,7 @@ public class CaseStateContextChangedEventHandler {
 
     List<Uni<Void>> unis = new ArrayList<>();
 
-    for (Binding rule : rules) {
+    for (Binding rule : bindings) {
       if (!(rule.getOn() instanceof ContextChangeTrigger cct)) {
         continue;
       }

@@ -63,11 +63,11 @@ public class YamlSimpleCaseHubBeanTest {
     assertInstanceOf(Workflow.class, def.getWorkers().get(0).getFunction().getValue());
 
     // rules
-    assertEquals(1, def.getRules().size());
-    assertEquals("trigger-on-processing-status", def.getRules().get(0).getName());
-    assertEquals("processDocument", def.getRules().get(0).getCapability().getName());
-    assertInstanceOf(ContextChangeTrigger.class, def.getRules().get(0).getOn());
-    ContextChangeTrigger cct = (ContextChangeTrigger) def.getRules().get(0).getOn();
+    assertEquals(1, def.getBindings().size());
+    assertEquals("trigger-on-processing-status", def.getBindings().get(0).getName());
+    assertEquals("processDocument", def.getBindings().get(0).getCapability().getName());
+    assertInstanceOf(ContextChangeTrigger.class, def.getBindings().get(0).getOn());
+    ContextChangeTrigger cct = (ContextChangeTrigger) def.getBindings().get(0).getOn();
     assertEquals(
         ".status == \"processing\"", ((JQExpressionEvaluator) cct.getFilter()).expression());
 

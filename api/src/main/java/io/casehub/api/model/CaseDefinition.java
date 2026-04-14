@@ -30,7 +30,7 @@ public class CaseDefinition {
   private String summary;
   private final List<Capability> capabilities;
   private final List<Worker> workers;
-  private final List<Binding> rules;
+  private final List<Binding> bindings;
   private final List<Milestone> milestones;
   private final List<Goal> goals;
   private CaseCompletion completion;
@@ -40,7 +40,7 @@ public class CaseDefinition {
     this.name = name;
     this.version = version;
     this.capabilities = new ArrayList<>();
-    this.rules = new ArrayList<>();
+    this.bindings = new ArrayList<>();
     this.milestones = new ArrayList<>();
     this.goals = new ArrayList<>();
     this.workers = new ArrayList<>();
@@ -90,8 +90,8 @@ public class CaseDefinition {
     return workers;
   }
 
-  public List<Binding> getRules() {
-    return rules;
+  public List<Binding> getBindings() {
+    return bindings;
   }
 
   public List<Milestone> getMilestones() {
@@ -123,7 +123,7 @@ public class CaseDefinition {
     private String summary;
     private List<Capability> capabilities;
     private List<Worker> workers;
-    private List<Binding> rules;
+    private List<Binding> bindings;
     private List<Milestone> milestones;
     private List<Goal> goals;
     private CaseCompletion completion;
@@ -175,13 +175,13 @@ public class CaseDefinition {
       return this;
     }
 
-    public Builder rules(List<Binding> rules) {
-      this.rules = rules;
+    public Builder bindings(List<Binding> bindings) {
+      this.bindings = bindings;
       return this;
     }
 
-    public Builder rules(Binding... rules) {
-      this.rules = List.of(rules);
+    public Builder bindings(Binding... bindings) {
+      this.bindings = List.of(bindings);
       return this;
     }
 
@@ -233,8 +233,8 @@ public class CaseDefinition {
       if (workers != null) {
         caseHubDefinition.workers.addAll(workers);
       }
-      if (rules != null) {
-        caseHubDefinition.rules.addAll(rules);
+      if (bindings != null) {
+        caseHubDefinition.bindings.addAll(bindings);
       }
       if (milestones != null) {
         caseHubDefinition.milestones.addAll(milestones);

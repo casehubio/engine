@@ -142,7 +142,7 @@ public class MultiWorkerPipelineBean extends CaseHub {
                         .build())
                 .description("Publishes enriched documents")
                 .build())
-        .rules(
+        .bindings(
             Binding.builder()
                 .name("trigger-on-received")
                 .capability(validateCap)

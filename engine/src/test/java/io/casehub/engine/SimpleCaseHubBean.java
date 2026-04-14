@@ -90,7 +90,7 @@ public class SimpleCaseHubBean extends CaseHub {
                         .build())
                 .description("Processes documents and updates case context")
                 .build())
-        .rules(
+        .bindings(
             Binding.builder()
                 .name("trigger-on-processing-status")
                 .capability(capability)

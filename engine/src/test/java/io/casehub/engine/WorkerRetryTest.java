@@ -140,7 +140,7 @@ public class WorkerRetryTest {
                   .executionPolicy(new ExecutionPolicy(60000, new RetryPolicy(3, 1000)))
                   .description("Processes documents and updates case context")
                   .build())
-          .rules(
+          .bindings(
               Binding.builder()
                   .name("trigger-on-processing-status")
                   .capability(capability)

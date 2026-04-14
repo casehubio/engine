@@ -229,7 +229,7 @@ public class SignalTest {
                         return Map.of("status", "paid");
                       })
                   .build())
-          .rules(
+          .bindings(
               Binding.builder()
                   .name("on-payment-received")
                   .capability(paymentCapability)
@@ -298,7 +298,7 @@ public class SignalTest {
                         return Map.of("documentProcessed", true);
                       })
                   .build())
-          .rules(
+          .bindings(
               Binding.builder()
                   .name("on-payment-approved")
                   .capability(paymentCapability)

@@ -124,7 +124,7 @@ public class AgentPipelineBean extends CaseHub {
                         .build())
                 .description("Summarizes document content via LLM")
                 .build())
-        .rules(
+        .bindings(
             Binding.builder()
                 .name("trigger-on-submitted")
                 .capability(fetchCap)
