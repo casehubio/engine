@@ -15,6 +15,7 @@
  */
 package io.casehub.engine.internal.engine.handler;
 
+import io.casehub.api.context.StateContext;
 import io.casehub.api.model.Capability;
 import io.casehub.api.model.CaseHubDefinition;
 import io.casehub.api.model.ContextChangeTrigger;
@@ -22,7 +23,9 @@ import io.casehub.api.model.DispatchRule;
 import io.casehub.api.model.Goal;
 import io.casehub.api.model.Milestone;
 import io.casehub.api.model.Worker;
+import io.casehub.api.model.evaluator.ExpressionEvaluator;
 import io.casehub.api.model.evaluator.JQExpressionEvaluator;
+import io.casehub.api.model.evaluator.LambdaExpressionEvaluator;
 import io.casehub.engine.internal.engine.CaseDefinitionRegistry;
 import io.casehub.engine.internal.event.CaseStateContextChangedEvent;
 import io.casehub.engine.internal.event.EventBusAddresses;
@@ -102,11 +105,7 @@ public class CaseStateContextChangedEventHandler {
         continue;
       }
 
-      String jqExpression = normalizeJqFilter(rule, cct);
-
-      ValidationResult matches =
-          jqEvaluator.eval(jqExpression, caseInstance.getStateContext().asJsonNode());
-      if (!matches.ok() || !matches.isTrue()) {
+      if (!evaluateFilter(cct.getFilter(), caseInstance.getStateContext())) {
         continue;
       }
 
@@ -133,13 +132,7 @@ public class CaseStateContextChangedEventHandler {
     }
 
     for (Milestone milestone : milestones) {
-      if (milestone.getCondition() == null) continue;
-      String conditionExpr = ((JQExpressionEvaluator) milestone.getCondition()).expression();
-      if (conditionExpr == null || conditionExpr.isBlank()) continue;
-
-      ValidationResult result =
-          jqEvaluator.eval(conditionExpr, caseInstance.getStateContext().asJsonNode());
-      if (!result.ok() || !result.isTrue()) continue;
+      if (!evaluateFilter(milestone.getCondition(), caseInstance.getStateContext())) continue;
 
       LOG.infof("Milestone '%s' REACHED! Publishing MilestoneReachedEvent", milestone.getName());
 
@@ -157,13 +150,7 @@ public class CaseStateContextChangedEventHandler {
     }
 
     for (Goal goal : goals) {
-      if (goal.getCondition() == null) continue;
-      String conditionExpr = ((JQExpressionEvaluator) goal.getCondition()).expression();
-      if (conditionExpr == null || conditionExpr.isBlank()) continue;
-
-      ValidationResult result =
-          jqEvaluator.eval(conditionExpr, caseInstance.getStateContext().asJsonNode());
-      if (!result.ok() || !result.isTrue()) continue;
+      if (!evaluateFilter(goal.getCondition(), caseInstance.getStateContext())) continue;
 
       LOG.infof("Goal '%s' REACHED! Publishing GoalReachedEvent", goal.getName());
 
@@ -173,17 +160,19 @@ public class CaseStateContextChangedEventHandler {
     return Uni.createFrom().voidItem();
   }
 
-  private String normalizeJqFilter(DispatchRule rule, ContextChangeTrigger cct) {
-    if (cct.getFilter() == null) {
-      LOG.debugf("Rule '%s' has no JQ filter defined, treating as always true", rule.getName());
-      return ".";
+  private boolean evaluateFilter(ExpressionEvaluator evaluator, StateContext context) {
+    if (evaluator == null) return true;
+    if (evaluator instanceof JQExpressionEvaluator jq) {
+      String expr = jq.expression();
+      if (expr == null || expr.isBlank()) return true;
+      ValidationResult result = jqEvaluator.eval(expr, context.asJsonNode());
+      return result.ok() && result.isTrue();
     }
-    String jqExpression = ((JQExpressionEvaluator) cct.getFilter()).expression();
-    if (jqExpression == null || jqExpression.isBlank()) {
-      LOG.debugf("Rule '%s' has no JQ filter defined, treating as always true", rule.getName());
-      return ".";
+    if (evaluator instanceof LambdaExpressionEvaluator lambda) {
+      return lambda.test(context);
     }
-    return jqExpression;
+    LOG.warnf("Unknown ExpressionEvaluator type: %s", evaluator.getClass().getSimpleName());
+    return false;
   }
 
   private Uni<Void> publishWorkerSchedules(
