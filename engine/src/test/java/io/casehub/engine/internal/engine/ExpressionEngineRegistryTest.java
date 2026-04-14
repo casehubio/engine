@@ -22,7 +22,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import io.casehub.api.model.evaluator.JQExpressionEvaluator;
 import io.casehub.api.model.evaluator.LambdaExpressionEvaluator;
-import io.casehub.engine.internal.context.StateContextImpl;
+import io.casehub.engine.internal.context.CaseContextImpl;
 import io.quarkus.test.junit.QuarkusTest;
 import jakarta.inject.Inject;
 import java.util.Map;
@@ -43,14 +43,14 @@ class ExpressionEngineRegistryTest {
     @Test
     @DisplayName("returns true for null evaluator")
     void nullEvaluator_returnsTrue() {
-      final var context = new StateContextImpl(Map.of());
+      final var context = new CaseContextImpl(Map.of());
       assertTrue(registry.evaluate(null, context));
     }
 
     @Test
     @DisplayName("JQ — returns true when expression matches context")
     void jq_returnsTrueOnMatch() {
-      final var context = new StateContextImpl(Map.of("status", "ready"));
+      final var context = new CaseContextImpl(Map.of("status", "ready"));
       final var evaluator = new JQExpressionEvaluator(".status == \"ready\"");
       assertTrue(registry.evaluate(evaluator, context));
     }
@@ -58,7 +58,7 @@ class ExpressionEngineRegistryTest {
     @Test
     @DisplayName("JQ — returns false when expression does not match context")
     void jq_returnsFalseOnNoMatch() {
-      final var context = new StateContextImpl(Map.of("status", "pending"));
+      final var context = new CaseContextImpl(Map.of("status", "pending"));
       final var evaluator = new JQExpressionEvaluator(".status == \"ready\"");
       assertFalse(registry.evaluate(evaluator, context));
     }
@@ -66,7 +66,7 @@ class ExpressionEngineRegistryTest {
     @Test
     @DisplayName("JQ — returns true for null expression (treat as always-match)")
     void jq_nullExpression_returnsTrue() {
-      final var context = new StateContextImpl(Map.of());
+      final var context = new CaseContextImpl(Map.of());
       final var evaluator = new JQExpressionEvaluator(null);
       assertTrue(registry.evaluate(evaluator, context));
     }
@@ -74,7 +74,7 @@ class ExpressionEngineRegistryTest {
     @Test
     @DisplayName("JQ — returns true for blank expression (treat as always-match)")
     void jq_blankExpression_returnsTrue() {
-      final var context = new StateContextImpl(Map.of());
+      final var context = new CaseContextImpl(Map.of());
       final var evaluator = new JQExpressionEvaluator("   ");
       assertTrue(registry.evaluate(evaluator, context));
     }
@@ -82,7 +82,7 @@ class ExpressionEngineRegistryTest {
     @Test
     @DisplayName("Lambda — returns true when predicate matches")
     void lambda_returnsTrueOnMatch() {
-      final var context = new StateContextImpl(Map.of("score", 10));
+      final var context = new CaseContextImpl(Map.of("score", 10));
       final var evaluator = new LambdaExpressionEvaluator(ctx -> ctx.get("score") != null);
       assertTrue(registry.evaluate(evaluator, context));
     }
@@ -90,7 +90,7 @@ class ExpressionEngineRegistryTest {
     @Test
     @DisplayName("Lambda — returns false when predicate does not match")
     void lambda_returnsFalseOnNoMatch() {
-      final var context = new StateContextImpl(Map.of());
+      final var context = new CaseContextImpl(Map.of());
       final var evaluator = new LambdaExpressionEvaluator(ctx -> ctx.get("score") != null);
       assertFalse(registry.evaluate(evaluator, context));
     }
@@ -98,7 +98,7 @@ class ExpressionEngineRegistryTest {
     @Test
     @DisplayName("throws IllegalArgumentException for unregistered evaluator type")
     void unknownType_throws() {
-      final var context = new StateContextImpl(Map.of());
+      final var context = new CaseContextImpl(Map.of());
       final var unknown =
           new io.casehub.api.model.evaluator.ExpressionEvaluator() {
             @Override

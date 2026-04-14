@@ -16,10 +16,10 @@
 package io.casehub.engine.internal.engine;
 
 import com.fasterxml.jackson.databind.JsonNode;
-import io.casehub.api.context.StateContext;
+import io.casehub.api.context.CaseContext;
 import io.casehub.api.engine.ExpressionEngine;
 import io.casehub.api.model.evaluator.ExpressionEvaluator;
-import io.casehub.engine.internal.context.StateContextImpl;
+import io.casehub.engine.internal.context.CaseContextImpl;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.enterprise.inject.Instance;
 import jakarta.inject.Inject;
@@ -47,7 +47,7 @@ public class ExpressionEngineRegistry {
    * @return {@code true} if the expression matches or is absent
    * @throws IllegalArgumentException if no engine is registered for the evaluator type
    */
-  public boolean evaluate(final ExpressionEvaluator evaluator, final StateContext context) {
+  public boolean evaluate(final ExpressionEvaluator evaluator, final CaseContext context) {
     if (evaluator == null) {
       return true;
     }
@@ -62,7 +62,7 @@ public class ExpressionEngineRegistry {
 
   // TODO do not use JsonNode
   public boolean evaluate(final ExpressionEvaluator evaluator, final JsonNode asNode) {
-    return evaluate(evaluator, new StateContextImpl(asNode));
+    return evaluate(evaluator, new CaseContextImpl(asNode));
   }
 
   /**

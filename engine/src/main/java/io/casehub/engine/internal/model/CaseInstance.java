@@ -15,7 +15,7 @@
  */
 package io.casehub.engine.internal.model;
 
-import io.casehub.api.context.StateContext;
+import io.casehub.api.context.CaseContext;
 import io.casehub.api.model.CaseStatus;
 import io.quarkus.hibernate.reactive.panache.PanacheEntity;
 import jakarta.persistence.Column;
@@ -38,10 +38,10 @@ public class CaseInstance extends PanacheEntity {
   @Column(name = "uuid", nullable = false, unique = true, updatable = false)
   private UUID uuid;
 
-  // TODO sync version with stateContext version
+  // TODO sync version with caseContext version
   @Transient private long version = 0L;
 
-  @Transient private StateContext stateContext;
+  @Transient private CaseContext caseContext;
 
   @Enumerated(EnumType.STRING)
   private CaseStatus state;
@@ -70,12 +70,12 @@ public class CaseInstance extends PanacheEntity {
     this.version = version;
   }
 
-  public StateContext getStateContext() {
-    return stateContext;
+  public CaseContext getCaseContext() {
+    return caseContext;
   }
 
-  public void setStateContext(StateContext stateContext) {
-    this.stateContext = stateContext;
+  public void setCaseContext(CaseContext caseContext) {
+    this.caseContext = caseContext;
   }
 
   public CaseStatus getState() {

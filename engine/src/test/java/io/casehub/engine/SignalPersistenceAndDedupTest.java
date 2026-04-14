@@ -202,10 +202,10 @@ public class SignalPersistenceAndDedupTest {
         recoveryService.loadOrRestoreCaseInstance(caseId).await().atMost(DB_TIMEOUT);
 
     assertNotNull(restored);
-    assertEquals(420, ((Number) restored.getStateContext().getPath("payment.amount")).intValue());
-    assertEquals("CAD", restored.getStateContext().getPathAsString("payment.currency"));
-    assertEquals("processed", restored.getStateContext().getPathAsString("status"));
-    assertEquals(420, ((Number) restored.getStateContext().get("lastProcessedAmount")).intValue());
+    assertEquals(420, ((Number) restored.getCaseContext().getPath("payment.amount")).intValue());
+    assertEquals("CAD", restored.getCaseContext().getPathAsString("payment.currency"));
+    assertEquals("processed", restored.getCaseContext().getPathAsString("status"));
+    assertEquals(420, ((Number) restored.getCaseContext().get("lastProcessedAmount")).intValue());
   }
 
   private EventLog latestEvent(UUID caseId, CaseHubEventType eventType) {

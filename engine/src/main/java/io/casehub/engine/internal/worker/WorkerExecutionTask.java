@@ -21,7 +21,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import io.casehub.api.model.Capability;
 import io.casehub.api.model.CaseDefinition;
 import io.casehub.api.model.Worker;
-import io.casehub.engine.internal.context.StateContextImpl;
+import io.casehub.engine.internal.context.CaseContextImpl;
 import io.casehub.engine.internal.engine.CaseDefinitionRegistry;
 import io.casehub.engine.internal.engine.recovery.WorkerExecutionRecoveryService;
 import io.casehub.engine.internal.event.WorkflowExecutionCompleted;
@@ -136,7 +136,7 @@ public class WorkerExecutionTask implements Job {
     }
 
     Map<String, Object> toContextOutputData =
-        new StateContextImpl(outputData).evalObjectTemplate(capability.getOutputSchema());
+        new CaseContextImpl(outputData).evalObjectTemplate(capability.getOutputSchema());
 
     WorkflowExecutionCompleted event =
         new WorkflowExecutionCompleted(instance, worker, inputDataHash, toContextOutputData);

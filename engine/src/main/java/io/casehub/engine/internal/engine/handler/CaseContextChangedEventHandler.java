@@ -27,7 +27,7 @@ import io.casehub.api.model.Milestone;
 import io.casehub.api.model.Worker;
 import io.casehub.engine.internal.engine.CaseDefinitionRegistry;
 import io.casehub.engine.internal.engine.ExpressionEngineRegistry;
-import io.casehub.engine.internal.event.CaseStateContextChangedEvent;
+import io.casehub.engine.internal.event.CaseContextChangedEvent;
 import io.casehub.engine.internal.event.EventBusAddresses;
 import io.casehub.engine.internal.event.GoalReachedEvent;
 import io.casehub.engine.internal.event.MilestoneReachedEvent;
@@ -44,7 +44,7 @@ import java.util.List;
 import org.jboss.logging.Logger;
 
 @ApplicationScoped
-public class CaseStateContextChangedEventHandler {
+public class CaseContextChangedEventHandler {
 
   private static final Logger LOG = Logger.getLogger(CaseStateContextChangedEventHandler.class);
 
@@ -57,7 +57,7 @@ public class CaseStateContextChangedEventHandler {
   @Inject LoopControl loopControl;
 
   @ConsumeEvent(value = EventBusAddresses.CONTEXT_CHANGED)
-  public Uni<Void> onCaseStateContextChangedEventHandler(CaseStateContextChangedEvent event) {
+  public Uni<Void> onCaseStateContextChangedEventHandler(CaseContextChangedEvent event) {
     CaseInstance caseInstance = event.instance();
     JsonNode contextSnapshot = event.contextSnapshot();
     if (!caseInstance.getState().equals(CaseStatus.RUNNING)) {
@@ -119,7 +119,7 @@ public class CaseStateContextChangedEventHandler {
     }
 
     // LoopControl decides which eligible rules to fire (default: all of them)
-    List<Binding> selected = loopControl.select(caseInstance.getStateContext(), eligible);
+    List<Binding> selected = loopControl.select(caseInstance.getCaseContext(), eligible);
 
     List<Uni<Void>> unis = new ArrayList<>(selected.size());
     for (Binding b : selected) {
@@ -142,7 +142,7 @@ public class CaseStateContextChangedEventHandler {
 
     for (Milestone milestone : milestones) {
       if (!expressionEngineRegistry.evaluate(
-          milestone.getCondition(), caseInstance.getStateContext())) continue;
+          milestone.getCondition(), caseInstance.getCaseContext())) continue;
 
       LOG.infof("Milestone '%s' REACHED! Publishing MilestoneReachedEvent", milestone.getName());
 
@@ -161,7 +161,7 @@ public class CaseStateContextChangedEventHandler {
     }
 
     for (Goal goal : goals) {
-      if (!expressionEngineRegistry.evaluate(goal.getCondition(), caseInstance.getStateContext()))
+      if (!expressionEngineRegistry.evaluate(goal.getCondition(), caseInstance.getCaseContext()))
         continue;
 
       LOG.infof("Goal '%s' REACHED! Publishing GoalReachedEvent", goal.getName());

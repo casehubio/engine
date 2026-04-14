@@ -15,7 +15,7 @@
  */
 package io.casehub.api.model.evaluator;
 
-import io.casehub.api.context.StateContext;
+import io.casehub.api.context.CaseContext;
 import java.util.function.Predicate;
 
 /**
@@ -28,9 +28,9 @@ public final class LambdaExpressionEvaluator implements ExpressionEvaluator {
 
   public static final String TYPE = "lambda";
 
-  private final Predicate<StateContext> predicate;
+  private final Predicate<CaseContext> predicate;
 
-  public LambdaExpressionEvaluator(final Predicate<StateContext> predicate) {
+  public LambdaExpressionEvaluator(final Predicate<CaseContext> predicate) {
     this.predicate = predicate;
   }
 
@@ -39,7 +39,7 @@ public final class LambdaExpressionEvaluator implements ExpressionEvaluator {
     return TYPE;
   }
 
-  public boolean test(final StateContext context) {
+  public boolean test(final CaseContext context) {
     return predicate.test(context);
   }
 }

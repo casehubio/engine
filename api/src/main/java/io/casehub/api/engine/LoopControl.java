@@ -15,7 +15,7 @@
  */
 package io.casehub.api.engine;
 
-import io.casehub.api.context.StateContext;
+import io.casehub.api.context.CaseContext;
 import io.casehub.api.model.Binding;
 import java.util.List;
 
@@ -38,5 +38,5 @@ public interface LoopControl {
    * @param eligible rules whose trigger conditions matched — may be empty, never null
    * @return the subset to fire; may be empty, may be the full list, must not be null
    */
-  List<Binding> select(StateContext context, List<Binding> eligible);
+  List<Binding> select(CaseContext context, List<Binding> eligible);
 }

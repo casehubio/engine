@@ -18,7 +18,7 @@ package io.casehub.engine.internal.engine.handler;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.casehub.api.model.Worker;
-import io.casehub.engine.internal.event.CaseStateContextChangedEvent;
+import io.casehub.engine.internal.event.CaseContextChangedEvent;
 import io.casehub.engine.internal.event.EventBusAddresses;
 import io.casehub.engine.internal.event.WorkflowExecutionCompleted;
 import io.casehub.engine.internal.history.CaseHubEventType;
@@ -55,15 +55,15 @@ public class WorkflowExecutionCompletedHandler {
         buildEventLog(caseInstance, worker, rawOutput, event.idempotency(), now);
     return Panache.withTransaction(
             () -> {
-              caseInstance.getStateContext().setAll(rawOutput);
-              JsonNode contextSnapshot = caseInstance.getStateContext().asJsonNode();
+              caseInstance.getCaseContext().setAll(rawOutput);
+              JsonNode contextSnapshot = caseInstance.getCaseContext().asJsonNode();
               return eventLog.persist().replaceWith(contextSnapshot);
             })
         .invoke(
             contextSnapshot ->
                 eventBus.publish(
                     EventBusAddresses.CONTEXT_CHANGED,
-                    new CaseStateContextChangedEvent(caseInstance, contextSnapshot)))
+                    new CaseContextChangedEvent(caseInstance, contextSnapshot)))
         .replaceWithVoid()
         .onFailure()
         .invoke(

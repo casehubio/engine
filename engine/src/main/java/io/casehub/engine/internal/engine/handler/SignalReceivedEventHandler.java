@@ -19,10 +19,10 @@ import static io.casehub.engine.internal.event.EventBusAddresses.CONTEXT_CHANGED
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import io.casehub.api.context.StateContext;
+import io.casehub.api.context.CaseContext;
 import io.casehub.engine.internal.engine.cache.CaseInstanceCache;
 import io.casehub.engine.internal.engine.recovery.WorkerExecutionRecoveryService;
-import io.casehub.engine.internal.event.CaseStateContextChangedEvent;
+import io.casehub.engine.internal.event.CaseContextChangedEvent;
 import io.casehub.engine.internal.event.EventBusAddresses;
 import io.casehub.engine.internal.event.SignalReceivedEvent;
 import io.casehub.engine.internal.history.CaseHubEventType;
@@ -63,10 +63,10 @@ public class SignalReceivedEventHandler {
   }
 
   private Uni<Void> applySignal(CaseInstance instance, SignalReceivedEvent event) {
-    StateContext before = instance.getStateContext().snapshot();
-    instance.getStateContext().setPath(event.path(), event.value());
-    JsonNode diff = before.diff(instance.getStateContext());
-    JsonNode contextSnapshot = instance.getStateContext().asJsonNode();
+    CaseContext before = instance.getCaseContext().snapshot();
+    instance.getCaseContext().setPath(event.path(), event.value());
+    JsonNode diff = before.diff(instance.getCaseContext());
+    JsonNode contextSnapshot = instance.getCaseContext().asJsonNode();
 
     if (diff.isEmpty()) {
       LOG.debugf(
@@ -84,7 +84,7 @@ public class SignalReceivedEventHandler {
                       () ->
                           eventBus.publish(
                               CONTEXT_CHANGED,
-                              new CaseStateContextChangedEvent(instance, contextSnapshot)));
+                              new CaseContextChangedEvent(instance, contextSnapshot)));
             })
         .replaceWithVoid()
         .onFailure()
