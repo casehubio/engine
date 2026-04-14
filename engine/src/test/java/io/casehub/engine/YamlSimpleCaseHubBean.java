@@ -20,10 +20,10 @@ import com.fasterxml.jackson.dataformat.yaml.YAMLFactory;
 import io.casehub.api.engine.CaseHub;
 import io.casehub.api.model.AllOfGoalExpression;
 import io.casehub.api.model.AnyOfGoalExpression;
+import io.casehub.api.model.Binding;
 import io.casehub.api.model.Capability;
-import io.casehub.api.model.CaseHubDefinition;
+import io.casehub.api.model.CaseDefinition;
 import io.casehub.api.model.ContextChangeTrigger;
-import io.casehub.api.model.DispatchRule;
 import io.casehub.api.model.Goal;
 import io.casehub.api.model.GoalBasedCompletion;
 import io.casehub.api.model.GoalExpression;
@@ -45,7 +45,7 @@ public class YamlSimpleCaseHubBean extends CaseHub {
   private static final ObjectMapper YAML_MAPPER = new ObjectMapper(new YAMLFactory());
 
   @Override
-  public CaseHubDefinition getDefinition() {
+  public CaseDefinition getDefinition() {
     try (InputStream is =
         Thread.currentThread().getContextClassLoader().getResourceAsStream("casehub/simple.yaml")) {
       if (is == null) {
@@ -59,9 +59,9 @@ public class YamlSimpleCaseHubBean extends CaseHub {
     }
   }
 
-  private CaseHubDefinition convertToApiModel(io.casehub.model.CaseHubDefinition schema) {
-    CaseHubDefinition def =
-        new CaseHubDefinition(schema.getNamespace(), schema.getName(), schema.getVersion());
+  private CaseDefinition convertToApiModel(io.casehub.model.CaseHubDefinition schema) {
+    CaseDefinition def =
+        new CaseDefinition(schema.getNamespace(), schema.getName(), schema.getVersion());
     def.setDsl(schema.getDsl());
     def.setTitle(schema.getTitle());
 
@@ -98,7 +98,7 @@ public class YamlSimpleCaseHubBean extends CaseHub {
               new ContextChangeTrigger(
                   new JQExpressionEvaluator(sr.getOn().getContextChange().getFilter()));
         }
-        DispatchRule rule = new DispatchRule(sr.getName(), cap, trigger);
+        Binding rule = new Binding(sr.getName(), cap, trigger);
         def.getRules().add(rule);
       }
     }

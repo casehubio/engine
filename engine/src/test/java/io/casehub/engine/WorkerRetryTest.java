@@ -20,10 +20,10 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import io.casehub.api.engine.CaseHub;
+import io.casehub.api.model.Binding;
 import io.casehub.api.model.Capability;
-import io.casehub.api.model.CaseHubDefinition;
+import io.casehub.api.model.CaseDefinition;
 import io.casehub.api.model.ContextChangeTrigger;
-import io.casehub.api.model.DispatchRule;
 import io.casehub.api.model.ExecutionPolicy;
 import io.casehub.api.model.Goal;
 import io.casehub.api.model.GoalExpression;
@@ -106,8 +106,8 @@ public class WorkerRetryTest {
             .build();
 
     @Override
-    public CaseHubDefinition getDefinition() {
-      return CaseHubDefinition.builder()
+    public CaseDefinition getDefinition() {
+      return CaseDefinition.builder()
           .namespace("test-worker-retry")
           .name("Worker Retry Test")
           .version("1.0.0")
@@ -141,7 +141,7 @@ public class WorkerRetryTest {
                   .description("Processes documents and updates case context")
                   .build())
           .rules(
-              DispatchRule.builder()
+              Binding.builder()
                   .name("trigger-on-processing-status")
                   .capability(capability)
                   .on(new ContextChangeTrigger(".status == \"processing\""))

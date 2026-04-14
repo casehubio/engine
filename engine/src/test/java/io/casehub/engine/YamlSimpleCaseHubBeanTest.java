@@ -20,7 +20,7 @@ import static org.junit.jupiter.api.Assertions.assertInstanceOf;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 
 import io.casehub.api.model.AllOfGoalExpression;
-import io.casehub.api.model.CaseHubDefinition;
+import io.casehub.api.model.CaseDefinition;
 import io.casehub.api.model.ContextChangeTrigger;
 import io.casehub.api.model.GoalBasedCompletion;
 import io.casehub.api.model.evaluator.JQExpressionEvaluator;
@@ -36,7 +36,7 @@ public class YamlSimpleCaseHubBeanTest {
 
   @Test
   public void test() {
-    CaseHubDefinition def = yamlSimpleCaseHubBean.getDefinition();
+    CaseDefinition def = yamlSimpleCaseHubBean.getDefinition();
     assertNotNull(def);
 
     assertEquals("0.1", def.getDsl());

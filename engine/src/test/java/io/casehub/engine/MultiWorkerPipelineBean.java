@@ -19,10 +19,10 @@ import static io.serverlessworkflow.fluent.func.FuncWorkflowBuilder.workflow;
 import static io.serverlessworkflow.fluent.func.dsl.FuncDSL.function;
 
 import io.casehub.api.engine.CaseHub;
+import io.casehub.api.model.Binding;
 import io.casehub.api.model.Capability;
-import io.casehub.api.model.CaseHubDefinition;
+import io.casehub.api.model.CaseDefinition;
 import io.casehub.api.model.ContextChangeTrigger;
-import io.casehub.api.model.DispatchRule;
 import io.casehub.api.model.Goal;
 import io.casehub.api.model.GoalExpression;
 import io.casehub.api.model.GoalKind;
@@ -36,7 +36,7 @@ import java.util.Map;
 public class MultiWorkerPipelineBean extends CaseHub {
 
   @Override
-  public CaseHubDefinition getDefinition() {
+  public CaseDefinition getDefinition() {
 
     Capability validateCap =
         Capability.builder()
@@ -70,7 +70,7 @@ public class MultiWorkerPipelineBean extends CaseHub {
             .description("All pipeline steps completed successfully")
             .build();
 
-    return CaseHubDefinition.builder()
+    return CaseDefinition.builder()
         .namespace("test")
         .name("Multi-Worker Document Pipeline")
         .version("1.0.0")
@@ -143,17 +143,17 @@ public class MultiWorkerPipelineBean extends CaseHub {
                 .description("Publishes enriched documents")
                 .build())
         .rules(
-            DispatchRule.builder()
+            Binding.builder()
                 .name("trigger-on-received")
                 .capability(validateCap)
                 .on(new ContextChangeTrigger(".step == \"received\""))
                 .build(),
-            DispatchRule.builder()
+            Binding.builder()
                 .name("trigger-on-validated")
                 .capability(enrichCap)
                 .on(new ContextChangeTrigger(".step == \"validated\" and .valid == true"))
                 .build(),
-            DispatchRule.builder()
+            Binding.builder()
                 .name("trigger-on-enriched")
                 .capability(publishCap)
                 .on(new ContextChangeTrigger(".step == \"enriched\""))

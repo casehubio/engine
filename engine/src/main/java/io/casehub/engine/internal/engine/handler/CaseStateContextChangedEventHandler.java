@@ -15,10 +15,10 @@
  */
 package io.casehub.engine.internal.engine.handler;
 
+import io.casehub.api.model.Binding;
 import io.casehub.api.model.Capability;
-import io.casehub.api.model.CaseHubDefinition;
+import io.casehub.api.model.CaseDefinition;
 import io.casehub.api.model.ContextChangeTrigger;
-import io.casehub.api.model.DispatchRule;
 import io.casehub.api.model.Goal;
 import io.casehub.api.model.Milestone;
 import io.casehub.api.model.Worker;
@@ -62,7 +62,7 @@ public class CaseStateContextChangedEventHandler {
     }
 
     CaseMetaModel caseMetaModel = caseInstance.getCaseMetaModel();
-    CaseHubDefinition caseHubDefinition = caseDefinitionRegistry.getCaseDefinition(caseMetaModel);
+    CaseDefinition caseHubDefinition = caseDefinitionRegistry.getCaseDefinition(caseMetaModel);
 
     if (caseHubDefinition == null) {
       return Uni.createFrom()
@@ -87,8 +87,8 @@ public class CaseStateContextChangedEventHandler {
                     t, "Failed handling context changed for caseId: %s", caseInstance.getUuid()));
   }
 
-  private Uni<Void> rules(CaseInstance caseInstance, CaseHubDefinition definition) {
-    List<DispatchRule> rules = definition.getRules();
+  private Uni<Void> rules(CaseInstance caseInstance, CaseDefinition definition) {
+    List<Binding> rules = definition.getRules();
     if (rules == null || rules.isEmpty()) {
       return Uni.createFrom().voidItem();
     }
@@ -97,7 +97,7 @@ public class CaseStateContextChangedEventHandler {
 
     List<Uni<Void>> unis = new ArrayList<>();
 
-    for (DispatchRule rule : rules) {
+    for (Binding rule : rules) {
       if (!(rule.getOn() instanceof ContextChangeTrigger cct)) {
         continue;
       }
@@ -126,7 +126,7 @@ public class CaseStateContextChangedEventHandler {
     return Uni.combine().all().unis(unis).discardItems();
   }
 
-  private Uni<Void> milestones(CaseInstance caseInstance, CaseHubDefinition definition) {
+  private Uni<Void> milestones(CaseInstance caseInstance, CaseDefinition definition) {
     List<Milestone> milestones = definition.getMilestones();
     if (milestones == null || milestones.isEmpty()) {
       return Uni.createFrom().voidItem();
@@ -150,7 +150,7 @@ public class CaseStateContextChangedEventHandler {
     return Uni.createFrom().voidItem();
   }
 
-  private Uni<Void> goals(CaseInstance caseInstance, CaseHubDefinition definition) {
+  private Uni<Void> goals(CaseInstance caseInstance, CaseDefinition definition) {
     List<Goal> goals = definition.getGoals();
     if (goals == null || goals.isEmpty()) {
       return Uni.createFrom().voidItem();
@@ -173,7 +173,7 @@ public class CaseStateContextChangedEventHandler {
     return Uni.createFrom().voidItem();
   }
 
-  private String normalizeJqFilter(DispatchRule rule, ContextChangeTrigger cct) {
+  private String normalizeJqFilter(Binding rule, ContextChangeTrigger cct) {
     if (cct.getFilter() == null) {
       LOG.debugf("Rule '%s' has no JQ filter defined, treating as always true", rule.getName());
       return ".";
@@ -187,7 +187,7 @@ public class CaseStateContextChangedEventHandler {
   }
 
   private Uni<Void> publishWorkerSchedules(
-      CaseInstance caseInstance, List<Worker> workers, DispatchRule rule, Capability capability) {
+      CaseInstance caseInstance, List<Worker> workers, Binding rule, Capability capability) {
 
     if (workers == null || workers.isEmpty()) {
       LOG.warnf(

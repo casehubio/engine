@@ -20,10 +20,10 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 
 import io.casehub.api.engine.CaseHub;
+import io.casehub.api.model.Binding;
 import io.casehub.api.model.Capability;
-import io.casehub.api.model.CaseHubDefinition;
+import io.casehub.api.model.CaseDefinition;
 import io.casehub.api.model.ContextChangeTrigger;
-import io.casehub.api.model.DispatchRule;
 import io.casehub.api.model.Goal;
 import io.casehub.api.model.GoalExpression;
 import io.casehub.api.model.GoalKind;
@@ -213,8 +213,8 @@ public class SignalTest {
             .build();
 
     @Override
-    public CaseHubDefinition getDefinition() {
-      return CaseHubDefinition.builder()
+    public CaseDefinition getDefinition() {
+      return CaseDefinition.builder()
           .namespace("test-signal")
           .name("Signal Test")
           .version("1.0.0")
@@ -230,7 +230,7 @@ public class SignalTest {
                       })
                   .build())
           .rules(
-              DispatchRule.builder()
+              Binding.builder()
                   .name("on-payment-received")
                   .capability(paymentCapability)
                   .on(new ContextChangeTrigger(".payment != null"))
@@ -273,8 +273,8 @@ public class SignalTest {
             .build();
 
     @Override
-    public CaseHubDefinition getDefinition() {
-      return CaseHubDefinition.builder()
+    public CaseDefinition getDefinition() {
+      return CaseDefinition.builder()
           .namespace("test-signal-two")
           .name("Two Signal Test")
           .version("1.0.0")
@@ -299,12 +299,12 @@ public class SignalTest {
                       })
                   .build())
           .rules(
-              DispatchRule.builder()
+              Binding.builder()
                   .name("on-payment-approved")
                   .capability(paymentCapability)
                   .on(new ContextChangeTrigger(".paymentApproved != null"))
                   .build(),
-              DispatchRule.builder()
+              Binding.builder()
                   .name("on-document-uploaded")
                   .capability(documentCapability)
                   .on(new ContextChangeTrigger(".documentUploaded != null"))

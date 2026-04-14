@@ -16,7 +16,7 @@
 package io.casehub.engine.internal.engine;
 
 import io.casehub.api.engine.CaseHub;
-import io.casehub.api.model.CaseHubDefinition;
+import io.casehub.api.model.CaseDefinition;
 import io.casehub.engine.internal.model.CaseMetaModel;
 import io.casehub.engine.internal.util.ReactiveUtils;
 import io.quarkus.runtime.StartupEvent;
@@ -37,12 +37,12 @@ import org.jboss.logging.Logger;
 
 /**
  * Registry for case definitions. TODO: it's a shim for now, simple becase it's not possible to
- * ser/deser CaseHubDefinition to yaml if it contains references to agents or java code
+ * ser/deser CaseDefinition to yaml if it contains references to agents or java code
  */
 @ApplicationScoped
 public class CaseDefinitionRegistry {
 
-  private final Map<CaseMetaModel, CaseHubDefinition> registry = new ConcurrentHashMap<>();
+  private final Map<CaseMetaModel, CaseDefinition> registry = new ConcurrentHashMap<>();
 
   private static final Logger LOG = Logger.getLogger(CaseDefinitionRegistry.class);
 
@@ -71,7 +71,7 @@ public class CaseDefinitionRegistry {
                 .replaceWithVoid());
   }
 
-  private Uni<CaseMetaModel> registerCaseDefinition(CaseHubDefinition model) {
+  private Uni<CaseMetaModel> registerCaseDefinition(CaseDefinition model) {
     LOG.info(
         "Registering case: "
             + model.getName()
@@ -115,12 +115,12 @@ public class CaseDefinitionRegistry {
             });
   }
 
-  public CaseHubDefinition getCaseDefinition(CaseMetaModel definition) {
+  public CaseDefinition getCaseDefinition(CaseMetaModel definition) {
     return registry.get(definition);
   }
 
-  public CaseMetaModel getCaseMetaModel(CaseHubDefinition caseDefinition) {
-    for (Map.Entry<CaseMetaModel, CaseHubDefinition> entry : registry.entrySet()) {
+  public CaseMetaModel getCaseMetaModel(CaseDefinition caseDefinition) {
+    for (Map.Entry<CaseMetaModel, CaseDefinition> entry : registry.entrySet()) {
       if (entry.getValue().equals(caseDefinition)) {
         return entry.getKey();
       }

@@ -20,7 +20,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
 
-public class CaseHubDefinition {
+public class CaseDefinition {
 
   private final String namespace;
   private final String name;
@@ -30,12 +30,12 @@ public class CaseHubDefinition {
   private String summary;
   private final List<Capability> capabilities;
   private final List<Worker> workers;
-  private final List<DispatchRule> rules;
+  private final List<Binding> rules;
   private final List<Milestone> milestones;
   private final List<Goal> goals;
   private CaseCompletion completion;
 
-  public CaseHubDefinition(String namespace, String name, String version) {
+  public CaseDefinition(String namespace, String name, String version) {
     this.namespace = namespace;
     this.name = name;
     this.version = version;
@@ -90,7 +90,7 @@ public class CaseHubDefinition {
     return workers;
   }
 
-  public List<DispatchRule> getRules() {
+  public List<Binding> getRules() {
     return rules;
   }
 
@@ -123,7 +123,7 @@ public class CaseHubDefinition {
     private String summary;
     private List<Capability> capabilities;
     private List<Worker> workers;
-    private List<DispatchRule> rules;
+    private List<Binding> rules;
     private List<Milestone> milestones;
     private List<Goal> goals;
     private CaseCompletion completion;
@@ -175,12 +175,12 @@ public class CaseHubDefinition {
       return this;
     }
 
-    public Builder rules(List<DispatchRule> rules) {
+    public Builder rules(List<Binding> rules) {
       this.rules = rules;
       return this;
     }
 
-    public Builder rules(DispatchRule... rules) {
+    public Builder rules(Binding... rules) {
       this.rules = List.of(rules);
       return this;
     }
@@ -219,9 +219,9 @@ public class CaseHubDefinition {
       return this;
     }
 
-    public CaseHubDefinition build() {
-      CaseHubDefinition caseHubDefinition =
-          new CaseHubDefinition(
+    public CaseDefinition build() {
+      CaseDefinition caseHubDefinition =
+          new CaseDefinition(
               Objects.requireNonNull(namespace),
               Objects.requireNonNull(name),
               Objects.requireNonNull(version));
@@ -250,7 +250,7 @@ public class CaseHubDefinition {
 
   @Override
   public boolean equals(Object o) {
-    if (!(o instanceof CaseHubDefinition that)) return false;
+    if (!(o instanceof CaseDefinition that)) return false;
     return Objects.equals(namespace, that.namespace)
         && Objects.equals(name, that.name)
         && Objects.equals(version, that.version);

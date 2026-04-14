@@ -19,7 +19,7 @@ import static io.casehub.engine.internal.event.EventBusAddresses.WORKER_EXECUTIO
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.casehub.api.model.Capability;
-import io.casehub.api.model.CaseHubDefinition;
+import io.casehub.api.model.CaseDefinition;
 import io.casehub.api.model.Worker;
 import io.casehub.engine.internal.context.StateContextImpl;
 import io.casehub.engine.internal.engine.CaseDefinitionRegistry;
@@ -94,12 +94,12 @@ public class WorkerExecutionTask implements Job {
             .await()
             .atMost(Duration.ofSeconds(10));
 
-    CaseHubDefinition definition =
+    CaseDefinition definition =
         caseDefinitionRegistry.getCaseDefinition(instance.getCaseMetaModel());
 
     if (definition == null) {
       throw new JobExecutionException(
-          "CaseHubDefinition not found for caseId=" + eventLog.getCaseId());
+          "CaseDefinition not found for caseId=" + eventLog.getCaseId());
     }
     String workflowId = eventLog.getWorkerId();
     String capabilityName = eventLog.getMetadata().get("capabilityName").asText();
