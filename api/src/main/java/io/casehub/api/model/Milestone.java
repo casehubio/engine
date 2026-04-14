@@ -15,9 +15,12 @@
  */
 package io.casehub.api.model;
 
+import io.casehub.api.context.CaseContext;
 import io.casehub.api.model.evaluator.ExpressionEvaluator;
 import io.casehub.api.model.evaluator.JQExpressionEvaluator;
+import io.casehub.api.model.evaluator.LambdaExpressionEvaluator;
 import java.util.Objects;
+import java.util.function.Predicate;
 
 /**
  * A named waypoint that a case passes through on its way to a {@link Goal}.
@@ -113,6 +116,13 @@ public class Milestone {
       this.condition =
           new JQExpressionEvaluator(
               Objects.requireNonNull(condition, "condition must not be null"));
+      return this;
+    }
+
+    public Builder condition(Predicate<CaseContext> predicate) {
+      this.condition =
+          new LambdaExpressionEvaluator(
+              Objects.requireNonNull(predicate, "condition must not be null"));
       return this;
     }
 
