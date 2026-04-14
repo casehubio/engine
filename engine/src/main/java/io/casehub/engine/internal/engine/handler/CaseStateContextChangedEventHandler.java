@@ -20,6 +20,7 @@ import io.casehub.api.engine.LoopControl;
 import io.casehub.api.model.Binding;
 import io.casehub.api.model.Capability;
 import io.casehub.api.model.CaseDefinition;
+import io.casehub.api.model.CaseStatus;
 import io.casehub.api.model.ContextChangeTrigger;
 import io.casehub.api.model.Goal;
 import io.casehub.api.model.Milestone;
@@ -33,7 +34,6 @@ import io.casehub.engine.internal.event.MilestoneReachedEvent;
 import io.casehub.engine.internal.event.WorkerScheduleEvent;
 import io.casehub.engine.internal.model.CaseInstance;
 import io.casehub.engine.internal.model.CaseMetaModel;
-import io.casehub.engine.internal.model.CaseState;
 import io.quarkus.vertx.ConsumeEvent;
 import io.smallrye.mutiny.Uni;
 import io.vertx.mutiny.core.eventbus.EventBus;
@@ -60,7 +60,7 @@ public class CaseStateContextChangedEventHandler {
   public Uni<Void> onCaseStateContextChangedEventHandler(CaseStateContextChangedEvent event) {
     CaseInstance caseInstance = event.instance();
     JsonNode contextSnapshot = event.contextSnapshot();
-    if (!caseInstance.getState().equals(CaseState.ACTIVE)) {
+    if (!caseInstance.getState().equals(CaseStatus.RUNNING)) {
       return Uni.createFrom().voidItem();
     }
 

@@ -23,13 +23,13 @@ import io.casehub.api.engine.CaseHub;
 import io.casehub.api.model.Binding;
 import io.casehub.api.model.Capability;
 import io.casehub.api.model.CaseDefinition;
+import io.casehub.api.model.CaseStatus;
 import io.casehub.api.model.ContextChangeTrigger;
 import io.casehub.api.model.Goal;
 import io.casehub.api.model.GoalExpression;
 import io.casehub.api.model.GoalKind;
 import io.casehub.api.model.Worker;
 import io.casehub.engine.internal.engine.cache.CaseInstanceCache;
-import io.casehub.engine.internal.model.CaseState;
 import io.quarkus.test.junit.QuarkusTest;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
@@ -87,7 +87,7 @@ public class SignalTest {
             () -> {
               assertEquals(
                   1, SignalCaseHubBean.runCount.get(), "Worker must run exactly once after signal");
-              assertEquals(CaseState.COMPLETED, caseInstanceCache.get(caseId).getState());
+              assertEquals(CaseStatus.COMPLETED, caseInstanceCache.get(caseId).getState());
             });
   }
 
@@ -163,7 +163,7 @@ public class SignalTest {
             () -> {
               assertEquals(1, TwoSignalCaseHubBean.paymentRunCount.get());
               assertEquals(1, TwoSignalCaseHubBean.documentRunCount.get());
-              assertEquals(CaseState.COMPLETED, caseInstanceCache.get(caseId).getState());
+              assertEquals(CaseStatus.COMPLETED, caseInstanceCache.get(caseId).getState());
             });
   }
 

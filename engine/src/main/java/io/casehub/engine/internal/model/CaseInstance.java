@@ -16,6 +16,7 @@
 package io.casehub.engine.internal.model;
 
 import io.casehub.api.context.StateContext;
+import io.casehub.api.model.CaseStatus;
 import io.quarkus.hibernate.reactive.panache.PanacheEntity;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
@@ -43,7 +44,7 @@ public class CaseInstance extends PanacheEntity {
   @Transient private StateContext stateContext;
 
   @Enumerated(EnumType.STRING)
-  private CaseState state;
+  private CaseStatus state;
 
   public CaseMetaModel getCaseMetaModel() {
     return caseMetaModel;
@@ -77,11 +78,11 @@ public class CaseInstance extends PanacheEntity {
     this.stateContext = stateContext;
   }
 
-  public CaseState getState() {
+  public CaseStatus getState() {
     return state;
   }
 
-  public void setState(CaseState state) {
+  public void setState(CaseStatus state) {
     this.state = state;
   }
 }
