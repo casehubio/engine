@@ -106,7 +106,7 @@ public class CaseStateContextChangedEventHandler {
         continue;
       }
 
-      if (!expressionEngineRegistry.evaluate(cct.getFilter(), caseInstance.getStateContext())) {
+      if (!expressionEngineRegistry.evaluate(cct.getFilter(), contextSnapshot)) {
         continue;
       }
 

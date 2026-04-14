@@ -15,9 +15,11 @@
  */
 package io.casehub.engine.internal.engine;
 
+import com.fasterxml.jackson.databind.JsonNode;
 import io.casehub.api.context.StateContext;
 import io.casehub.api.engine.ExpressionEngine;
 import io.casehub.api.model.evaluator.ExpressionEvaluator;
+import io.casehub.engine.internal.context.StateContextImpl;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.enterprise.inject.Instance;
 import jakarta.inject.Inject;
@@ -56,5 +58,9 @@ public class ExpressionEngineRegistry {
       }
     }
     throw new IllegalArgumentException("No ExpressionEngine registered for type '" + type + "'");
+  }
+
+  public boolean evaluate(final ExpressionEvaluator evaluator, final JsonNode asNode) {
+    return evaluate(evaluator, new StateContextImpl(asNode));
   }
 }
