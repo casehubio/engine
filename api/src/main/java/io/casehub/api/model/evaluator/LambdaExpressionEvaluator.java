@@ -26,10 +26,17 @@ import java.util.function.Predicate;
  */
 public final class LambdaExpressionEvaluator implements ExpressionEvaluator {
 
+  public static final String TYPE = "lambda";
+
   private final Predicate<StateContext> predicate;
 
   public LambdaExpressionEvaluator(final Predicate<StateContext> predicate) {
     this.predicate = predicate;
+  }
+
+  @Override
+  public String type() {
+    return TYPE;
   }
 
   public boolean test(final StateContext context) {

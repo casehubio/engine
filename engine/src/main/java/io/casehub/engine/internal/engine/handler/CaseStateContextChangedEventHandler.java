@@ -15,7 +15,6 @@
  */
 package io.casehub.engine.internal.engine.handler;
 
-import io.casehub.api.context.StateContext;
 import io.casehub.api.model.Capability;
 import io.casehub.api.model.CaseHubDefinition;
 import io.casehub.api.model.ContextChangeTrigger;
@@ -23,17 +22,13 @@ import io.casehub.api.model.DispatchRule;
 import io.casehub.api.model.Goal;
 import io.casehub.api.model.Milestone;
 import io.casehub.api.model.Worker;
-import io.casehub.api.model.evaluator.ExpressionEvaluator;
-import io.casehub.api.model.evaluator.JQExpressionEvaluator;
-import io.casehub.api.model.evaluator.LambdaExpressionEvaluator;
 import io.casehub.engine.internal.engine.CaseDefinitionRegistry;
+import io.casehub.engine.internal.engine.ExpressionEngineRegistry;
 import io.casehub.engine.internal.event.CaseStateContextChangedEvent;
 import io.casehub.engine.internal.event.EventBusAddresses;
 import io.casehub.engine.internal.event.GoalReachedEvent;
 import io.casehub.engine.internal.event.MilestoneReachedEvent;
 import io.casehub.engine.internal.event.WorkerScheduleEvent;
-import io.casehub.engine.internal.jq.JQEvaluator;
-import io.casehub.engine.internal.jq.ValidationResult;
 import io.casehub.engine.internal.model.CaseInstance;
 import io.casehub.engine.internal.model.CaseMetaModel;
 import io.casehub.engine.internal.model.CaseState;
@@ -55,7 +50,7 @@ public class CaseStateContextChangedEventHandler {
 
   @Inject CaseDefinitionRegistry caseDefinitionRegistry;
 
-  @Inject JQEvaluator jqEvaluator;
+  @Inject ExpressionEngineRegistry expressionEngineRegistry;
 
   @ConsumeEvent(value = EventBusAddresses.CONTEXT_CHANGED)
   public Uni<Void> onCaseStateContextChangedEventHandler(CaseStateContextChangedEvent event) {
@@ -105,7 +100,7 @@ public class CaseStateContextChangedEventHandler {
         continue;
       }
 
-      if (!evaluateFilter(cct.getFilter(), caseInstance.getStateContext())) {
+      if (!expressionEngineRegistry.evaluate(cct.getFilter(), caseInstance.getStateContext())) {
         continue;
       }
 
@@ -132,7 +127,8 @@ public class CaseStateContextChangedEventHandler {
     }
 
     for (Milestone milestone : milestones) {
-      if (!evaluateFilter(milestone.getCondition(), caseInstance.getStateContext())) continue;
+      if (!expressionEngineRegistry.evaluate(
+          milestone.getCondition(), caseInstance.getStateContext())) continue;
 
       LOG.infof("Milestone '%s' REACHED! Publishing MilestoneReachedEvent", milestone.getName());
 
@@ -150,7 +146,8 @@ public class CaseStateContextChangedEventHandler {
     }
 
     for (Goal goal : goals) {
-      if (!evaluateFilter(goal.getCondition(), caseInstance.getStateContext())) continue;
+      if (!expressionEngineRegistry.evaluate(goal.getCondition(), caseInstance.getStateContext()))
+        continue;
 
       LOG.infof("Goal '%s' REACHED! Publishing GoalReachedEvent", goal.getName());
 
@@ -158,21 +155,6 @@ public class CaseStateContextChangedEventHandler {
     }
 
     return Uni.createFrom().voidItem();
-  }
-
-  private boolean evaluateFilter(ExpressionEvaluator evaluator, StateContext context) {
-    if (evaluator == null) return true;
-    if (evaluator instanceof JQExpressionEvaluator jq) {
-      String expr = jq.expression();
-      if (expr == null || expr.isBlank()) return true;
-      ValidationResult result = jqEvaluator.eval(expr, context.asJsonNode());
-      return result.ok() && result.isTrue();
-    }
-    if (evaluator instanceof LambdaExpressionEvaluator lambda) {
-      return lambda.test(context);
-    }
-    LOG.warnf("Unknown ExpressionEvaluator type: %s", evaluator.getClass().getSimpleName());
-    return false;
   }
 
   private Uni<Void> publishWorkerSchedules(

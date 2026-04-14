@@ -15,4 +15,12 @@
  */
 package io.casehub.api.model.evaluator;
 
-public interface ExpressionEvaluator {}
+public interface ExpressionEvaluator {
+
+  /**
+   * Returns the type identifier for this evaluator, used by {@link
+   * io.casehub.api.engine.ExpressionEngine} implementations to declare which evaluator type they
+   * handle.
+   */
+  String type();
+}
