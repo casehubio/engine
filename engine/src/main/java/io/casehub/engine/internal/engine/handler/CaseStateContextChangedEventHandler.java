@@ -15,6 +15,8 @@
  */
 package io.casehub.engine.internal.engine.handler;
 
+import com.fasterxml.jackson.databind.JsonNode;
+import io.casehub.api.engine.LoopControl;
 import io.casehub.api.model.Binding;
 import io.casehub.api.model.Capability;
 import io.casehub.api.model.CaseDefinition;
@@ -54,17 +56,20 @@ public class CaseStateContextChangedEventHandler {
 
   @Inject JQEvaluator jqEvaluator;
 
+  @Inject LoopControl loopControl;
+
   @ConsumeEvent(value = EventBusAddresses.CONTEXT_CHANGED)
   public Uni<Void> onCaseStateContextChangedEventHandler(CaseStateContextChangedEvent event) {
     CaseInstance caseInstance = event.instance();
+    JsonNode contextSnapshot = event.contextSnapshot();
     if (!caseInstance.getState().equals(CaseState.ACTIVE)) {
       return Uni.createFrom().voidItem();
     }
 
     CaseMetaModel caseMetaModel = caseInstance.getCaseMetaModel();
-    CaseDefinition caseHubDefinition = caseDefinitionRegistry.getCaseDefinition(caseMetaModel);
+    CaseDefinition caseefinition = caseDefinitionRegistry.getCaseDefinition(caseMetaModel);
 
-    if (caseHubDefinition == null) {
+    if (caseefinition == null) {
       return Uni.createFrom()
           .failure(
               new RuntimeException(
@@ -73,9 +78,9 @@ public class CaseStateContextChangedEventHandler {
 
     LOG.infof("Handling CaseStateContextChangedEvent for caseId: %s", caseInstance.getUuid());
 
-    return rules(caseInstance, caseHubDefinition)
-        .chain(() -> milestones(caseInstance, caseHubDefinition))
-        .chain(() -> goals(caseInstance, caseHubDefinition))
+    return rules(caseInstance, contextSnapshot, caseefinition)
+        .chain(() -> milestones(caseInstance, contextSnapshot, caseefinition))
+        .chain(() -> goals(caseInstance, contextSnapshot, caseefinition))
         .invoke(
             () ->
                 LOG.debugf(
@@ -87,7 +92,8 @@ public class CaseStateContextChangedEventHandler {
                     t, "Failed handling context changed for caseId: %s", caseInstance.getUuid()));
   }
 
-  private Uni<Void> rules(CaseInstance caseInstance, CaseDefinition definition) {
+  private Uni<Void> rules(
+      CaseInstance caseInstance, JsonNode contextSnapshot, CaseDefinition definition) {
     List<Binding> bindings = definition.getBindings();
     if (bindings == null || bindings.isEmpty()) {
       return Uni.createFrom().voidItem();
@@ -95,28 +101,32 @@ public class CaseStateContextChangedEventHandler {
 
     List<Worker> workers = definition.getWorkers();
 
-    List<Uni<Void>> unis = new ArrayList<>();
-
-    for (Binding rule : bindings) {
-      if (!(rule.getOn() instanceof ContextChangeTrigger cct)) {
+    // Evaluate trigger conditions to find eligible rules
+    List<Binding> eligible = new ArrayList<>();
+    for (Binding binding : bindings) {
+      if (!(binding.getOn() instanceof ContextChangeTrigger cct)) {
         continue;
       }
 
-      String jqExpression = normalizeJqFilter(rule, cct);
-
-      ValidationResult matches =
-          jqEvaluator.eval(jqExpression, caseInstance.getStateContext().asJsonNode());
+      ValidationResult matches = jqEvaluator.eval(normalizeJqFilter(binding, cct), contextSnapshot);
       if (!matches.ok() || !matches.isTrue()) {
         continue;
       }
 
-      Capability capability = rule.getCapability();
-      if (capability == null) {
-        LOG.warnf("Capability referenced by rule '%s' is null", rule.getName());
+      if (binding.getCapability() == null) {
+        LOG.warnf("Capability referenced by rule '%s' is null", binding.getName());
         continue;
       }
 
-      unis.add(publishWorkerSchedules(caseInstance, workers, rule, capability));
+      eligible.add(binding);
+    }
+
+    // LoopControl decides which eligible rules to fire (default: all of them)
+    List<Binding> selected = loopControl.select(caseInstance.getStateContext(), eligible);
+
+    List<Uni<Void>> unis = new ArrayList<>(selected.size());
+    for (Binding binding : selected) {
+      unis.add(publishWorkerSchedules(caseInstance, workers, binding, binding.getCapability()));
     }
 
     if (unis.isEmpty()) {
@@ -126,7 +136,8 @@ public class CaseStateContextChangedEventHandler {
     return Uni.combine().all().unis(unis).discardItems();
   }
 
-  private Uni<Void> milestones(CaseInstance caseInstance, CaseDefinition definition) {
+  private Uni<Void> milestones(
+      CaseInstance caseInstance, JsonNode contextSnapshot, CaseDefinition definition) {
     List<Milestone> milestones = definition.getMilestones();
     if (milestones == null || milestones.isEmpty()) {
       return Uni.createFrom().voidItem();
@@ -137,8 +148,7 @@ public class CaseStateContextChangedEventHandler {
       String conditionExpr = ((JQExpressionEvaluator) milestone.getCondition()).expression();
       if (conditionExpr == null || conditionExpr.isBlank()) continue;
 
-      ValidationResult result =
-          jqEvaluator.eval(conditionExpr, caseInstance.getStateContext().asJsonNode());
+      ValidationResult result = jqEvaluator.eval(conditionExpr, contextSnapshot);
       if (!result.ok() || !result.isTrue()) continue;
 
       LOG.infof("Milestone '%s' REACHED! Publishing MilestoneReachedEvent", milestone.getName());
@@ -150,7 +160,8 @@ public class CaseStateContextChangedEventHandler {
     return Uni.createFrom().voidItem();
   }
 
-  private Uni<Void> goals(CaseInstance caseInstance, CaseDefinition definition) {
+  private Uni<Void> goals(
+      CaseInstance caseInstance, JsonNode contextSnapshot, CaseDefinition definition) {
     List<Goal> goals = definition.getGoals();
     if (goals == null || goals.isEmpty()) {
       return Uni.createFrom().voidItem();
@@ -161,8 +172,7 @@ public class CaseStateContextChangedEventHandler {
       String conditionExpr = ((JQExpressionEvaluator) goal.getCondition()).expression();
       if (conditionExpr == null || conditionExpr.isBlank()) continue;
 
-      ValidationResult result =
-          jqEvaluator.eval(conditionExpr, caseInstance.getStateContext().asJsonNode());
+      ValidationResult result = jqEvaluator.eval(conditionExpr, contextSnapshot);
       if (!result.ok() || !result.isTrue()) continue;
 
       LOG.infof("Goal '%s' REACHED! Publishing GoalReachedEvent", goal.getName());
@@ -173,26 +183,26 @@ public class CaseStateContextChangedEventHandler {
     return Uni.createFrom().voidItem();
   }
 
-  private String normalizeJqFilter(Binding rule, ContextChangeTrigger cct) {
+  private String normalizeJqFilter(Binding binding, ContextChangeTrigger cct) {
     if (cct.getFilter() == null) {
-      LOG.debugf("Rule '%s' has no JQ filter defined, treating as always true", rule.getName());
+      LOG.debugf("Rule '%s' has no JQ filter defined, treating as always true", binding.getName());
       return ".";
     }
     String jqExpression = ((JQExpressionEvaluator) cct.getFilter()).expression();
     if (jqExpression == null || jqExpression.isBlank()) {
-      LOG.debugf("Rule '%s' has no JQ filter defined, treating as always true", rule.getName());
+      LOG.debugf("Rule '%s' has no JQ filter defined, treating as always true", binding.getName());
       return ".";
     }
     return jqExpression;
   }
 
   private Uni<Void> publishWorkerSchedules(
-      CaseInstance caseInstance, List<Worker> workers, Binding rule, Capability capability) {
+      CaseInstance caseInstance, List<Worker> workers, Binding binding, Capability capability) {
 
     if (workers == null || workers.isEmpty()) {
       LOG.warnf(
           "No workers defined; cannot schedule capability '%s' for rule '%s'",
-          capability.getName(), rule.getName());
+          capability.getName(), binding.getName());
       return Uni.createFrom().voidItem();
     }
 
@@ -207,7 +217,7 @@ public class CaseStateContextChangedEventHandler {
 
       LOG.infof(
           "Worker '%s' matches capability '%s' from rule '%s' -> scheduling",
-          worker.getName(), capability.getName(), rule.getName());
+          worker.getName(), capability.getName(), binding.getName());
 
       eventBus.publish(
           EventBusAddresses.WORKER_SCHEDULE,
