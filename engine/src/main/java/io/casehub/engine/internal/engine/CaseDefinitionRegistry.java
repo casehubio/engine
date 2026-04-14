@@ -78,7 +78,7 @@ public class CaseDefinitionRegistry {
                 .replaceWithVoid());
   }
 
-  private Uni<CaseMetaModel> registerCaseDefinition(CaseDefinition model) {
+  public Uni<CaseMetaModel> registerCaseDefinition(CaseDefinition model) {
     try {
       validateExpressions(model);
     } catch (IllegalArgumentException e) {
