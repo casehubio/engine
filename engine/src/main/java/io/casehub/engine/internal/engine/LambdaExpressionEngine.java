@@ -34,4 +34,10 @@ public class LambdaExpressionEngine implements ExpressionEngine {
   public boolean evaluate(final ExpressionEvaluator evaluator, final StateContext context) {
     return ((LambdaExpressionEvaluator) evaluator).test(context);
   }
+
+  @Override
+  public void validate(final ExpressionEvaluator evaluator) {
+    // Lambda predicates are validated by the Java compiler at the call site;
+    // nothing further to check at registration time.
+  }
 }

@@ -23,6 +23,8 @@ import io.casehub.engine.internal.jq.JQEvaluator;
 import io.casehub.engine.internal.jq.ValidationResult;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
+import net.thisptr.jackson.jq.JsonQuery;
+import net.thisptr.jackson.jq.Versions;
 
 /** {@link ExpressionEngine} for JQ expressions. */
 @ApplicationScoped
@@ -43,5 +45,19 @@ public class JQExpressionEngine implements ExpressionEngine {
     }
     final ValidationResult result = jqEvaluator.eval(expr, context.asJsonNode());
     return result.ok() && result.isTrue();
+  }
+
+  @Override
+  public void validate(final ExpressionEvaluator evaluator) {
+    final String expr = ((JQExpressionEvaluator) evaluator).expression();
+    if (expr == null || expr.isBlank()) {
+      return;
+    }
+    try {
+      JsonQuery.compile(expr, Versions.JQ_1_6);
+    } catch (Exception e) {
+      throw new IllegalArgumentException(
+          "Invalid JQ expression '" + expr + "': " + e.getMessage(), e);
+    }
   }
 }
