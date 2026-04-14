@@ -19,7 +19,9 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.casehub.api.model.Capability;
 import io.casehub.api.model.Worker;
+import io.casehub.api.spi.WorkerExecutionGuard;
 import io.casehub.engine.internal.event.EventBusAddresses;
+import io.casehub.engine.internal.event.WorkerRetriesExhaustedEvent;
 import io.casehub.engine.internal.event.WorkerScheduleEvent;
 import io.casehub.engine.internal.history.CaseHubEventType;
 import io.casehub.engine.internal.history.EventLog;
@@ -47,10 +49,29 @@ public class WorkerScheduleEventHandler {
 
   @Inject WorkerExecutionManager workflowExecutionManager;
 
+  @Inject WorkerExecutionGuard workerExecutionGuard;
+
+  @Inject io.vertx.mutiny.core.eventbus.EventBus eventBus;
+
   @ConsumeEvent(value = EventBusAddresses.WORKER_SCHEDULE)
   public Uni<Void> onWorkerScheduleEventHandler(WorkerScheduleEvent event) {
     CaseInstance instance = event.caseInstance();
     Worker worker = event.worker();
+
+    if (workerExecutionGuard.isBlocked(worker.getName(), instance.getUuid())) {
+      LOG.warnf(
+          "Worker blocked by guard (quarantined?): caseId=%s worker=%s — emitting retries exhausted",
+          instance.getUuid(), worker.getName());
+      String idempotency =
+          io.casehub.engine.internal.util.WorkerExecutionKeys.inputDataHash(
+              worker.getName(),
+              event.capability().getName(),
+              instance.getCaseContext().evalObjectTemplate(event.capability().getInputSchema()));
+      eventBus.publish(
+          EventBusAddresses.WORKER_RETRIES_EXHAUSTED,
+          new WorkerRetriesExhaustedEvent(instance.getUuid(), worker.getName(), idempotency));
+      return Uni.createFrom().voidItem();
+    }
     Capability capability = event.capability();
 
     Map<String, Object> inputData =
