@@ -119,44 +119,36 @@ class ExpressionEngineRegistryTest {
     @Test
     @DisplayName("no-op for null evaluator")
     void nullEvaluator_doesNotThrow() {
-      assertDoesNotThrow(() -> registry.evaluate(null, new StateContextImpl()));
+      assertDoesNotThrow(() -> registry.validate(null));
     }
 
     @Test
     @DisplayName("JQ — passes for valid expression")
     void jq_validExpression_doesNotThrow() {
       assertDoesNotThrow(
-          () ->
-              registry.evaluate(
-                  new JQExpressionEvaluator(".status == \"ready\""), new StateContextImpl()));
+          () -> registry.validate(new JQExpressionEvaluator(".status == \"ready\"")));
     }
 
     @Test
     @DisplayName("JQ — passes for null expression")
     void jq_nullExpression_doesNotThrow() {
-      assertDoesNotThrow(
-          () -> registry.evaluate(new JQExpressionEvaluator(null), new StateContextImpl()));
+      assertDoesNotThrow(() -> registry.validate(new JQExpressionEvaluator(null)));
     }
 
-    // @Test //TODO enable this test
+    @Test
     @DisplayName("JQ — throws IllegalArgumentException for invalid syntax")
     void jq_invalidExpression_throws() {
       final var ex =
           assertThrows(
               IllegalArgumentException.class,
-              () ->
-                  registry.evaluate(
-                      new JQExpressionEvaluator(".foo ??? broken"), new StateContextImpl()));
+              () -> registry.validate(new JQExpressionEvaluator(".foo ??? broken")));
       assertTrue(ex.getMessage().contains("Invalid JQ expression"));
     }
 
     @Test
     @DisplayName("Lambda — no-op regardless of predicate")
     void lambda_doesNotThrow() {
-      assertDoesNotThrow(
-          () ->
-              registry.evaluate(
-                  new LambdaExpressionEvaluator(ctx -> true), new StateContextImpl()));
+      assertDoesNotThrow(() -> registry.validate(new LambdaExpressionEvaluator(ctx -> true)));
     }
   }
 }
