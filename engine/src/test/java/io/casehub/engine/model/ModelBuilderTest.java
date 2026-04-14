@@ -346,6 +346,31 @@ class ModelBuilderTest {
           Milestone.builder().name("m").condition(".x == true").description("my milestone").build();
       assertEquals("my milestone", m.getDescription());
     }
+
+    @Test
+    @DisplayName("condition(Predicate) creates LambdaExpressionEvaluator")
+    void conditionPredicate_createsLambdaEvaluator() {
+      final var m =
+          Milestone.builder()
+              .name("m")
+              .condition((io.casehub.api.context.CaseContext ctx) -> true)
+              .build();
+      assertInstanceOf(
+          io.casehub.api.model.evaluator.LambdaExpressionEvaluator.class, m.getCondition());
+    }
+
+    @Test
+    @DisplayName("null Predicate condition throws NullPointerException")
+    void nullPredicateCondition_throws() {
+      assertThrows(
+          NullPointerException.class,
+          () ->
+              Milestone.builder()
+                  .name("m")
+                  .condition(
+                      (java.util.function.Predicate<io.casehub.api.context.CaseContext>) null)
+                  .build());
+    }
   }
 
   // ================================================================== //
@@ -461,6 +486,33 @@ class ModelBuilderTest {
       final var failure =
           Goal.builder().name("g").condition(".x == true").kind(GoalKind.FAILURE).build();
       assertNotEquals(success, failure);
+    }
+
+    @Test
+    @DisplayName("condition(Predicate) creates LambdaExpressionEvaluator")
+    void conditionPredicate_createsLambdaEvaluator() {
+      final var g =
+          Goal.builder()
+              .name("g")
+              .condition((io.casehub.api.context.CaseContext ctx) -> true)
+              .kind(GoalKind.SUCCESS)
+              .build();
+      assertInstanceOf(
+          io.casehub.api.model.evaluator.LambdaExpressionEvaluator.class, g.getCondition());
+    }
+
+    @Test
+    @DisplayName("null Predicate condition throws NullPointerException")
+    void nullPredicateCondition_throws() {
+      assertThrows(
+          NullPointerException.class,
+          () ->
+              Goal.builder()
+                  .name("g")
+                  .condition(
+                      (java.util.function.Predicate<io.casehub.api.context.CaseContext>) null)
+                  .kind(GoalKind.SUCCESS)
+                  .build());
     }
   }
 
