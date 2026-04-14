@@ -43,4 +43,12 @@ public interface ExpressionEngine {
    * @return {@code true} if the expression matches, {@code false} otherwise
    */
   boolean evaluate(ExpressionEvaluator evaluator, StateContext context);
+
+  /**
+   * Validates the expression syntax without evaluating it against any context.
+   *
+   * @param evaluator the expression to validate — guaranteed to match {@link #type()}
+   * @throws IllegalArgumentException if the expression is syntactically invalid
+   */
+  void validate(ExpressionEvaluator evaluator);
 }
