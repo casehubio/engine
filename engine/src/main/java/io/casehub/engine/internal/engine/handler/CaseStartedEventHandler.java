@@ -15,6 +15,7 @@
  */
 package io.casehub.engine.internal.engine.handler;
 
+import com.fasterxml.jackson.databind.JsonNode;
 import io.casehub.engine.internal.event.CaseStartedEvent;
 import io.casehub.engine.internal.event.CaseStateContextChangedEvent;
 import io.casehub.engine.internal.event.EventBusAddresses;
@@ -41,22 +42,19 @@ public class CaseStartedEventHandler {
   @ConsumeEvent(value = EventBusAddresses.CASE_STARTED)
   public Uni<Void> onCaseStarted(CaseStartedEvent event) {
     CaseInstance instance = event.instance();
+    JsonNode contextSnapshot = instance.getStateContext().asJsonNode();
     EventLog eventLog = new EventLog();
     eventLog.setCaseId(instance.getUuid());
     eventLog.setEventType(CaseHubEventType.CASE_STARTED);
     eventLog.setStreamType(EventStreamType.CASE);
     eventLog.setTimestamp(Instant.now()); // replace with @PrePersist in EventLog
-    eventLog.setPayload(instance.getStateContext().asJsonNode());
+    eventLog.setPayload(contextSnapshot);
 
-    return Panache.withTransaction(
-        () ->
-            eventLog
-                .persist()
-                .invoke(
-                    () ->
-                        eventBus.publish(
-                            EventBusAddresses.CONTEXT_CHANGED,
-                            new CaseStateContextChangedEvent(instance)))
-                .replaceWithVoid());
+    return Panache.withTransaction(() -> eventLog.persist().replaceWithVoid())
+        .invoke(
+            () ->
+                eventBus.publish(
+                    EventBusAddresses.CONTEXT_CHANGED,
+                    new CaseStateContextChangedEvent(instance, contextSnapshot)));
   }
 }
