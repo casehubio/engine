@@ -43,6 +43,9 @@ public class CaseInstance extends PanacheEntity {
 
   @Transient private CaseContext caseContext;
 
+  @Column(name = "parent_plan_item_id", nullable = true)
+  private UUID parentPlanItemId;
+
   @Enumerated(EnumType.STRING)
   private CaseStatus state;
 
@@ -76,6 +79,14 @@ public class CaseInstance extends PanacheEntity {
 
   public void setCaseContext(CaseContext caseContext) {
     this.caseContext = caseContext;
+  }
+
+  public UUID getParentPlanItemId() {
+    return parentPlanItemId;
+  }
+
+  public void setParentPlanItemId(UUID parentPlanItemId) {
+    this.parentPlanItemId = parentPlanItemId;
   }
 
   public CaseStatus getState() {
