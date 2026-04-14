@@ -16,6 +16,7 @@
 package io.casehub.engine.internal.engine.handler;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import io.casehub.api.model.CaseStatus;
 import io.casehub.engine.internal.engine.cache.CaseInstanceCache;
 import io.casehub.engine.internal.event.CaseStatusChanged;
 import io.casehub.engine.internal.event.EventBusAddresses;
@@ -24,7 +25,6 @@ import io.casehub.engine.internal.history.CaseHubEventType;
 import io.casehub.engine.internal.history.EventLog;
 import io.casehub.engine.internal.history.EventStreamType;
 import io.casehub.engine.internal.model.CaseInstance;
-import io.casehub.engine.internal.model.CaseState;
 import io.quarkus.hibernate.reactive.panache.Panache;
 import io.quarkus.vertx.ConsumeEvent;
 import io.smallrye.mutiny.Uni;
@@ -49,10 +49,10 @@ public class WorkerRetriesExhaustedEventHandler {
   public Uni<Void> onWorkerRetriesExhaustedEvent(WorkerRetriesExhaustedEvent event) {
     CaseInstance caseInstance = caseInstanceCache.get(event.caseId());
     String oldStatus = caseInstance.getState().name();
-    caseInstance.setState(CaseState.FAILED);
+    caseInstance.setState(CaseStatus.FAULTED);
 
     EventLog eventLog = new EventLog();
-    eventLog.setEventType(CaseHubEventType.CASE_FAILED);
+    eventLog.setEventType(CaseHubEventType.CASE_FAULTED);
     eventLog.setCaseId(caseInstance.getUuid());
     eventLog.setStreamType(EventStreamType.CASE);
     eventLog.setTimestamp(Instant.now());
@@ -63,7 +63,11 @@ public class WorkerRetriesExhaustedEventHandler {
             .put("workerId", event.workerId())
             .put("inputDataHash", event.idempotency()));
 
-    return Panache.withTransaction(() -> caseInstance.persist().chain(eventLog::persist))
+    return Panache.withTransaction(
+            () ->
+                Panache.getSession()
+                    .chain(session -> session.merge(caseInstance))
+                    .chain(merged -> eventLog.persist()))
         .invoke(
             () -> {
               LOG.warnf(
@@ -71,7 +75,7 @@ public class WorkerRetriesExhaustedEventHandler {
                   event.caseId(), event.workerId());
               eventBus.publish(
                   EventBusAddresses.CASE_STATUS_CHANGED,
-                  new CaseStatusChanged(caseInstance, oldStatus, CaseState.FAILED.name()));
+                  new CaseStatusChanged(caseInstance, oldStatus, CaseStatus.FAULTED.name()));
             })
         .replaceWithVoid();
   }
