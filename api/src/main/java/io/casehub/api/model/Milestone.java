@@ -110,7 +110,9 @@ public class Milestone {
     }
 
     public Builder condition(String condition) {
-      this.condition = new JQExpressionEvaluator(condition);
+      this.condition =
+          new JQExpressionEvaluator(
+              Objects.requireNonNull(condition, "condition must not be null"));
       return this;
     }
 
