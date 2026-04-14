@@ -17,7 +17,7 @@ package io.casehub.engine.internal.engine;
 
 import io.casehub.api.context.StateContext;
 import io.casehub.api.engine.LoopControl;
-import io.casehub.api.model.DispatchRule;
+import io.casehub.api.model.Binding;
 import jakarta.enterprise.context.ApplicationScoped;
 import java.util.List;
 
@@ -32,7 +32,7 @@ import java.util.List;
 public class ChoreographyLoopControl implements LoopControl {
 
   @Override
-  public List<DispatchRule> select(final StateContext context, final List<DispatchRule> eligible) {
+  public List<Binding> select(final StateContext context, final List<Binding> eligible) {
     return eligible;
   }
 }
