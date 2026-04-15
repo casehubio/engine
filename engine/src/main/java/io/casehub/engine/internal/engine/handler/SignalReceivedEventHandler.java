@@ -19,7 +19,6 @@ import static io.casehub.engine.internal.event.EventBusAddresses.CONTEXT_CHANGED
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import io.casehub.api.context.CaseContext;
 import io.casehub.engine.internal.engine.cache.CaseInstanceCache;
 import io.casehub.engine.internal.engine.recovery.WorkerExecutionRecoveryService;
 import io.casehub.engine.internal.event.CaseContextChangedEvent;
@@ -36,6 +35,7 @@ import io.vertx.mutiny.core.eventbus.EventBus;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
 import java.time.Instant;
+import java.util.Optional;
 import org.jboss.logging.Logger;
 
 @ApplicationScoped
@@ -63,17 +63,18 @@ public class SignalReceivedEventHandler {
   }
 
   private Uni<Void> applySignal(CaseInstance instance, SignalReceivedEvent event) {
-    CaseContext before = instance.getCaseContext().snapshot();
-    instance.getCaseContext().setPath(event.path(), event.value());
-    JsonNode diff = before.diff(instance.getCaseContext());
-    JsonNode contextSnapshot = instance.getCaseContext().asJsonNode();
+    Optional<JsonNode> maybeDiff =
+        instance.getCaseContext().applyAndDiff(event.path(), event.value());
 
-    if (diff.isEmpty()) {
+    if (maybeDiff.isEmpty()) {
       LOG.debugf(
           "Signal path='%s' produced no state change for caseId=%s — skipping",
           event.path(), event.caseId());
       return Uni.createFrom().voidItem();
     }
+
+    JsonNode diff = maybeDiff.get();
+    JsonNode contextSnapshot = instance.getCaseContext().asJsonNode();
 
     return Panache.withTransaction(
             () -> {
