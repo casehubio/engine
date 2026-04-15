@@ -37,7 +37,7 @@ public class CaseInstanceEntity extends PanacheEntity {
   public UUID uuid;
 
   @Enumerated(EnumType.STRING)
-  @Column(name = "state", nullable = false)
+  @Column(name = "state", nullable = false, length = 50)
   public CaseStatus state;
 
   @ManyToOne(fetch = FetchType.EAGER)
