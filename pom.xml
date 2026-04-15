@@ -84,6 +84,7 @@
         <module>schema</module>
         <module>engine</module>
         <module>casehub-blackboard</module>
+        <module>casehub-resilience</module>
     </modules>
 
     <dependencyManagement>
