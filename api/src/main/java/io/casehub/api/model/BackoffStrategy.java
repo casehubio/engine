@@ -15,15 +15,21 @@
  */
 package io.casehub.api.model;
 
-public record RetryPolicy(Integer maxAttempts, Integer delayMs, BackoffStrategy backoffStrategy) {
+/** Backoff strategy applied between retry attempts. */
+public enum BackoffStrategy {
 
-  /** Default: 3 attempts, 10s fixed delay. */
-  public RetryPolicy() {
-    this(3, 10000, BackoffStrategy.FIXED);
-  }
+  /** Constant delay of {@code delayMs} between every attempt. */
+  FIXED,
 
-  /** Backwards-compatible 2-arg constructor — defaults to FIXED backoff. */
-  public RetryPolicy(Integer maxAttempts, Integer delayMs) {
-    this(maxAttempts, delayMs, BackoffStrategy.FIXED);
-  }
+  /**
+   * Delay doubles with each attempt ({@code delayMs * 2^(attempt-1)}), capped at 30 seconds.
+   * Prevents thundering-herd when many workers fail simultaneously.
+   */
+  EXPONENTIAL,
+
+  /**
+   * Exponential backoff with random jitter in {@code [0, exponentialDelay]}, capped at 30 seconds.
+   * Spreads retry load across time when many workers share the same backoff schedule.
+   */
+  EXPONENTIAL_WITH_JITTER
 }
