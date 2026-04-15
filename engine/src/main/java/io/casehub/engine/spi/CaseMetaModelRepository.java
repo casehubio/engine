@@ -20,7 +20,7 @@ import io.smallrye.mutiny.Uni;
 
 public interface CaseMetaModelRepository {
 
-  /** Find by the unique (namespace, name, version) key. Returns null if not found. */
+  /** Find by the unique (namespace, name, version) key. Returns null if not registered. */
   Uni<CaseMetaModel> findByKey(String namespace, String name, String version);
 
   /** Persist a new case meta model. Returns the saved instance with id populated. */
