@@ -13,17 +13,16 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.casehub.api.model;
+package io.casehub.resilience.deadletter;
 
-public record RetryPolicy(Integer maxAttempts, Integer delayMs, BackoffStrategy backoffStrategy) {
+/** Lifecycle status of a {@link DeadLetterEntry}. */
+public enum DeadLetterStatus {
+  /** Entry is awaiting human review or automated replay. */
+  PENDING_REVIEW,
 
-  /** Default: 3 attempts, 10s fixed delay. */
-  public RetryPolicy() {
-    this(3, 10000, BackoffStrategy.FIXED);
-  }
+  /** Entry has been replayed (re-submitted for execution). */
+  REPLAYED,
 
-  /** Backwards-compatible 2-arg constructor — defaults to FIXED backoff. */
-  public RetryPolicy(Integer maxAttempts, Integer delayMs) {
-    this(maxAttempts, delayMs, BackoffStrategy.FIXED);
-  }
+  /** Entry has been acknowledged as unrecoverable and will not be retried. */
+  DISCARDED
 }

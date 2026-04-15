@@ -13,17 +13,21 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.casehub.api.model;
+package io.casehub.engine.internal.worker;
 
-public record RetryPolicy(Integer maxAttempts, Integer delayMs, BackoffStrategy backoffStrategy) {
+import io.casehub.api.spi.WorkerExecutionGuard;
+import jakarta.enterprise.context.ApplicationScoped;
+import java.util.UUID;
 
-  /** Default: 3 attempts, 10s fixed delay. */
-  public RetryPolicy() {
-    this(3, 10000, BackoffStrategy.FIXED);
-  }
+/**
+ * Default no-op {@link WorkerExecutionGuard}: all workers are always allowed to execute. Active
+ * when {@code casehub-resilience} is not on the classpath or no alternative is selected.
+ */
+@ApplicationScoped
+public class AllowAllWorkerExecutionGuard implements WorkerExecutionGuard {
 
-  /** Backwards-compatible 2-arg constructor — defaults to FIXED backoff. */
-  public RetryPolicy(Integer maxAttempts, Integer delayMs) {
-    this(maxAttempts, delayMs, BackoffStrategy.FIXED);
+  @Override
+  public boolean isBlocked(String workerId, UUID caseId) {
+    return false;
   }
 }
