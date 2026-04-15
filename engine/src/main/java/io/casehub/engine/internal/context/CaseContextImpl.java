@@ -21,7 +21,7 @@ import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
-import io.casehub.api.context.StateContext;
+import io.casehub.api.context.CaseContext;
 import io.fabric8.zjsonpatch.JsonDiff;
 import io.fabric8.zjsonpatch.JsonPatch;
 import java.util.ArrayList;
@@ -35,8 +35,8 @@ import java.util.concurrent.locks.ReadWriteLock;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 import java.util.function.Function;
 
-@JsonDeserialize(as = StateContextImpl.class)
-public class StateContextImpl implements StateContext {
+@JsonDeserialize(as = CaseContextImpl.class)
+public class CaseContextImpl implements CaseContext {
 
   private static final ObjectMapper mapper = new ObjectMapper();
 
@@ -44,22 +44,22 @@ public class StateContextImpl implements StateContext {
   private final ReadWriteLock lock = new ReentrantReadWriteLock();
   private long version = 0L;
 
-  public StateContextImpl() {}
+  public CaseContextImpl() {}
 
-  public StateContextImpl(Map<String, Object> initial) {
+  public CaseContextImpl(Map<String, Object> initial) {
     if (initial != null) {
       data.putAll(initial);
     }
   }
 
-  public StateContextImpl(Map<String, Object> initial, long version) {
+  public CaseContextImpl(Map<String, Object> initial, long version) {
     if (initial != null) {
       data.putAll(initial);
     }
     this.version = version;
   }
 
-  public StateContextImpl(JsonNode asNode) {
+  public CaseContextImpl(JsonNode asNode) {
     this(mapper.convertValue(asNode == null ? mapper.createObjectNode() : asNode, Map.class));
   }
 
@@ -76,7 +76,7 @@ public class StateContextImpl implements StateContext {
 
   @JsonAnySetter
   @Override
-  public StateContext set(String key, Object value) {
+  public CaseContext set(String key, Object value) {
     lock.writeLock().lock();
     try {
       Object prev = data.get(key);
@@ -179,7 +179,7 @@ public class StateContextImpl implements StateContext {
   }
 
   @Override
-  public StateContext update(String key, Function<Object, Object> updateFunction) {
+  public CaseContext update(String key, Function<Object, Object> updateFunction) {
     lock.writeLock().lock();
     try {
       Object current = data.get(key);
@@ -288,7 +288,7 @@ public class StateContextImpl implements StateContext {
 
   @SuppressWarnings("unchecked")
   @Override
-  public StateContext setPath(String path, Object value) {
+  public CaseContext setPath(String path, Object value) {
     lock.writeLock().lock();
     try {
       String[] parts = path.split("\\.");
@@ -319,7 +319,7 @@ public class StateContextImpl implements StateContext {
   }
 
   @Override
-  public StateContext setAll(Map<String, Object> values) {
+  public CaseContext setAll(Map<String, Object> values) {
     if (values == null || values.isEmpty()) return this;
     lock.writeLock().lock();
     try {
@@ -368,7 +368,7 @@ public class StateContextImpl implements StateContext {
   }
 
   @Override
-  public StateContext remove(String key) {
+  public CaseContext remove(String key) {
     lock.writeLock().lock();
     try {
       if (data.containsKey(key)) {
@@ -382,7 +382,7 @@ public class StateContextImpl implements StateContext {
   }
 
   @Override
-  public StateContext clear() {
+  public CaseContext clear() {
     lock.writeLock().lock();
     try {
       if (!data.isEmpty()) {
@@ -439,7 +439,7 @@ public class StateContextImpl implements StateContext {
   }
 
   @Override
-  public StateContext merge(StateContext other) {
+  public CaseContext merge(CaseContext other) {
     if (other == null) return this;
     lock.writeLock().lock();
     try {
@@ -462,17 +462,17 @@ public class StateContextImpl implements StateContext {
   }
 
   @Override
-  public StateContext snapshot() {
+  public CaseContext snapshot() {
     lock.readLock().lock();
     try {
-      return new StateContextImpl(deepCopy(data), version);
+      return new CaseContextImpl(deepCopy(data), version);
     } finally {
       lock.readLock().unlock();
     }
   }
 
   @Override
-  public JsonNode diff(StateContext other) {
+  public JsonNode diff(CaseContext other) {
     lock.readLock().lock();
     try {
       JsonNode thisNode = mapper.convertValue(this.data, JsonNode.class);
@@ -543,7 +543,7 @@ public class StateContextImpl implements StateContext {
   @Override
   public boolean equals(Object o) {
     if (this == o) return true;
-    if (!(o instanceof StateContextImpl that)) return false;
+    if (!(o instanceof CaseContextImpl that)) return false;
     Map<String, Object> thisData = this.getData();
     Map<String, Object> thatData = that.getData();
     return thisData.equals(thatData);

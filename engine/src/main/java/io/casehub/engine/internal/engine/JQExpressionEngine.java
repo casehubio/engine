@@ -15,7 +15,7 @@
  */
 package io.casehub.engine.internal.engine;
 
-import io.casehub.api.context.StateContext;
+import io.casehub.api.context.CaseContext;
 import io.casehub.api.engine.ExpressionEngine;
 import io.casehub.api.model.evaluator.ExpressionEvaluator;
 import io.casehub.api.model.evaluator.JQExpressionEvaluator;
@@ -38,7 +38,7 @@ public class JQExpressionEngine implements ExpressionEngine {
   }
 
   @Override
-  public boolean evaluate(final ExpressionEvaluator evaluator, final StateContext context) {
+  public boolean evaluate(final ExpressionEvaluator evaluator, final CaseContext context) {
     final String expr = ((JQExpressionEvaluator) evaluator).expression();
     if (expr == null || expr.isBlank()) {
       return true;

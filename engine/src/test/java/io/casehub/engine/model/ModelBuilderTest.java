@@ -280,8 +280,6 @@ class ModelBuilderTest {
     @Test
     @DisplayName("null ExpressionEvaluator condition throws NullPointerException")
     void nullEvaluatorCondition_throws() {
-      // condition(String null) wraps null in JQExpressionEvaluator (non-null object) — that path
-      // does not throw. condition(ExpressionEvaluator) with null does hit requireNonNull at build.
       assertThrows(
           NullPointerException.class,
           () ->
@@ -289,6 +287,14 @@ class ModelBuilderTest {
                   .name("m")
                   .condition((io.casehub.api.model.evaluator.ExpressionEvaluator) null)
                   .build());
+    }
+
+    @Test
+    @DisplayName("null String condition throws NullPointerException")
+    void nullStringCondition_throws() {
+      assertThrows(
+          NullPointerException.class,
+          () -> Milestone.builder().name("m").condition((String) null).build());
     }
 
     @Test
@@ -340,6 +346,31 @@ class ModelBuilderTest {
           Milestone.builder().name("m").condition(".x == true").description("my milestone").build();
       assertEquals("my milestone", m.getDescription());
     }
+
+    @Test
+    @DisplayName("condition(Predicate) creates LambdaExpressionEvaluator")
+    void conditionPredicate_createsLambdaEvaluator() {
+      final var m =
+          Milestone.builder()
+              .name("m")
+              .condition((io.casehub.api.context.CaseContext ctx) -> true)
+              .build();
+      assertInstanceOf(
+          io.casehub.api.model.evaluator.LambdaExpressionEvaluator.class, m.getCondition());
+    }
+
+    @Test
+    @DisplayName("null Predicate condition throws NullPointerException")
+    void nullPredicateCondition_throws() {
+      assertThrows(
+          NullPointerException.class,
+          () ->
+              Milestone.builder()
+                  .name("m")
+                  .condition(
+                      (java.util.function.Predicate<io.casehub.api.context.CaseContext>) null)
+                  .build());
+    }
   }
 
   // ================================================================== //
@@ -361,8 +392,6 @@ class ModelBuilderTest {
     @Test
     @DisplayName("null ExpressionEvaluator condition throws NullPointerException")
     void nullEvaluatorCondition_throws() {
-      // condition(String null) wraps null in JQExpressionEvaluator (non-null object) so does not
-      // throw. Passing a null ExpressionEvaluator directly hits requireNonNull at build time.
       assertThrows(
           NullPointerException.class,
           () ->
@@ -371,6 +400,14 @@ class ModelBuilderTest {
                   .condition((io.casehub.api.model.evaluator.ExpressionEvaluator) null)
                   .kind(GoalKind.SUCCESS)
                   .build());
+    }
+
+    @Test
+    @DisplayName("null String condition throws NullPointerException")
+    void nullStringCondition_throws() {
+      assertThrows(
+          NullPointerException.class,
+          () -> Goal.builder().name("g").condition((String) null).kind(GoalKind.SUCCESS).build());
     }
 
     @Test
@@ -449,6 +486,33 @@ class ModelBuilderTest {
       final var failure =
           Goal.builder().name("g").condition(".x == true").kind(GoalKind.FAILURE).build();
       assertNotEquals(success, failure);
+    }
+
+    @Test
+    @DisplayName("condition(Predicate) creates LambdaExpressionEvaluator")
+    void conditionPredicate_createsLambdaEvaluator() {
+      final var g =
+          Goal.builder()
+              .name("g")
+              .condition((io.casehub.api.context.CaseContext ctx) -> true)
+              .kind(GoalKind.SUCCESS)
+              .build();
+      assertInstanceOf(
+          io.casehub.api.model.evaluator.LambdaExpressionEvaluator.class, g.getCondition());
+    }
+
+    @Test
+    @DisplayName("null Predicate condition throws NullPointerException")
+    void nullPredicateCondition_throws() {
+      assertThrows(
+          NullPointerException.class,
+          () ->
+              Goal.builder()
+                  .name("g")
+                  .condition(
+                      (java.util.function.Predicate<io.casehub.api.context.CaseContext>) null)
+                  .kind(GoalKind.SUCCESS)
+                  .build());
     }
   }
 

@@ -18,14 +18,14 @@ package io.casehub.engine.internal.engine;
 import static io.casehub.engine.internal.event.EventBusAddresses.CASE_STARTED;
 import static io.casehub.engine.internal.event.EventBusAddresses.SIGNAL_RECEIVED;
 
-import io.casehub.api.context.StateContext;
+import io.casehub.api.context.CaseContext;
 import io.casehub.api.model.CaseDefinition;
+import io.casehub.api.model.CaseStatus;
 import io.casehub.engine.internal.engine.cache.CaseInstanceCache;
 import io.casehub.engine.internal.event.CaseStartedEvent;
 import io.casehub.engine.internal.event.SignalReceivedEvent;
 import io.casehub.engine.internal.model.CaseInstance;
 import io.casehub.engine.internal.model.CaseMetaModel;
-import io.casehub.engine.internal.model.CaseState;
 import io.smallrye.mutiny.Uni;
 import io.vertx.mutiny.core.eventbus.EventBus;
 import jakarta.enterprise.context.ApplicationScoped;
@@ -49,7 +49,7 @@ class CaseHubReactor {
 
   @Inject EventBus eventBus;
 
-  CompletionStage<UUID> startCase(CaseDefinition definition, StateContext context) {
+  CompletionStage<UUID> startCase(CaseDefinition definition, CaseContext context) {
     return getCaseInstance(definition, context)
         .invoke(
             instance -> {
@@ -61,15 +61,15 @@ class CaseHubReactor {
         .subscribeAsCompletionStage();
   }
 
-  private Uni<CaseInstance> getCaseInstance(CaseDefinition definition, StateContext context) {
+  private Uni<CaseInstance> getCaseInstance(CaseDefinition definition, CaseContext context) {
     CaseMetaModel model = caseDefinitionRegistry.getCaseMetaModel(definition);
 
     CaseInstance instance = new CaseInstance();
     instance.setUuid(UUID.randomUUID());
     instance.setCaseMetaModel(model);
     instance.setVersion(0L);
-    instance.setState(CaseState.ACTIVE);
-    instance.setStateContext(context);
+    instance.setState(CaseStatus.RUNNING);
+    instance.setCaseContext(context);
 
     caseInstanceCache.put(instance);
     return sessionFactory.withTransaction(session -> instance.persist());
@@ -85,7 +85,7 @@ class CaseHubReactor {
           if (caseInstanceCache.get(caseId) == null) {
             throw new RuntimeException("Case instance not found for caseId: " + caseId);
           }
-          return caseInstanceCache.get(caseId).getStateContext().getPath(path);
+          return caseInstanceCache.get(caseId).getCaseContext().getPath(path);
         });
   }
 

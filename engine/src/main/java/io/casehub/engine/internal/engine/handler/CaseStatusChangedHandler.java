@@ -16,13 +16,13 @@
 package io.casehub.engine.internal.engine.handler;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import io.casehub.api.model.CaseStatus;
 import io.casehub.engine.internal.event.CaseStatusChanged;
 import io.casehub.engine.internal.event.EventBusAddresses;
 import io.casehub.engine.internal.history.CaseHubEventType;
 import io.casehub.engine.internal.history.EventLog;
 import io.casehub.engine.internal.history.EventStreamType;
 import io.casehub.engine.internal.model.CaseInstance;
-import io.casehub.engine.internal.model.CaseState;
 import io.quarkus.hibernate.reactive.panache.Panache;
 import io.quarkus.vertx.ConsumeEvent;
 import io.smallrye.mutiny.Uni;
@@ -43,7 +43,7 @@ public class CaseStatusChangedHandler {
   @ConsumeEvent(value = EventBusAddresses.CASE_STATUS_CHANGED)
   public Uni<Void> onCaseStatusChangedHandler(CaseStatusChanged event) {
     CaseInstance caseInstance = event.instance();
-    CaseState newState = CaseState.valueOf(event.newStatus());
+    CaseStatus newState = CaseStatus.valueOf(event.newStatus());
     String oldStatus = event.oldStatus();
 
     LOG.infof(
@@ -80,18 +80,18 @@ public class CaseStatusChangedHandler {
         .replaceWithVoid();
   }
 
-  private CaseHubEventType resolveState(CaseState state) {
+  private CaseHubEventType resolveState(CaseStatus state) {
     return switch (state) {
       case COMPLETED -> CaseHubEventType.CASE_COMPLETED;
-      case FAILED -> CaseHubEventType.CASE_FAILED;
+      case FAULTED -> CaseHubEventType.CASE_FAULTED;
       default -> CaseHubEventType.CASE_STATUS_CHANGED;
     };
   }
 
-  private String resolveStateAsString(CaseState state) {
+  private String resolveStateAsString(CaseStatus state) {
     return switch (state) {
       case COMPLETED -> EventBusAddresses.CASE_COMPLETED;
-      case FAILED -> EventBusAddresses.CASE_FAILED;
+      case FAULTED -> EventBusAddresses.CASE_FAULTED;
       default -> null;
     };
   }

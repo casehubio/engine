@@ -19,8 +19,8 @@ import static org.awaitility.Awaitility.await;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 
+import io.casehub.api.model.CaseStatus;
 import io.casehub.engine.internal.engine.cache.CaseInstanceCache;
-import io.casehub.engine.internal.model.CaseState;
 import io.quarkus.test.junit.QuarkusTest;
 import jakarta.inject.Inject;
 import java.util.Map;
@@ -68,7 +68,7 @@ public class SimpleCaseHubBeanTest {
             () -> {
               var instance = caseInstanceCache.get(ref.get());
               assertNotNull(instance);
-              assertEquals(CaseState.COMPLETED, instance.getState());
+              assertEquals(CaseStatus.COMPLETED, instance.getState());
             });
   }
 }

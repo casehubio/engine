@@ -13,13 +13,21 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.casehub.engine.internal.model;
+package io.casehub.blackboard.strategy;
 
-public enum CaseState {
-  ACTIVE,
-  COMPLETED,
-  FAILED,
-  SUSPENDED,
-  TERMINATED,
-  WAITING
+import io.casehub.api.context.CaseContext;
+import io.casehub.blackboard.plan.PlanItem;
+import jakarta.enterprise.context.ApplicationScoped;
+import java.util.List;
+
+/**
+ * Default: fires all eligible PlanItems — orchestration at Stage level, choreography within Stage.
+ */
+@ApplicationScoped
+public class DefaultPlanningStrategy implements PlanningStrategy {
+
+  @Override
+  public List<PlanItem<?>> select(CaseContext context, List<PlanItem<?>> eligible) {
+    return eligible;
+  }
 }

@@ -15,9 +15,12 @@
  */
 package io.casehub.api.model;
 
+import io.casehub.api.context.CaseContext;
 import io.casehub.api.model.evaluator.ExpressionEvaluator;
 import io.casehub.api.model.evaluator.JQExpressionEvaluator;
+import io.casehub.api.model.evaluator.LambdaExpressionEvaluator;
 import java.util.Objects;
+import java.util.function.Predicate;
 
 /**
  * A named outcome that a case is trying to achieve, with success or failure polarity.
@@ -120,7 +123,16 @@ public class Goal {
     }
 
     public Builder condition(String condition) {
-      this.condition = new JQExpressionEvaluator(condition);
+      this.condition =
+          new JQExpressionEvaluator(
+              Objects.requireNonNull(condition, "condition must not be null"));
+      return this;
+    }
+
+    public Builder condition(Predicate<CaseContext> predicate) {
+      this.condition =
+          new LambdaExpressionEvaluator(
+              Objects.requireNonNull(predicate, "condition must not be null"));
       return this;
     }
 

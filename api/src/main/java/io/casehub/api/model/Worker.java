@@ -15,8 +15,9 @@
  */
 package io.casehub.api.model;
 
-import io.casehub.api.context.StateContext;
+import io.casehub.api.context.CaseContext;
 import io.casehub.api.model.holder.WorkerFunctionHolder;
+import io.casehub.api.plan.PlanElement;
 import io.serverlessworkflow.api.types.Workflow;
 import java.io.File;
 import java.util.Arrays;
@@ -25,7 +26,7 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.function.Function;
 
-public class Worker {
+public class Worker implements PlanElement {
 
   private final String name;
   private final List<Capability> capabilities;
@@ -36,7 +37,7 @@ public class Worker {
   public Worker(
       String name,
       List<Capability> capabilities,
-      Function<StateContext, Map<String, Object>> function) {
+      Function<CaseContext, Map<String, Object>> function) {
     this(name, capabilities, new WorkerFunctionHolder<>(function));
   }
 
