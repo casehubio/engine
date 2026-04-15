@@ -30,6 +30,7 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.locks.ReadWriteLock;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
@@ -313,6 +314,42 @@ public class CaseContextImpl implements CaseContext {
         version++;
       }
       return this;
+    } finally {
+      lock.writeLock().unlock();
+    }
+  }
+
+  @Override
+  @SuppressWarnings("unchecked")
+  public Optional<JsonNode> applyAndDiff(String path, Object value) {
+    lock.writeLock().lock();
+    try {
+      JsonNode before = mapper.convertValue(data, JsonNode.class);
+
+      String[] parts = path.split("\\.");
+      Map<String, Object> current = data;
+      for (int i = 0; i < parts.length - 1; i++) {
+        Object next = current.get(parts[i]);
+        if (next == null) {
+          next = new LinkedHashMap<String, Object>();
+          current.put(parts[i], next);
+        }
+        if (next instanceof Map) {
+          current = (Map<String, Object>) next;
+        } else {
+          throw new IllegalStateException("Cannot set path: " + parts[i] + " is not a Map");
+        }
+      }
+      String leaf = parts[parts.length - 1];
+      Object prev = current.get(leaf);
+      if (!Objects.equals(prev, value)) {
+        current.put(leaf, value);
+        version++;
+      }
+
+      JsonNode after = mapper.convertValue(data, JsonNode.class);
+      JsonNode diff = JsonDiff.asJson(before, after);
+      return diff.isEmpty() ? Optional.empty() : Optional.of(diff);
     } finally {
       lock.writeLock().unlock();
     }

@@ -22,10 +22,11 @@ CREATE TABLE IF NOT EXISTS case_meta_model (
 
 -- Represents a running case instance linked to a definition
 CREATE TABLE IF NOT EXISTS case_instance (
-    id                 BIGINT      NOT NULL DEFAULT nextval('case_instance_seq'),
-    uuid               UUID        NOT NULL,
-    case_definition_id BIGINT      NOT NULL,
-    state              VARCHAR(50),
+    id                   BIGINT      NOT NULL DEFAULT nextval('case_instance_seq'),
+    uuid                 UUID        NOT NULL,
+    case_definition_id   BIGINT      NOT NULL,
+    state                VARCHAR(50),
+    parent_plan_item_id  UUID,
     PRIMARY KEY (id),
     CONSTRAINT uq_case_instance_uuid
         UNIQUE (uuid),
