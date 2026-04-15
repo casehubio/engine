@@ -47,7 +47,7 @@ import org.jboss.logging.Logger;
 @ApplicationScoped
 public class CaseContextChangedEventHandler {
 
-  private static final Logger LOG = Logger.getLogger(CaseStartedEventHandler.class);
+  private static final Logger LOG = Logger.getLogger(CaseContextChangedEventHandler.class);
 
   @Inject EventBus eventBus;
 
