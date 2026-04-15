@@ -18,6 +18,7 @@ package io.casehub.api.context;
 import com.fasterxml.jackson.databind.JsonNode;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
 import java.util.function.Function;
 
@@ -58,6 +59,13 @@ public interface CaseContext {
   String getPathAsString(String path);
 
   CaseContext setPath(String path, Object value);
+
+  /**
+   * Atomically sets the value at {@code path} and returns the JSON diff against the state before
+   * the write. Returns {@link Optional#empty()} if the write produced no state change (idempotent
+   * signal deduplication).
+   */
+  Optional<JsonNode> applyAndDiff(String path, Object value);
 
   CaseContext setAll(Map<String, Object> values);
 

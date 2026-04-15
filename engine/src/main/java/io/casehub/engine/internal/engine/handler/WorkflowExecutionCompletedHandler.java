@@ -19,7 +19,6 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import io.casehub.api.model.Worker;
-import io.casehub.api.spi.ContextDiffStrategy;
 import io.casehub.engine.internal.event.CaseContextChangedEvent;
 import io.casehub.engine.internal.event.EventBusAddresses;
 import io.casehub.engine.internal.event.WorkflowExecutionCompleted;
@@ -55,16 +54,9 @@ public class WorkflowExecutionCompletedHandler {
 
     return Panache.withTransaction(
             () -> {
-              // Snapshot BEFORE applying output — deep copy so setAll cannot corrupt it
-              JsonNode contextBefore = caseInstance.getCaseContext().snapshot().asJsonNode();
               caseInstance.getCaseContext().setAll(rawOutput);
-              JsonNode contextAfter = caseInstance.getCaseContext().asJsonNode();
-
-              JsonNode diff = contextDiffStrategy.compute(contextBefore, contextAfter);
-              EventLog eventLog =
-                  buildEventLog(caseInstance, worker, rawOutput, event.idempotency(), now, diff);
-
-              return eventLog.persist().replaceWith(contextAfter);
+              JsonNode contextSnapshot = caseInstance.getCaseContext().asJsonNode();
+              return eventLog.persist().replaceWith(contextSnapshot);
             })
         .invoke(
             contextSnapshot ->
