@@ -106,22 +106,32 @@ public class WorkerExecutionRecoveryService {
   }
 
   private Uni<Void> reschedulePendingEvents(List<EventLog> eventLogs) {
-    Set<String> alreadyStarted = new HashSet<>();
+    // First pass: collect keys for every execution that has already been started,
+    // completed, or failed. Events are ordered by seq asc, so WORKER_SCHEDULED always
+    // appears before its matching terminal event in the stream. A single-pass approach
+    // would include every SCHEDULED event for recovery because the terminal event hasn't
+    // been seen yet when the SCHEDULED event is processed.
+    Set<String> alreadyProgressed = new HashSet<>();
+    for (EventLog eventLog : eventLogs) {
+      if (eventLog.getEventType() != CaseHubEventType.WORKER_SCHEDULED) {
+        String key = executionKey(eventLog);
+        if (key != null) {
+          alreadyProgressed.add(key);
+        }
+      }
+    }
+
+    // Second pass: only reschedule WORKER_SCHEDULED events that have no matching
+    // STARTED / COMPLETED / FAILED record (i.e. genuinely interrupted mid-flight).
     List<Uni<Void>> recoveries =
         eventLogs.stream()
             .filter(
                 eventLog -> {
-                  String executionKey = executionKey(eventLog);
-                  if (executionKey == null) {
+                  if (eventLog.getEventType() != CaseHubEventType.WORKER_SCHEDULED) {
                     return false;
                   }
-
-                  if (eventLog.getEventType() == CaseHubEventType.WORKER_SCHEDULED) {
-                    return !alreadyStarted.contains(executionKey);
-                  }
-
-                  alreadyStarted.add(executionKey);
-                  return false;
+                  String key = executionKey(eventLog);
+                  return key != null && !alreadyProgressed.contains(key);
                 })
             .map(workflowExecutionManager::schedulePersistedEvent)
             .toList();
