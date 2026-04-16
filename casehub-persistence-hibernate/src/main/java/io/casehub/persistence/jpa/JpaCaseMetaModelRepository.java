@@ -21,6 +21,7 @@ import io.quarkus.hibernate.reactive.panache.Panache;
 import io.smallrye.mutiny.Uni;
 import jakarta.enterprise.context.ApplicationScoped;
 import java.time.Instant;
+import java.time.temporal.ChronoUnit;
 
 @ApplicationScoped
 public class JpaCaseMetaModelRepository implements CaseMetaModelRepository {
@@ -38,7 +39,7 @@ public class JpaCaseMetaModelRepository implements CaseMetaModelRepository {
   @Override
   public Uni<CaseMetaModel> save(CaseMetaModel metaModel) {
     CaseMetaModelEntity entity = toEntity(metaModel);
-    entity.createdAt = Instant.now();
+    entity.createdAt = Instant.now().truncatedTo(ChronoUnit.MICROS);
     return Panache.withTransaction(() -> entity.persist())
         .map(
             v -> {
