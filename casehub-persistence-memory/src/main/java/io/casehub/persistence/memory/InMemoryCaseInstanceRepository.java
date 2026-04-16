@@ -42,6 +42,9 @@ public class InMemoryCaseInstanceRepository implements CaseInstanceRepository {
 
   @Override
   public Uni<CaseInstance> update(CaseInstance instance) {
+    if (!store.containsKey(instance.getUuid())) {
+      throw new IllegalStateException("CaseInstance not found for UUID: " + instance.getUuid());
+    }
     store.put(instance.getUuid(), instance);
     return Uni.createFrom().item(instance);
   }
