@@ -38,7 +38,9 @@ public class InMemoryCaseMetaModelRepository implements CaseMetaModelRepository 
 
   @Override
   public Uni<CaseMetaModel> save(CaseMetaModel metaModel) {
-    metaModel.setId(idSeq.incrementAndGet());
+    if (metaModel.getId() == null) {
+      metaModel.setId(idSeq.incrementAndGet());
+    }
     if (metaModel.getCreatedAt() == null) {
       metaModel.setCreatedAt(Instant.now());
     }
