@@ -121,14 +121,22 @@ public class SignalTest {
   /** Signal with a primitive value (not a Map) must also trigger the rule. */
   @Test
   void signalWithPrimitiveValueTriggersWorker() {
-    UUID caseId = bean.startCase(Map.of("orderId", "order-primitive")).toCompletableFuture().join();
+    String orderId = "order-primitive-" + UUID.randomUUID();
+    UUID caseId = bean.startCase(Map.of("orderId", orderId)).toCompletableFuture().join();
 
     // signal writes a non-null value — rule checks `.payment != null`
     bean.signal(caseId, "payment", 999);
 
     await()
         .atMost(10, TimeUnit.SECONDS)
-        .untilAsserted(() -> assertEquals(1, SignalCaseHubBean.runCount.get()));
+        .untilAsserted(
+            () ->
+                assertEquals(
+                    1,
+                    SignalCaseHubBean.runCountByOrderId
+                        .getOrDefault(orderId, new AtomicInteger())
+                        .get(),
+                    "Worker must run exactly once for signal with primitive value"));
   }
 
   /**
@@ -232,10 +240,10 @@ public class SignalTest {
                   .function(
                       input -> {
                         runCount.incrementAndGet();
-                        String orderId = (String) input.get("orderId");
+                        Object orderId = input.get("orderId");
                         if (orderId != null) {
                           runCountByOrderId
-                              .computeIfAbsent(orderId, k -> new AtomicInteger())
+                              .computeIfAbsent(orderId.toString(), k -> new AtomicInteger())
                               .incrementAndGet();
                         }
                         return Map.of("status", "paid");
