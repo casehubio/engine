@@ -82,7 +82,9 @@ public class SignalPersistenceAndDedupTest {
             () -> {
               assertEquals(
                   1,
-                  findWorkerEvents(caseId, CaseHubEventType.WORKER_EXECUTION_COMPLETED, "payment-worker").size());
+                  findWorkerEvents(
+                          caseId, CaseHubEventType.WORKER_EXECUTION_COMPLETED, "payment-worker")
+                      .size());
 
               EventLog signalEvent = latestEvent(caseId, CaseHubEventType.SIGNAL_RECEIVED);
               assertNotNull(signalEvent);
@@ -113,7 +115,9 @@ public class SignalPersistenceAndDedupTest {
             () -> {
               assertEquals(
                   1,
-                  findWorkerEvents(caseId, CaseHubEventType.WORKER_EXECUTION_COMPLETED, "payment-worker").size());
+                  findWorkerEvents(
+                          caseId, CaseHubEventType.WORKER_EXECUTION_COMPLETED, "payment-worker")
+                      .size());
               assertEquals(
                   1,
                   countWorkerEvents(
@@ -145,7 +149,9 @@ public class SignalPersistenceAndDedupTest {
             () -> {
               assertEquals(
                   1,
-                  findWorkerEvents(caseId, CaseHubEventType.WORKER_EXECUTION_COMPLETED, "payment-worker").size());
+                  findWorkerEvents(
+                          caseId, CaseHubEventType.WORKER_EXECUTION_COMPLETED, "payment-worker")
+                      .size());
               assertEquals(
                   1,
                   countWorkerEvents(
@@ -160,7 +166,9 @@ public class SignalPersistenceAndDedupTest {
             () -> {
               assertEquals(
                   2,
-                  findWorkerEvents(caseId, CaseHubEventType.WORKER_EXECUTION_COMPLETED, "payment-worker").size());
+                  findWorkerEvents(
+                          caseId, CaseHubEventType.WORKER_EXECUTION_COMPLETED, "payment-worker")
+                      .size());
               assertEquals(
                   1,
                   countWorkerEvents(
@@ -195,7 +203,9 @@ public class SignalPersistenceAndDedupTest {
             () -> {
               assertEquals(
                   1,
-                  findWorkerEvents(caseId, CaseHubEventType.WORKER_EXECUTION_COMPLETED, "payment-worker").size());
+                  findWorkerEvents(
+                          caseId, CaseHubEventType.WORKER_EXECUTION_COMPLETED, "payment-worker")
+                      .size());
               assertNotNull(latestEvent(caseId, CaseHubEventType.SIGNAL_RECEIVED));
               assertEquals(
                   1,
