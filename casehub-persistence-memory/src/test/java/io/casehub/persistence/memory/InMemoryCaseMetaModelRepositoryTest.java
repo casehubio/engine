@@ -92,6 +92,17 @@ class InMemoryCaseMetaModelRepositoryTest {
     assertThat(a.getId()).isNotEqualTo(b.getId());
   }
 
+  @Test
+  void save_doesNotReassignIdIfAlreadySet() {
+    CaseMetaModel meta = metaModel("idempotent", "ns", "1.0");
+    repository.save(meta).await().indefinitely();
+    Long firstId = meta.getId();
+
+    repository.save(meta).await().indefinitely();
+
+    assertThat(meta.getId()).isEqualTo(firstId);
+  }
+
   // --- Edge cases ---
 
   @Test
