@@ -43,7 +43,6 @@ import java.time.Duration;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
-import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import org.hibernate.reactive.mutiny.Mutiny;
@@ -68,13 +67,11 @@ public class SignalPersistenceAndDedupTest {
   @BeforeEach
   void reset() {
     SignalPersistenceCaseHubBean.runCount.set(0);
-    SignalPersistenceCaseHubBean.runCountByOrderId.clear();
   }
 
   @Test
   void signalEventPayloadUsesWrappedPatchFormat() {
-    String orderId = "order-payload-" + UUID.randomUUID();
-    UUID caseId = bean.startCase(Map.of("orderId", orderId)).toCompletableFuture().join();
+    UUID caseId = bean.startCase(Map.of("orderId", "order-payload")).toCompletableFuture().join();
     Map<String, Object> payment = Map.of("amount", 125, "currency", "USD");
 
     bean.signal(caseId, "payment", payment);
@@ -83,8 +80,9 @@ public class SignalPersistenceAndDedupTest {
         .atMost(10, TimeUnit.SECONDS)
         .untilAsserted(
             () -> {
-              assertEquals(1, SignalPersistenceCaseHubBean.runCountByOrderId
-                  .getOrDefault(orderId, new AtomicInteger()).get());
+              assertEquals(
+                  1,
+                  findWorkerEvents(caseId, CaseHubEventType.WORKER_EXECUTION_COMPLETED, "payment-worker").size());
 
               EventLog signalEvent = latestEvent(caseId, CaseHubEventType.SIGNAL_RECEIVED);
               assertNotNull(signalEvent);
@@ -102,8 +100,7 @@ public class SignalPersistenceAndDedupTest {
 
   @Test
   void duplicateSignalSchedulesWorkerOnceForSameInput() {
-    String orderId = "order-dedup-" + UUID.randomUUID();
-    UUID caseId = bean.startCase(Map.of("orderId", orderId)).toCompletableFuture().join();
+    UUID caseId = bean.startCase(Map.of("orderId", "order-dedup")).toCompletableFuture().join();
     Map<String, Object> payment = Map.of("amount", 100, "currency", "EUR");
     String inputDataHash = inputDataHash(payment);
 
@@ -114,8 +111,9 @@ public class SignalPersistenceAndDedupTest {
         .atMost(10, TimeUnit.SECONDS)
         .untilAsserted(
             () -> {
-              assertEquals(1, SignalPersistenceCaseHubBean.runCountByOrderId
-                  .getOrDefault(orderId, new AtomicInteger()).get());
+              assertEquals(
+                  1,
+                  findWorkerEvents(caseId, CaseHubEventType.WORKER_EXECUTION_COMPLETED, "payment-worker").size());
               assertEquals(
                   1,
                   countWorkerEvents(
@@ -132,8 +130,8 @@ public class SignalPersistenceAndDedupTest {
 
   @Test
   void changedSignalSchedulesWorkerAgainForNewInput() {
-    String orderId = "order-different-input-" + UUID.randomUUID();
-    UUID caseId = bean.startCase(Map.of("orderId", orderId)).toCompletableFuture().join();
+    UUID caseId =
+        bean.startCase(Map.of("orderId", "order-different-input")).toCompletableFuture().join();
     Map<String, Object> firstPayment = Map.of("amount", 100, "currency", "EUR");
     Map<String, Object> secondPayment = Map.of("amount", 200, "currency", "EUR");
     String firstHash = inputDataHash(firstPayment);
@@ -145,8 +143,9 @@ public class SignalPersistenceAndDedupTest {
         .atMost(10, TimeUnit.SECONDS)
         .untilAsserted(
             () -> {
-              assertEquals(1, SignalPersistenceCaseHubBean.runCountByOrderId
-                  .getOrDefault(orderId, new AtomicInteger()).get());
+              assertEquals(
+                  1,
+                  findWorkerEvents(caseId, CaseHubEventType.WORKER_EXECUTION_COMPLETED, "payment-worker").size());
               assertEquals(
                   1,
                   countWorkerEvents(
@@ -159,8 +158,9 @@ public class SignalPersistenceAndDedupTest {
         .atMost(10, TimeUnit.SECONDS)
         .untilAsserted(
             () -> {
-              assertEquals(2, SignalPersistenceCaseHubBean.runCountByOrderId
-                  .getOrDefault(orderId, new AtomicInteger()).get());
+              assertEquals(
+                  2,
+                  findWorkerEvents(caseId, CaseHubEventType.WORKER_EXECUTION_COMPLETED, "payment-worker").size());
               assertEquals(
                   1,
                   countWorkerEvents(
@@ -183,8 +183,7 @@ public class SignalPersistenceAndDedupTest {
 
   @Test
   void recoveryRestoresSignalStateFromWrappedPatchPayload() {
-    String orderId = "order-recovery-" + UUID.randomUUID();
-    UUID caseId = bean.startCase(Map.of("orderId", orderId)).toCompletableFuture().join();
+    UUID caseId = bean.startCase(Map.of("orderId", "order-recovery")).toCompletableFuture().join();
     Map<String, Object> payment = Map.of("amount", 420, "currency", "CAD");
     String inputDataHash = inputDataHash(payment);
 
@@ -194,8 +193,9 @@ public class SignalPersistenceAndDedupTest {
         .atMost(10, TimeUnit.SECONDS)
         .untilAsserted(
             () -> {
-              assertEquals(1, SignalPersistenceCaseHubBean.runCountByOrderId
-                  .getOrDefault(orderId, new AtomicInteger()).get());
+              assertEquals(
+                  1,
+                  findWorkerEvents(caseId, CaseHubEventType.WORKER_EXECUTION_COMPLETED, "payment-worker").size());
               assertNotNull(latestEvent(caseId, CaseHubEventType.SIGNAL_RECEIVED));
               assertEquals(
                   1,
@@ -280,13 +280,11 @@ public class SignalPersistenceAndDedupTest {
   public static class SignalPersistenceCaseHubBean extends CaseHub {
 
     static final AtomicInteger runCount = new AtomicInteger();
-    static final ConcurrentHashMap<String, AtomicInteger> runCountByOrderId =
-        new ConcurrentHashMap<>();
 
     private final Capability paymentCapability =
         Capability.builder()
             .name("processPayment")
-            .inputSchema("{ payment: .payment, orderId: .orderId }")
+            .inputSchema("{ payment: .payment }")
             .outputSchema("{ status: .status, lastProcessedAmount: .lastProcessedAmount }")
             .build();
 
@@ -304,12 +302,6 @@ public class SignalPersistenceAndDedupTest {
                   .function(
                       input -> {
                         runCount.incrementAndGet();
-                        Object orderId = input.get("orderId");
-                        if (orderId != null) {
-                          runCountByOrderId
-                              .computeIfAbsent(orderId.toString(), k -> new AtomicInteger())
-                              .incrementAndGet();
-                        }
                         Map<String, Object> payment = (Map<String, Object>) input.get("payment");
                         Number amount = (Number) payment.get("amount");
                         return Map.of(
