@@ -35,6 +35,7 @@ import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
 import java.util.Map;
 import java.util.UUID;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import org.junit.jupiter.api.BeforeEach;
@@ -52,6 +53,7 @@ public class SignalTest {
   @BeforeEach
   void reset() {
     SignalCaseHubBean.runCount.set(0);
+    SignalCaseHubBean.runCountByOrderId.clear();
     TwoSignalCaseHubBean.paymentRunCount.set(0);
     TwoSignalCaseHubBean.documentRunCount.set(0);
   }
@@ -97,7 +99,9 @@ public class SignalTest {
    */
   @Test
   void workerRunsOnceOnDuplicateSignal() {
-    UUID caseId = bean.startCase(Map.of("orderId", "order-dedup")).toCompletableFuture().join();
+    // Unique orderId per run — isolates this test's run count from other tests' workers
+    String orderId = "order-dedup-" + UUID.randomUUID();
+    UUID caseId = bean.startCase(Map.of("orderId", orderId)).toCompletableFuture().join();
 
     bean.signal(caseId, "payment", Map.of("amount", 100, "currency", "EUR"));
     bean.signal(caseId, "payment", Map.of("amount", 100, "currency", "EUR"));
@@ -108,7 +112,9 @@ public class SignalTest {
             () ->
                 assertEquals(
                     1,
-                    SignalCaseHubBean.runCount.get(),
+                    SignalCaseHubBean.runCountByOrderId
+                        .getOrDefault(orderId, new AtomicInteger())
+                        .get(),
                     "Worker must run exactly once despite duplicate signal"));
   }
 
@@ -195,11 +201,13 @@ public class SignalTest {
   public static class SignalCaseHubBean extends CaseHub {
 
     static final AtomicInteger runCount = new AtomicInteger();
+    static final ConcurrentHashMap<String, AtomicInteger> runCountByOrderId =
+        new ConcurrentHashMap<>();
 
     private final Capability paymentCapability =
         Capability.builder()
             .name("processPayment")
-            .inputSchema("{ payment: .payment }")
+            .inputSchema("{ payment: .payment, orderId: .orderId }")
             .outputSchema("{ status: .status }")
             .build();
 
@@ -224,6 +232,12 @@ public class SignalTest {
                   .function(
                       input -> {
                         runCount.incrementAndGet();
+                        String orderId = (String) input.get("orderId");
+                        if (orderId != null) {
+                          runCountByOrderId
+                              .computeIfAbsent(orderId, k -> new AtomicInteger())
+                              .incrementAndGet();
+                        }
                         return Map.of("status", "paid");
                       })
                   .build())
