@@ -142,6 +142,16 @@ class InMemoryCaseInstanceRepositoryTest {
     assertThat(reloaded.getState()).isEqualTo(CaseStatus.COMPLETED);
   }
 
+  @Test
+  void update_throwsForUnknownUuid() {
+    CaseInstance instance = newInstance(CaseStatus.RUNNING);
+    // deliberately not saved
+
+    org.assertj.core.api.Assertions.assertThatThrownBy(
+            () -> repository.update(instance).await().indefinitely())
+        .isInstanceOf(IllegalStateException.class);
+  }
+
   // --- Helper ---
 
   private CaseInstance newInstance(CaseStatus status) {
