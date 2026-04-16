@@ -1,24 +1,28 @@
 # CLAUDE.md
 
-## No Migration Tooling
+## Schema Management
 
-This project has no installed instances to migrate. Do not add:
+This project has no installed instances to migrate between versions. Use a single SQL schema file — not incremental versioned migrations.
 
-- Flyway or Liquibase dependencies
-- SQL migration files (`V*.sql`, `db/migration/` directories)
-- `quarkus.flyway.*` or `quarkus.liquibase.*` properties
-- JDBC-only dependencies (`quarkus-jdbc-postgresql`, `quarkus-agroal`) unless required for a non-migration reason
+**Do not add:**
+- Multiple Flyway migration files (`V1.0__x.sql`, `V1.1__x.sql`, etc.)
+- Any `ALTER TABLE` or `UPDATE` migration scripts
+- `quarkus.flyway.baseline-*` properties
 
-Schema is managed by Hibernate directly:
-```properties
-quarkus.hibernate-orm.schema-management.strategy=drop-and-create
-```
-
-If a schema change is needed, update the `@Entity` class. Hibernate recreates the schema on next startup.
+**Do:**
+- Keep all DDL in `casehub-persistence-hibernate/src/main/resources/db/migration/V1__schema.sql`
+- If the schema changes, update `V1__schema.sql` directly (it runs on a fresh database)
+- Use `quarkus.flyway.migrate-at-start=true` in `casehub-persistence-hibernate`
 
 ## Quartz
 
-Use RAM store — no JDBC store, no Quartz tables:
+Quartz uses JDBC store in production (`quarkus.quartz.store-type=jdbc-cmt`). The Quartz tables are in `V1__schema.sql`.
+
+In engine **tests only**, use RAM store to avoid needing Quartz tables:
 ```properties
-quarkus.quartz.store-type=ram
+%test.quarkus.quartz.store-type=ram
 ```
+
+## Datasource Config
+
+Production datasource config (both reactive and JDBC URLs) lives in `casehub-persistence-hibernate/src/main/resources/application.properties`. The engine only holds the reactive URL.
