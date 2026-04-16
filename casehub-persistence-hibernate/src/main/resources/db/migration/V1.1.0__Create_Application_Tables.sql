@@ -7,7 +7,7 @@ CREATE SEQUENCE IF NOT EXISTS event_log_seq START WITH 1 INCREMENT BY 50;
 
 -- Stores the case definition metadata (name, version, DSL, JSON schema)
 CREATE TABLE IF NOT EXISTS case_meta_model (
-    id           BIGINT       NOT NULL DEFAULT nextval('case_meta_model_seq'),
+                                               id           BIGINT       NOT NULL DEFAULT nextval('case_meta_model_seq'),
     name         VARCHAR(255) NOT NULL,
     namespace    VARCHAR(255),
     version      VARCHAR(50)  NOT NULL,
@@ -17,26 +17,26 @@ CREATE TABLE IF NOT EXISTS case_meta_model (
     created_at   TIMESTAMP    NOT NULL,
     PRIMARY KEY (id),
     CONSTRAINT uq_case_meta_model_namespace_name_version
-        UNIQUE (namespace, name, version)
-);
+    UNIQUE (namespace, name, version)
+    );
 
 -- Represents a running case instance linked to a definition
 CREATE TABLE IF NOT EXISTS case_instance (
-    id                   BIGINT      NOT NULL DEFAULT nextval('case_instance_seq'),
+                                             id                   BIGINT      NOT NULL DEFAULT nextval('case_instance_seq'),
     uuid                 UUID        NOT NULL,
     case_definition_id   BIGINT      NOT NULL,
     state                VARCHAR(50),
     parent_plan_item_id  UUID,
     PRIMARY KEY (id),
     CONSTRAINT uq_case_instance_uuid
-        UNIQUE (uuid),
+    UNIQUE (uuid),
     CONSTRAINT fk_case_instance_meta_model
-        FOREIGN KEY (case_definition_id) REFERENCES case_meta_model(id)
-);
+    FOREIGN KEY (case_definition_id) REFERENCES case_meta_model(id)
+    );
 
 -- Append-only event log; seq is a monotonic identity column for ordering within a case stream
 CREATE TABLE IF NOT EXISTS event_log (
-    id           BIGINT       NOT NULL DEFAULT nextval('event_log_seq'),
+                                         id           BIGINT       NOT NULL DEFAULT nextval('event_log_seq'),
     seq          BIGINT       GENERATED ALWAYS AS IDENTITY NOT NULL,
     case_id      UUID         NOT NULL,
     event_type   VARCHAR(255) NOT NULL,
@@ -46,7 +46,7 @@ CREATE TABLE IF NOT EXISTS event_log (
     payload      JSONB,
     metadata     JSONB,
     PRIMARY KEY (id)
-);
+    );
 
 CREATE INDEX IF NOT EXISTS idx_event_log_case_id ON event_log(case_id);
 CREATE INDEX IF NOT EXISTS idx_event_log_case_worker ON event_log(case_id, worker_id);
