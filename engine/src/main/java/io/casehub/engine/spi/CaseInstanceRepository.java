@@ -15,20 +15,30 @@
  */
 package io.casehub.engine.spi;
 
+import io.casehub.engine.internal.history.EventLog;
 import io.casehub.engine.internal.model.CaseInstance;
 import io.smallrye.mutiny.Uni;
 import java.util.UUID;
 
+/**
+ * Storage provider for {@link CaseInstance} lifecycle. Implementations must handle their own
+ * session/transaction management; callers do not wrap calls in Panache.withTransaction().
+ */
 public interface CaseInstanceRepository {
 
-  /** Persist a new case instance. Returns the saved instance with id populated. */
+  /** Persist a new CaseInstance. Sets {@code instance.id} on completion. */
   Uni<CaseInstance> save(CaseInstance instance);
 
-  /** Merge state changes back to storage (status transitions). */
+  /** Update mutable fields (state, parentPlanItemId) of an existing CaseInstance. */
   Uni<CaseInstance> update(CaseInstance instance);
 
-  /**
-   * Load a case instance by UUID with its CaseMetaModel eagerly joined. Returns null if not found.
-   */
+  /** Look up a CaseInstance by its business UUID. Returns null if not found. */
   Uni<CaseInstance> findByUuid(UUID uuid);
+
+  /**
+   * Atomically update the instance state and append an event log entry. JPA implementations wrap
+   * both writes in a single transaction. In-memory implementations perform both synchronously.
+   * Sets {@code eventLog.id} and {@code eventLog.seq} on completion.
+   */
+  Uni<Void> updateStateAndAppendEvent(CaseInstance instance, EventLog eventLog);
 }
