@@ -31,9 +31,8 @@ import io.casehub.api.model.Worker;
 import io.casehub.engine.internal.engine.cache.CaseInstanceCache;
 import io.casehub.engine.internal.history.CaseHubEventType;
 import io.casehub.engine.internal.history.EventLog;
-import io.casehub.engine.internal.util.ReactiveUtils;
+import io.casehub.engine.spi.EventLogRepository;
 import io.quarkus.test.junit.QuarkusTest;
-import io.vertx.core.Vertx;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
 import java.time.Duration;
@@ -42,7 +41,6 @@ import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
-import org.hibernate.reactive.mutiny.Mutiny;
 import org.junit.jupiter.api.Test;
 
 /**
@@ -53,13 +51,12 @@ import org.junit.jupiter.api.Test;
 @QuarkusTest
 class ContextDiffEndToEndTest {
 
-  private static final Duration DB_TIMEOUT = Duration.ofSeconds(10);
+  private static final Duration SPI_TIMEOUT = Duration.ofSeconds(10);
 
   @Inject DiffCaseHub diffCase;
   @Inject UpdateCaseHub updateCase;
   @Inject CaseInstanceCache caseInstanceCache;
-  @Inject Mutiny.SessionFactory sessionFactory;
-  @Inject Vertx vertx;
+  @Inject EventLogRepository eventLogRepository;
 
   /**
    * Happy path: initial context has "status"="start". Worker writes "status"="done" and adds
@@ -171,21 +168,10 @@ class ContextDiffEndToEndTest {
 
   private EventLog fetchCompletedEvent(UUID caseId) {
     List<EventLog> events =
-        ReactiveUtils.runOnSafeVertxContext(
-                vertx,
-                () ->
-                    sessionFactory.withSession(
-                        session ->
-                            session
-                                .createSelectionQuery(
-                                    "from EventLog where caseId = :caseId and eventType = :eventType order by seq asc",
-                                    EventLog.class)
-                                .setParameter("caseId", caseId)
-                                .setParameter(
-                                    "eventType", CaseHubEventType.WORKER_EXECUTION_COMPLETED)
-                                .getResultList()))
+        eventLogRepository
+            .findByCaseAndTypes(caseId, List.of(CaseHubEventType.WORKER_EXECUTION_COMPLETED))
             .await()
-            .atMost(DB_TIMEOUT);
+            .atMost(SPI_TIMEOUT);
     return events.isEmpty() ? null : events.get(0);
   }
 
