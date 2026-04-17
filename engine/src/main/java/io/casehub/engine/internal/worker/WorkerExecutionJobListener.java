@@ -33,8 +33,6 @@ import io.casehub.engine.internal.history.EventLog;
 import io.casehub.engine.internal.history.EventStreamType;
 import io.casehub.engine.internal.model.CaseInstance;
 import io.casehub.engine.internal.util.ReactiveUtils;
-import io.quarkus.hibernate.reactive.panache.Panache;
-import io.quarkus.hibernate.reactive.panache.PanacheEntityBase;
 import io.smallrye.mutiny.Uni;
 import io.vertx.core.Vertx;
 import io.vertx.mutiny.core.eventbus.EventBus;
@@ -63,6 +61,8 @@ public class WorkerExecutionJobListener implements JobListener {
   @Inject EventBus eventBus;
 
   @Inject WorkerExecutionRecoveryService workerExecutionRecoveryService;
+
+  @Inject io.casehub.engine.spi.EventLogRepository eventLogRepository;
 
   private static final Logger LOG = Logger.getLogger(WorkerExecutionJobListener.class);
 
@@ -262,23 +262,18 @@ public class WorkerExecutionJobListener implements JobListener {
   }
 
   private Uni<Void> persistEventLog(String jobName, EventLog eventLog) {
-    return runOnSafeVertxContext(
-            () -> Panache.withTransaction(() -> PanacheEntityBase.persist(eventLog)))
+    return runOnSafeVertxContext(() -> eventLogRepository.append(eventLog))
         .onFailure()
-        .invoke(ex -> LOG.errorf(ex, "Failed to persist and reschedule job: %s", jobName))
-        .replaceWithVoid();
+        .invoke(ex -> LOG.errorf(ex, "Failed to persist event for job: %s", jobName));
   }
 
   // TODO metadata->>'idempotency' way faster but not very stable
   private Uni<Long> countFailedAttempts(UUID caseId, String workerId, String idempotency) {
-    return Panache.withSession(
+    return runOnSafeVertxContext(
         () ->
-            EventLog.<EventLog>find(
-                    "caseId = ?1 and workerId = ?2 and eventType = ?3",
-                    caseId,
-                    workerId,
-                    CaseHubEventType.WORKER_EXECUTION_FAILED)
-                .list()
+            eventLogRepository
+                .findByCaseAndWorkerAndType(
+                    caseId, workerId, CaseHubEventType.WORKER_EXECUTION_FAILED)
                 .map(
                     eventLogs ->
                         eventLogs.stream()
