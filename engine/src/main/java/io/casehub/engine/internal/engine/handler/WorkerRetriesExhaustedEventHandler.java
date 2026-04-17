@@ -25,7 +25,7 @@ import io.casehub.engine.internal.history.CaseHubEventType;
 import io.casehub.engine.internal.history.EventLog;
 import io.casehub.engine.internal.history.EventStreamType;
 import io.casehub.engine.internal.model.CaseInstance;
-import io.quarkus.hibernate.reactive.panache.Panache;
+import io.casehub.engine.spi.CaseInstanceRepository;
 import io.quarkus.vertx.ConsumeEvent;
 import io.smallrye.mutiny.Uni;
 import io.vertx.mutiny.core.eventbus.EventBus;
@@ -34,16 +34,21 @@ import jakarta.inject.Inject;
 import java.time.Instant;
 import org.jboss.logging.Logger;
 
+/**
+ * Handles worker retry exhaustion by marking the case as FAULTED. Atomically updates the instance
+ * state and appends the event log entry.
+ */
 @ApplicationScoped
 public class WorkerRetriesExhaustedEventHandler {
 
   private static final Logger LOG = Logger.getLogger(WorkerRetriesExhaustedEventHandler.class);
-
   private static final ObjectMapper OBJECT_MAPPER = new ObjectMapper();
 
   @Inject CaseInstanceCache caseInstanceCache;
 
   @Inject EventBus eventBus;
+
+  @Inject CaseInstanceRepository caseInstanceRepository;
 
   @ConsumeEvent(value = EventBusAddresses.WORKER_RETRIES_EXHAUSTED)
   public Uni<Void> onWorkerRetriesExhaustedEvent(WorkerRetriesExhaustedEvent event) {
@@ -57,26 +62,16 @@ public class WorkerRetriesExhaustedEventHandler {
     eventLog.setStreamType(EventStreamType.CASE);
     eventLog.setTimestamp(Instant.now());
     eventLog.setWorkerId(event.workerId());
-    eventLog.setMetadata(
-        OBJECT_MAPPER
-            .createObjectNode()
-            .put("workerId", event.workerId())
-            .put("inputDataHash", event.idempotency()));
+    eventLog.setMetadata(OBJECT_MAPPER.createObjectNode()
+        .put("workerId", event.workerId())
+        .put("inputDataHash", event.idempotency()));
 
-    return Panache.withTransaction(
-            () ->
-                Panache.getSession()
-                    .chain(session -> session.merge(caseInstance))
-                    .chain(merged -> eventLog.persist()))
-        .invoke(
-            () -> {
-              LOG.warnf(
-                  "Worker retries exhausted for caseId=%s, workerId=%s",
-                  event.caseId(), event.workerId());
-              eventBus.publish(
-                  EventBusAddresses.CASE_STATUS_CHANGED,
-                  new CaseStatusChanged(caseInstance, oldStatus, CaseStatus.FAULTED.name()));
-            })
-        .replaceWithVoid();
+    return caseInstanceRepository.updateStateAndAppendEvent(caseInstance, eventLog)
+        .invoke(() -> {
+          LOG.warnf("Worker retries exhausted for caseId=%s, workerId=%s",
+              event.caseId(), event.workerId());
+          eventBus.publish(EventBusAddresses.CASE_STATUS_CHANGED,
+              new CaseStatusChanged(caseInstance, oldStatus, CaseStatus.FAULTED.name()));
+        });
   }
 }
