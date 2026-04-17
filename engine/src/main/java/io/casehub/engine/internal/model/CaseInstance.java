@@ -17,83 +17,36 @@ package io.casehub.engine.internal.model;
 
 import io.casehub.api.context.CaseContext;
 import io.casehub.api.model.CaseStatus;
-import io.quarkus.hibernate.reactive.panache.PanacheEntity;
-import jakarta.persistence.Column;
-import jakarta.persistence.Entity;
-import jakarta.persistence.EnumType;
-import jakarta.persistence.Enumerated;
-import jakarta.persistence.FetchType;
-import jakarta.persistence.JoinColumn;
-import jakarta.persistence.ManyToOne;
-import jakarta.persistence.Transient;
 import java.util.UUID;
 
-@Entity(name = "case_instance")
-public class CaseInstance extends PanacheEntity {
+/** Plain domain object representing one running case. Persistence is handled by the SPI. */
+public class CaseInstance {
 
-  @ManyToOne(optional = false, fetch = FetchType.LAZY)
-  @JoinColumn(name = "case_definition_id", nullable = false)
+  /** Populated by the repository after save. Null until first persisted. */
+  public Long id;
+
   private CaseMetaModel caseMetaModel;
-
-  @Column(name = "uuid", nullable = false, unique = true, updatable = false)
   private UUID uuid;
-
-  // TODO sync version with caseContext version
-  @Transient private long version = 0L;
-
-  @Transient private CaseContext caseContext;
-
-  @Column(name = "parent_plan_item_id", nullable = true)
+  private long version = 0L;
+  private CaseContext caseContext;
   private UUID parentPlanItemId;
-
-  @Enumerated(EnumType.STRING)
   private CaseStatus state;
 
-  public CaseMetaModel getCaseMetaModel() {
-    return caseMetaModel;
-  }
+  public CaseMetaModel getCaseMetaModel() { return caseMetaModel; }
+  public void setCaseMetaModel(CaseMetaModel caseMetaModel) { this.caseMetaModel = caseMetaModel; }
 
-  public void setCaseMetaModel(CaseMetaModel caseMetaModel) {
-    this.caseMetaModel = caseMetaModel;
-  }
+  public UUID getUuid() { return uuid; }
+  public void setUuid(UUID uuid) { this.uuid = uuid; }
 
-  public UUID getUuid() {
-    return uuid;
-  }
+  public long getVersion() { return version; }
+  public void setVersion(long version) { this.version = version; }
 
-  public void setUuid(UUID uuid) {
-    this.uuid = uuid;
-  }
+  public CaseContext getCaseContext() { return caseContext; }
+  public void setCaseContext(CaseContext caseContext) { this.caseContext = caseContext; }
 
-  public long getVersion() {
-    return version;
-  }
+  public UUID getParentPlanItemId() { return parentPlanItemId; }
+  public void setParentPlanItemId(UUID parentPlanItemId) { this.parentPlanItemId = parentPlanItemId; }
 
-  public void setVersion(long version) {
-    this.version = version;
-  }
-
-  public CaseContext getCaseContext() {
-    return caseContext;
-  }
-
-  public void setCaseContext(CaseContext caseContext) {
-    this.caseContext = caseContext;
-  }
-
-  public UUID getParentPlanItemId() {
-    return parentPlanItemId;
-  }
-
-  public void setParentPlanItemId(UUID parentPlanItemId) {
-    this.parentPlanItemId = parentPlanItemId;
-  }
-
-  public CaseStatus getState() {
-    return state;
-  }
-
-  public void setState(CaseStatus state) {
-    this.state = state;
-  }
+  public CaseStatus getState() { return state; }
+  public void setState(CaseStatus state) { this.state = state; }
 }
