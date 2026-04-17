@@ -15,6 +15,7 @@
  */
 package io.casehub.persistence.jpa;
 
+import io.casehub.engine.internal.history.EventLog;
 import io.casehub.engine.internal.model.CaseInstance;
 import io.casehub.engine.internal.model.CaseMetaModel;
 import io.casehub.engine.spi.CaseInstanceRepository;
@@ -74,6 +75,12 @@ public class JpaCaseInstanceRepository implements CaseInstanceRepository {
                         uuid)
                     .firstResult())
         .map(entity -> entity == null ? null : fromEntity(entity));
+  }
+
+  @Override
+  public Uni<Void> updateStateAndAppendEvent(CaseInstance instance, EventLog eventLog) {
+    // Full TDD implementation delivered in Task 4.
+    throw new UnsupportedOperationException("updateStateAndAppendEvent not yet implemented in JPA");
   }
 
   private CaseInstance fromEntity(CaseInstanceEntity entity) {
