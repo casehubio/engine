@@ -33,29 +33,69 @@ public class CaseMetaModel {
   private JsonNode definition;
   private Instant createdAt;
 
-  public Long getId() { return id; }
-  public void setId(Long id) { this.id = id; }
+  public Long getId() {
+    return id;
+  }
 
-  public String getNamespace() { return namespace; }
-  public void setNamespace(String namespace) { this.namespace = namespace; }
+  public void setId(Long id) {
+    this.id = id;
+  }
 
-  public String getName() { return name; }
-  public void setName(String name) { this.name = name; }
+  public String getNamespace() {
+    return namespace;
+  }
 
-  public String getVersion() { return version; }
-  public void setVersion(String version) { this.version = version; }
+  public void setNamespace(String namespace) {
+    this.namespace = namespace;
+  }
 
-  public String getTitle() { return title; }
-  public void setTitle(String title) { this.title = title; }
+  public String getName() {
+    return name;
+  }
 
-  public String getDsl() { return dsl; }
-  public void setDsl(String dsl) { this.dsl = dsl; }
+  public void setName(String name) {
+    this.name = name;
+  }
 
-  public JsonNode getDefinition() { return definition; }
-  public void setDefinition(JsonNode definition) { this.definition = definition; }
+  public String getVersion() {
+    return version;
+  }
 
-  public Instant getCreatedAt() { return createdAt; }
-  public void setCreatedAt(Instant createdAt) { this.createdAt = createdAt; }
+  public void setVersion(String version) {
+    this.version = version;
+  }
+
+  public String getTitle() {
+    return title;
+  }
+
+  public void setTitle(String title) {
+    this.title = title;
+  }
+
+  public String getDsl() {
+    return dsl;
+  }
+
+  public void setDsl(String dsl) {
+    this.dsl = dsl;
+  }
+
+  public JsonNode getDefinition() {
+    return definition;
+  }
+
+  public void setDefinition(JsonNode definition) {
+    this.definition = definition;
+  }
+
+  public Instant getCreatedAt() {
+    return createdAt;
+  }
+
+  public void setCreatedAt(Instant createdAt) {
+    this.createdAt = createdAt;
+  }
 
   @Override
   public boolean equals(Object o) {
@@ -68,12 +108,26 @@ public class CaseMetaModel {
   }
 
   @Override
-  public int hashCode() { return Objects.hash(namespace, name, version); }
+  public int hashCode() {
+    return Objects.hash(namespace, name, version);
+  }
 
   @Override
   public String toString() {
-    return "CaseMetaModel{id=" + id + ", namespace='" + namespace + "', name='" + name
-        + "', version='" + version + "', title='" + title + "', dsl='" + dsl
-        + "', createdAt=" + createdAt + '}';
+    return "CaseMetaModel{id="
+        + id
+        + ", namespace='"
+        + namespace
+        + "', name='"
+        + name
+        + "', version='"
+        + version
+        + "', title='"
+        + title
+        + "', dsl='"
+        + dsl
+        + "', createdAt="
+        + createdAt
+        + '}';
   }
 }

@@ -49,9 +49,11 @@ public class MilestoneReachedEventHandler {
     eventLog.setEventType(MILESTONE_REACHED);
     eventLog.setStreamType(EventStreamType.CASE);
     eventLog.setTimestamp(Instant.now());
-    eventLog.setMetadata(OBJECT_MAPPER.createObjectNode()
-        .put("name", milestone.getName())
-        .put("description", milestone.getDescription()));
+    eventLog.setMetadata(
+        OBJECT_MAPPER
+            .createObjectNode()
+            .put("name", milestone.getName())
+            .put("description", milestone.getDescription()));
 
     return eventLogRepository.append(eventLog);
   }

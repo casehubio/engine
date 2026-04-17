@@ -54,9 +54,12 @@ public class CaseStartedEventHandler {
     eventLog.setTimestamp(Instant.now());
     eventLog.setPayload(contextSnapshot);
 
-    return eventLogRepository.append(eventLog)
-        .invoke(() -> eventBus.publish(
-            EventBusAddresses.CONTEXT_CHANGED,
-            new CaseContextChangedEvent(instance, contextSnapshot)));
+    return eventLogRepository
+        .append(eventLog)
+        .invoke(
+            () ->
+                eventBus.publish(
+                    EventBusAddresses.CONTEXT_CHANGED,
+                    new CaseContextChangedEvent(instance, contextSnapshot)));
   }
 }

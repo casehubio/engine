@@ -63,15 +63,18 @@ public class SignalReceivedEventHandler {
       return applySignal(cached, event);
     }
     LOG.warnf("CaseInstance not found in cache for caseId=%s, trying recovery", event.caseId());
-    return recoveryService.loadOrRestoreCaseInstance(event.caseId())
+    return recoveryService
+        .loadOrRestoreCaseInstance(event.caseId())
         .chain(instance -> applySignal(instance, event));
   }
 
   private Uni<Void> applySignal(CaseInstance instance, SignalReceivedEvent event) {
-    Optional<JsonNode> maybeDiff = instance.getCaseContext().applyAndDiff(event.path(), event.value());
+    Optional<JsonNode> maybeDiff =
+        instance.getCaseContext().applyAndDiff(event.path(), event.value());
 
     if (maybeDiff.isEmpty()) {
-      LOG.debugf("Signal path='%s' produced no state change for caseId=%s — skipping",
+      LOG.debugf(
+          "Signal path='%s' produced no state change for caseId=%s — skipping",
           event.path(), event.caseId());
       return Uni.createFrom().voidItem();
     }
@@ -80,12 +83,21 @@ public class SignalReceivedEventHandler {
     JsonNode contextSnapshot = instance.getCaseContext().asJsonNode();
     EventLog eventLog = buildSignalEventLog(instance, diff);
 
-    return eventLogRepository.append(eventLog)
-        .invoke(() -> eventBus.publish(CONTEXT_CHANGED, new CaseContextChangedEvent(instance, contextSnapshot)))
+    return eventLogRepository
+        .append(eventLog)
+        .invoke(
+            () ->
+                eventBus.publish(
+                    CONTEXT_CHANGED, new CaseContextChangedEvent(instance, contextSnapshot)))
         .replaceWithVoid()
         .onFailure()
-        .invoke(t -> LOG.errorf(t, "Failed to process signal path='%s' for caseId=%s",
-            event.path(), event.caseId()));
+        .invoke(
+            t ->
+                LOG.errorf(
+                    t,
+                    "Failed to process signal path='%s' for caseId=%s",
+                    event.path(),
+                    event.caseId()));
   }
 
   private EventLog buildSignalEventLog(CaseInstance instance, JsonNode diff) {
