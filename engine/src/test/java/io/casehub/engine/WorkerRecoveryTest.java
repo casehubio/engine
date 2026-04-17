@@ -27,25 +27,25 @@ import io.casehub.engine.internal.engine.recovery.WorkerExecutionRecoveryService
 import io.casehub.engine.internal.history.CaseHubEventType;
 import io.casehub.engine.internal.history.EventLog;
 import io.casehub.engine.internal.history.EventStreamType;
-import io.casehub.engine.internal.util.ReactiveUtils;
 import io.casehub.engine.internal.util.WorkerExecutionKeys;
+import io.casehub.engine.spi.EventLogRepository;
 import io.quarkus.test.junit.QuarkusTest;
-import io.vertx.core.Vertx;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
+import java.time.Duration;
 import java.time.Instant;
 import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import org.awaitility.Awaitility;
-import org.hibernate.reactive.mutiny.Mutiny;
 import org.junit.jupiter.api.Test;
 
 @QuarkusTest
 public class WorkerRecoveryTest {
 
   private static final ObjectMapper OBJECT_MAPPER = new ObjectMapper();
+  private static final Duration SPI_TIMEOUT = Duration.ofSeconds(10);
 
   @Inject RecoveryCaseHubBean bean;
 
@@ -53,9 +53,7 @@ public class WorkerRecoveryTest {
 
   @Inject CaseInstanceCache caseInstanceCache;
 
-  @Inject Mutiny.SessionFactory sessionFactory;
-
-  @Inject Vertx vertx;
+  @Inject EventLogRepository eventLogRepository;
 
   @Test
   void shouldRecoverScheduledWorkerWhenCacheIsEmpty() {
@@ -88,17 +86,11 @@ public class WorkerRecoveryTest {
                 "documentId", "doc-recovery",
                 "status", "scheduled")));
 
-    ReactiveUtils.runOnSafeVertxContext(
-            vertx, () -> sessionFactory.withTransaction(session -> session.persist(scheduledEvent)))
-        .await()
-        .atMost(java.time.Duration.ofSeconds(10));
+    eventLogRepository.append(scheduledEvent).await().atMost(SPI_TIMEOUT);
 
     caseInstanceCache.clear();
 
-    recoveryService
-        .recoverPendingScheduledWorkers()
-        .await()
-        .atMost(java.time.Duration.ofSeconds(10));
+    recoveryService.recoverPendingScheduledWorkers().await().atMost(SPI_TIMEOUT);
 
     Awaitility.await()
         .atMost(20, TimeUnit.SECONDS)
