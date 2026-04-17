@@ -37,8 +37,8 @@ public interface CaseInstanceRepository {
 
   /**
    * Atomically update the instance state and append an event log entry. JPA implementations wrap
-   * both writes in a single transaction. In-memory implementations perform both synchronously.
-   * Sets {@code eventLog.id} and {@code eventLog.seq} on completion.
+   * both writes in a single transaction. In-memory implementations perform both synchronously. Sets
+   * {@code eventLog.id} and {@code eventLog.seq} on completion.
    */
   Uni<Void> updateStateAndAppendEvent(CaseInstance instance, EventLog eventLog);
 }

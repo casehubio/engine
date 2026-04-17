@@ -16,6 +16,24 @@ quarkus.hibernate-orm.schema-management.strategy=drop-and-create
 
 If a schema change is needed, update the `@Entity` class. Hibernate recreates the schema on next startup.
 
+## Persistence Architecture
+
+The `engine` module has **no JPA dependency**. Persistence is routed through three SPI interfaces
+in `engine/src/main/java/io/casehub/engine/spi/`:
+
+- `CaseMetaModelRepository` — find/save CaseMetaModel definitions
+- `CaseInstanceRepository` — save/update/find CaseInstance + atomic `updateStateAndAppendEvent`
+- `EventLogRepository` — append-only event log with query methods
+
+**Production implementation:** `casehub-persistence-hibernate` (JPA/Panache, PostgreSQL)
+**Test implementation:** test-local copies in `engine/src/test/java/io/casehub/persistence/memory/`
+
+Engine tests activate the memory implementations via `quarkus.arc.selected-alternatives`
+in `engine/src/test/resources/application.properties` — no Docker required.
+
+Domain objects (`CaseMetaModel`, `CaseInstance`, `EventLog`) are plain POJOs. The `id` field
+is public (`public Long id`) and set by the repository after save.
+
 ## Quartz
 
 Use RAM store — no JDBC store, no Quartz tables:
