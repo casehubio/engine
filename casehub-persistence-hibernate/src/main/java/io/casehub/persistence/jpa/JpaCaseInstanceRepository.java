@@ -79,8 +79,31 @@ public class JpaCaseInstanceRepository implements CaseInstanceRepository {
 
   @Override
   public Uni<Void> updateStateAndAppendEvent(CaseInstance instance, EventLog eventLog) {
-    // Full TDD implementation delivered in Task 4.
-    throw new UnsupportedOperationException("updateStateAndAppendEvent not yet implemented in JPA");
+    EventLogEntity logEntity = new EventLogEntity();
+    logEntity.caseId = eventLog.getCaseId();
+    logEntity.eventType = eventLog.getEventType();
+    logEntity.streamType = eventLog.getStreamType();
+    logEntity.workerId = eventLog.getWorkerId();
+    logEntity.timestamp = eventLog.getTimestamp();
+    logEntity.payload = eventLog.getPayload();
+    logEntity.metadata = eventLog.getMetadata();
+
+    return Panache.withTransaction(
+            () ->
+                CaseInstanceEntity.<CaseInstanceEntity>findById(instance.id)
+                    .chain(
+                        entity -> {
+                          entity.state = instance.getState();
+                          entity.parentPlanItemId = instance.getParentPlanItemId();
+                          return Panache.getSession().chain(s -> s.merge(entity));
+                        })
+                    .chain(merged -> logEntity.persistAndFlush()))
+        .invoke(
+            () -> {
+              eventLog.id = logEntity.id;
+              eventLog.setSeq(logEntity.seq);
+            })
+        .replaceWithVoid();
   }
 
   private CaseInstance fromEntity(CaseInstanceEntity entity) {
