@@ -20,9 +20,9 @@ import java.time.Instant;
 import java.util.UUID;
 
 /**
- * Plain domain object for an immutable audit event. {@code id} and {@code seq} are populated by
- * the repository after append. Static Panache query methods have been removed; use
- * {@link io.casehub.engine.spi.EventLogRepository} instead.
+ * Plain domain object for an immutable audit event. {@code id} and {@code seq} are populated by the
+ * repository after append. Static Panache query methods have been removed; use {@link
+ * io.casehub.engine.spi.EventLogRepository} instead.
  *
  * <p>{@code workerId} is intentionally denormalised so events can be filtered by worker without
  * parsing the JSON metadata payload.
@@ -41,27 +41,67 @@ public class EventLog {
   private JsonNode payload;
   private JsonNode metadata;
 
-  public UUID getCaseId() { return caseId; }
-  public void setCaseId(UUID caseId) { this.caseId = caseId; }
+  public UUID getCaseId() {
+    return caseId;
+  }
 
-  public Long getSeq() { return seq; }
-  public void setSeq(Long seq) { this.seq = seq; }
+  public void setCaseId(UUID caseId) {
+    this.caseId = caseId;
+  }
 
-  public CaseHubEventType getEventType() { return eventType; }
-  public void setEventType(CaseHubEventType eventType) { this.eventType = eventType; }
+  public Long getSeq() {
+    return seq;
+  }
 
-  public EventStreamType getStreamType() { return streamType; }
-  public void setStreamType(EventStreamType streamType) { this.streamType = streamType; }
+  public void setSeq(Long seq) {
+    this.seq = seq;
+  }
 
-  public String getWorkerId() { return workerId; }
-  public void setWorkerId(String workerId) { this.workerId = workerId; }
+  public CaseHubEventType getEventType() {
+    return eventType;
+  }
 
-  public Instant getTimestamp() { return timestamp; }
-  public void setTimestamp(Instant timestamp) { this.timestamp = timestamp; }
+  public void setEventType(CaseHubEventType eventType) {
+    this.eventType = eventType;
+  }
 
-  public JsonNode getPayload() { return payload; }
-  public void setPayload(JsonNode payload) { this.payload = payload; }
+  public EventStreamType getStreamType() {
+    return streamType;
+  }
 
-  public JsonNode getMetadata() { return metadata; }
-  public void setMetadata(JsonNode metadata) { this.metadata = metadata; }
+  public void setStreamType(EventStreamType streamType) {
+    this.streamType = streamType;
+  }
+
+  public String getWorkerId() {
+    return workerId;
+  }
+
+  public void setWorkerId(String workerId) {
+    this.workerId = workerId;
+  }
+
+  public Instant getTimestamp() {
+    return timestamp;
+  }
+
+  public void setTimestamp(Instant timestamp) {
+    this.timestamp = timestamp;
+  }
+
+  public JsonNode getPayload() {
+    return payload;
+  }
+
+  public void setPayload(JsonNode payload) {
+    this.payload = payload;
+  }
+
+  public JsonNode getMetadata() {
+    return metadata;
+  }
+
+  public void setMetadata(JsonNode metadata) {
+    this.metadata = metadata;
+  }
 }

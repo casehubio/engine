@@ -62,16 +62,22 @@ public class WorkerRetriesExhaustedEventHandler {
     eventLog.setStreamType(EventStreamType.CASE);
     eventLog.setTimestamp(Instant.now());
     eventLog.setWorkerId(event.workerId());
-    eventLog.setMetadata(OBJECT_MAPPER.createObjectNode()
-        .put("workerId", event.workerId())
-        .put("inputDataHash", event.idempotency()));
+    eventLog.setMetadata(
+        OBJECT_MAPPER
+            .createObjectNode()
+            .put("workerId", event.workerId())
+            .put("inputDataHash", event.idempotency()));
 
-    return caseInstanceRepository.updateStateAndAppendEvent(caseInstance, eventLog)
-        .invoke(() -> {
-          LOG.warnf("Worker retries exhausted for caseId=%s, workerId=%s",
-              event.caseId(), event.workerId());
-          eventBus.publish(EventBusAddresses.CASE_STATUS_CHANGED,
-              new CaseStatusChanged(caseInstance, oldStatus, CaseStatus.FAULTED.name()));
-        });
+    return caseInstanceRepository
+        .updateStateAndAppendEvent(caseInstance, eventLog)
+        .invoke(
+            () -> {
+              LOG.warnf(
+                  "Worker retries exhausted for caseId=%s, workerId=%s",
+                  event.caseId(), event.workerId());
+              eventBus.publish(
+                  EventBusAddresses.CASE_STATUS_CHANGED,
+                  new CaseStatusChanged(caseInstance, oldStatus, CaseStatus.FAULTED.name()));
+            });
   }
 }

@@ -63,20 +63,33 @@ public class WorkflowExecutionCompletedHandler {
     JsonNode contextAfter = caseInstance.getCaseContext().asJsonNode();
     JsonNode diff = contextDiffStrategy.compute(contextBefore, contextAfter);
 
-    EventLog eventLog = buildEventLog(caseInstance, worker, rawOutput, event.idempotency(), now, diff);
+    EventLog eventLog =
+        buildEventLog(caseInstance, worker, rawOutput, event.idempotency(), now, diff);
 
-    return eventLogRepository.append(eventLog)
-        .invoke(() -> eventBus.publish(
-            EventBusAddresses.CONTEXT_CHANGED,
-            new CaseContextChangedEvent(caseInstance, contextAfter)))
+    return eventLogRepository
+        .append(eventLog)
+        .invoke(
+            () ->
+                eventBus.publish(
+                    EventBusAddresses.CONTEXT_CHANGED,
+                    new CaseContextChangedEvent(caseInstance, contextAfter)))
         .replaceWithVoid()
         .onFailure()
-        .invoke(t -> LOG.error(
-            "Failed to handle WorkflowExecutionCompleted for caseId: " + caseInstance.getUuid(), t));
+        .invoke(
+            t ->
+                LOG.error(
+                    "Failed to handle WorkflowExecutionCompleted for caseId: "
+                        + caseInstance.getUuid(),
+                    t));
   }
 
-  private EventLog buildEventLog(CaseInstance caseInstance, Worker worker,
-      Map<String, Object> output, String idempotency, Instant timestamp, JsonNode contextDiff) {
+  private EventLog buildEventLog(
+      CaseInstance caseInstance,
+      Worker worker,
+      Map<String, Object> output,
+      String idempotency,
+      Instant timestamp,
+      JsonNode contextDiff) {
     EventLog eventLog = new EventLog();
     eventLog.setCaseId(caseInstance.getUuid());
     eventLog.setWorkerId(worker.getName());

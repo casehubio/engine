@@ -41,8 +41,8 @@ import java.util.concurrent.ConcurrentHashMap;
 import org.jboss.logging.Logger;
 
 /**
- * Registry for case definitions. Persists each definition's metadata via
- * {@link CaseMetaModelRepository} on startup so the engine can reference it by id.
+ * Registry for case definitions. Persists each definition's metadata via {@link
+ * CaseMetaModelRepository} on startup so the engine can reference it by id.
  */
 @ApplicationScoped
 public class CaseDefinitionRegistry {
@@ -83,8 +83,13 @@ public class CaseDefinitionRegistry {
       return Uni.createFrom().failure(e);
     }
 
-    LOG.info("Registering case: " + model.getName() + " version: " + model.getVersion()
-        + " namespace: " + model.getNamespace());
+    LOG.info(
+        "Registering case: "
+            + model.getName()
+            + " version: "
+            + model.getVersion()
+            + " namespace: "
+            + model.getNamespace());
 
     CaseMetaModel definition = new CaseMetaModel();
     definition.setName(model.getName());
@@ -97,18 +102,21 @@ public class CaseDefinitionRegistry {
       }
     }
 
-    return caseMetaModelRepository.findByKey(model.getNamespace(), model.getName(), model.getVersion())
+    return caseMetaModelRepository
+        .findByKey(model.getNamespace(), model.getName(), model.getVersion())
         .onItem()
-        .transformToUni(existing -> {
-          if (existing != null) {
-            registry.put(existing, model);
-            return Uni.createFrom().item(existing);
-          }
-          definition.setDsl(model.getDsl());
-          definition.setCreatedAt(Instant.now());
-          return caseMetaModelRepository.save(definition)
-              .invoke(saved -> registry.put(saved, model));
-        });
+        .transformToUni(
+            existing -> {
+              if (existing != null) {
+                registry.put(existing, model);
+                return Uni.createFrom().item(existing);
+              }
+              definition.setDsl(model.getDsl());
+              definition.setCreatedAt(Instant.now());
+              return caseMetaModelRepository
+                  .save(definition)
+                  .invoke(saved -> registry.put(saved, model));
+            });
   }
 
   public CaseDefinition getCaseDefinition(CaseMetaModel definition) {
@@ -121,9 +129,13 @@ public class CaseDefinitionRegistry {
         return entry.getKey();
       }
     }
-    throw new RuntimeException("CaseMetaModel not found for caseDefinition: "
-        + caseDefinition.getNamespace() + "." + caseDefinition.getName()
-        + ":" + caseDefinition.getVersion());
+    throw new RuntimeException(
+        "CaseMetaModel not found for caseDefinition: "
+            + caseDefinition.getNamespace()
+            + "."
+            + caseDefinition.getName()
+            + ":"
+            + caseDefinition.getVersion());
   }
 
   private void validateExpressions(CaseDefinition definition) {

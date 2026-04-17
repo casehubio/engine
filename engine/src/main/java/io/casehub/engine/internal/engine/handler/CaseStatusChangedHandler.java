@@ -52,7 +52,8 @@ public class CaseStatusChangedHandler {
     CaseStatus newState = CaseStatus.valueOf(event.newStatus());
     String oldStatus = event.oldStatus();
 
-    LOG.infof("Case status changed: caseId=%s, %s -> %s",
+    LOG.infof(
+        "Case status changed: caseId=%s, %s -> %s",
         caseInstance.getUuid(), oldStatus, event.newStatus());
 
     caseInstance.setState(newState);
@@ -62,17 +63,21 @@ public class CaseStatusChangedHandler {
     eventLog.setEventType(resolveState(newState));
     eventLog.setStreamType(EventStreamType.CASE);
     eventLog.setTimestamp(Instant.now());
-    eventLog.setMetadata(OBJECT_MAPPER.createObjectNode()
-        .put("oldStatus", oldStatus)
-        .put("newStatus", event.newStatus()));
+    eventLog.setMetadata(
+        OBJECT_MAPPER
+            .createObjectNode()
+            .put("oldStatus", oldStatus)
+            .put("newStatus", event.newStatus()));
 
-    return caseInstanceRepository.updateStateAndAppendEvent(caseInstance, eventLog)
-        .invoke(() -> {
-          String eventBusAddress = resolveStateAsString(newState);
-          if (eventBusAddress != null) {
-            eventBus.publish(eventBusAddress, caseInstance);
-          }
-        });
+    return caseInstanceRepository
+        .updateStateAndAppendEvent(caseInstance, eventLog)
+        .invoke(
+            () -> {
+              String eventBusAddress = resolveStateAsString(newState);
+              if (eventBusAddress != null) {
+                eventBus.publish(eventBusAddress, caseInstance);
+              }
+            });
   }
 
   private CaseHubEventType resolveState(CaseStatus state) {

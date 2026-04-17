@@ -32,21 +32,51 @@ public class CaseInstance {
   private UUID parentPlanItemId;
   private CaseStatus state;
 
-  public CaseMetaModel getCaseMetaModel() { return caseMetaModel; }
-  public void setCaseMetaModel(CaseMetaModel caseMetaModel) { this.caseMetaModel = caseMetaModel; }
+  public CaseMetaModel getCaseMetaModel() {
+    return caseMetaModel;
+  }
 
-  public UUID getUuid() { return uuid; }
-  public void setUuid(UUID uuid) { this.uuid = uuid; }
+  public void setCaseMetaModel(CaseMetaModel caseMetaModel) {
+    this.caseMetaModel = caseMetaModel;
+  }
 
-  public long getVersion() { return version; }
-  public void setVersion(long version) { this.version = version; }
+  public UUID getUuid() {
+    return uuid;
+  }
 
-  public CaseContext getCaseContext() { return caseContext; }
-  public void setCaseContext(CaseContext caseContext) { this.caseContext = caseContext; }
+  public void setUuid(UUID uuid) {
+    this.uuid = uuid;
+  }
 
-  public UUID getParentPlanItemId() { return parentPlanItemId; }
-  public void setParentPlanItemId(UUID parentPlanItemId) { this.parentPlanItemId = parentPlanItemId; }
+  public long getVersion() {
+    return version;
+  }
 
-  public CaseStatus getState() { return state; }
-  public void setState(CaseStatus state) { this.state = state; }
+  public void setVersion(long version) {
+    this.version = version;
+  }
+
+  public CaseContext getCaseContext() {
+    return caseContext;
+  }
+
+  public void setCaseContext(CaseContext caseContext) {
+    this.caseContext = caseContext;
+  }
+
+  public UUID getParentPlanItemId() {
+    return parentPlanItemId;
+  }
+
+  public void setParentPlanItemId(UUID parentPlanItemId) {
+    this.parentPlanItemId = parentPlanItemId;
+  }
+
+  public CaseStatus getState() {
+    return state;
+  }
+
+  public void setState(CaseStatus state) {
+    this.state = state;
+  }
 }
