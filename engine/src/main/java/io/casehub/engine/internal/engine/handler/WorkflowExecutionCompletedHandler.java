@@ -27,7 +27,7 @@ import io.casehub.engine.internal.history.CaseHubEventType;
 import io.casehub.engine.internal.history.EventLog;
 import io.casehub.engine.internal.history.EventStreamType;
 import io.casehub.engine.internal.model.CaseInstance;
-import io.quarkus.hibernate.reactive.panache.Panache;
+import io.casehub.engine.spi.EventLogRepository;
 import io.quarkus.vertx.ConsumeEvent;
 import io.smallrye.mutiny.Uni;
 import io.vertx.mutiny.core.eventbus.EventBus;
@@ -37,11 +37,16 @@ import java.time.Instant;
 import java.util.Map;
 import org.jboss.logging.Logger;
 
+/**
+ * Applies worker output to the case context, persists the completion event, and notifies listeners
+ * that the context has changed.
+ */
 @ApplicationScoped
 public class WorkflowExecutionCompletedHandler {
 
   @Inject EventBus eventBus;
   @Inject ContextDiffStrategy contextDiffStrategy;
+  @Inject EventLogRepository eventLogRepository;
 
   private static final ObjectMapper OBJECT_MAPPER = new ObjectMapper();
   private static final Logger LOG = Logger.getLogger(WorkflowExecutionCompletedHandler.class);
@@ -53,42 +58,26 @@ public class WorkflowExecutionCompletedHandler {
     final Map<String, Object> rawOutput = event.output() == null ? Map.of() : event.output();
     final Instant now = Instant.now();
 
-    return Panache.withTransaction(
-            () -> {
-              // Snapshot BEFORE applying output — deep copy so setAll cannot corrupt it
-              JsonNode contextBefore = caseInstance.getCaseContext().snapshot().asJsonNode();
-              caseInstance.getCaseContext().setAll(rawOutput);
-              JsonNode contextAfter = caseInstance.getCaseContext().asJsonNode();
+    JsonNode contextBefore = caseInstance.getCaseContext().snapshot().asJsonNode();
+    caseInstance.getCaseContext().setAll(rawOutput);
+    JsonNode contextAfter = caseInstance.getCaseContext().asJsonNode();
+    JsonNode diff = contextDiffStrategy.compute(contextBefore, contextAfter);
 
-              JsonNode diff = contextDiffStrategy.compute(contextBefore, contextAfter);
-              EventLog eventLog =
-                  buildEventLog(caseInstance, worker, rawOutput, event.idempotency(), now, diff);
+    EventLog eventLog = buildEventLog(caseInstance, worker, rawOutput, event.idempotency(), now, diff);
 
-              return eventLog.persist().replaceWith(contextAfter);
-            })
-        .invoke(
-            contextSnapshot ->
-                eventBus.publish(
-                    EventBusAddresses.CONTEXT_CHANGED,
-                    new CaseContextChangedEvent(caseInstance, contextSnapshot)))
+    return eventLogRepository.append(eventLog)
+        .invoke(() -> eventBus.publish(
+            EventBusAddresses.CONTEXT_CHANGED,
+            new CaseContextChangedEvent(caseInstance, contextAfter)))
         .replaceWithVoid()
         .onFailure()
-        .invoke(
-            t ->
-                LOG.error(
-                    "Failed to handle WorkflowExecutionCompleted event for caseId: "
-                        + caseInstance.getUuid(),
-                    t));
+        .invoke(t -> LOG.error(
+            "Failed to handle WorkflowExecutionCompleted for caseId: " + caseInstance.getUuid(), t));
   }
 
-  private EventLog buildEventLog(
-      CaseInstance caseInstance,
-      Worker worker,
-      Map<String, Object> output,
-      String idempotency,
-      Instant timestamp,
-      JsonNode contextDiff) {
-    final EventLog eventLog = new EventLog();
+  private EventLog buildEventLog(CaseInstance caseInstance, Worker worker,
+      Map<String, Object> output, String idempotency, Instant timestamp, JsonNode contextDiff) {
+    EventLog eventLog = new EventLog();
     eventLog.setCaseId(caseInstance.getUuid());
     eventLog.setWorkerId(worker.getName());
     eventLog.setStreamType(EventStreamType.CASE);
