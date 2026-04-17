@@ -15,21 +15,35 @@
  */
 package io.casehub.persistence.memory;
 
+import io.casehub.engine.internal.history.EventLog;
 import io.casehub.engine.internal.model.CaseInstance;
 import io.casehub.engine.spi.CaseInstanceRepository;
+import io.casehub.engine.spi.EventLogRepository;
 import io.smallrye.mutiny.Uni;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.enterprise.inject.Alternative;
+import jakarta.inject.Inject;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicLong;
 
+/**
+ * In-memory {@link CaseInstanceRepository} for use in engine unit tests. Activated via {@code
+ * quarkus.arc.selected-alternatives} — never active in production.
+ */
 @Alternative
 @ApplicationScoped
 public class InMemoryCaseInstanceRepository implements CaseInstanceRepository {
 
   private final AtomicLong idSeq = new AtomicLong(0);
   private final ConcurrentHashMap<UUID, CaseInstance> store = new ConcurrentHashMap<>();
+
+  @Inject EventLogRepository eventLogRepository;
+
+  /** Package-private setter for unit tests that cannot use CDI injection. */
+  void setEventLogRepository(EventLogRepository eventLogRepository) {
+    this.eventLogRepository = eventLogRepository;
+  }
 
   @Override
   public Uni<CaseInstance> save(CaseInstance instance) {
@@ -52,5 +66,11 @@ public class InMemoryCaseInstanceRepository implements CaseInstanceRepository {
   @Override
   public Uni<CaseInstance> findByUuid(UUID uuid) {
     return Uni.createFrom().item(store.get(uuid));
+  }
+
+  @Override
+  public Uni<Void> updateStateAndAppendEvent(CaseInstance instance, EventLog eventLog) {
+    store.put(instance.getUuid(), instance);
+    return eventLogRepository.append(eventLog);
   }
 }
