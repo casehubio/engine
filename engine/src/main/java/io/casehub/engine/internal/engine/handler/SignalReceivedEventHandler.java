@@ -31,7 +31,9 @@ import io.casehub.engine.internal.model.CaseInstance;
 import io.casehub.engine.spi.EventLogRepository;
 import io.quarkus.vertx.ConsumeEvent;
 import io.smallrye.mutiny.Uni;
+import io.vertx.mutiny.core.Vertx;
 import io.vertx.mutiny.core.eventbus.EventBus;
+import io.vertx.mutiny.core.shareddata.Lock;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
 import java.time.Instant;
@@ -47,6 +49,8 @@ public class SignalReceivedEventHandler {
 
   private static final Logger LOG = Logger.getLogger(SignalReceivedEventHandler.class);
   private static final ObjectMapper OBJECT_MAPPER = new ObjectMapper();
+
+  @Inject Vertx vertx;
 
   @Inject EventBus eventBus;
 
@@ -69,8 +73,25 @@ public class SignalReceivedEventHandler {
   }
 
   private Uni<Void> applySignal(CaseInstance instance, SignalReceivedEvent event) {
-    Optional<JsonNode> maybeDiff =
-        instance.getCaseContext().applyAndDiff(event.path(), event.value());
+    // One lock per (caseId, path): concurrent signals to the same field are serialized so that
+    // the second signal always sees the context state written by the first one.
+    String lockKey = "signal:" + instance.getUuid() + ":" + event.path();
+    return vertx
+        .sharedData()
+        .getLocalLock(lockKey)
+        .chain(lock -> applySignalUnderLock(instance, event, lock));
+  }
+
+  private Uni<Void> applySignalUnderLock(
+      CaseInstance instance, SignalReceivedEvent event, Lock lock) {
+    Optional<JsonNode> maybeDiff;
+    try {
+      maybeDiff = instance.getCaseContext().applyAndDiff(event.path(), event.value());
+    } finally {
+      // Release immediately: the lock only needs to protect the in-memory context update.
+      // The subsequent DB transaction does not need to be serialized here.
+      lock.release();
+    }
 
     if (maybeDiff.isEmpty()) {
       LOG.debugf(

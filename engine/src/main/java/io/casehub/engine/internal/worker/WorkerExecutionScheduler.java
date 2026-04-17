@@ -34,11 +34,9 @@ public class WorkerExecutionScheduler {
     try {
       quartz.scheduleJob(job, trigger);
     } catch (ObjectAlreadyExistsException e) {
-      try {
-        quartz.rescheduleJob(trigger.getKey(), trigger);
-      } catch (SchedulerException ex) {
-        throw new RuntimeException("Quartz scheduling failed for jobKey=" + job.getKey(), ex);
-      }
+      // Job is already queued in Quartz — it will execute once. Rescheduling would fire it
+      // a second time, which is wrong. The idempotency key guarantees one execution per
+      // distinct (worker, capability, inputDataHash) combination.
     } catch (SchedulerException e) {
       throw new RuntimeException("Quartz scheduling failed for jobKey=" + job.getKey(), e);
     }

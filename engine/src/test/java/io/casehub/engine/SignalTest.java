@@ -38,6 +38,7 @@ import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
+import org.jboss.logging.Logger;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
@@ -49,6 +50,8 @@ public class SignalTest {
   @Inject TwoSignalCaseHubBean twoSignalBean;
 
   @Inject CaseInstanceCache caseInstanceCache;
+
+  private static final Logger LOG = Logger.getLogger(SignalTest.class);
 
   @BeforeEach
   void reset() {
@@ -66,7 +69,8 @@ public class SignalTest {
    */
   @Test
   void workerShouldNotRunBeforeSignalAndRunAfter() {
-    UUID caseId = bean.startCase(Map.of("orderId", "order-1")).toCompletableFuture().join();
+    String orderId = "order-signal-" + UUID.randomUUID();
+    UUID caseId = bean.startCase(Map.of("orderId", orderId)).toCompletableFuture().join();
 
     assertNotNull(caseId);
 
@@ -75,22 +79,12 @@ public class SignalTest {
         .during(2, TimeUnit.SECONDS)
         .atMost(3, TimeUnit.SECONDS)
         .untilAsserted(
-            () ->
-                assertEquals(
-                    0, SignalCaseHubBean.runCount.get(), "Worker must not run before signal"));
+            () -> assertEquals(0, runCountForOrder(orderId), "Worker must not run before signal"));
 
     // send signal — writes the triggering field
     bean.signal(caseId, "payment", Map.of("amount", 500, "currency", "USD"));
 
-    // worker must run and case must complete
-    await()
-        .atMost(10, TimeUnit.SECONDS)
-        .untilAsserted(
-            () -> {
-              assertEquals(
-                  1, SignalCaseHubBean.runCount.get(), "Worker must run exactly once after signal");
-              assertEquals(CaseStatus.COMPLETED, caseInstanceCache.get(caseId).getState());
-            });
+    awaitWorkerCompletedExactlyOnce(caseId, orderId, "Worker must run exactly once after signal");
   }
 
   /**
@@ -99,6 +93,12 @@ public class SignalTest {
    */
   @Test
   void workerRunsOnceOnDuplicateSignal() {
+
+    SignalCaseHubBean.runCount.set(0);
+    SignalCaseHubBean.runCountByOrderId.clear();
+
+    LOG.warnf("Starting signal");
+
     // Unique orderId per run — isolates this test's run count from other tests' workers
     String orderId = "order-dedup-" + UUID.randomUUID();
     UUID caseId = bean.startCase(Map.of("orderId", orderId)).toCompletableFuture().join();
@@ -110,36 +110,26 @@ public class SignalTest {
     bean.signal(caseId, "payment", Map.of("amount", 100, "currency", "EUR"));
     bean.signal(caseId, "payment", Map.of("amount", 100, "currency", "EUR"));
 
-    await()
-        .atMost(10, TimeUnit.SECONDS)
-        .untilAsserted(
-            () ->
-                assertEquals(
-                    1,
-                    SignalCaseHubBean.runCountByOrderId
-                        .getOrDefault(orderId, new AtomicInteger())
-                        .get(),
-                    "Worker must run exactly once despite duplicate signal"));
+    awaitWorkerCompletedExactlyOnce(
+        caseId, orderId, "Worker must run exactly once despite duplicate signal");
+    LOG.warnf("Finished signal");
   }
 
   /** Signal with a primitive value (not a Map) must also trigger the rule. */
   @Test
   void signalWithPrimitiveValueTriggersWorker() {
-    UUID caseId = bean.startCase(Map.of("orderId", "order-primitive")).toCompletableFuture().join();
+
+    SignalCaseHubBean.runCount.set(0);
+    SignalCaseHubBean.runCountByOrderId.clear();
+
+    String orderId = "order-primitive-" + UUID.randomUUID();
+    UUID caseId = bean.startCase(Map.of("orderId", orderId)).toCompletableFuture().join();
 
     // signal writes a non-null value — rule checks `.payment != null`
     bean.signal(caseId, "payment", 999);
 
-    // Case completion is the definitive signal that the worker fired and ran to success.
-    // Avoids global runCount which is susceptible to cross-test contamination.
-    await()
-        .atMost(10, TimeUnit.SECONDS)
-        .untilAsserted(
-            () ->
-                assertEquals(
-                    io.casehub.api.model.CaseStatus.COMPLETED,
-                    caseInstanceCache.get(caseId).getState(),
-                    "Worker must fire and complete the case when payment signal is a primitive"));
+    awaitWorkerCompletedExactlyOnce(
+        caseId, orderId, "Primitive signal must trigger exactly one worker execution");
   }
 
   /**
@@ -148,6 +138,8 @@ public class SignalTest {
    */
   @Test
   void twoIndependentSignalsTriggerTwoWorkers() {
+    SignalCaseHubBean.runCount.set(0);
+    SignalCaseHubBean.runCountByOrderId.clear();
     UUID caseId =
         twoSignalBean
             .startCase(Map.of("orderId", "order-two-signals"))
@@ -187,17 +179,38 @@ public class SignalTest {
   /** Signal written value must be readable through query after the signal is processed. */
   @Test
   void signalValueIsAvailableViaQuery() {
-    UUID caseId = bean.startCase(Map.of("orderId", "order-query")).toCompletableFuture().join();
+    SignalCaseHubBean.runCount.set(0);
+    SignalCaseHubBean.runCountByOrderId.clear();
+
+    String orderId = "order-query-" + UUID.randomUUID();
+    UUID caseId = bean.startCase(Map.of("orderId", orderId)).toCompletableFuture().join();
 
     bean.signal(caseId, "payment", Map.of("amount", 750, "currency", "GBP"));
 
-    await()
-        .atMost(10, TimeUnit.SECONDS)
-        .untilAsserted(() -> assertEquals(1, SignalCaseHubBean.runCount.get()));
+    awaitWorkerCompletedExactlyOnce(caseId, orderId, "Signal-driven worker must complete once");
 
     // the worker output wrote "status" = "paid" into the context
     String status = bean.query(caseId, "status", String.class).toCompletableFuture().join();
     assertEquals("paid", status);
+  }
+
+  private void awaitWorkerCompletedExactlyOnce(UUID caseId, String orderId, String message) {
+    await()
+        .atMost(10, TimeUnit.SECONDS)
+        .untilAsserted(
+            () -> {
+              assertEquals(1, runCountForOrder(orderId), message);
+              assertEquals(CaseStatus.COMPLETED, caseInstanceCache.get(caseId).getState());
+            });
+
+    await()
+        .during(1, TimeUnit.SECONDS)
+        .atMost(2, TimeUnit.SECONDS)
+        .untilAsserted(() -> assertEquals(1, runCountForOrder(orderId), message));
+  }
+
+  private int runCountForOrder(String orderId) {
+    return SignalCaseHubBean.runCountByOrderId.getOrDefault(orderId, new AtomicInteger()).get();
   }
 
   // ================================================================== //
@@ -242,7 +255,8 @@ public class SignalTest {
                   .capabilities(paymentCapability)
                   .function(
                       input -> {
-                        runCount.incrementAndGet();
+                        LOG.warnf("WORKER INPUT: %s %s", input, runCount.incrementAndGet());
+
                         String orderId = (String) input.get("orderId");
                         if (orderId != null) {
                           runCountByOrderId

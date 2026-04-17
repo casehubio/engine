@@ -51,10 +51,17 @@ class CaseHubReactor {
 
   CompletionStage<UUID> startCase(CaseDefinition definition, CaseContext context) {
     return getCaseInstance(definition, context)
-        .invoke(
+        .chain(
             instance -> {
               LOG.info("Case started with caseId: " + instance.getUuid());
-              eventBus.publish(CASE_STARTED, new CaseStartedEvent(instance));
+              // Use request() instead of publish() so the CompletionStage resolves only after
+              // CaseStartedEventHandler has finished — context snapshot taken, CASE_STARTED
+              // persisted, CONTEXT_CHANGED published. publish() is fire-and-forget and resolves
+              // before the handler runs, creating a race window for callers that mutate the
+              // context immediately after startCase() returns.
+              return eventBus
+                  .<Void>request(CASE_STARTED, new CaseStartedEvent(instance))
+                  .replaceWith(instance);
             })
         .onItem()
         .transform(CaseInstance::getUuid)
