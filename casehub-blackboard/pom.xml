@@ -11,7 +11,11 @@
 
     <artifactId>casehub-blackboard</artifactId>
     <name>Case Hub :: Blackboard</name>
-    <description>Optional CMMN/Blackboard orchestration layer — Stages, PlanItems, PlanningStrategy</description>
+    <description>
+        Optional CMMN/Blackboard orchestration layer for casehub-engine.
+        Provides async PlanningStrategy, CasePlanModel, Stage, and PlanItem.
+        See casehubio/engine#76 (epic: casehubio/engine#30).
+    </description>
 
     <dependencies>
         <dependency>
@@ -24,17 +28,13 @@
             <artifactId>engine</artifactId>
             <version>${project.version}</version>
         </dependency>
+        <!-- Vert.x for EventBus and @ConsumeEvent -->
         <dependency>
             <groupId>io.quarkus</groupId>
-            <artifactId>quarkus-arc</artifactId>
+            <artifactId>quarkus-vertx</artifactId>
         </dependency>
 
         <!-- Test -->
-        <dependency>
-            <groupId>org.testcontainers</groupId>
-            <artifactId>testcontainers-postgresql</artifactId>
-            <scope>test</scope>
-        </dependency>
         <dependency>
             <groupId>io.quarkus</groupId>
             <artifactId>quarkus-junit5</artifactId>
@@ -43,6 +43,11 @@
         <dependency>
             <groupId>org.assertj</groupId>
             <artifactId>assertj-core</artifactId>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.mockito</groupId>
+            <artifactId>mockito-core</artifactId>
             <scope>test</scope>
         </dependency>
         <dependency>
