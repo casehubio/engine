@@ -1,0 +1,110 @@
+/*
+ * Copyright 2026-Present The Case Hub Authors
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ * http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+package io.casehub.blackboard.plan;
+
+import java.time.Instant;
+import java.util.Optional;
+import java.util.UUID;
+
+/**
+ * Activation record for a {@link io.casehub.api.model.Binding} on the {@link CasePlanModel}
+ * scheduling agenda.
+ *
+ * <p>Priority is assigned by {@link io.casehub.blackboard.control.PlanningStrategy}. Status is
+ * updated by {@link io.casehub.blackboard.handler.PlanItemCompletionHandler} on worker completion.
+ * Implements {@link Comparable} for priority-ordered sorting (higher priority first; FIFO for equal
+ * priority). See casehubio/engine#76.
+ */
+public class PlanItem implements Comparable<PlanItem> {
+
+  private final String planItemId;
+  private final String bindingName;
+  private final String workerName;
+  private int priority;
+  private PlanItemStatus status;
+  private final Instant createdAt;
+  private String parentStageId; // null means no parent stage
+
+  /** Lifecycle states. See casehubio/engine#76. */
+  public enum PlanItemStatus {
+    PENDING,
+    RUNNING,
+    COMPLETED,
+    FAULTED,
+    CANCELLED
+  }
+
+  private PlanItem(String bindingName, String workerName, int priority) {
+    this.planItemId = UUID.randomUUID().toString();
+    this.bindingName = bindingName;
+    this.workerName = workerName;
+    this.priority = priority;
+    this.status = PlanItemStatus.PENDING;
+    this.createdAt = Instant.now();
+    this.parentStageId = null;
+  }
+
+  public static PlanItem create(String bindingName, String workerName, int priority) {
+    return new PlanItem(bindingName, workerName, priority);
+  }
+
+  @Override
+  public int compareTo(PlanItem other) {
+    int cmp = Integer.compare(other.priority, this.priority); // higher first
+    if (cmp != 0) return cmp;
+    return this.createdAt.compareTo(other.createdAt); // earlier first
+  }
+
+  public String getPlanItemId() {
+    return planItemId;
+  }
+
+  public String getBindingName() {
+    return bindingName;
+  }
+
+  public String getWorkerName() {
+    return workerName;
+  }
+
+  public int getPriority() {
+    return priority;
+  }
+
+  public void setPriority(int priority) {
+    this.priority = priority;
+  }
+
+  public PlanItemStatus getStatus() {
+    return status;
+  }
+
+  public void setStatus(PlanItemStatus status) {
+    this.status = status;
+  }
+
+  public Instant getCreatedAt() {
+    return createdAt;
+  }
+
+  public Optional<String> getParentStageId() {
+    return Optional.ofNullable(parentStageId);
+  }
+
+  public void setParentStageId(String stageId) {
+    this.parentStageId = stageId;
+  }
+}
