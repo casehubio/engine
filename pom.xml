@@ -86,6 +86,7 @@
         <module>casehub-blackboard</module>
         <module>casehub-resilience</module>
         <module>casehub-persistence-hibernate</module>
+        <module>casehub-persistence-memory</module>
     </modules>
 
     <dependencyManagement>
