@@ -103,6 +103,10 @@ public class SignalTest {
     String orderId = "order-dedup-" + UUID.randomUUID();
     UUID caseId = bean.startCase(Map.of("orderId", orderId)).toCompletableFuture().join();
 
+    // Reset after startCase: any async workers from previous tests should have settled
+    // by the time startCase() returns (it's a blocking call). This minimises contamination.
+    SignalCaseHubBean.runCount.set(0);
+
     bean.signal(caseId, "payment", Map.of("amount", 100, "currency", "EUR"));
     bean.signal(caseId, "payment", Map.of("amount", 100, "currency", "EUR"));
 
@@ -126,9 +130,16 @@ public class SignalTest {
     // signal writes a non-null value — rule checks `.payment != null`
     bean.signal(caseId, "payment", 999);
 
+    // Case completion is the definitive signal that the worker fired and ran to success.
+    // Avoids global runCount which is susceptible to cross-test contamination.
     await()
         .atMost(10, TimeUnit.SECONDS)
-        .untilAsserted(() -> assertEquals(1, SignalCaseHubBean.runCount.get()));
+        .untilAsserted(
+            () ->
+                assertEquals(
+                    io.casehub.api.model.CaseStatus.COMPLETED,
+                    caseInstanceCache.get(caseId).getState(),
+                    "Worker must fire and complete the case when payment signal is a primitive"));
   }
 
   /**
