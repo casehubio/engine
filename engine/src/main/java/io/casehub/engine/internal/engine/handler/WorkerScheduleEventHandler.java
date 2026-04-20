@@ -29,15 +29,17 @@ import io.casehub.engine.internal.history.EventStreamType;
 import io.casehub.engine.internal.model.CaseInstance;
 import io.casehub.engine.internal.util.WorkerExecutionKeys;
 import io.casehub.engine.internal.worker.WorkerExecutionManager;
+import io.casehub.engine.spi.EventLogRepository;
 import io.quarkus.vertx.ConsumeEvent;
 import io.smallrye.mutiny.Uni;
+import io.vertx.mutiny.core.Vertx;
+import io.vertx.mutiny.core.eventbus.EventBus;
+import io.vertx.mutiny.core.shareddata.Lock;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
 import java.time.Instant;
-import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
-import java.util.Optional;
 import org.jboss.logging.Logger;
 
 @ApplicationScoped
@@ -46,41 +48,61 @@ public class WorkerScheduleEventHandler {
   private static final Logger LOG = Logger.getLogger(WorkerScheduleEventHandler.class);
   private static final ObjectMapper OBJECT_MAPPER = new ObjectMapper();
 
+  @Inject Vertx vertx;
+
   @Inject WorkerExecutionManager workflowExecutionManager;
 
   @Inject WorkerExecutionGuard workerExecutionGuard;
 
-  @Inject io.vertx.mutiny.core.eventbus.EventBus eventBus;
+  @Inject EventBus eventBus;
 
-  @Inject io.casehub.engine.spi.EventLogRepository eventLogRepository;
+  @Inject EventLogRepository eventLogRepository;
 
   @ConsumeEvent(value = EventBusAddresses.WORKER_SCHEDULE)
   public Uni<Void> onWorkerScheduleEventHandler(WorkerScheduleEvent event) {
     CaseInstance instance = event.caseInstance();
     Worker worker = event.worker();
+    String inputDataHash =
+        WorkerExecutionKeys.inputDataHash(
+            worker.getName(),
+            event.capability().getName(),
+            instance.getCaseContext().evalObjectTemplate(event.capability().getInputSchema()));
 
     if (workerExecutionGuard.isBlocked(worker.getName(), instance.getUuid())) {
       LOG.warnf(
           "Worker blocked by guard (quarantined?): caseId=%s worker=%s — emitting retries exhausted",
           instance.getUuid(), worker.getName());
-      String idempotency =
-          io.casehub.engine.internal.util.WorkerExecutionKeys.inputDataHash(
-              worker.getName(),
-              event.capability().getName(),
-              instance.getCaseContext().evalObjectTemplate(event.capability().getInputSchema()));
       eventBus.publish(
           EventBusAddresses.WORKER_RETRIES_EXHAUSTED,
-          new WorkerRetriesExhaustedEvent(instance.getUuid(), worker.getName(), idempotency));
+          new WorkerRetriesExhaustedEvent(instance.getUuid(), worker.getName(), inputDataHash));
       return Uni.createFrom().voidItem();
     }
     Capability capability = event.capability();
 
     Map<String, Object> inputData =
         instance.getCaseContext().evalObjectTemplate(capability.getInputSchema());
-    String inputDataHash =
-        WorkerExecutionKeys.inputDataHash(worker.getName(), capability.getName(), inputData);
+
     EventLog eventLog = buildEventLog(instance, worker, capability, inputData, inputDataHash);
 
+    String lockKey = "wse:" + instance.getUuid() + ":" + worker.getName() + ":" + inputDataHash;
+
+    return vertx
+        .sharedData()
+        .getLocalLock(lockKey)
+        .chain(
+            lock ->
+                scheduleUnderLock(
+                    lock, eventLog, instance, worker, capability, inputData, inputDataHash));
+  }
+
+  private Uni<Void> scheduleUnderLock(
+      Lock lock,
+      EventLog eventLog,
+      CaseInstance instance,
+      Worker worker,
+      Capability capability,
+      Map<String, Object> inputData,
+      String inputDataHash) {
     return eventLogRepository
         .findSchedulingEvents(instance.getUuid(), worker.getName())
         .map(existing -> decideAction(existing, inputDataHash))
@@ -91,6 +113,7 @@ public class WorkerScheduleEventHandler {
                 LOG.infof(
                     "WorkerScheduleEvent processed: caseId=%s worker=%s capability=%s",
                     instance.getUuid(), worker.getName(), capability.getName()))
+        .invoke(lock::release)
         .replaceWithVoid()
         .onFailure()
         .invoke(
@@ -100,7 +123,8 @@ public class WorkerScheduleEventHandler {
                     "WorkerScheduleEvent FAILED: caseId=%s worker=%s capability=%s",
                     instance.getUuid(),
                     worker.getName(),
-                    capability.getName()));
+                    capability.getName()))
+        .invoke(lock::release);
   }
 
   private EventLog buildEventLog(
@@ -135,15 +159,9 @@ public class WorkerScheduleEventHandler {
     return switch (action.type()) {
       case SKIP -> {
         LOG.infof(
-            "Skipping WorkerScheduleEvent: already started/completed caseId=%s worker=%s capability=%s",
+            "Skipping WorkerScheduleEvent: already scheduled/started/completed caseId=%s worker=%s capability=%s",
             instance.getUuid(), worker.getName(), capability.getName());
         yield Uni.createFrom().nullItem();
-      }
-      case RESUBMIT_EXISTING -> {
-        LOG.infof(
-            "Re-submitting existing scheduled worker: caseId=%s worker=%s capability=%s eventLogId=%d",
-            instance.getUuid(), worker.getName(), capability.getName(), action.eventLogId());
-        yield Uni.createFrom().item(action.eventLogId());
       }
       case CREATE_NEW -> eventLogRepository.appendAndReturnId(eventLog);
     };
@@ -172,35 +190,26 @@ public class WorkerScheduleEventHandler {
                 })
             .toList();
 
-    boolean alreadyStartedOrCompleted =
+    boolean alreadyScheduledOrStartedOrCompleted =
         sameInputEvents.stream()
             .anyMatch(
                 eventLog ->
-                    eventLog.getEventType() == CaseHubEventType.WORKER_EXECUTION_STARTED
+                    eventLog.getEventType() == CaseHubEventType.WORKER_SCHEDULED
+                        || eventLog.getEventType() == CaseHubEventType.WORKER_EXECUTION_STARTED
                         || eventLog.getEventType() == CaseHubEventType.WORKER_EXECUTION_COMPLETED);
-    if (alreadyStartedOrCompleted) {
+    if (alreadyScheduledOrStartedOrCompleted) {
+      // Live duplicate schedule events must not re-submit the same Quartz job.
+      // If a WORKER_SCHEDULED event was persisted but never executed due to a crash,
+      // WorkerExecutionRecoveryService is responsible for replaying it.
       return ScheduleAction.skip();
     }
-
-    Optional<Long> existingScheduledId =
-        sameInputEvents.stream()
-            .filter(eventLog -> eventLog.getEventType() == CaseHubEventType.WORKER_SCHEDULED)
-            .max(Comparator.comparing(eventLog -> eventLog.id))
-            .map(eventLog -> eventLog.id);
-
-    return existingScheduledId
-        .map(ScheduleAction::resubmitExisting)
-        .orElseGet(ScheduleAction::createNew);
+    return ScheduleAction.createNew();
   }
 
   private record ScheduleAction(ScheduleActionType type, Long eventLogId) {
 
     static ScheduleAction skip() {
       return new ScheduleAction(ScheduleActionType.SKIP, null);
-    }
-
-    static ScheduleAction resubmitExisting(Long eventLogId) {
-      return new ScheduleAction(ScheduleActionType.RESUBMIT_EXISTING, eventLogId);
     }
 
     static ScheduleAction createNew() {
@@ -210,7 +219,6 @@ public class WorkerScheduleEventHandler {
 
   private enum ScheduleActionType {
     SKIP,
-    RESUBMIT_EXISTING,
     CREATE_NEW
   }
 }

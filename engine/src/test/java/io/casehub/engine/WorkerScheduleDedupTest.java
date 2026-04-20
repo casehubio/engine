@@ -26,6 +26,7 @@ import io.casehub.api.model.CaseDefinition;
 import io.casehub.api.model.Worker;
 import io.casehub.engine.internal.engine.cache.CaseInstanceCache;
 import io.casehub.engine.internal.engine.handler.WorkerScheduleEventHandler;
+import io.casehub.engine.internal.engine.recovery.WorkerExecutionRecoveryService;
 import io.casehub.engine.internal.event.WorkerScheduleEvent;
 import io.casehub.engine.internal.history.CaseHubEventType;
 import io.casehub.engine.internal.history.EventLog;
@@ -57,6 +58,8 @@ public class WorkerScheduleDedupTest {
   @Inject DedupCaseHubBean bean;
 
   @Inject WorkerScheduleEventHandler handler;
+
+  @Inject WorkerExecutionRecoveryService recoveryService;
 
   @Inject CaseInstanceCache caseInstanceCache;
 
@@ -114,7 +117,7 @@ public class WorkerScheduleDedupTest {
   }
 
   @Test
-  void shouldResubmitExistingScheduledWithoutCreatingDuplicateLog() {
+  void shouldSkipWhenMatchingScheduledEventAlreadyExists() {
     DedupCaseHubBean.runCount.set(0);
 
     UUID caseId =
@@ -147,10 +150,11 @@ public class WorkerScheduleDedupTest {
         .atMost(Duration.ofSeconds(10));
 
     Awaitility.await()
-        .atMost(10, TimeUnit.SECONDS)
+        .during(2, TimeUnit.SECONDS)
+        .atMost(3, TimeUnit.SECONDS)
         .untilAsserted(
             () -> {
-              assertEquals(1, DedupCaseHubBean.runCount.get());
+              assertEquals(0, DedupCaseHubBean.runCount.get());
               assertEquals(
                   1,
                   countEvents(
@@ -158,6 +162,60 @@ public class WorkerScheduleDedupTest {
                       CaseHubEventType.WORKER_SCHEDULED,
                       "dedup-worker",
                       executionIdempotency));
+            });
+  }
+
+  /**
+   * Crash-recovery scenario: a WORKER_SCHEDULED row exists in the DB (written before the crash) but
+   * the Quartz RAM-store is empty (cleared on restart). The handler SKIPs re-scheduling (covered by
+   * shouldSkipWhenMatchingScheduledEventAlreadyExists), while recoverPendingScheduledWorkers()
+   * replays the orphaned job exactly once without creating a duplicate WORKER_SCHEDULED row.
+   */
+  @Test
+  void shouldRecoverOrphanedScheduledWorkerOnRestart() {
+    DedupCaseHubBean.runCount.set(0);
+
+    UUID caseId =
+        bean.startCase(Map.of("documentId", "doc-recovery", "status", "queued"))
+            .toCompletableFuture()
+            .join();
+
+    assertNotNull(caseInstanceCache.get(caseId));
+
+    String executionIdempotency =
+        WorkerExecutionKeys.inputDataHash(
+            "dedup-worker",
+            "dedupCapability",
+            Map.of("documentId", "doc-recovery", "status", "queued"));
+
+    // Simulate the state left after a crash: WORKER_SCHEDULED persisted, Quartz job lost.
+    persistEvent(
+        eventLog(
+            caseId,
+            CaseHubEventType.WORKER_SCHEDULED,
+            "dedup-worker",
+            executionIdempotency,
+            Map.of("documentId", "doc-recovery", "status", "queued")));
+
+    // Recovery service reschedules the orphaned job without creating a new EventLog row.
+    ReactiveUtils.runOnSafeVertxContext(
+            vertx, () -> recoveryService.recoverPendingScheduledWorkers())
+        .await()
+        .atMost(Duration.ofSeconds(10));
+
+    Awaitility.await()
+        .atMost(10, TimeUnit.SECONDS)
+        .untilAsserted(
+            () -> {
+              assertEquals(1, DedupCaseHubBean.runCount.get(), "worker must run exactly once");
+              assertEquals(
+                  1,
+                  countEvents(
+                      caseId,
+                      CaseHubEventType.WORKER_SCHEDULED,
+                      "dedup-worker",
+                      executionIdempotency),
+                  "no duplicate WORKER_SCHEDULED row must be created");
               assertEquals(
                   "processed",
                   bean.query(caseId, "status", String.class).toCompletableFuture().join());
