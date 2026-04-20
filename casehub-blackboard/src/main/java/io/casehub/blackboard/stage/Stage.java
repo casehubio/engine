@@ -15,12 +15,15 @@
  */
 package io.casehub.blackboard.stage;
 
+import io.casehub.api.context.CaseContext;
 import io.casehub.api.model.evaluator.ExpressionEvaluator;
+import io.casehub.api.model.evaluator.LambdaExpressionEvaluator;
 import java.time.Instant;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 import java.util.concurrent.CopyOnWriteArrayList;
+import java.util.function.Predicate;
 
 /**
  * CMMN Stage — a container for PlanItems, Milestones, and nested Stages that activates and
@@ -75,8 +78,26 @@ public class Stage {
     return this;
   }
 
+  /**
+   * Convenience overload — wraps a Java lambda in {@link LambdaExpressionEvaluator}. Use this for
+   * Java DSL stage definitions where type safety is preferred over JQ string expressions.
+   */
+  public Stage withEntryCondition(Predicate<CaseContext> predicate) {
+    this.entryCondition = new LambdaExpressionEvaluator(predicate);
+    return this;
+  }
+
   public Stage withExitCondition(ExpressionEvaluator condition) {
     this.exitCondition = condition;
+    return this;
+  }
+
+  /**
+   * Convenience overload — wraps a Java lambda in {@link LambdaExpressionEvaluator}. Use this for
+   * Java DSL stage definitions where type safety is preferred over JQ string expressions.
+   */
+  public Stage withExitCondition(Predicate<CaseContext> predicate) {
+    this.exitCondition = new LambdaExpressionEvaluator(predicate);
     return this;
   }
 
