@@ -25,7 +25,7 @@ import io.casehub.engine.internal.history.CaseHubEventType;
 import io.casehub.engine.internal.history.EventLog;
 import io.casehub.engine.internal.history.EventStreamType;
 import io.casehub.engine.internal.model.CaseInstance;
-import io.quarkus.hibernate.reactive.panache.Panache;
+import io.casehub.engine.spi.CaseInstanceRepository;
 import io.quarkus.vertx.ConsumeEvent;
 import io.smallrye.mutiny.Uni;
 import io.vertx.mutiny.core.eventbus.EventBus;
@@ -34,16 +34,21 @@ import jakarta.inject.Inject;
 import java.time.Instant;
 import org.jboss.logging.Logger;
 
+/**
+ * Handles worker retry exhaustion by marking the case as FAULTED. Atomically updates the instance
+ * state and appends the event log entry.
+ */
 @ApplicationScoped
 public class WorkerRetriesExhaustedEventHandler {
 
   private static final Logger LOG = Logger.getLogger(WorkerRetriesExhaustedEventHandler.class);
-
   private static final ObjectMapper OBJECT_MAPPER = new ObjectMapper();
 
   @Inject CaseInstanceCache caseInstanceCache;
 
   @Inject EventBus eventBus;
+
+  @Inject CaseInstanceRepository caseInstanceRepository;
 
   @ConsumeEvent(value = EventBusAddresses.WORKER_RETRIES_EXHAUSTED)
   public Uni<Void> onWorkerRetriesExhaustedEvent(WorkerRetriesExhaustedEvent event) {
@@ -63,11 +68,8 @@ public class WorkerRetriesExhaustedEventHandler {
             .put("workerId", event.workerId())
             .put("inputDataHash", event.idempotency()));
 
-    return Panache.withTransaction(
-            () ->
-                Panache.getSession()
-                    .chain(session -> session.merge(caseInstance))
-                    .chain(merged -> eventLog.persist()))
+    return caseInstanceRepository
+        .updateStateAndAppendEvent(caseInstance, eventLog)
         .invoke(
             () -> {
               LOG.warnf(
@@ -76,7 +78,6 @@ public class WorkerRetriesExhaustedEventHandler {
               eventBus.publish(
                   EventBusAddresses.CASE_STATUS_CHANGED,
                   new CaseStatusChanged(caseInstance, oldStatus, CaseStatus.FAULTED.name()));
-            })
-        .replaceWithVoid();
+            });
   }
 }

@@ -16,59 +16,22 @@
 package io.casehub.engine.internal.model;
 
 import com.fasterxml.jackson.databind.JsonNode;
-import io.quarkus.hibernate.reactive.panache.PanacheEntity;
-import jakarta.persistence.CascadeType;
-import jakarta.persistence.Column;
-import jakarta.persistence.Entity;
-import jakarta.persistence.OneToMany;
-import jakarta.persistence.PrePersist;
-import jakarta.persistence.Table;
-import jakarta.persistence.UniqueConstraint;
 import java.time.Instant;
-import java.util.ArrayList;
-import java.util.List;
 import java.util.Objects;
-import org.hibernate.annotations.JdbcTypeCode;
-import org.hibernate.type.SqlTypes;
 
-@Entity
-@Table(
-    name = "case_meta_model",
-    uniqueConstraints = {@UniqueConstraint(columnNames = {"namespace", "name", "version"})})
-public class CaseMetaModel extends PanacheEntity {
+/** Plain domain object describing a registered case type. Persistence is handled by the SPI. */
+public class CaseMetaModel {
 
-  @Column(nullable = false, length = 255)
+  /** Populated by the repository after save. Null until first persisted. */
+  public Long id;
+
   private String name;
-
-  @Column(length = 255)
   private String namespace;
-
-  @Column(nullable = false, length = 50)
   private String version;
-
-  @Column(length = 500)
   private String title;
-
-  @Column(length = 50)
   private String dsl;
-
-  @JdbcTypeCode(SqlTypes.JSON)
-  @Column(columnDefinition = "jsonb")
   private JsonNode definition;
-
-  @Column(name = "created_at", nullable = false)
   private Instant createdAt;
-
-  @OneToMany(mappedBy = "caseMetaModel", cascade = CascadeType.ALL, orphanRemoval = true)
-  private List<CaseInstance> caseInstance = new ArrayList<>();
-
-  @PrePersist
-  public void prePersist() {
-    Instant now = Instant.now();
-    if (createdAt == null) {
-      createdAt = now;
-    }
-  }
 
   public Long getId() {
     return id;
@@ -134,22 +97,14 @@ public class CaseMetaModel extends PanacheEntity {
     this.createdAt = createdAt;
   }
 
-  public List<CaseInstance> getCaseInstance() {
-    return caseInstance;
-  }
-
-  public void setCaseInstance(List<CaseInstance> caseInstance) {
-    this.caseInstance = caseInstance;
-  }
-
   @Override
   public boolean equals(Object o) {
     if (this == o) return true;
     if (o == null || getClass() != o.getClass()) return false;
-    CaseMetaModel caseHub = (CaseMetaModel) o;
-    return Objects.equals(namespace, caseHub.namespace)
-        && Objects.equals(name, caseHub.name)
-        && Objects.equals(version, caseHub.version);
+    CaseMetaModel that = (CaseMetaModel) o;
+    return Objects.equals(namespace, that.namespace)
+        && Objects.equals(name, that.name)
+        && Objects.equals(version, that.version);
   }
 
   @Override
@@ -159,25 +114,19 @@ public class CaseMetaModel extends PanacheEntity {
 
   @Override
   public String toString() {
-    return "CaseHub{"
-        + "id="
+    return "CaseMetaModel{id="
         + id
         + ", namespace='"
         + namespace
-        + '\''
-        + ", name='"
+        + "', name='"
         + name
-        + '\''
-        + ", version='"
+        + "', version='"
         + version
-        + '\''
-        + ", title='"
+        + "', title='"
         + title
-        + '\''
-        + ", dsl='"
+        + "', dsl='"
         + dsl
-        + '\''
-        + ", createdAt="
+        + "', createdAt="
         + createdAt
         + '}';
   }

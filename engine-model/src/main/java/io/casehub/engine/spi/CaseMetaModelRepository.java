@@ -18,11 +18,24 @@ package io.casehub.engine.spi;
 import io.casehub.engine.internal.model.CaseMetaModel;
 import io.smallrye.mutiny.Uni;
 
+/**
+ * Storage provider for {@link io.casehub.engine.internal.model.CaseMetaModel} definitions.
+ * Implementations handle their own session/transaction management.
+ */
 public interface CaseMetaModelRepository {
 
-  /** Find by the unique (namespace, name, version) key. Returns null if not found. */
+  /**
+   * Find a registered case type by its natural key. Returns {@code null} if not found.
+   *
+   * @param namespace the case namespace (may be null for unnamespaced definitions)
+   * @param name the case name
+   * @param version the semantic version string
+   */
   Uni<CaseMetaModel> findByKey(String namespace, String name, String version);
 
-  /** Persist a new case meta model. Returns the saved instance with id populated. */
+  /**
+   * Persist a new case meta model. Sets {@code metaModel.id} and {@code metaModel.createdAt} on
+   * completion if not already set.
+   */
   Uni<CaseMetaModel> save(CaseMetaModel metaModel);
 }

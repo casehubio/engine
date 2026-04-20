@@ -31,7 +31,7 @@ import io.casehub.engine.internal.event.GoalReachedEvent;
 import io.casehub.engine.internal.history.EventLog;
 import io.casehub.engine.internal.history.EventStreamType;
 import io.casehub.engine.internal.model.CaseInstance;
-import io.quarkus.hibernate.reactive.panache.Panache;
+import io.casehub.engine.spi.EventLogRepository;
 import io.quarkus.vertx.ConsumeEvent;
 import io.smallrye.mutiny.Uni;
 import io.vertx.mutiny.core.eventbus.EventBus;
@@ -42,6 +42,7 @@ import java.util.Set;
 import java.util.stream.Collectors;
 import org.jboss.logging.Logger;
 
+/** Records a GOAL_REACHED event and evaluates whether the case has reached a terminal state. */
 @ApplicationScoped
 public class GoalReachedEventHandler {
 
@@ -50,6 +51,8 @@ public class GoalReachedEventHandler {
   @Inject CaseDefinitionRegistry caseDefinitionRegistry;
 
   @Inject EventBus eventBus;
+
+  @Inject EventLogRepository eventLogRepository;
 
   private static final ObjectMapper OBJECT_MAPPER = new ObjectMapper();
 
@@ -73,26 +76,18 @@ public class GoalReachedEventHandler {
             .put("kind", goal.getKind().value())
             .put("isTerminal", goal.getTerminal()));
 
-    CaseCompletion completion = definition.getCompletion();
-
-    return Panache.withTransaction(eventLog::persist)
-        .chain(() -> evaluateCompletion(caseInstance, completion));
+    return eventLogRepository
+        .append(eventLog)
+        .chain(() -> evaluateCompletion(caseInstance, definition.getCompletion()));
   }
 
   private Uni<Void> evaluateCompletion(CaseInstance caseInstance, CaseCompletion completion) {
-    if (completion == null) {
+    if (completion == null || !(completion instanceof GoalBasedCompletion goalBasedCompletion)) {
       return Uni.createFrom().voidItem();
     }
 
-    if (!(completion instanceof GoalBasedCompletion goalBasedCompletion)) {
-      return Uni.createFrom().voidItem();
-    }
-
-    return Panache.withTransaction(
-            () ->
-                EventLog.find(
-                        "caseId = ?1 and eventType = ?2", caseInstance.getUuid(), GOAL_REACHED)
-                    .<EventLog>list())
+    return eventLogRepository
+        .findByCaseAndTypes(caseInstance.getUuid(), Set.of(GOAL_REACHED))
         .chain(
             eventLogs -> {
               Set<String> reachedGoals =
@@ -132,18 +127,14 @@ public class GoalReachedEventHandler {
     if (expression == null || expression.getGoals() == null || expression.getGoals().isEmpty()) {
       return false;
     }
-
     Set<String> expressionGoalNames =
         expression.getGoals().stream().map(Goal::getName).collect(Collectors.toSet());
-
     if (expression instanceof io.casehub.api.model.AllOfGoalExpression) {
       return reachedGoals.containsAll(expressionGoalNames);
     }
-
     if (expression instanceof io.casehub.api.model.AnyOfGoalExpression) {
       return expressionGoalNames.stream().anyMatch(reachedGoals::contains);
     }
-
     return false;
   }
 }

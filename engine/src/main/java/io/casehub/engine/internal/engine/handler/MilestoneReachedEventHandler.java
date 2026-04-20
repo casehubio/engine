@@ -24,16 +24,20 @@ import io.casehub.engine.internal.event.MilestoneReachedEvent;
 import io.casehub.engine.internal.history.EventLog;
 import io.casehub.engine.internal.history.EventStreamType;
 import io.casehub.engine.internal.model.CaseInstance;
-import io.quarkus.hibernate.reactive.panache.Panache;
+import io.casehub.engine.spi.EventLogRepository;
 import io.quarkus.vertx.ConsumeEvent;
 import io.smallrye.mutiny.Uni;
 import jakarta.enterprise.context.ApplicationScoped;
+import jakarta.inject.Inject;
 import java.time.Instant;
 
+/** Records a MILESTONE_REACHED event. */
 @ApplicationScoped
 public class MilestoneReachedEventHandler {
 
   private static final ObjectMapper OBJECT_MAPPER = new ObjectMapper();
+
+  @Inject EventLogRepository eventLogRepository;
 
   @ConsumeEvent(value = EventBusAddresses.MILESTONE_REACHED)
   public Uni<Void> onMilestoneReachedEventHandler(MilestoneReachedEvent event) {
@@ -51,6 +55,6 @@ public class MilestoneReachedEventHandler {
             .put("name", milestone.getName())
             .put("description", milestone.getDescription()));
 
-    return Panache.withTransaction(eventLog::persist).replaceWithVoid();
+    return eventLogRepository.append(eventLog);
   }
 }

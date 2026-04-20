@@ -29,7 +29,6 @@ import io.casehub.engine.internal.history.EventStreamType;
 import io.casehub.engine.internal.model.CaseInstance;
 import io.casehub.engine.internal.util.WorkerExecutionKeys;
 import io.casehub.engine.internal.worker.WorkerExecutionManager;
-import io.quarkus.hibernate.reactive.panache.Panache;
 import io.quarkus.vertx.ConsumeEvent;
 import io.smallrye.mutiny.Uni;
 import jakarta.enterprise.context.ApplicationScoped;
@@ -52,6 +51,8 @@ public class WorkerScheduleEventHandler {
   @Inject WorkerExecutionGuard workerExecutionGuard;
 
   @Inject io.vertx.mutiny.core.eventbus.EventBus eventBus;
+
+  @Inject io.casehub.engine.spi.EventLogRepository eventLogRepository;
 
   @ConsumeEvent(value = EventBusAddresses.WORKER_SCHEDULE)
   public Uni<Void> onWorkerScheduleEventHandler(WorkerScheduleEvent event) {
@@ -80,11 +81,10 @@ public class WorkerScheduleEventHandler {
         WorkerExecutionKeys.inputDataHash(worker.getName(), capability.getName(), inputData);
     EventLog eventLog = buildEventLog(instance, worker, capability, inputData, inputDataHash);
 
-    return Panache.withTransaction(
-            () ->
-                EventLog.findSchedulingEvents(instance.getUuid(), worker.getName())
-                    .map(existing -> decideAction(existing, inputDataHash))
-                    .chain(action -> executeAction(action, eventLog, instance, worker, capability)))
+    return eventLogRepository
+        .findSchedulingEvents(instance.getUuid(), worker.getName())
+        .map(existing -> decideAction(existing, inputDataHash))
+        .chain(action -> executeAction(action, eventLog, instance, worker, capability))
         .chain(eventLogId -> submitIfNeeded(eventLogId, instance, worker, capability, inputData))
         .invoke(
             () ->
@@ -145,7 +145,7 @@ public class WorkerScheduleEventHandler {
             instance.getUuid(), worker.getName(), capability.getName(), action.eventLogId());
         yield Uni.createFrom().item(action.eventLogId());
       }
-      case CREATE_NEW -> eventLog.persistScheduledEvent();
+      case CREATE_NEW -> eventLogRepository.appendAndReturnId(eventLog);
     };
   }
 

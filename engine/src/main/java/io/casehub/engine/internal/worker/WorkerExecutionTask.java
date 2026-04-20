@@ -28,7 +28,6 @@ import io.casehub.engine.internal.event.WorkflowExecutionCompleted;
 import io.casehub.engine.internal.history.EventLog;
 import io.casehub.engine.internal.model.CaseInstance;
 import io.casehub.engine.internal.util.ReactiveUtils;
-import io.quarkus.hibernate.reactive.panache.Panache;
 import io.serverlessworkflow.api.types.Workflow;
 import io.serverlessworkflow.impl.WorkflowModel;
 import io.smallrye.mutiny.Uni;
@@ -58,6 +57,8 @@ public class WorkerExecutionTask implements Job {
   @Inject EventBus eventBus;
 
   @Inject WorkerExecutionRecoveryService workerExecutionRecoveryService;
+
+  @Inject io.casehub.engine.spi.EventLogRepository eventLogRepository;
 
   private static final ObjectMapper OBJECT_MAPPER = new ObjectMapper();
 
@@ -158,6 +159,6 @@ public class WorkerExecutionTask implements Job {
 
   private Uni<EventLog> findEventLog(String eventLogId) {
     return ReactiveUtils.runOnSafeVertxContext(
-        vertx, () -> Panache.withSession(() -> EventLog.findById(eventLogId)));
+        vertx, () -> eventLogRepository.findById(Long.parseLong(eventLogId)));
   }
 }

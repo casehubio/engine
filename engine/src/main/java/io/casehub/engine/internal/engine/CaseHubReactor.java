@@ -26,6 +26,7 @@ import io.casehub.engine.internal.event.CaseStartedEvent;
 import io.casehub.engine.internal.event.SignalReceivedEvent;
 import io.casehub.engine.internal.model.CaseInstance;
 import io.casehub.engine.internal.model.CaseMetaModel;
+import io.casehub.engine.spi.CaseInstanceRepository;
 import io.smallrye.mutiny.Uni;
 import io.vertx.mutiny.core.eventbus.EventBus;
 import jakarta.enterprise.context.ApplicationScoped;
@@ -33,7 +34,6 @@ import jakarta.inject.Inject;
 import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
-import org.hibernate.reactive.mutiny.Mutiny;
 import org.jboss.logging.Logger;
 
 @ApplicationScoped
@@ -45,7 +45,7 @@ class CaseHubReactor {
 
   @Inject CaseInstanceCache caseInstanceCache;
 
-  @Inject Mutiny.SessionFactory sessionFactory;
+  @Inject CaseInstanceRepository caseInstanceRepository;
 
   @Inject EventBus eventBus;
 
@@ -72,7 +72,7 @@ class CaseHubReactor {
     instance.setCaseContext(context);
 
     caseInstanceCache.put(instance);
-    return sessionFactory.withTransaction(session -> instance.persist());
+    return caseInstanceRepository.save(instance);
   }
 
   void signal(UUID caseId, String path, Object value) {
