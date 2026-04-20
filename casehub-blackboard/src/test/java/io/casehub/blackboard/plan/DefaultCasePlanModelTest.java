@@ -107,4 +107,32 @@ class DefaultCasePlanModelTest {
     plan.put("custom-key", 42);
     assertThat(plan.get("custom-key", Integer.class)).contains(42);
   }
+
+  @Test
+  void hasActivePlanItem_true_for_pending_item() {
+    PlanItem item = PlanItem.create("binding-a", "worker-a", 0);
+    plan.addPlanItem(item);
+    assertThat(plan.hasActivePlanItem("binding-a")).isTrue();
+  }
+
+  @Test
+  void hasActivePlanItem_true_for_running_item() {
+    PlanItem item = PlanItem.create("binding-a", "worker-a", 0);
+    item.setStatus(PlanItem.PlanItemStatus.RUNNING);
+    plan.addPlanItem(item);
+    assertThat(plan.hasActivePlanItem("binding-a")).isTrue();
+  }
+
+  @Test
+  void hasActivePlanItem_false_for_completed_item() {
+    PlanItem item = PlanItem.create("binding-a", "worker-a", 0);
+    item.setStatus(PlanItem.PlanItemStatus.COMPLETED);
+    plan.addPlanItem(item);
+    assertThat(plan.hasActivePlanItem("binding-a")).isFalse();
+  }
+
+  @Test
+  void hasActivePlanItem_false_when_no_item() {
+    assertThat(plan.hasActivePlanItem("binding-a")).isFalse();
+  }
 }

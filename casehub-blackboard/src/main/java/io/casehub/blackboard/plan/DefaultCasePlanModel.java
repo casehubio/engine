@@ -70,6 +70,16 @@ public class DefaultCasePlanModel implements CasePlanModel {
   }
 
   @Override
+  public boolean hasActivePlanItem(String bindingName) {
+    return itemsById.values().stream()
+        .anyMatch(
+            pi ->
+                pi.getBindingName().equals(bindingName)
+                    && (pi.getStatus() == PlanItem.PlanItemStatus.PENDING
+                        || pi.getStatus() == PlanItem.PlanItemStatus.RUNNING));
+  }
+
+  @Override
   public List<PlanItem> getAgenda() {
     return agenda.stream()
         .filter(p -> p.getStatus() == PlanItem.PlanItemStatus.PENDING)

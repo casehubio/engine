@@ -43,6 +43,12 @@ public interface CasePlanModel {
 
   Optional<PlanItem> getPlanItem(String planItemId);
 
+  /**
+   * Returns true if there is already a PENDING or RUNNING PlanItem for the given binding name. Used
+   * to prevent duplicate scheduling.
+   */
+  boolean hasActivePlanItem(String bindingName);
+
   /** Returns only PENDING items, sorted highest-priority first. */
   List<PlanItem> getAgenda();
 
