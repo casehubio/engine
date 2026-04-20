@@ -17,6 +17,7 @@ package io.casehub.blackboard.plan;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import io.casehub.blackboard.stage.Stage;
 import java.util.List;
 import java.util.UUID;
 import org.junit.jupiter.api.BeforeEach;
@@ -100,6 +101,7 @@ class DefaultCasePlanModelTest {
     plan.setFocus("analysis");
     plan.setFocusRationale("high-value documents detected");
     assertThat(plan.getFocus()).contains("analysis");
+    assertThat(plan.getFocusRationale()).contains("high-value documents detected");
   }
 
   @Test
@@ -134,5 +136,32 @@ class DefaultCasePlanModelTest {
   @Test
   void hasActivePlanItem_false_when_no_item() {
     assertThat(plan.hasActivePlanItem("binding-a")).isFalse();
+  }
+
+  @Test
+  void hasActivePlanItem_false_for_faulted_item() {
+    PlanItem item = PlanItem.create("binding-a", "worker-a", 0);
+    item.setStatus(PlanItem.PlanItemStatus.FAULTED);
+    plan.addPlanItem(item);
+    assertThat(plan.hasActivePlanItem("binding-a")).isFalse();
+  }
+
+  @Test
+  void stage_management_add_and_retrieve() {
+    Stage stage = Stage.create("intake");
+    plan.addStage(stage);
+    assertThat(plan.getStage(stage.getStageId())).contains(stage);
+    assertThat(plan.getAllStages()).containsExactly(stage);
+  }
+
+  @Test
+  void getPendingStages_and_getActiveStages_filter_by_status() {
+    Stage pending = Stage.create("pending-stage");
+    Stage active = Stage.create("active-stage");
+    active.activate();
+    plan.addStage(pending);
+    plan.addStage(active);
+    assertThat(plan.getPendingStages()).containsExactly(pending);
+    assertThat(plan.getActiveStages()).containsExactly(active);
   }
 }

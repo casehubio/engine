@@ -97,8 +97,16 @@ public class PlanningStrategyLoopControl implements LoopControl {
     if (matching.size() > 1) {
       LOG.warnf(
           "Capability '%s' matched %d workers — only '%s' will be tracked for PlanItem completion. "
-              + "Multi-worker fan-out requires separate PlanItems per worker (casehubio/engine#82).",
-          capName, matching.size(), matching.get(0).getName());
+              + "Workers [%s] will fire but their completion events will be silently ignored, "
+              + "leaving their PlanItems RUNNING indefinitely. "
+              + "Multi-worker fan-out requires per-worker PlanItems (casehubio/engine#82).",
+          capName,
+          matching.size(),
+          matching.get(0).getName(),
+          matching.stream()
+              .skip(1)
+              .map(Worker::getName)
+              .collect(java.util.stream.Collectors.joining(", ")));
     }
     return matching.isEmpty() ? capName : matching.get(0).getName();
   }

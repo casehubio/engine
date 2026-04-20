@@ -33,7 +33,7 @@ public class PlanItem implements Comparable<PlanItem> {
   private final String planItemId;
   private final String bindingName;
   private final String workerName;
-  private int priority;
+  private final int priority;
   private PlanItemStatus status;
   private final Instant createdAt;
   private String parentStageId; // null means no parent stage
@@ -82,10 +82,6 @@ public class PlanItem implements Comparable<PlanItem> {
 
   public int getPriority() {
     return priority;
-  }
-
-  public void setPriority(int priority) {
-    this.priority = priority;
   }
 
   public PlanItemStatus getStatus() {

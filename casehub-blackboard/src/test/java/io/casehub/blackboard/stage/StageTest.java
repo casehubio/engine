@@ -95,6 +95,17 @@ class StageTest {
   }
 
   @Test
+  void containment_add_same_id_twice_produces_no_duplicates() {
+    Stage s = Stage.create("intake");
+    s.addPlanItem("pi-1");
+    s.addPlanItem("pi-1");
+    s.addRequiredItem("pi-1");
+    s.addRequiredItem("pi-1");
+    assertThat(s.getContainedPlanItemIds()).containsExactly("pi-1");
+    assertThat(s.getRequiredItemIds()).containsExactly("pi-1");
+  }
+
+  @Test
   void autocomplete_defaults_true() {
     assertThat(Stage.create("intake").isAutocomplete()).isTrue();
   }

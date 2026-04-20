@@ -57,6 +57,7 @@ public abstract class PlanningStrategyContractTest {
 
     List<Binding> result = strategy().select(plan, ctx(), eligible).await().indefinitely();
 
+    assertThat(result).doesNotHaveDuplicates();
     assertThat(result).doesNotContain(outsider);
     assertThat(eligible).containsAll(result);
   }

@@ -29,6 +29,7 @@ import io.vertx.mutiny.core.eventbus.EventBus;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
 import java.util.UUID;
+import org.jboss.logging.Logger;
 
 /**
  * Marks {@link PlanItem}s COMPLETED when a worker finishes, then evaluates Stage autocomplete for
@@ -49,6 +50,8 @@ import java.util.UUID;
 @ApplicationScoped
 public class PlanItemCompletionHandler {
 
+  private static final Logger LOG = Logger.getLogger(PlanItemCompletionHandler.class);
+
   private final BlackboardRegistry registry;
   private final EventBus eventBus;
 
@@ -63,20 +66,25 @@ public class PlanItemCompletionHandler {
     UUID caseId = event.caseInstance().getUuid();
     String workerName = event.worker().getName();
 
-    registry
-        .get(caseId)
+    CasePlanModel plan = registry.get(caseId).orElse(null);
+    if (plan == null) return Uni.createFrom().voidItem();
+
+    String planItemId = registry.getPlanItemId(caseId, workerName).orElse(null);
+    if (planItemId == null) {
+      LOG.debugf(
+          "No PlanItem indexed for worker '%s' in case %s — pure choreography or already evicted",
+          workerName, caseId);
+      return Uni.createFrom().voidItem();
+    }
+
+    plan.getPlanItem(planItemId)
         .ifPresent(
-            plan ->
-                registry
-                    .getPlanItemId(caseId, workerName)
-                    .ifPresent(
-                        planItemId ->
-                            plan.getPlanItem(planItemId)
-                                .ifPresent(
-                                    item -> {
-                                      item.setStatus(PlanItem.PlanItemStatus.COMPLETED);
-                                      evaluateStageAutocomplete(caseId, plan, planItemId);
-                                    })));
+            item -> {
+              item.setStatus(PlanItem.PlanItemStatus.COMPLETED);
+              // activeByBinding self-cleans lazily in hasActivePlanItem() when it encounters a
+              // terminal item. itemsById retains completed items for post-completion observability.
+              evaluateStageAutocomplete(caseId, plan, planItemId);
+            });
 
     return Uni.createFrom().voidItem();
   }

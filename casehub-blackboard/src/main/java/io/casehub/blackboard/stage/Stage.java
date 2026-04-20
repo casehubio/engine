@@ -21,8 +21,9 @@ import io.casehub.api.model.evaluator.LambdaExpressionEvaluator;
 import java.time.Instant;
 import java.util.List;
 import java.util.Optional;
+import java.util.Set;
 import java.util.UUID;
-import java.util.concurrent.CopyOnWriteArrayList;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Predicate;
 
 /**
@@ -50,12 +51,12 @@ public class Stage {
   private ExpressionEvaluator entryCondition;
   private ExpressionEvaluator exitCondition;
 
-  // Containment
-  private final List<String> containedPlanItemIds = new CopyOnWriteArrayList<>();
-  private final List<String> containedMilestoneIds =
-      new CopyOnWriteArrayList<>(); // casehubio/engine#84
-  private final List<String> containedStageIds = new CopyOnWriteArrayList<>();
-  private final List<String> requiredItemIds = new CopyOnWriteArrayList<>();
+  // Containment — ConcurrentHashMap.newKeySet() for atomic add-if-absent deduplication
+  private final Set<String> containedPlanItemIds = ConcurrentHashMap.newKeySet();
+  private final Set<String> containedMilestoneIds =
+      ConcurrentHashMap.newKeySet(); // casehubio/engine#84
+  private final Set<String> containedStageIds = ConcurrentHashMap.newKeySet();
+  private final Set<String> requiredItemIds = ConcurrentHashMap.newKeySet();
 
   // Behaviour
   private boolean autocomplete = true;
@@ -169,21 +170,30 @@ public class Stage {
     return status == StageStatus.ACTIVE;
   }
 
-  // Containment mutations
+  // Containment mutations — sets handle deduplication atomically; no contains-before-add guard
+  // needed
   public void addPlanItem(String planItemId) {
-    if (!containedPlanItemIds.contains(planItemId)) containedPlanItemIds.add(planItemId);
+    containedPlanItemIds.add(planItemId);
   }
 
   public void addMilestone(String milestoneName) {
-    if (!containedMilestoneIds.contains(milestoneName)) containedMilestoneIds.add(milestoneName);
+    containedMilestoneIds.add(milestoneName);
   }
 
   public void addNestedStage(String stageId) {
-    if (!containedStageIds.contains(stageId)) containedStageIds.add(stageId);
+    containedStageIds.add(stageId);
   }
 
+  /**
+   * Marks {@code itemId} as required for Stage autocomplete evaluation.
+   *
+   * <p><strong>Constraint:</strong> All required items must be registered BEFORE their
+   * corresponding bindings fire. If a binding fires and its worker completes before this method is
+   * called, the autocomplete event will be missed and the Stage will remain ACTIVE indefinitely.
+   * Register required items during case setup, before calling {@code CaseHubRuntime.startCase()}.
+   */
   public void addRequiredItem(String itemId) {
-    if (!requiredItemIds.contains(itemId)) requiredItemIds.add(itemId);
+    requiredItemIds.add(itemId);
   }
 
   // Getters
@@ -224,19 +234,19 @@ public class Stage {
   }
 
   public List<String> getContainedPlanItemIds() {
-    return List.copyOf(containedPlanItemIds);
+    return List.copyOf(containedPlanItemIds); // snapshot of the concurrent set
   }
 
   public List<String> getContainedMilestoneIds() {
-    return List.copyOf(containedMilestoneIds);
+    return List.copyOf(containedMilestoneIds); // snapshot of the concurrent set
   }
 
   public List<String> getContainedStageIds() {
-    return List.copyOf(containedStageIds);
+    return List.copyOf(containedStageIds); // snapshot of the concurrent set
   }
 
   public List<String> getRequiredItemIds() {
-    return List.copyOf(requiredItemIds);
+    return List.copyOf(requiredItemIds); // snapshot of the concurrent set
   }
 
   public boolean isAutocomplete() {

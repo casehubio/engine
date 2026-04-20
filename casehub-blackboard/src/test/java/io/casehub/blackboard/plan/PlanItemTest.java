@@ -58,4 +58,18 @@ class PlanItemTest {
     item.setStatus(PlanItem.PlanItemStatus.COMPLETED);
     assertThat(item.getStatus()).isEqualTo(PlanItem.PlanItemStatus.COMPLETED);
   }
+
+  @Test
+  void status_can_transition_to_faulted() {
+    PlanItem item = PlanItem.create("binding-a", "worker-a", 0);
+    item.setStatus(PlanItem.PlanItemStatus.FAULTED);
+    assertThat(item.getStatus()).isEqualTo(PlanItem.PlanItemStatus.FAULTED);
+  }
+
+  @Test
+  void status_can_transition_to_cancelled() {
+    PlanItem item = PlanItem.create("binding-a", "worker-a", 0);
+    item.setStatus(PlanItem.PlanItemStatus.CANCELLED);
+    assertThat(item.getStatus()).isEqualTo(PlanItem.PlanItemStatus.CANCELLED);
+  }
 }

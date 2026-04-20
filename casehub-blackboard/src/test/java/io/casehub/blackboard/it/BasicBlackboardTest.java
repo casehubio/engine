@@ -27,6 +27,7 @@ import io.casehub.api.model.ContextChangeTrigger;
 import io.casehub.api.model.Goal;
 import io.casehub.api.model.GoalExpression;
 import io.casehub.api.model.GoalKind;
+import io.casehub.api.model.Milestone;
 import io.casehub.api.model.Worker;
 import io.casehub.blackboard.plan.PlanItem.PlanItemStatus;
 import io.casehub.blackboard.registry.BlackboardRegistry;
@@ -62,6 +63,7 @@ class BasicBlackboardTest {
   @Inject OnceCaseBean onceCase;
   @Inject NeverTriggerCaseBean neverTriggerCase;
   @Inject CompletingCaseBean completingCase;
+  @Inject MilestoneCaseBean milestoneCase;
 
   // ------------------------------------------------------------------ //
   // Registry population                                                  //
@@ -183,6 +185,41 @@ class BasicBlackboardTest {
                   .as("case must reach COMPLETED state after worker writes phase=done")
                   .isEqualTo(CaseStatus.COMPLETED);
             });
+  }
+
+  // ------------------------------------------------------------------ //
+  // Milestone tracking                                                   //
+  // ------------------------------------------------------------------ //
+
+  /**
+   * Verifies that {@link io.casehub.blackboard.handler.MilestoneAchievementHandler} marks a tracked
+   * milestone as achieved in the plan model when the engine publishes a MilestoneReachedEvent. The
+   * milestone is pre-tracked in the plan model, the worker writes output that satisfies the
+   * milestone condition, and the handler promotes it to ACHIEVED.
+   */
+  @Test
+  void milestone_is_achieved_in_plan_model_after_condition_met() {
+    UUID caseId = milestoneCase.startCase(Map.of("phase", "start")).toCompletableFuture().join();
+
+    // Wait for plan model to be created on first select()
+    await()
+        .atMost(10, TimeUnit.SECONDS)
+        .untilAsserted(() -> assertThat(registry.get(caseId)).isPresent());
+
+    // Pre-track the milestone so the handler can promote it when MilestoneReachedEvent fires
+    registry.get(caseId).get().trackMilestone("docs-received");
+
+    // Signal the context change that triggers the worker to write docsUploaded=true,
+    // which satisfies the milestone condition
+    milestoneCase.signal(caseId, "go", true);
+
+    await()
+        .atMost(10, TimeUnit.SECONDS)
+        .untilAsserted(
+            () ->
+                assertThat(registry.get(caseId).get().isMilestoneAchieved("docs-received"))
+                    .as("milestone must be ACHIEVED after condition is satisfied")
+                    .isTrue());
   }
 
   // ------------------------------------------------------------------ //
@@ -309,6 +346,49 @@ class BasicBlackboardTest {
                   .build())
           .goals(successGoal)
           .completion(GoalExpression.allOf(successGoal))
+          .build();
+    }
+  }
+
+  /**
+   * Case with a milestone condition ({@code .docsUploaded == true}). Binding fires when {@code .go
+   * == true} — worker writes {@code docsUploaded=true}, satisfying the milestone. No goals — case
+   * stays RUNNING for milestone assertion.
+   */
+  @ApplicationScoped
+  public static class MilestoneCaseBean extends CaseHub {
+
+    private final Capability cap =
+        Capability.builder()
+            .name("milestone-cap")
+            .inputSchema("{ go: .go }")
+            .outputSchema("{ go: .go, docsUploaded: .docsUploaded }")
+            .build();
+
+    private final Milestone docsReceived =
+        Milestone.builder().name("docs-received").condition(".docsUploaded == true").build();
+
+    @Override
+    public CaseDefinition getDefinition() {
+      return CaseDefinition.builder()
+          .namespace("blackboard-basic-it")
+          .name("Milestone Case")
+          .version("1.0.0")
+          .capabilities(cap)
+          .workers(
+              Worker.builder()
+                  .name("milestone-worker")
+                  .capabilities(cap)
+                  .function(input -> Map.of("go", false, "docsUploaded", true))
+                  .build())
+          .bindings(
+              Binding.builder()
+                  .name("on-go-true")
+                  .capability(cap)
+                  .on(new ContextChangeTrigger(".go == true"))
+                  .build())
+          .milestones(docsReceived)
+          // No goals — case stays RUNNING for milestone assertions
           .build();
     }
   }

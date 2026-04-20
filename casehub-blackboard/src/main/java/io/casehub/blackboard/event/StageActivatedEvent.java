@@ -18,5 +18,12 @@ package io.casehub.blackboard.event;
 import io.casehub.blackboard.stage.Stage;
 import java.util.UUID;
 
-/** Published when a Stage transitions PENDING → ACTIVE. See casehubio/engine#76. */
+/**
+ * Published when a Stage transitions PENDING → ACTIVE. See casehubio/engine#76.
+ *
+ * <p><strong>Note:</strong> {@code stage} is passed by reference via {@link
+ * io.casehub.blackboard.event.BlackboardEventCodecRegistrar.LocalOnlyCodec}. Consumers must not
+ * retain this reference — the Stage object is mutable and its state will reflect subsequent
+ * lifecycle transitions.
+ */
 public record StageActivatedEvent(UUID caseId, Stage stage) {}

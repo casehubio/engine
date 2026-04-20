@@ -44,6 +44,11 @@ public class BlackboardRegistry {
   private final ConcurrentHashMap<UUID, ConcurrentHashMap<String, String>> completionIndex =
       new ConcurrentHashMap<>();
 
+  /**
+   * Returns the {@link CasePlanModel} for the given case, creating it if absent. Only {@link
+   * io.casehub.blackboard.control.PlanningStrategyLoopControl} should call this method — all other
+   * components should use {@link #get(UUID)}.
+   */
   public CasePlanModel getOrCreate(UUID caseId) {
     return planModels.computeIfAbsent(caseId, DefaultCasePlanModel::new);
   }
@@ -61,5 +66,15 @@ public class BlackboardRegistry {
   public Optional<String> getPlanItemId(UUID caseId, String workerName) {
     ConcurrentHashMap<String, String> index = completionIndex.get(caseId);
     return index == null ? Optional.empty() : Optional.ofNullable(index.get(workerName));
+  }
+
+  /**
+   * Evicts the plan model and completion index for a completed or terminated case. Call when a case
+   * reaches a terminal state to prevent unbounded memory growth. See casehubio/engine#84 for the
+   * persistence SPI that will eventually replace this in-memory registry.
+   */
+  public void evict(UUID caseId) {
+    planModels.remove(caseId);
+    completionIndex.remove(caseId);
   }
 }

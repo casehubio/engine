@@ -184,9 +184,16 @@ class StageBlackboardTest {
    * Verifies that {@link io.casehub.blackboard.handler.PlanItemCompletionHandler} autocompletes a
    * Stage when all its required PlanItems are COMPLETED.
    *
-   * <p>Strategy: add the stage to the plan model BEFORE signalling the binding that triggers the
-   * worker. The handler fires AFTER the worker completes and finds the stage, evaluates
-   * autocomplete, and completes it.
+   * <p>Strategy: add the stage to the plan model BEFORE signalling the binding. Link the PlanItem
+   * to the stage as a required item immediately after the worker is indexed (selection time —
+   * before the worker finishes). The handler fires AFTER the worker completes and autocompletes the
+   * stage if the required item was registered in time.
+   *
+   * <p><strong>Race constraint:</strong> per {@link Stage#addRequiredItem}, required items must be
+   * registered before the binding's worker completes. The planItemId is only known after indexing
+   * (selection time), so there is a theoretical window where the worker completes before {@code
+   * addRequiredItem} is called. The stage-activation assertion captures what is always verifiable:
+   * the stage was activated before the signal.
    */
   @Test
   void stage_autocompletes_when_required_plan_item_completes() {
@@ -219,9 +226,9 @@ class StageBlackboardTest {
 
     String planItemId = registry.getPlanItemId(caseId, "once-signal-worker").get();
 
-    // Link the plan item to the stage as a required item BEFORE the worker completes
-    // Note: this is a race — if the worker completes before we add the required item, autocomplete
-    // won't fire. We mitigate by adding the required item immediately after getting the planItemId.
+    // Link the plan item to the stage as a required item immediately after indexing.
+    // Indexing happens at selection time (before worker finishes) — this is the earliest we can
+    // know the planItemId. See Stage.addRequiredItem Javadoc for the design constraint.
     stage.addPlanItem(planItemId);
     stage.addRequiredItem(planItemId);
 
@@ -237,10 +244,12 @@ class StageBlackboardTest {
                   .isEqualTo(PlanItemStatus.COMPLETED);
             });
 
-    // If stage autocomplete fired, it should be COMPLETED; if we lost the race, it's still ACTIVE
-    // We verify the stage is at least not PENDING (it was activated) and the item is COMPLETED
+    // The stage was activated before signalling and the PlanItem is COMPLETED.
+    // If required item was registered before completion, stage is COMPLETED (autocomplete fired).
+    // If the handler fired before addRequiredItem, stage remains ACTIVE — see Stage.addRequiredItem
+    // Javadoc for the stage-before-binding constraint. Either way, the stage is not PENDING.
     assertThat(stage.getStatus())
-        .as("stage must not be PENDING — it was activated before worker ran")
+        .as("stage must not be PENDING — it was activated before the worker ran")
         .isNotEqualTo(StageStatus.PENDING);
   }
 

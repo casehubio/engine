@@ -79,6 +79,9 @@ public interface CasePlanModel {
 
   void setFocusRationale(String rationale);
 
+  /** Returns the rationale for the current focus of attention, if set. */
+  Optional<String> getFocusRationale();
+
   // Resource budget (written by PlanningStrategy)
   void setResourceBudget(Map<String, Object> budget);
 

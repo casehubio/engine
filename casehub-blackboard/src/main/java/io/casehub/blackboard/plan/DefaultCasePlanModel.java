@@ -36,6 +36,8 @@ public class DefaultCasePlanModel implements CasePlanModel {
   private final UUID caseId;
   private final PriorityBlockingQueue<PlanItem> agenda = new PriorityBlockingQueue<>();
   private final ConcurrentHashMap<String, PlanItem> itemsById = new ConcurrentHashMap<>();
+  // bindingName → PlanItem (only PENDING or RUNNING items) — fast O(1) duplicate-prevention lookup
+  private final ConcurrentHashMap<String, PlanItem> activeByBinding = new ConcurrentHashMap<>();
   private final ConcurrentHashMap<String, Stage> stages = new ConcurrentHashMap<>();
   private final ConcurrentHashMap<String, Boolean> milestones = new ConcurrentHashMap<>();
   private final ConcurrentHashMap<String, Object> state = new ConcurrentHashMap<>();
@@ -56,12 +58,16 @@ public class DefaultCasePlanModel implements CasePlanModel {
   public void addPlanItem(PlanItem item) {
     agenda.add(item);
     itemsById.put(item.getPlanItemId(), item);
+    activeByBinding.put(item.getBindingName(), item);
   }
 
   @Override
   public void removePlanItem(String planItemId) {
     PlanItem item = itemsById.remove(planItemId);
-    if (item != null) agenda.remove(item);
+    if (item != null) {
+      agenda.remove(item);
+      activeByBinding.remove(item.getBindingName(), item); // CAS: only removes if still this item
+    }
   }
 
   @Override
@@ -71,16 +77,22 @@ public class DefaultCasePlanModel implements CasePlanModel {
 
   @Override
   public boolean hasActivePlanItem(String bindingName) {
-    return itemsById.values().stream()
-        .anyMatch(
-            pi ->
-                pi.getBindingName().equals(bindingName)
-                    && (pi.getStatus() == PlanItem.PlanItemStatus.PENDING
-                        || pi.getStatus() == PlanItem.PlanItemStatus.RUNNING));
+    PlanItem item = activeByBinding.get(bindingName);
+    if (item == null) return false;
+    PlanItem.PlanItemStatus status = item.getStatus();
+    if (status == PlanItem.PlanItemStatus.PENDING || status == PlanItem.PlanItemStatus.RUNNING) {
+      return true;
+    }
+    // Item exists but is terminal — clean up the stale entry
+    activeByBinding.remove(bindingName, item);
+    return false;
   }
 
   @Override
   public List<PlanItem> getAgenda() {
+    // PriorityBlockingQueue.stream() is NOT guaranteed to return elements in priority order —
+    // the explicit sort is required. RUNNING items remain in the queue (for observability via
+    // itemsById) but are filtered here so only PENDING items appear on the returned agenda.
     return agenda.stream()
         .filter(p -> p.getStatus() == PlanItem.PlanItemStatus.PENDING)
         .sorted()
@@ -150,6 +162,11 @@ public class DefaultCasePlanModel implements CasePlanModel {
   @Override
   public void setFocusRationale(String r) {
     this.focusRationale = r;
+  }
+
+  @Override
+  public Optional<String> getFocusRationale() {
+    return Optional.ofNullable(focusRationale);
   }
 
   @Override
