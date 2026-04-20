@@ -351,6 +351,8 @@ public class WorkerRetryExtendedTest {
    */
   @Test
   void oneOfTwoWorkersRetriesButBothComplete() {
+    System.out.println("Starting test: oneOfTwoWorkersRetriesButBothComplete");
+
     // Alpha succeeds immediately; Beta fails once then succeeds
     TwoWorkerRetryBean.betaFailUntil.set(1);
 
@@ -385,6 +387,7 @@ public class WorkerRetryExtendedTest {
                       .toCompletableFuture()
                       .join());
             });
+    System.out.println("Completed test: oneOfTwoWorkersRetriesButBothComplete");
   }
 
   // ================================================================== //
