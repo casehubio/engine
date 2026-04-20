@@ -16,27 +16,29 @@
 package io.casehub.api.engine;
 
 import io.casehub.api.model.Binding;
+import io.smallrye.mutiny.Uni;
 import java.util.List;
 
 /**
- * SPI for controlling which eligible dispatch rules are selected for execution after their trigger
- * conditions have been evaluated.
+ * SPI for controlling which eligible bindings are selected for execution.
+ *
+ * <p>Returns {@code Uni<List<Binding>>} to allow non-blocking I/O during selection (e.g. EventLog
+ * queries, LLM scoring). See casehubio/engine#76.
  *
  * <p>The default implementation ({@link io.casehub.engine.internal.engine.ChoreographyLoopControl})
- * fires all eligible rules concurrently — pure choreography. Provide an alternative CDI bean
- * ({@code @Alternative @Priority} ) to introduce deliberate ordering, prioritisation, or sequential
- * execution.
+ * wraps with {@code Uni.createFrom().item(eligible)} — no behaviour change.
  */
 public interface LoopControl {
 
   /**
-   * Select the dispatch rules to fire from the set of rules whose trigger conditions have already
-   * been evaluated and matched.
+   * Select the bindings to fire from the set of bindings whose trigger conditions have already been
+   * evaluated and matched.
    *
    * @param context case identity, definition, and current case state — enables implementations to
    *     look up plan models without requiring access to internal engine structures
-   * @param eligible rules whose trigger conditions matched — may be empty, never null
-   * @return the subset to fire; may be empty, may be the full list, must not be null
+   * @param eligible bindings whose trigger conditions matched — may be empty, never null
+   * @return Uni that resolves to the subset to fire; may be empty, may be the full list, must not
+   *     be null
    */
-  List<Binding> select(PlanExecutionContext context, List<Binding> eligible);
+  Uni<List<Binding>> select(PlanExecutionContext context, List<Binding> eligible);
 }

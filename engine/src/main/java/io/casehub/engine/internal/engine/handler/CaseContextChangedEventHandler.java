@@ -119,21 +119,20 @@ public class CaseContextChangedEventHandler {
       eligible.add(binding);
     }
 
-    // LoopControl decides which eligible rules to fire (default: all of them)
     PlanExecutionContext planCtx =
         new PlanExecutionContext(caseInstance.getUuid(), definition, caseInstance.getCaseContext());
-    List<Binding> selected = loopControl.select(planCtx, eligible);
 
-    List<Uni<Void>> unis = new ArrayList<>(selected.size());
-    for (Binding b : selected) {
-      unis.add(publishWorkerSchedules(caseInstance, workers, b, b.getCapability()));
-    }
-
-    if (unis.isEmpty()) {
-      return Uni.createFrom().voidItem();
-    }
-
-    return Uni.combine().all().unis(unis).discardItems();
+    return loopControl
+        .select(planCtx, eligible)
+        .chain(
+            selected -> {
+              List<Uni<Void>> unis = new ArrayList<>(selected.size());
+              for (Binding b : selected) {
+                unis.add(publishWorkerSchedules(caseInstance, workers, b, b.getCapability()));
+              }
+              if (unis.isEmpty()) return Uni.createFrom().voidItem();
+              return Uni.combine().all().unis(unis).discardItems();
+            });
   }
 
   private Uni<Void> milestones(
