@@ -26,6 +26,7 @@ import jakarta.inject.Inject;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicLong;
+import java.util.concurrent.locks.ReentrantReadWriteLock;
 
 /**
  * In-memory {@link CaseInstanceRepository} for use in engine unit tests. Activated via {@code
@@ -38,6 +39,14 @@ public class InMemoryCaseInstanceRepository implements CaseInstanceRepository {
   private final AtomicLong idSeq = new AtomicLong(0);
   private final ConcurrentHashMap<UUID, CaseInstance> store = new ConcurrentHashMap<>();
 
+  /**
+   * Read-write lock to ensure happens-before relationship between writes and reads.
+   * ConcurrentHashMap provides weak consistency — concurrent modifications may not be immediately
+   * visible to readers without a memory barrier. Read lock permits parallel findByUuid queries;
+   * write lock serializes save/update operations.
+   */
+  private final ReentrantReadWriteLock rwLock = new ReentrantReadWriteLock();
+
   @Inject EventLogRepository eventLogRepository;
 
   /** Package-private setter for unit tests that cannot use CDI injection. */
@@ -47,30 +56,50 @@ public class InMemoryCaseInstanceRepository implements CaseInstanceRepository {
 
   @Override
   public Uni<CaseInstance> save(CaseInstance instance) {
-    if (instance.id == null) {
-      instance.id = idSeq.incrementAndGet();
+    rwLock.writeLock().lock();
+    try {
+      if (instance.id == null) {
+        instance.id = idSeq.incrementAndGet();
+      }
+      store.put(instance.getUuid(), instance);
+      return Uni.createFrom().item(instance);
+    } finally {
+      rwLock.writeLock().unlock();
     }
-    store.put(instance.getUuid(), instance);
-    return Uni.createFrom().item(instance);
   }
 
   @Override
   public Uni<CaseInstance> update(CaseInstance instance) {
-    if (!store.containsKey(instance.getUuid())) {
-      throw new IllegalStateException("CaseInstance not found for UUID: " + instance.getUuid());
+    rwLock.writeLock().lock();
+    try {
+      if (!store.containsKey(instance.getUuid())) {
+        throw new IllegalStateException("CaseInstance not found for UUID: " + instance.getUuid());
+      }
+      store.put(instance.getUuid(), instance);
+      return Uni.createFrom().item(instance);
+    } finally {
+      rwLock.writeLock().unlock();
     }
-    store.put(instance.getUuid(), instance);
-    return Uni.createFrom().item(instance);
   }
 
   @Override
   public Uni<CaseInstance> findByUuid(UUID uuid) {
-    return Uni.createFrom().item(store.get(uuid));
+    rwLock.readLock().lock();
+    try {
+      return Uni.createFrom().item(store.get(uuid));
+    } finally {
+      rwLock.readLock().unlock();
+    }
   }
 
   @Override
   public Uni<Void> updateStateAndAppendEvent(CaseInstance instance, EventLog eventLog) {
-    store.put(instance.getUuid(), instance);
-    return eventLogRepository.append(eventLog);
+    rwLock.writeLock().lock();
+    try {
+      store.put(instance.getUuid(), instance);
+      return eventLogRepository.append(eventLog);
+    } finally {
+      rwLock.writeLock().unlock();
+    }
   }
 }
