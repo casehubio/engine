@@ -55,7 +55,7 @@ import org.junit.jupiter.api.Test;
  * </ul>
  */
 @QuarkusTest
-class BasicBlackboardIT {
+class BasicBlackboardTest {
 
   @Inject BlackboardRegistry registry;
   @Inject CaseInstanceCache caseInstanceCache;

@@ -52,7 +52,7 @@ import org.junit.jupiter.api.Test;
  * worker fires.
  */
 @QuarkusTest
-class StageBlackboardIT {
+class StageBlackboardTest {
 
   @Inject BlackboardRegistry registry;
   @Inject SignalCaseBean signalCase;
