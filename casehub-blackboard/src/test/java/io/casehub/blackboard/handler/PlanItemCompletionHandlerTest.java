@@ -1,0 +1,141 @@
+/*
+ * Copyright 2026-Present The Case Hub Authors
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ * http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+package io.casehub.blackboard.handler;
+
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyNoInteractions;
+import static org.mockito.Mockito.when;
+
+import io.casehub.api.model.Worker;
+import io.casehub.blackboard.event.BlackboardEventBusAddresses;
+import io.casehub.blackboard.plan.DefaultCasePlanModel;
+import io.casehub.blackboard.plan.PlanItem;
+import io.casehub.blackboard.registry.BlackboardRegistry;
+import io.casehub.blackboard.stage.Stage;
+import io.casehub.engine.internal.event.WorkflowExecutionCompleted;
+import io.casehub.engine.internal.model.CaseInstance;
+import io.vertx.mutiny.core.eventbus.EventBus;
+import java.util.Map;
+import java.util.UUID;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+
+/**
+ * Unit tests for PlanItemCompletionHandler — marks PlanItems COMPLETED and triggers Stage
+ * autocomplete. See casehubio/engine#76.
+ */
+class PlanItemCompletionHandlerTest {
+
+  private BlackboardRegistry registry;
+  private EventBus mockBus;
+  private PlanItemCompletionHandler handler;
+  private UUID caseId;
+  private DefaultCasePlanModel plan;
+
+  @BeforeEach
+  void setUp() {
+    registry = new BlackboardRegistry();
+    mockBus = mock(EventBus.class);
+    handler = new PlanItemCompletionHandler(registry, mockBus);
+    caseId = UUID.randomUUID();
+    plan = (DefaultCasePlanModel) registry.getOrCreate(caseId);
+  }
+
+  private WorkflowExecutionCompleted eventFor(String workerName) {
+    CaseInstance instance = mock(CaseInstance.class);
+    when(instance.getUuid()).thenReturn(caseId);
+    Worker worker = mock(Worker.class);
+    when(worker.getName()).thenReturn(workerName);
+    return new WorkflowExecutionCompleted(instance, worker, "idempotency-key", Map.of());
+  }
+
+  @Test
+  void marks_plan_item_completed_on_worker_finish() {
+    PlanItem item = PlanItem.create("binding-a", "worker-a", 0);
+    plan.addPlanItem(item);
+    registry.indexWorkerForCompletion(caseId, "worker-a", item.getPlanItemId());
+
+    handler.onWorkerFinished(eventFor("worker-a")).await().indefinitely();
+
+    assertThat(item.getStatus()).isEqualTo(PlanItem.PlanItemStatus.COMPLETED);
+  }
+
+  @Test
+  void unknown_worker_does_not_throw() {
+    handler.onWorkerFinished(eventFor("unknown-worker")).await().indefinitely();
+  }
+
+  @Test
+  void stage_autocompletes_when_all_required_items_done() {
+    PlanItem item = PlanItem.create("binding-a", "worker-a", 0);
+    plan.addPlanItem(item);
+    registry.indexWorkerForCompletion(caseId, "worker-a", item.getPlanItemId());
+
+    Stage stage = Stage.create("intake");
+    stage.addPlanItem(item.getPlanItemId());
+    stage.addRequiredItem(item.getPlanItemId());
+    stage.activate();
+    plan.addStage(stage);
+
+    handler.onWorkerFinished(eventFor("worker-a")).await().indefinitely();
+
+    assertThat(stage.isTerminal()).isTrue();
+    verify(mockBus).publish(eq(BlackboardEventBusAddresses.STAGE_COMPLETED), any());
+  }
+
+  @Test
+  void stage_does_not_autocomplete_when_not_all_required_done() {
+    PlanItem item1 = PlanItem.create("binding-a", "worker-a", 0);
+    PlanItem item2 = PlanItem.create("binding-b", "worker-b", 0);
+    plan.addPlanItem(item1);
+    plan.addPlanItem(item2);
+    registry.indexWorkerForCompletion(caseId, "worker-a", item1.getPlanItemId());
+
+    Stage stage = Stage.create("intake");
+    stage.addPlanItem(item1.getPlanItemId());
+    stage.addPlanItem(item2.getPlanItemId());
+    stage.addRequiredItem(item1.getPlanItemId());
+    stage.addRequiredItem(item2.getPlanItemId());
+    stage.activate();
+    plan.addStage(stage);
+
+    handler.onWorkerFinished(eventFor("worker-a")).await().indefinitely();
+
+    assertThat(stage.isTerminal()).isFalse();
+    verifyNoInteractions(mockBus);
+  }
+
+  @Test
+  void autocomplete_false_stage_does_not_complete_even_when_all_done() {
+    PlanItem item = PlanItem.create("binding-a", "worker-a", 0);
+    plan.addPlanItem(item);
+    registry.indexWorkerForCompletion(caseId, "worker-a", item.getPlanItemId());
+
+    Stage stage = Stage.create("intake").withAutocomplete(false);
+    stage.addRequiredItem(item.getPlanItemId());
+    stage.activate();
+    plan.addStage(stage);
+
+    handler.onWorkerFinished(eventFor("worker-a")).await().indefinitely();
+
+    assertThat(stage.isTerminal()).isFalse();
+    verifyNoInteractions(mockBus);
+  }
+}

@@ -16,38 +16,213 @@
 package io.casehub.blackboard.stage;
 
 import io.casehub.api.context.CaseContext;
-import io.casehub.api.model.Worker;
 import io.casehub.api.model.evaluator.ExpressionEvaluator;
-import io.casehub.api.model.evaluator.JQExpressionEvaluator;
 import io.casehub.api.model.evaluator.LambdaExpressionEvaluator;
-import io.casehub.api.plan.PlanElement;
-import java.util.ArrayList;
-import java.util.Arrays;
+import java.time.Instant;
 import java.util.List;
-import java.util.Objects;
+import java.util.Optional;
+import java.util.Set;
+import java.util.UUID;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Predicate;
 
-/** CMMN Stage — a named logical grouping of Workers with entry/exit criteria. */
-public class Stage implements PlanElement {
+/**
+ * CMMN Stage — a container for PlanItems, Milestones, and nested Stages that activates and
+ * completes as a unit. Entry/exit conditions use {@link ExpressionEvaluator} (JQ or Lambda). See
+ * casehubio/engine#76.
+ *
+ * <p>Milestone containment ({@code containedMilestoneIds}) is present but Stage exit criteria
+ * referencing milestone achievement requires the full alignment in casehubio/engine#84. For PR4,
+ * exit conditions use expression evaluation against {@code CaseContext} only.
+ *
+ * <p>See CMMN 1.1 §5.4.4. Full audit: casehubio/engine#84.
+ */
+public class Stage {
 
+  private final String stageId;
   private final String name;
-  private final ExpressionEvaluator entryCondition;
-  private final ExpressionEvaluator exitCondition;
-  private final List<Worker> workers;
-  private final List<Stage> nestedStages;
-  private final List<SubCase> subCases;
+  private StageStatus status;
+  private final Instant createdAt;
+  private Instant activatedAt;
+  private Instant completedAt;
+  private String parentStageId; // null means root stage
 
-  private Stage(Builder b) {
-    this.name = b.name;
-    this.entryCondition = b.entryCondition;
-    this.exitCondition = b.exitCondition;
-    this.workers = List.copyOf(b.workers);
-    this.nestedStages = List.copyOf(b.nestedStages);
-    this.subCases = List.copyOf(b.subCases);
+  // Conditions — null means "no condition"
+  private ExpressionEvaluator entryCondition;
+  private ExpressionEvaluator exitCondition;
+
+  // Containment — ConcurrentHashMap.newKeySet() for atomic add-if-absent deduplication
+  private final Set<String> containedPlanItemIds = ConcurrentHashMap.newKeySet();
+  private final Set<String> containedMilestoneIds =
+      ConcurrentHashMap.newKeySet(); // casehubio/engine#84
+  private final Set<String> containedStageIds = ConcurrentHashMap.newKeySet();
+  private final Set<String> requiredItemIds = ConcurrentHashMap.newKeySet();
+
+  // Behaviour
+  private boolean autocomplete = true;
+  private boolean manualActivation = false;
+
+  private Stage(String name) {
+    this.stageId = UUID.randomUUID().toString();
+    this.name = name;
+    this.status = StageStatus.PENDING;
+    this.createdAt = Instant.now();
+  }
+
+  public static Stage create(String name) {
+    return new Stage(name);
+  }
+
+  // Fluent builder-style configuration (called before adding to CasePlanModel)
+  public Stage withEntryCondition(ExpressionEvaluator condition) {
+    this.entryCondition = condition;
+    return this;
+  }
+
+  /**
+   * Convenience overload — wraps a Java lambda in {@link LambdaExpressionEvaluator}. Use this for
+   * Java DSL stage definitions where type safety is preferred over JQ string expressions.
+   */
+  public Stage withEntryCondition(Predicate<CaseContext> predicate) {
+    this.entryCondition = new LambdaExpressionEvaluator(predicate);
+    return this;
+  }
+
+  public Stage withExitCondition(ExpressionEvaluator condition) {
+    this.exitCondition = condition;
+    return this;
+  }
+
+  /**
+   * Convenience overload — wraps a Java lambda in {@link LambdaExpressionEvaluator}. Use this for
+   * Java DSL stage definitions where type safety is preferred over JQ string expressions.
+   */
+  public Stage withExitCondition(Predicate<CaseContext> predicate) {
+    this.exitCondition = new LambdaExpressionEvaluator(predicate);
+    return this;
+  }
+
+  public Stage withManualActivation(boolean manual) {
+    this.manualActivation = manual;
+    return this;
+  }
+
+  public Stage withAutocomplete(boolean autocomplete) {
+    this.autocomplete = autocomplete;
+    return this;
+  }
+
+  public Stage withParentStage(String parentStageId) {
+    this.parentStageId = parentStageId;
+    return this;
+  }
+
+  // Lifecycle transitions
+  public void activate() {
+    if (status == StageStatus.PENDING) {
+      status = StageStatus.ACTIVE;
+      activatedAt = Instant.now();
+    }
+  }
+
+  public void complete() {
+    if (status == StageStatus.ACTIVE || status == StageStatus.SUSPENDED) {
+      status = StageStatus.COMPLETED;
+      completedAt = Instant.now();
+    }
+  }
+
+  public void terminate() {
+    if (status == StageStatus.ACTIVE || status == StageStatus.SUSPENDED) {
+      status = StageStatus.TERMINATED;
+      completedAt = Instant.now();
+    }
+  }
+
+  public void suspend() {
+    if (status == StageStatus.ACTIVE) status = StageStatus.SUSPENDED;
+  }
+
+  public void resume() {
+    if (status == StageStatus.SUSPENDED) status = StageStatus.ACTIVE;
+  }
+
+  /**
+   * Transitions this stage to FAULTED due to an unrecoverable error. No-op if the stage is already
+   * in a terminal state (COMPLETED, TERMINATED, FAULTED). Unlike hardware faults which can
+   * interrupt any state, this guard prevents overwriting a cleanly completed stage with a fault
+   * that arrived out of order.
+   */
+  public void fault() {
+    if (!isTerminal()) {
+      status = StageStatus.FAULTED;
+      completedAt = Instant.now();
+    }
+  }
+
+  public boolean isTerminal() {
+    return status == StageStatus.COMPLETED
+        || status == StageStatus.TERMINATED
+        || status == StageStatus.FAULTED;
+  }
+
+  public boolean isActive() {
+    return status == StageStatus.ACTIVE;
+  }
+
+  // Containment mutations — sets handle deduplication atomically; no contains-before-add guard
+  // needed
+  public void addPlanItem(String planItemId) {
+    containedPlanItemIds.add(planItemId);
+  }
+
+  public void addMilestone(String milestoneName) {
+    containedMilestoneIds.add(milestoneName);
+  }
+
+  public void addNestedStage(String stageId) {
+    containedStageIds.add(stageId);
+  }
+
+  /**
+   * Marks {@code itemId} as required for Stage autocomplete evaluation.
+   *
+   * <p><strong>Constraint:</strong> All required items must be registered BEFORE their
+   * corresponding bindings fire. If a binding fires and its worker completes before this method is
+   * called, the autocomplete event will be missed and the Stage will remain ACTIVE indefinitely.
+   * Register required items during case setup, before calling {@code CaseHubRuntime.startCase()}.
+   */
+  public void addRequiredItem(String itemId) {
+    requiredItemIds.add(itemId);
+  }
+
+  // Getters
+  public String getStageId() {
+    return stageId;
   }
 
   public String getName() {
     return name;
+  }
+
+  public StageStatus getStatus() {
+    return status;
+  }
+
+  public Instant getCreatedAt() {
+    return createdAt;
+  }
+
+  public Instant getActivatedAt() {
+    return activatedAt;
+  }
+
+  public Instant getCompletedAt() {
+    return completedAt;
+  }
+
+  public Optional<String> getParentStageId() {
+    return Optional.ofNullable(parentStageId);
   }
 
   public ExpressionEvaluator getEntryCondition() {
@@ -58,91 +233,27 @@ public class Stage implements PlanElement {
     return exitCondition;
   }
 
-  public List<Worker> getWorkers() {
-    return workers;
+  public List<String> getContainedPlanItemIds() {
+    return List.copyOf(containedPlanItemIds); // snapshot of the concurrent set
   }
 
-  public List<Stage> getNestedStages() {
-    return nestedStages;
+  public List<String> getContainedMilestoneIds() {
+    return List.copyOf(containedMilestoneIds); // snapshot of the concurrent set
   }
 
-  public List<SubCase> getSubCases() {
-    return subCases;
+  public List<String> getContainedStageIds() {
+    return List.copyOf(containedStageIds); // snapshot of the concurrent set
   }
 
-  public static Builder builder() {
-    return new Builder();
+  public List<String> getRequiredItemIds() {
+    return List.copyOf(requiredItemIds); // snapshot of the concurrent set
   }
 
-  public static class Builder {
+  public boolean isAutocomplete() {
+    return autocomplete;
+  }
 
-    private String name;
-    private ExpressionEvaluator entryCondition;
-    private ExpressionEvaluator exitCondition;
-    private final List<Worker> workers = new ArrayList<>();
-    private final List<Stage> nestedStages = new ArrayList<>();
-    private final List<SubCase> subCases = new ArrayList<>();
-
-    public Builder name(String name) {
-      this.name = name;
-      return this;
-    }
-
-    public Builder entry(String jq) {
-      this.entryCondition =
-          new JQExpressionEvaluator(Objects.requireNonNull(jq, "entry condition must not be null"));
-      return this;
-    }
-
-    public Builder entry(Predicate<CaseContext> predicate) {
-      this.entryCondition =
-          new LambdaExpressionEvaluator(
-              Objects.requireNonNull(predicate, "entry condition must not be null"));
-      return this;
-    }
-
-    public Builder entry(ExpressionEvaluator evaluator) {
-      this.entryCondition = evaluator;
-      return this;
-    }
-
-    public Builder exit(String jq) {
-      this.exitCondition =
-          new JQExpressionEvaluator(Objects.requireNonNull(jq, "exit condition must not be null"));
-      return this;
-    }
-
-    public Builder exit(Predicate<CaseContext> predicate) {
-      this.exitCondition =
-          new LambdaExpressionEvaluator(
-              Objects.requireNonNull(predicate, "exit condition must not be null"));
-      return this;
-    }
-
-    public Builder exit(ExpressionEvaluator evaluator) {
-      this.exitCondition = evaluator;
-      return this;
-    }
-
-    public Builder workers(Worker... workers) {
-      this.workers.addAll(Arrays.asList(workers));
-      return this;
-    }
-
-    public Builder nestedStage(Stage stage) {
-      this.nestedStages.add(stage);
-      return this;
-    }
-
-    public Builder subCase(SubCase subCase) {
-      this.subCases.add(subCase);
-      return this;
-    }
-
-    public Stage build() {
-      Objects.requireNonNull(name, "name must not be null");
-      Objects.requireNonNull(entryCondition, "entry condition must not be null");
-      return new Stage(this);
-    }
+  public boolean isManualActivation() {
+    return manualActivation;
   }
 }

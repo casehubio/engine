@@ -13,18 +13,14 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.casehub.blackboard.strategy;
+package io.casehub.blackboard.stage;
 
-import io.casehub.api.context.CaseContext;
-import io.casehub.blackboard.plan.PlanItem;
-import java.util.List;
-
-/**
- * SPI for selecting which eligible {@link PlanItem}s to activate.
- *
- * <p>{@code eligible} contains PlanItem&lt;Worker&gt; and PlanItem&lt;SubCase&gt; whose containing
- * Stage is ACTIVE and whose Binding trigger conditions have been evaluated as true by the engine.
- */
-public interface PlanningStrategy {
-  List<PlanItem<?>> select(CaseContext context, List<PlanItem<?>> eligible);
+/** Lifecycle states for a {@link Stage}. See casehubio/engine#76. */
+public enum StageStatus {
+  PENDING,
+  ACTIVE,
+  SUSPENDED,
+  COMPLETED,
+  TERMINATED,
+  FAULTED
 }

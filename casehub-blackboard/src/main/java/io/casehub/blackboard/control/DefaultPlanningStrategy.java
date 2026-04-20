@@ -13,28 +13,36 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.casehub.engine.internal.engine;
+package io.casehub.blackboard.control;
 
-import io.casehub.api.engine.LoopControl;
 import io.casehub.api.engine.PlanExecutionContext;
 import io.casehub.api.model.Binding;
+import io.casehub.blackboard.plan.CasePlanModel;
 import io.smallrye.mutiny.Uni;
 import jakarta.enterprise.context.ApplicationScoped;
 import java.util.List;
 
 /**
- * Default {@link LoopControl} — fires all eligible dispatch rules concurrently.
- *
- * <p>Pure choreography: every rule whose trigger condition matched is scheduled for execution
- * without deliberate ordering or prioritisation. Replace this bean via
- * {@code @Alternative @Priority} to introduce a planning strategy or sequential execution model.
+ * Default {@link PlanningStrategy} — returns all eligible bindings unchanged, assigns equal
+ * priority. Equivalent to choreography but routed through the plan model, enabling CasePlanModel
+ * state to accumulate for custom strategies. See casehubio/engine#76. Epic casehubio/engine#30.
  */
 @ApplicationScoped
-public class ChoreographyLoopControl implements LoopControl {
+public class DefaultPlanningStrategy implements PlanningStrategy {
+
+  @Override
+  public String getId() {
+    return "default";
+  }
+
+  @Override
+  public String getName() {
+    return "Default Equal-Priority Strategy";
+  }
 
   @Override
   public Uni<List<Binding>> select(
-      final PlanExecutionContext context, final List<Binding> eligible) {
+      CasePlanModel plan, PlanExecutionContext context, List<Binding> eligible) {
     return Uni.createFrom().item(eligible);
   }
 }

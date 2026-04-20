@@ -13,17 +13,15 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.casehub.blackboard.strategy;
-
-import io.casehub.api.context.CaseContext;
-import io.casehub.api.model.CaseStatus;
-import io.casehub.blackboard.plan.PlanItemStatus;
+package io.casehub.blackboard.control;
 
 /**
- * Maps a completed sub-case's {@link CaseStatus} to a {@link PlanItemStatus} for the parent {@link
- * io.casehub.blackboard.plan.PlanItem}.
+ * Contract test for DefaultPlanningStrategy. Verifies DefaultPlanningStrategy honours the
+ * PlanningStrategy contract. See casehubio/engine#76.
  */
-@FunctionalInterface
-public interface SubCaseCompletionStrategy {
-  PlanItemStatus resolve(CaseStatus subCaseStatus, CaseContext subCaseContext);
+class DefaultPlanningStrategyContractTest extends PlanningStrategyContractTest {
+  @Override
+  protected PlanningStrategy strategy() {
+    return new DefaultPlanningStrategy();
+  }
 }
