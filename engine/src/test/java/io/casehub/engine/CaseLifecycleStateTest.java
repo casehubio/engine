@@ -31,9 +31,9 @@ import io.casehub.api.model.Worker;
 import io.casehub.engine.internal.engine.cache.CaseInstanceCache;
 import io.casehub.engine.internal.history.CaseHubEventType;
 import io.casehub.engine.internal.history.EventLog;
-import io.casehub.engine.internal.util.ReactiveUtils;
+import io.casehub.engine.spi.CaseInstanceRepository;
+import io.casehub.engine.spi.EventLogRepository;
 import io.quarkus.test.junit.QuarkusTest;
-import io.vertx.core.Vertx;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
 import java.time.Duration;
@@ -41,7 +41,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.TimeUnit;
-import org.hibernate.reactive.mutiny.Mutiny;
 import org.junit.jupiter.api.Test;
 
 /**
@@ -51,7 +50,7 @@ import org.junit.jupiter.api.Test;
 @QuarkusTest
 class CaseLifecycleStateTest {
 
-  private static final Duration DB_TIMEOUT = Duration.ofSeconds(10);
+  private static final Duration SPI_TIMEOUT = Duration.ofSeconds(10);
 
   @Inject IdleCaseHubBean idleBean;
 
@@ -59,9 +58,9 @@ class CaseLifecycleStateTest {
 
   @Inject CaseInstanceCache caseInstanceCache;
 
-  @Inject Mutiny.SessionFactory sessionFactory;
+  @Inject CaseInstanceRepository caseInstanceRepository;
 
-  @Inject Vertx vertx;
+  @Inject EventLogRepository eventLogRepository;
 
   // ------------------------------------------------------------------ //
   // RUNNING state                                                         //
@@ -89,32 +88,20 @@ class CaseLifecycleStateTest {
   }
 
   @Test
-  void runningStateIsPersistedInDatabase() {
+  void runningStateIsPersistedByRepository() {
     UUID caseId = idleBean.startCase(Map.of("status", "idle")).toCompletableFuture().join();
 
     await()
         .atMost(5, TimeUnit.SECONDS)
         .untilAsserted(() -> assertThat(caseInstanceCache.get(caseId)).isNotNull());
 
-    // DB must store "RUNNING" — not the legacy "ACTIVE" value.
-    String persistedState =
-        ReactiveUtils.runOnSafeVertxContext(
-                vertx,
-                () ->
-                    sessionFactory.withSession(
-                        session ->
-                            session
-                                .createNativeQuery(
-                                    "SELECT state FROM case_instance WHERE uuid = :uuid",
-                                    String.class)
-                                .setParameter("uuid", caseId)
-                                .getSingleResult()))
-            .await()
-            .atMost(DB_TIMEOUT);
+    // Repository must store RUNNING — not the legacy ACTIVE value.
+    var stored = caseInstanceRepository.findByUuid(caseId).await().atMost(SPI_TIMEOUT);
 
-    assertThat(persistedState)
-        .as("DB column must store RUNNING, not legacy ACTIVE")
-        .isEqualTo("RUNNING");
+    assertThat(stored).as("CaseInstance must be findable by UUID after start").isNotNull();
+    assertThat(stored.getState())
+        .as("Repository must store RUNNING, not legacy ACTIVE")
+        .isEqualTo(CaseStatus.RUNNING);
   }
 
   // ------------------------------------------------------------------ //
@@ -176,37 +163,20 @@ class CaseLifecycleStateTest {
   // ------------------------------------------------------------------ //
 
   private List<EventLog> findEvents(UUID caseId, CaseHubEventType eventType) {
-    return ReactiveUtils.runOnSafeVertxContext(
-            vertx,
-            () ->
-                sessionFactory.withSession(
-                    session ->
-                        session
-                            .createSelectionQuery(
-                                "from EventLog where caseId = :caseId and eventType = :eventType order by seq asc",
-                                EventLog.class)
-                            .setParameter("caseId", caseId)
-                            .setParameter("eventType", eventType)
-                            .getResultList()))
+    return eventLogRepository
+        .findByCaseAndTypes(caseId, List.of(eventType))
         .await()
-        .atMost(DB_TIMEOUT);
+        .atMost(SPI_TIMEOUT);
   }
 
   private List<EventLog> findEventsByTypeName(UUID caseId, String eventTypeName) {
-    return ReactiveUtils.runOnSafeVertxContext(
-            vertx,
-            () ->
-                sessionFactory.withSession(
-                    session ->
-                        session
-                            .createSelectionQuery(
-                                "from EventLog where caseId = :caseId and cast(eventType as string) = :name order by seq asc",
-                                EventLog.class)
-                            .setParameter("caseId", caseId)
-                            .setParameter("name", eventTypeName)
-                            .getResultList()))
+    return eventLogRepository
+        .findByCaseAndTypes(caseId, List.of(CaseHubEventType.values()))
         .await()
-        .atMost(DB_TIMEOUT);
+        .atMost(SPI_TIMEOUT)
+        .stream()
+        .filter(e -> eventTypeName.equals(e.getEventType().name()))
+        .toList();
   }
 
   // ------------------------------------------------------------------ //

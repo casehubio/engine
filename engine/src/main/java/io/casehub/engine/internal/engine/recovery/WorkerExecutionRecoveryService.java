@@ -25,6 +25,8 @@ import io.casehub.engine.internal.history.EventLog;
 import io.casehub.engine.internal.model.CaseInstance;
 import io.casehub.engine.internal.util.ReactiveUtils;
 import io.casehub.engine.internal.worker.WorkerExecutionManager;
+import io.casehub.engine.spi.CaseInstanceRepository;
+import io.casehub.engine.spi.EventLogRepository;
 import io.smallrye.mutiny.Uni;
 import io.vertx.core.Vertx;
 import jakarta.enterprise.context.ApplicationScoped;
@@ -35,14 +37,16 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
-import org.hibernate.reactive.mutiny.Mutiny;
 import org.jboss.logging.Logger;
 
+/**
+ * Restores in-flight workers and case state after a restart. Uses the repository SPI — no direct
+ * Hibernate session access.
+ */
 @ApplicationScoped
 public class WorkerExecutionRecoveryService {
 
   private static final Logger LOG = Logger.getLogger(WorkerExecutionRecoveryService.class);
-
   private static final ObjectMapper OBJECT_MAPPER = new ObjectMapper();
 
   private static final EnumSet<CaseHubEventType> RELEVANT_RECOVERY_EVENTS =
@@ -52,7 +56,9 @@ public class WorkerExecutionRecoveryService {
           CaseHubEventType.WORKER_EXECUTION_COMPLETED,
           CaseHubEventType.WORKER_EXECUTION_FAILED);
 
-  @Inject Mutiny.SessionFactory sessionFactory; // TODO fix it
+  @Inject CaseInstanceRepository caseInstanceRepository;
+
+  @Inject EventLogRepository eventLogRepository;
 
   @Inject Vertx vertx;
 
@@ -66,17 +72,7 @@ public class WorkerExecutionRecoveryService {
       return Uni.createFrom().item(cached);
     }
 
-    // TODO not really great
-    return runOnSafeContext(
-            () ->
-                sessionFactory.withSession(
-                    session ->
-                        session
-                            .createSelectionQuery(
-                                "from case_instance ci join fetch ci.caseMetaModel where ci.uuid = :uuid",
-                                CaseInstance.class)
-                            .setParameter("uuid", caseId)
-                            .getSingleResultOrNull()))
+    return runOnSafeContext(() -> caseInstanceRepository.findByUuid(caseId))
         .onItem()
         .ifNull()
         .failWith(() -> new IllegalStateException("CaseInstance not found for caseId=" + caseId))
@@ -92,25 +88,11 @@ public class WorkerExecutionRecoveryService {
   }
 
   public Uni<Void> recoverPendingScheduledWorkers() {
-    return runOnSafeContext(
-            () ->
-                sessionFactory.withSession(
-                    session ->
-                        session
-                            .createSelectionQuery(
-                                "from EventLog where eventType in :eventTypes order by seq asc",
-                                EventLog.class)
-                            .setParameter("eventTypes", RELEVANT_RECOVERY_EVENTS)
-                            .getResultList()))
+    return runOnSafeContext(() -> eventLogRepository.findByTypes(RELEVANT_RECOVERY_EVENTS))
         .chain(this::reschedulePendingEvents);
   }
 
   private Uni<Void> reschedulePendingEvents(List<EventLog> eventLogs) {
-    // First pass: collect keys for every execution that has already been started,
-    // completed, or failed. Events are ordered by seq asc, so WORKER_SCHEDULED always
-    // appears before its matching terminal event in the stream. A single-pass approach
-    // would include every SCHEDULED event for recovery because the terminal event hasn't
-    // been seen yet when the SCHEDULED event is processed.
     Set<String> alreadyProgressed = new HashSet<>();
     for (EventLog eventLog : eventLogs) {
       if (eventLog.getEventType() != CaseHubEventType.WORKER_SCHEDULED) {
@@ -121,8 +103,6 @@ public class WorkerExecutionRecoveryService {
       }
     }
 
-    // Second pass: only reschedule WORKER_SCHEDULED events that have no matching
-    // STARTED / COMPLETED / FAILED record (i.e. genuinely interrupted mid-flight).
     List<Uni<Void>> recoveries =
         eventLogs.stream()
             .filter(
@@ -147,26 +127,18 @@ public class WorkerExecutionRecoveryService {
   private Uni<CaseContext> rebuildStateContext(UUID caseId) {
     return runOnSafeContext(
             () ->
-                sessionFactory.withSession(
-                    session ->
-                        session
-                            .createSelectionQuery(
-                                "from EventLog where caseId = :caseId and eventType in :eventTypes order by seq asc",
-                                EventLog.class)
-                            .setParameter("caseId", caseId)
-                            .setParameter(
-                                "eventTypes",
-                                EnumSet.of(
-                                    CaseHubEventType.CASE_STARTED,
-                                    CaseHubEventType.WORKER_EXECUTION_COMPLETED,
-                                    CaseHubEventType.SIGNAL_RECEIVED))
-                            .getResultList()))
+                eventLogRepository.findByCaseAndTypes(
+                    caseId,
+                    EnumSet.of(
+                        CaseHubEventType.CASE_STARTED,
+                        CaseHubEventType.WORKER_EXECUTION_COMPLETED,
+                        CaseHubEventType.SIGNAL_RECEIVED)))
         .map(
             eventLogs -> {
               CaseContext caseContext = new CaseContextImpl();
               EventLog caseStartedEvent =
                   eventLogs.stream()
-                      .filter(eventLog -> eventLog.getEventType() == CaseHubEventType.CASE_STARTED)
+                      .filter(e -> e.getEventType() == CaseHubEventType.CASE_STARTED)
                       .findFirst()
                       .orElse(null);
 
@@ -178,7 +150,6 @@ public class WorkerExecutionRecoveryService {
                 if (eventLog.getEventType() == CaseHubEventType.CASE_STARTED) {
                   continue;
                 }
-
                 if (eventLog.getEventType() == CaseHubEventType.SIGNAL_RECEIVED) {
                   JsonNode patch = payloadAsPatch(eventLog.getPayload());
                   if (patch != null) {
@@ -202,25 +173,18 @@ public class WorkerExecutionRecoveryService {
   }
 
   private JsonNode payloadAsPatch(JsonNode payload) {
-    if (payload == null || payload.isNull()) {
-      return null;
-    }
+    if (payload == null || payload.isNull()) return null;
     JsonNode patch = payload.get("patch");
     return patch != null && patch.isArray() ? patch : null;
   }
 
-  // TODO fix it
   private String executionKey(EventLog eventLog) {
     JsonNode metadata = eventLog.getMetadata();
     if (metadata == null || eventLog.getCaseId() == null || eventLog.getWorkerId() == null) {
       return null;
     }
-
     JsonNode inputDataHash = metadata.get("inputDataHash");
-    if (inputDataHash == null || inputDataHash.isNull()) {
-      return null;
-    }
-
+    if (inputDataHash == null || inputDataHash.isNull()) return null;
     return eventLog.getCaseId() + "|" + eventLog.getWorkerId() + "|" + inputDataHash.asText();
   }
 

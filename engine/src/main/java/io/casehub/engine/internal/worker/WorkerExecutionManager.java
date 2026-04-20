@@ -24,7 +24,6 @@ import io.casehub.engine.internal.engine.recovery.WorkerExecutionRecoveryService
 import io.casehub.engine.internal.history.EventLog;
 import io.casehub.engine.internal.model.CaseInstance;
 import io.casehub.engine.internal.util.WorkerExecutionKeys;
-import io.quarkus.hibernate.reactive.panache.Panache;
 import io.quarkus.runtime.StartupEvent;
 import io.smallrye.mutiny.Uni;
 import jakarta.annotation.Priority;
@@ -52,6 +51,8 @@ public class WorkerExecutionManager {
 
   @Inject WorkerExecutionRecoveryService workerExecutionRecoveryService;
 
+  @Inject io.casehub.engine.spi.EventLogRepository eventLogRepository;
+
   private static final Logger LOG = Logger.getLogger(WorkerExecutionManager.class);
 
   // TODO this must be reworked
@@ -78,13 +79,12 @@ public class WorkerExecutionManager {
         WorkerExecutionKeys.inputDataHash(worker.getName(), capability.getName(), inputData);
     String group = instance.getUuid().toString();
 
-    return Panache.withTransaction(
-            () ->
-                EventLog.<EventLog>findById(eventLogId)
-                    .onItem()
-                    .ifNull()
-                    .failWith(() -> new NotFoundException("EventLog not found: id=" + eventLogId))
-                    .replaceWithVoid())
+    return eventLogRepository
+        .findById(eventLogId)
+        .onItem()
+        .ifNull()
+        .failWith(() -> new NotFoundException("EventLog not found: id=" + eventLogId))
+        .replaceWithVoid()
         .chain(() -> scheduleQuartzJob(eventLogId, instance, worker, idempotency, group));
   }
 

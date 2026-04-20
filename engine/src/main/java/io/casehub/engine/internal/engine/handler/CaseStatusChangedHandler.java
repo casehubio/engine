@@ -23,7 +23,7 @@ import io.casehub.engine.internal.history.CaseHubEventType;
 import io.casehub.engine.internal.history.EventLog;
 import io.casehub.engine.internal.history.EventStreamType;
 import io.casehub.engine.internal.model.CaseInstance;
-import io.quarkus.hibernate.reactive.panache.Panache;
+import io.casehub.engine.spi.CaseInstanceRepository;
 import io.quarkus.vertx.ConsumeEvent;
 import io.smallrye.mutiny.Uni;
 import io.vertx.mutiny.core.eventbus.EventBus;
@@ -32,6 +32,10 @@ import jakarta.inject.Inject;
 import java.time.Instant;
 import org.jboss.logging.Logger;
 
+/**
+ * Persists a case status change event and atomically updates the instance state. Publishes a
+ * downstream event (CASE_COMPLETED or CASE_FAULTED) after the write commits.
+ */
 @ApplicationScoped
 public class CaseStatusChangedHandler {
 
@@ -39,6 +43,8 @@ public class CaseStatusChangedHandler {
   private static final ObjectMapper OBJECT_MAPPER = new ObjectMapper();
 
   @Inject EventBus eventBus;
+
+  @Inject CaseInstanceRepository caseInstanceRepository;
 
   @ConsumeEvent(value = EventBusAddresses.CASE_STATUS_CHANGED)
   public Uni<Void> onCaseStatusChangedHandler(CaseStatusChanged event) {
@@ -50,11 +56,11 @@ public class CaseStatusChangedHandler {
         "Case status changed: caseId=%s, %s -> %s",
         caseInstance.getUuid(), oldStatus, event.newStatus());
 
-    CaseHubEventType eventType = resolveState(newState);
+    caseInstance.setState(newState);
 
     EventLog eventLog = new EventLog();
     eventLog.setCaseId(caseInstance.getUuid());
-    eventLog.setEventType(eventType);
+    eventLog.setEventType(resolveState(newState));
     eventLog.setStreamType(EventStreamType.CASE);
     eventLog.setTimestamp(Instant.now());
     eventLog.setMetadata(
@@ -63,21 +69,15 @@ public class CaseStatusChangedHandler {
             .put("oldStatus", oldStatus)
             .put("newStatus", event.newStatus()));
 
-    caseInstance.setState(newState);
-
-    return Panache.withTransaction(
-            () ->
-                Panache.getSession()
-                    .chain(session -> session.merge(caseInstance))
-                    .chain(merged -> eventLog.persist()))
+    return caseInstanceRepository
+        .updateStateAndAppendEvent(caseInstance, eventLog)
         .invoke(
             () -> {
               String eventBusAddress = resolveStateAsString(newState);
               if (eventBusAddress != null) {
                 eventBus.publish(eventBusAddress, caseInstance);
               }
-            })
-        .replaceWithVoid();
+            });
   }
 
   private CaseHubEventType resolveState(CaseStatus state) {

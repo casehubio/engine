@@ -82,11 +82,12 @@
         <module>api</module>
         <module>codegen</module>
         <module>schema</module>
+        <module>engine-model</module>
+        <module>casehub-persistence-memory</module>
+        <module>casehub-persistence-hibernate</module>
         <module>engine</module>
         <module>casehub-blackboard</module>
         <module>casehub-resilience</module>
-        <module>casehub-persistence-hibernate</module>
-        <module>casehub-persistence-memory</module>
     </modules>
 
     <dependencyManagement>

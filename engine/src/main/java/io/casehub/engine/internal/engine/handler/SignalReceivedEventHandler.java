@@ -28,7 +28,7 @@ import io.casehub.engine.internal.history.CaseHubEventType;
 import io.casehub.engine.internal.history.EventLog;
 import io.casehub.engine.internal.history.EventStreamType;
 import io.casehub.engine.internal.model.CaseInstance;
-import io.quarkus.hibernate.reactive.panache.Panache;
+import io.casehub.engine.spi.EventLogRepository;
 import io.quarkus.vertx.ConsumeEvent;
 import io.smallrye.mutiny.Uni;
 import io.vertx.mutiny.core.eventbus.EventBus;
@@ -38,6 +38,10 @@ import java.time.Instant;
 import java.util.Optional;
 import org.jboss.logging.Logger;
 
+/**
+ * Applies an external signal to the case context, persists the event, and notifies listeners that
+ * the context has changed.
+ */
 @ApplicationScoped
 public class SignalReceivedEventHandler {
 
@@ -49,6 +53,8 @@ public class SignalReceivedEventHandler {
   @Inject CaseInstanceCache caseInstanceCache;
 
   @Inject WorkerExecutionRecoveryService recoveryService;
+
+  @Inject EventLogRepository eventLogRepository;
 
   @ConsumeEvent(value = EventBusAddresses.SIGNAL_RECEIVED)
   public Uni<Void> onSignalReceived(SignalReceivedEvent event) {
@@ -75,18 +81,14 @@ public class SignalReceivedEventHandler {
 
     JsonNode diff = maybeDiff.get();
     JsonNode contextSnapshot = instance.getCaseContext().asJsonNode();
+    EventLog eventLog = buildSignalEventLog(instance, diff);
 
-    return Panache.withTransaction(
-            () -> {
-              EventLog eventLog = buildSignalEventLog(instance, diff);
-              return eventLog
-                  .persist()
-                  .invoke(
-                      () ->
-                          eventBus.publish(
-                              CONTEXT_CHANGED,
-                              new CaseContextChangedEvent(instance, contextSnapshot)));
-            })
+    return eventLogRepository
+        .append(eventLog)
+        .invoke(
+            () ->
+                eventBus.publish(
+                    CONTEXT_CHANGED, new CaseContextChangedEvent(instance, contextSnapshot)))
         .replaceWithVoid()
         .onFailure()
         .invoke(

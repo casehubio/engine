@@ -16,7 +16,7 @@
     <dependencies>
         <dependency>
             <groupId>io.casehub</groupId>
-            <artifactId>engine</artifactId>
+            <artifactId>engine-model</artifactId>
             <version>${project.version}</version>
         </dependency>
         <dependency>

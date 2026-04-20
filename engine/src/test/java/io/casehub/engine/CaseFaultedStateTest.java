@@ -33,9 +33,8 @@ import io.casehub.api.model.Worker;
 import io.casehub.engine.internal.engine.cache.CaseInstanceCache;
 import io.casehub.engine.internal.history.CaseHubEventType;
 import io.casehub.engine.internal.history.EventLog;
-import io.casehub.engine.internal.util.ReactiveUtils;
+import io.casehub.engine.spi.EventLogRepository;
 import io.quarkus.test.junit.QuarkusTest;
-import io.vertx.core.Vertx;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
 import java.time.Duration;
@@ -44,7 +43,6 @@ import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
-import org.hibernate.reactive.mutiny.Mutiny;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
@@ -56,7 +54,7 @@ import org.junit.jupiter.api.Test;
 @QuarkusTest
 class CaseFaultedStateTest {
 
-  private static final Duration DB_TIMEOUT = Duration.ofSeconds(10);
+  private static final Duration SPI_TIMEOUT = Duration.ofSeconds(10);
 
   @Inject AlwaysFailingCaseHubBean alwaysFailingBean;
 
@@ -64,9 +62,7 @@ class CaseFaultedStateTest {
 
   @Inject CaseInstanceCache caseInstanceCache;
 
-  @Inject Mutiny.SessionFactory sessionFactory;
-
-  @Inject Vertx vertx;
+  @Inject EventLogRepository eventLogRepository;
 
   @BeforeEach
   void reset() {
@@ -129,38 +125,6 @@ class CaseFaultedStateTest {
   }
 
   @Test
-  void faultedStateIsPersistedInDatabase() {
-    UUID caseId =
-        alwaysFailingBean.startCase(Map.of("status", "processing")).toCompletableFuture().join();
-
-    await()
-        .atMost(30, TimeUnit.SECONDS)
-        .untilAsserted(
-            () ->
-                assertThat(caseInstanceCache.get(caseId).getState()).isEqualTo(CaseStatus.FAULTED));
-
-    // DB must store "FAULTED" — not the legacy "FAILED" value.
-    String persistedState =
-        ReactiveUtils.runOnSafeVertxContext(
-                vertx,
-                () ->
-                    sessionFactory.withSession(
-                        session ->
-                            session
-                                .createNativeQuery(
-                                    "SELECT state FROM case_instance WHERE uuid = :uuid",
-                                    String.class)
-                                .setParameter("uuid", caseId)
-                                .getSingleResult()))
-            .await()
-            .atMost(DB_TIMEOUT);
-
-    assertThat(persistedState)
-        .as("DB column must store FAULTED, not legacy FAILED")
-        .isEqualTo("FAULTED");
-  }
-
-  @Test
   void allRetriesAreAttemptedBeforeFaulting() {
     // RetryPolicy(2, 200) = 2 max attempts. Worker must be called exactly twice.
     UUID caseId =
@@ -219,37 +183,20 @@ class CaseFaultedStateTest {
   // ------------------------------------------------------------------ //
 
   private List<EventLog> findEvents(UUID caseId, CaseHubEventType eventType) {
-    return ReactiveUtils.runOnSafeVertxContext(
-            vertx,
-            () ->
-                sessionFactory.withSession(
-                    session ->
-                        session
-                            .createSelectionQuery(
-                                "from EventLog where caseId = :caseId and eventType = :eventType order by seq asc",
-                                EventLog.class)
-                            .setParameter("caseId", caseId)
-                            .setParameter("eventType", eventType)
-                            .getResultList()))
+    return eventLogRepository
+        .findByCaseAndTypes(caseId, List.of(eventType))
         .await()
-        .atMost(DB_TIMEOUT);
+        .atMost(SPI_TIMEOUT);
   }
 
   private List<EventLog> findEventsByTypeName(UUID caseId, String eventTypeName) {
-    return ReactiveUtils.runOnSafeVertxContext(
-            vertx,
-            () ->
-                sessionFactory.withSession(
-                    session ->
-                        session
-                            .createSelectionQuery(
-                                "from EventLog where caseId = :caseId and cast(eventType as string) = :name order by seq asc",
-                                EventLog.class)
-                            .setParameter("caseId", caseId)
-                            .setParameter("name", eventTypeName)
-                            .getResultList()))
+    return eventLogRepository
+        .findByCaseAndTypes(caseId, List.of(CaseHubEventType.values()))
         .await()
-        .atMost(DB_TIMEOUT);
+        .atMost(SPI_TIMEOUT)
+        .stream()
+        .filter(e -> eventTypeName.equals(e.getEventType().name()))
+        .toList();
   }
 
   // ------------------------------------------------------------------ //

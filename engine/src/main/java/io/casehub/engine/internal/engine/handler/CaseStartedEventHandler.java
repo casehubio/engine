@@ -23,7 +23,7 @@ import io.casehub.engine.internal.history.CaseHubEventType;
 import io.casehub.engine.internal.history.EventLog;
 import io.casehub.engine.internal.history.EventStreamType;
 import io.casehub.engine.internal.model.CaseInstance;
-import io.quarkus.hibernate.reactive.panache.Panache;
+import io.casehub.engine.spi.EventLogRepository;
 import io.quarkus.vertx.ConsumeEvent;
 import io.smallrye.mutiny.Uni;
 import io.vertx.mutiny.core.eventbus.EventBus;
@@ -32,6 +32,7 @@ import jakarta.inject.Inject;
 import java.time.Instant;
 import org.jboss.logging.Logger;
 
+/** Records a {@code CASE_STARTED} event and notifies listeners that the context has changed. */
 @ApplicationScoped
 public class CaseStartedEventHandler {
 
@@ -39,18 +40,22 @@ public class CaseStartedEventHandler {
 
   @Inject EventBus eventBus;
 
+  @Inject EventLogRepository eventLogRepository;
+
   @ConsumeEvent(value = EventBusAddresses.CASE_STARTED)
   public Uni<Void> onCaseStarted(CaseStartedEvent event) {
     CaseInstance instance = event.instance();
     JsonNode contextSnapshot = instance.getCaseContext().asJsonNode();
+
     EventLog eventLog = new EventLog();
     eventLog.setCaseId(instance.getUuid());
     eventLog.setEventType(CaseHubEventType.CASE_STARTED);
     eventLog.setStreamType(EventStreamType.CASE);
-    eventLog.setTimestamp(Instant.now()); // replace with @PrePersist in EventLog
+    eventLog.setTimestamp(Instant.now());
     eventLog.setPayload(contextSnapshot);
 
-    return Panache.withTransaction(() -> eventLog.persist().replaceWithVoid())
+    return eventLogRepository
+        .append(eventLog)
         .invoke(
             () ->
                 eventBus.publish(

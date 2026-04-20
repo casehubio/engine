@@ -22,6 +22,7 @@ import io.casehub.engine.internal.model.CaseInstance;
 import io.casehub.engine.internal.model.CaseMetaModel;
 import io.casehub.engine.spi.CaseInstanceRepository;
 import io.casehub.engine.spi.CaseMetaModelRepository;
+import io.casehub.engine.spi.EventLogRepository;
 import io.quarkus.test.junit.QuarkusTest;
 import io.quarkus.vertx.VertxContextSupport;
 import io.smallrye.mutiny.Uni;
@@ -36,6 +37,7 @@ class JpaCaseInstanceRepositoryTest {
 
   @Inject CaseInstanceRepository instanceRepository;
   @Inject CaseMetaModelRepository metaModelRepository;
+  @Inject EventLogRepository eventLogRepository;
 
   private CaseMetaModel savedMeta;
 
@@ -79,6 +81,34 @@ class JpaCaseInstanceRepositoryTest {
     assertThat(found.getState()).isEqualTo(CaseStatus.RUNNING);
     assertThat(found.getCaseMetaModel()).isNotNull();
     assertThat(found.getCaseMetaModel().getId()).isEqualTo(savedMeta.getId());
+  }
+
+  @Test
+  void updateStateAndAppendEvent_atomicallyUpdatesAndPersistsEvent() {
+    CaseInstance instance = newInstance(savedMeta, CaseStatus.RUNNING);
+    run(() -> instanceRepository.save(instance));
+
+    instance.setState(CaseStatus.FAULTED);
+    io.casehub.engine.internal.history.EventLog eventLog =
+        new io.casehub.engine.internal.history.EventLog();
+    eventLog.setCaseId(instance.getUuid());
+    eventLog.setEventType(io.casehub.engine.internal.history.CaseHubEventType.CASE_FAULTED);
+    eventLog.setStreamType(io.casehub.engine.internal.history.EventStreamType.CASE);
+    eventLog.setTimestamp(
+        java.time.Instant.now().truncatedTo(java.time.temporal.ChronoUnit.MICROS));
+
+    run(() -> instanceRepository.updateStateAndAppendEvent(instance, eventLog));
+
+    CaseInstance updated = run(() -> instanceRepository.findByUuid(instance.getUuid()));
+    assertThat(updated.getState()).isEqualTo(CaseStatus.FAULTED);
+    assertThat(eventLog.id).isNotNull();
+    assertThat(eventLog.getSeq()).isNotNull();
+
+    io.casehub.engine.internal.history.EventLog found =
+        run(() -> eventLogRepository.findById(eventLog.id));
+    assertThat(found).isNotNull();
+    assertThat(found.getEventType())
+        .isEqualTo(io.casehub.engine.internal.history.CaseHubEventType.CASE_FAULTED);
   }
 
   @Test

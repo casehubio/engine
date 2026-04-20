@@ -31,6 +31,12 @@
 
         <!-- Test -->
         <dependency>
+            <groupId>io.casehub</groupId>
+            <artifactId>casehub-persistence-memory</artifactId>
+            <version>${project.version}</version>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
             <groupId>org.testcontainers</groupId>
             <artifactId>testcontainers-postgresql</artifactId>
             <scope>test</scope>
@@ -61,7 +67,6 @@
                 <executions>
                     <execution>
                         <goals>
-                            <goal>build</goal>
                             <goal>generate-code</goal>
                             <goal>generate-code-tests</goal>
                         </goals>

@@ -33,6 +33,7 @@ import io.casehub.engine.internal.history.EventStreamType;
 import io.casehub.engine.internal.model.CaseInstance;
 import io.casehub.engine.internal.util.ReactiveUtils;
 import io.casehub.engine.internal.util.WorkerExecutionKeys;
+import io.casehub.engine.spi.EventLogRepository;
 import io.quarkus.test.junit.QuarkusTest;
 import io.vertx.core.Vertx;
 import jakarta.enterprise.context.ApplicationScoped;
@@ -45,13 +46,13 @@ import java.util.UUID;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import org.awaitility.Awaitility;
-import org.hibernate.reactive.mutiny.Mutiny;
 import org.junit.jupiter.api.Test;
 
 @QuarkusTest
 public class WorkerScheduleDedupTest {
 
   private static final ObjectMapper OBJECT_MAPPER = new ObjectMapper();
+  private static final Duration SPI_TIMEOUT = Duration.ofSeconds(10);
 
   @Inject DedupCaseHubBean bean;
 
@@ -59,7 +60,7 @@ public class WorkerScheduleDedupTest {
 
   @Inject CaseInstanceCache caseInstanceCache;
 
-  @Inject Mutiny.SessionFactory sessionFactory;
+  @Inject EventLogRepository eventLogRepository;
 
   @Inject Vertx vertx;
 
@@ -164,30 +165,16 @@ public class WorkerScheduleDedupTest {
   }
 
   private void persistEvent(EventLog eventLog) {
-    ReactiveUtils.runOnSafeVertxContext(
-            vertx, () -> sessionFactory.withTransaction(session -> session.persist(eventLog)))
-        .await()
-        .atMost(Duration.ofSeconds(10));
+    eventLogRepository.append(eventLog).await().atMost(SPI_TIMEOUT);
   }
 
   private long countEvents(
       UUID caseId, CaseHubEventType eventType, String workerId, String inputDataHash) {
     List<EventLog> eventLogs =
-        ReactiveUtils.runOnSafeVertxContext(
-                vertx,
-                () ->
-                    sessionFactory.withSession(
-                        session ->
-                            session
-                                .createSelectionQuery(
-                                    "from EventLog where caseId = :caseId and eventType = :eventType and workerId = :workerId",
-                                    EventLog.class)
-                                .setParameter("caseId", caseId)
-                                .setParameter("eventType", eventType)
-                                .setParameter("workerId", workerId)
-                                .getResultList()))
+        eventLogRepository
+            .findByCaseAndWorkerAndType(caseId, workerId, eventType)
             .await()
-            .atMost(Duration.ofSeconds(10));
+            .atMost(SPI_TIMEOUT);
 
     return eventLogs.stream()
         .filter(
