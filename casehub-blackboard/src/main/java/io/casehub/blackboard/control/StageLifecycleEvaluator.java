@@ -42,7 +42,9 @@ import jakarta.inject.Inject;
  * <p>Exit condition evaluation: ACTIVE stages whose exit condition evaluates {@code true} are
  * terminated. Stages with no exit condition are never auto-terminated by this evaluator.
  *
- * <p>See casehubio/engine#76.
+ * <p>Stage event types are registered with local-only Vert.x codecs by {@link
+ * io.casehub.blackboard.event.BlackboardEventCodecRegistrar} at startup, enabling in-VM delivery
+ * without serialisation. See casehubio/engine#76.
  */
 @ApplicationScoped
 public class StageLifecycleEvaluator {
