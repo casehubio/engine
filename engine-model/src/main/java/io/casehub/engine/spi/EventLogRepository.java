@@ -32,8 +32,7 @@ public interface EventLogRepository {
   Uni<Void> append(EventLog eventLog);
 
   /**
-   * Append an event and return its generated id. Sets {@code eventLog.id} and {@code
-   * eventLog.seq}.
+   * Append an event and return its generated id. Sets {@code eventLog.id} and {@code eventLog.seq}.
    */
   Uni<Long> appendAndReturnId(EventLog eventLog);
 
@@ -52,14 +51,10 @@ public interface EventLogRepository {
    */
   Uni<List<EventLog>> findByTypes(Collection<CaseHubEventType> types);
 
-  /**
-   * Find events for a specific case matching the given types, ordered by seq ascending.
-   */
+  /** Find events for a specific case matching the given types, ordered by seq ascending. */
   Uni<List<EventLog>> findByCaseAndTypes(UUID caseId, Collection<CaseHubEventType> types);
 
-  /**
-   * Find events for a specific case, worker, and event type (all criteria must match).
-   */
+  /** Find events for a specific case, worker, and event type (all criteria must match). */
   Uni<List<EventLog>> findByCaseAndWorkerAndType(
       UUID caseId, String workerId, CaseHubEventType type);
 }

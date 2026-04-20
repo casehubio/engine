@@ -18,12 +18,13 @@ If a schema change is needed, update the `@Entity` class. Hibernate recreates th
 
 ## Persistence Architecture
 
-The `engine` module has **no JPA dependency**. Persistence is routed through three SPI interfaces
-in `engine/src/main/java/io/casehub/engine/spi/`:
+Domain objects and SPI interfaces live in `engine-model` (no Quarkus, no JPA):
 
-- `CaseMetaModelRepository` — find/save CaseMetaModel definitions
-- `CaseInstanceRepository` — save/update/find CaseInstance + atomic `updateStateAndAppendEvent`
-- `EventLogRepository` — append-only event log with query methods
+- `engine-model/src/main/java/io/casehub/engine/internal/model/` — `CaseMetaModel`, `CaseInstance`
+- `engine-model/src/main/java/io/casehub/engine/internal/history/` — `EventLog`, `CaseHubEventType`, `EventStreamType`
+- `engine-model/src/main/java/io/casehub/engine/spi/` — `CaseMetaModelRepository`, `CaseInstanceRepository`, `EventLogRepository`
+
+Both `engine` and both persistence modules depend on `engine-model`. Neither persistence module depends on `engine`.
 
 **Production implementation:** `casehub-persistence-hibernate` (JPA/Panache, PostgreSQL)
 **Test implementation:** test-local copies in `engine/src/test/java/io/casehub/persistence/memory/`
