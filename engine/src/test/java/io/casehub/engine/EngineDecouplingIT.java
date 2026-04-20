@@ -23,9 +23,9 @@ import io.casehub.engine.internal.history.EventStreamType;
 import io.casehub.engine.spi.CaseInstanceRepository;
 import io.casehub.engine.spi.CaseMetaModelRepository;
 import io.casehub.engine.spi.EventLogRepository;
-import io.casehub.persistence.memory.InMemoryCaseInstanceRepository;
-import io.casehub.persistence.memory.InMemoryCaseMetaModelRepository;
-import io.casehub.persistence.memory.InMemoryEventLogRepository;
+import io.casehub.persistence.jpa.JpaCaseInstanceRepository;
+import io.casehub.persistence.jpa.JpaCaseMetaModelRepository;
+import io.casehub.persistence.jpa.JpaEventLogRepository;
 import io.quarkus.test.junit.QuarkusTest;
 import jakarta.inject.Inject;
 import java.time.Instant;
@@ -34,7 +34,7 @@ import java.util.UUID;
 import org.junit.jupiter.api.Test;
 
 /**
- * Verifies that the engine uses in-memory repository implementations — no Docker, no PostgreSQL.
+ * Verifies that the engine uses JPA repository implementations backed by PostgreSQL Dev Services.
  * This test confirms the persistence decoupling is complete and functional end-to-end.
  */
 @QuarkusTest
@@ -47,10 +47,10 @@ class EngineDecouplingIT {
   @Inject EventLogRepository eventLogRepository;
 
   @Test
-  void repositoriesAreInMemoryImplementations() {
-    assertThat(caseMetaModelRepository).isInstanceOf(InMemoryCaseMetaModelRepository.class);
-    assertThat(caseInstanceRepository).isInstanceOf(InMemoryCaseInstanceRepository.class);
-    assertThat(eventLogRepository).isInstanceOf(InMemoryEventLogRepository.class);
+  void repositoriesAreJpaImplementations() {
+    assertThat(caseMetaModelRepository).isInstanceOf(JpaCaseMetaModelRepository.class);
+    assertThat(caseInstanceRepository).isInstanceOf(JpaCaseInstanceRepository.class);
+    assertThat(eventLogRepository).isInstanceOf(JpaEventLogRepository.class);
   }
 
   @Test
