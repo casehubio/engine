@@ -33,9 +33,10 @@ import io.casehub.engine.internal.engine.recovery.WorkerExecutionRecoveryService
 import io.casehub.engine.internal.history.CaseHubEventType;
 import io.casehub.engine.internal.history.EventLog;
 import io.casehub.engine.internal.model.CaseInstance;
+import io.casehub.engine.internal.util.ReactiveUtils;
 import io.casehub.engine.internal.util.WorkerExecutionKeys;
-import io.casehub.engine.spi.EventLogRepository;
 import io.quarkus.test.junit.QuarkusTest;
+import io.vertx.core.Vertx;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
 import java.time.Duration;
@@ -44,13 +45,14 @@ import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
+import org.hibernate.reactive.mutiny.Mutiny;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 @QuarkusTest
 public class SignalPersistenceAndDedupTest {
 
-  private static final Duration SPI_TIMEOUT = Duration.ofSeconds(10);
+  private static final Duration DB_TIMEOUT = Duration.ofSeconds(10);
 
   @Inject SignalPersistenceCaseHubBean bean;
 
@@ -58,7 +60,9 @@ public class SignalPersistenceAndDedupTest {
 
   @Inject CaseInstanceCache caseInstanceCache;
 
-  @Inject EventLogRepository eventLogRepository;
+  @Inject Mutiny.SessionFactory sessionFactory;
+
+  @Inject Vertx vertx;
 
   @BeforeEach
   void reset() {
@@ -215,7 +219,7 @@ public class SignalPersistenceAndDedupTest {
     caseInstanceCache.clear();
 
     CaseInstance restored =
-        recoveryService.loadOrRestoreCaseInstance(caseId).await().atMost(SPI_TIMEOUT);
+        recoveryService.loadOrRestoreCaseInstance(caseId).await().atMost(DB_TIMEOUT);
 
     assertNotNull(restored);
     assertEquals(420, ((Number) restored.getCaseContext().getPath("payment.amount")).intValue());
@@ -242,18 +246,39 @@ public class SignalPersistenceAndDedupTest {
   }
 
   private List<EventLog> findEvents(UUID caseId, CaseHubEventType eventType) {
-    return eventLogRepository
-        .findByCaseAndTypes(caseId, List.of(eventType))
+    return ReactiveUtils.runOnSafeVertxContext(
+            vertx,
+            () ->
+                sessionFactory.withSession(
+                    session ->
+                        session
+                            .createSelectionQuery(
+                                "from EventLog where caseId = :caseId and eventType = :eventType order by seq asc",
+                                EventLog.class)
+                            .setParameter("caseId", caseId)
+                            .setParameter("eventType", eventType)
+                            .getResultList()))
         .await()
-        .atMost(SPI_TIMEOUT);
+        .atMost(DB_TIMEOUT);
   }
 
   private List<EventLog> findWorkerEvents(
       UUID caseId, CaseHubEventType eventType, String workerId) {
-    return eventLogRepository
-        .findByCaseAndWorkerAndType(caseId, workerId, eventType)
+    return ReactiveUtils.runOnSafeVertxContext(
+            vertx,
+            () ->
+                sessionFactory.withSession(
+                    session ->
+                        session
+                            .createSelectionQuery(
+                                "from EventLog where caseId = :caseId and eventType = :eventType and workerId = :workerId order by seq asc",
+                                EventLog.class)
+                            .setParameter("caseId", caseId)
+                            .setParameter("eventType", eventType)
+                            .setParameter("workerId", workerId)
+                            .getResultList()))
         .await()
-        .atMost(SPI_TIMEOUT);
+        .atMost(DB_TIMEOUT);
   }
 
   private String inputDataHash(Map<String, Object> payment) {

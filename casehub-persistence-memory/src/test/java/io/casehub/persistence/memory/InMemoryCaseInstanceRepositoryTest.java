@@ -18,12 +18,8 @@ package io.casehub.persistence.memory;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.casehub.api.model.CaseStatus;
-import io.casehub.engine.internal.history.CaseHubEventType;
-import io.casehub.engine.internal.history.EventLog;
-import io.casehub.engine.internal.history.EventStreamType;
 import io.casehub.engine.internal.model.CaseInstance;
 import io.casehub.engine.internal.model.CaseMetaModel;
-import java.time.Instant;
 import java.util.UUID;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -154,56 +150,6 @@ class InMemoryCaseInstanceRepositoryTest {
     org.assertj.core.api.Assertions.assertThatThrownBy(
             () -> repository.update(instance).await().indefinitely())
         .isInstanceOf(IllegalStateException.class);
-  }
-
-  @Test
-  void updateStateAndAppendEvent_updatesInstanceAndAppendsEvent() {
-    InMemoryEventLogRepository eventLogRepo = new InMemoryEventLogRepository();
-    InMemoryCaseInstanceRepository repo = new InMemoryCaseInstanceRepository();
-    repo.setEventLogRepository(eventLogRepo);
-
-    CaseMetaModel model = new CaseMetaModel();
-    model.setNamespace("ns");
-    model.setName("n");
-    model.setVersion("1");
-
-    CaseInstance instance = new CaseInstance();
-    instance.setUuid(UUID.randomUUID());
-    instance.setCaseMetaModel(model);
-    instance.setState(CaseStatus.RUNNING);
-    repo.save(instance).subscribe().asCompletionStage().toCompletableFuture().join();
-
-    instance.setState(CaseStatus.COMPLETED);
-    EventLog eventLog = new EventLog();
-    eventLog.setCaseId(instance.getUuid());
-    eventLog.setEventType(CaseHubEventType.CASE_COMPLETED);
-    eventLog.setStreamType(EventStreamType.CASE);
-    eventLog.setTimestamp(Instant.now());
-
-    repo.updateStateAndAppendEvent(instance, eventLog)
-        .subscribe()
-        .asCompletionStage()
-        .toCompletableFuture()
-        .join();
-
-    CaseInstance updated =
-        repo.findByUuid(instance.getUuid())
-            .subscribe()
-            .asCompletionStage()
-            .toCompletableFuture()
-            .join();
-    assertThat(updated.getState()).isEqualTo(CaseStatus.COMPLETED);
-    assertThat(eventLog.id).isNotNull();
-    assertThat(eventLog.getSeq()).isNotNull();
-    EventLog found =
-        eventLogRepo
-            .findById(eventLog.id)
-            .subscribe()
-            .asCompletionStage()
-            .toCompletableFuture()
-            .join();
-    assertThat(found).isNotNull();
-    assertThat(found.getEventType()).isEqualTo(CaseHubEventType.CASE_COMPLETED);
   }
 
   // --- Helper ---
