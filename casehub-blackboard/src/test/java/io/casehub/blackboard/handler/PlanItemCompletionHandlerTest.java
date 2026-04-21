@@ -70,6 +70,7 @@ class PlanItemCompletionHandlerTest {
   void marks_plan_item_completed_on_worker_finish() {
     PlanItem item = PlanItem.create("binding-a", "worker-a", 0);
     plan.addPlanItem(item);
+    item.markRunning(); // simulates indexSelectedForCompletion in PlanningStrategyLoopControl
     registry.indexWorkerForCompletion(caseId, "worker-a", item.getPlanItemId());
 
     handler.onWorkerFinished(eventFor("worker-a")).await().indefinitely();
@@ -86,6 +87,7 @@ class PlanItemCompletionHandlerTest {
   void stage_autocompletes_when_all_required_items_done() {
     PlanItem item = PlanItem.create("binding-a", "worker-a", 0);
     plan.addPlanItem(item);
+    item.markRunning(); // simulates indexSelectedForCompletion in PlanningStrategyLoopControl
     registry.indexWorkerForCompletion(caseId, "worker-a", item.getPlanItemId());
 
     Stage stage = Stage.create("intake");
@@ -106,6 +108,7 @@ class PlanItemCompletionHandlerTest {
     PlanItem item2 = PlanItem.create("binding-b", "worker-b", 0);
     plan.addPlanItem(item1);
     plan.addPlanItem(item2);
+    item1.markRunning(); // simulates indexSelectedForCompletion in PlanningStrategyLoopControl
     registry.indexWorkerForCompletion(caseId, "worker-a", item1.getPlanItemId());
 
     Stage stage = Stage.create("intake");
@@ -126,6 +129,7 @@ class PlanItemCompletionHandlerTest {
   void completed_plan_item_is_removed_from_active_tracking() {
     PlanItem item = PlanItem.create("binding-a", "worker-a", 0);
     plan.addPlanItem(item);
+    item.markRunning(); // simulates indexSelectedForCompletion in PlanningStrategyLoopControl
     registry.indexWorkerForCompletion(caseId, "worker-a", item.getPlanItemId());
 
     handler.onWorkerFinished(eventFor("worker-a")).await().indefinitely();
@@ -139,6 +143,7 @@ class PlanItemCompletionHandlerTest {
   void autocomplete_with_unregistered_required_item_does_not_complete_stage() {
     PlanItem item = PlanItem.create("binding-a", "worker-a", 0);
     plan.addPlanItem(item);
+    item.markRunning(); // simulates indexSelectedForCompletion in PlanningStrategyLoopControl
     registry.indexWorkerForCompletion(caseId, "worker-a", item.getPlanItemId());
 
     Stage stage = Stage.create("intake");
@@ -158,6 +163,7 @@ class PlanItemCompletionHandlerTest {
   void autocomplete_false_stage_does_not_complete_even_when_all_done() {
     PlanItem item = PlanItem.create("binding-a", "worker-a", 0);
     plan.addPlanItem(item);
+    item.markRunning(); // simulates indexSelectedForCompletion in PlanningStrategyLoopControl
     registry.indexWorkerForCompletion(caseId, "worker-a", item.getPlanItemId());
 
     Stage stage = Stage.create("intake").withAutocomplete(false);
