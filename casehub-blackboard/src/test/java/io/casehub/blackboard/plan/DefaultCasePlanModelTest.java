@@ -164,4 +164,72 @@ class DefaultCasePlanModelTest {
     assertThat(plan.getPendingStages()).containsExactly(pending);
     assertThat(plan.getActiveStages()).containsExactly(active);
   }
+
+  @Test
+  void addPlanItemIfAbsent_returns_true_when_no_active_item() {
+    PlanItem item = PlanItem.create("binding-a", "worker-a", 0);
+    assertThat(plan.addPlanItemIfAbsent(item)).isTrue();
+    assertThat(plan.getAgenda()).hasSize(1);
+  }
+
+  @Test
+  void addPlanItemIfAbsent_returns_false_when_pending_item_exists() {
+    PlanItem first = PlanItem.create("binding-a", "worker-a", 0);
+    PlanItem second = PlanItem.create("binding-a", "worker-a", 0);
+    plan.addPlanItemIfAbsent(first);
+    assertThat(plan.addPlanItemIfAbsent(second)).isFalse();
+    assertThat(plan.getAgenda()).hasSize(1);
+  }
+
+  @Test
+  void addPlanItemIfAbsent_returns_false_when_running_item_exists() {
+    PlanItem item = PlanItem.create("binding-a", "worker-a", 0);
+    plan.addPlanItemIfAbsent(item);
+    item.setStatus(PlanItem.PlanItemStatus.RUNNING);
+    PlanItem second = PlanItem.create("binding-a", "worker-a", 0);
+    assertThat(plan.addPlanItemIfAbsent(second)).isFalse();
+  }
+
+  @Test
+  void addPlanItemIfAbsent_returns_true_when_prior_item_is_completed() {
+    PlanItem first = PlanItem.create("binding-a", "worker-a", 0);
+    plan.addPlanItemIfAbsent(first);
+    first.setStatus(PlanItem.PlanItemStatus.COMPLETED);
+    PlanItem second = PlanItem.create("binding-a", "worker-a", 0);
+    assertThat(plan.addPlanItemIfAbsent(second)).isTrue();
+  }
+
+  @Test
+  void concurrent_addPlanItemIfAbsent_for_same_binding_adds_exactly_one() throws Exception {
+    int threads = 10;
+    java.util.concurrent.CountDownLatch start = new java.util.concurrent.CountDownLatch(1);
+    java.util.concurrent.CountDownLatch done = new java.util.concurrent.CountDownLatch(threads);
+    java.util.concurrent.atomic.AtomicInteger addedCount =
+        new java.util.concurrent.atomic.AtomicInteger(0);
+
+    for (int i = 0; i < threads; i++) {
+      int idx = i;
+      Thread t =
+          new Thread(
+              () -> {
+                try {
+                  start.await();
+                  PlanItem item = PlanItem.create("binding-a", "worker-" + idx, 0);
+                  if (plan.addPlanItemIfAbsent(item)) addedCount.incrementAndGet();
+                } catch (InterruptedException ignored) {
+                } finally {
+                  done.countDown();
+                }
+              });
+      t.start();
+    }
+
+    start.countDown();
+    done.await(5, java.util.concurrent.TimeUnit.SECONDS);
+
+    assertThat(addedCount.get())
+        .as("Exactly one thread should have added the PlanItem")
+        .isEqualTo(1);
+    assertThat(plan.getAgenda()).hasSize(1);
+  }
 }
