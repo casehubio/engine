@@ -16,54 +16,79 @@
 package io.casehub.blackboard.plan;
 
 import io.casehub.blackboard.stage.Stage;
-import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.List;
-import java.util.Objects;
+import java.util.Map;
+import java.util.Optional;
+import java.util.UUID;
 
 /**
- * Authored orchestration definition — a named list of root Stages. Separate from CaseDefinition.
+ * The control blackboard — Hayes-Roth's BB1 "control board" — paired 1:1 with each running case.
+ * Holds the scheduling agenda, focus of attention, resource budget, stage tracking, milestone
+ * lifecycle state, and extensible key-value state. Written to by {@link
+ * io.casehub.blackboard.control.PlanningStrategy}; read by {@link
+ * io.casehub.blackboard.control.PlanningStrategyLoopControl}.
+ *
+ * <p>Milestone lifecycle tracking here is an interim approach. Full alignment of Milestone, Stage,
+ * and Goal is tracked in casehubio/engine#84. See casehubio/engine#76.
  */
-public class CasePlanModel {
+public interface CasePlanModel {
 
-  private final String name;
-  private final List<Stage> stages;
+  UUID getCaseId();
 
-  private CasePlanModel(Builder b) {
-    this.name = b.name;
-    this.stages = List.copyOf(b.stages);
-  }
+  // Scheduling agenda
+  void addPlanItem(PlanItem planItem);
 
-  public String getName() {
-    return name;
-  }
+  /** Removes the plan item with the given planItemId. No-op if not found. */
+  void removePlanItem(String planItemId);
 
-  public List<Stage> getStages() {
-    return stages;
-  }
+  Optional<PlanItem> getPlanItem(String planItemId);
 
-  public static Builder builder() {
-    return new Builder();
-  }
+  /**
+   * Returns true if there is already a PENDING or RUNNING PlanItem for the given binding name. Used
+   * to prevent duplicate scheduling.
+   */
+  boolean hasActivePlanItem(String bindingName);
 
-  public static class Builder {
+  /** Returns only PENDING items, sorted highest-priority first. */
+  List<PlanItem> getAgenda();
 
-    private String name;
-    private final List<Stage> stages = new ArrayList<>();
+  List<PlanItem> getTopPlanItems(int maxCount);
 
-    public Builder name(String name) {
-      this.name = name;
-      return this;
-    }
+  // Stage management
+  void addStage(Stage stage);
 
-    public Builder stages(Stage... stages) {
-      this.stages.addAll(Arrays.asList(stages));
-      return this;
-    }
+  Optional<Stage> getStage(String stageId);
 
-    public CasePlanModel build() {
-      Objects.requireNonNull(name, "name must not be null");
-      return new CasePlanModel(this);
-    }
-  }
+  List<Stage> getPendingStages();
+
+  List<Stage> getActiveStages();
+
+  List<Stage> getAllStages();
+
+  // Milestone lifecycle (PENDING → ACHIEVED). See casehubio/engine#84.
+  void trackMilestone(String milestoneName);
+
+  void achieveMilestone(String milestoneName);
+
+  boolean isMilestoneAchieved(String milestoneName);
+
+  // Focus of attention (written by PlanningStrategy)
+  void setFocus(String focusArea);
+
+  Optional<String> getFocus();
+
+  void setFocusRationale(String rationale);
+
+  /** Returns the rationale for the current focus of attention, if set. */
+  Optional<String> getFocusRationale();
+
+  // Resource budget (written by PlanningStrategy)
+  void setResourceBudget(Map<String, Object> budget);
+
+  Map<String, Object> getResourceBudget();
+
+  // Extensible key-value (custom PlanningStrategy state)
+  void put(String key, Object value);
+
+  <T> Optional<T> get(String key, Class<T> type);
 }

@@ -15,94 +15,92 @@
  */
 package io.casehub.blackboard.plan;
 
-import io.casehub.api.plan.PlanElement;
 import java.time.Instant;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.List;
+import java.util.Optional;
+import java.util.UUID;
 
 /**
- * Runtime lifecycle container for a {@link PlanElement}. Hierarchical — knows its parent and
- * children. Each instance starts PENDING; transitions follow PlanItemStatus rules.
+ * Activation record for a {@link io.casehub.api.model.Binding} on the {@link CasePlanModel}
+ * scheduling agenda.
+ *
+ * <p>Priority is assigned by {@link io.casehub.blackboard.control.PlanningStrategy}. Status is
+ * updated by {@link io.casehub.blackboard.handler.PlanItemCompletionHandler} on worker completion.
+ * Implements {@link Comparable} for priority-ordered sorting (higher priority first; FIFO for equal
+ * priority). See casehubio/engine#76.
  */
-public class PlanItem<T extends PlanElement> {
+public class PlanItem implements Comparable<PlanItem> {
 
-  private final T element;
+  private final String planItemId;
+  private final String bindingName;
+  private final String workerName;
+  private final int priority;
   private PlanItemStatus status;
-  private PlanItem<?> parent;
-  private final List<PlanItem<?>> children = new ArrayList<>();
-  private Instant activatedAt;
-  private Instant completedAt;
+  private final Instant createdAt;
+  private String parentStageId; // null means no parent stage
 
-  private PlanItem(T element) {
-    this.element = element;
+  /** Lifecycle states. See casehubio/engine#76. */
+  public enum PlanItemStatus {
+    PENDING,
+    RUNNING,
+    COMPLETED,
+    FAULTED,
+    CANCELLED
+  }
+
+  private PlanItem(String bindingName, String workerName, int priority) {
+    this.planItemId = UUID.randomUUID().toString();
+    this.bindingName = bindingName;
+    this.workerName = workerName;
+    this.priority = priority;
     this.status = PlanItemStatus.PENDING;
+    this.createdAt = Instant.now();
+    this.parentStageId = null;
   }
 
-  public static <T extends PlanElement> PlanItem<T> of(T element) {
-    return new PlanItem<>(element);
+  public static PlanItem create(String bindingName, String workerName, int priority) {
+    return new PlanItem(bindingName, workerName, priority);
   }
 
-  public T getElement() {
-    return element;
+  @Override
+  public int compareTo(PlanItem other) {
+    int cmp = Integer.compare(other.priority, this.priority); // higher first
+    if (cmp != 0) return cmp;
+    return this.createdAt.compareTo(other.createdAt); // earlier first
+  }
+
+  public String getPlanItemId() {
+    return planItemId;
+  }
+
+  public String getBindingName() {
+    return bindingName;
+  }
+
+  public String getWorkerName() {
+    return workerName;
+  }
+
+  public int getPriority() {
+    return priority;
   }
 
   public PlanItemStatus getStatus() {
     return status;
   }
 
-  public PlanItem<?> getParent() {
-    return parent;
+  public void setStatus(PlanItemStatus status) {
+    this.status = status;
   }
 
-  public List<PlanItem<?>> getChildren() {
-    return Collections.unmodifiableList(children);
+  public Instant getCreatedAt() {
+    return createdAt;
   }
 
-  public Instant getActivatedAt() {
-    return activatedAt;
+  public Optional<String> getParentStageId() {
+    return Optional.ofNullable(parentStageId);
   }
 
-  public Instant getCompletedAt() {
-    return completedAt;
-  }
-
-  public void addChild(PlanItem<?> child) {
-    child.parent = this;
-    children.add(child);
-  }
-
-  public void activate() {
-    requireStatus(PlanItemStatus.PENDING, "activate");
-    this.status = PlanItemStatus.ACTIVE;
-    this.activatedAt = Instant.now();
-  }
-
-  public void complete() {
-    requireStatus(PlanItemStatus.ACTIVE, "complete");
-    this.status = PlanItemStatus.COMPLETED;
-    this.completedAt = Instant.now();
-  }
-
-  public void terminate() {
-    if (status.isTerminal()) return; // idempotent for terminal states
-    this.status = PlanItemStatus.TERMINATED;
-    this.completedAt = Instant.now();
-    for (PlanItem<?> child : children) {
-      child.terminate();
-    }
-  }
-
-  public void fault() {
-    requireStatus(PlanItemStatus.ACTIVE, "fault");
-    this.status = PlanItemStatus.FAULTED;
-    this.completedAt = Instant.now();
-  }
-
-  private void requireStatus(PlanItemStatus required, String operation) {
-    if (status != required) {
-      throw new IllegalStateException(
-          "Cannot " + operation + " PlanItem in status " + status + " (requires " + required + ")");
-    }
+  public void setParentStageId(String stageId) {
+    this.parentStageId = stageId;
   }
 }

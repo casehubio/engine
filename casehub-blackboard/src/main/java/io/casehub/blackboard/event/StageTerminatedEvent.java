@@ -13,21 +13,17 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.casehub.blackboard.strategy;
+package io.casehub.blackboard.event;
 
-import io.casehub.api.context.CaseContext;
-import io.casehub.blackboard.plan.PlanItem;
-import jakarta.enterprise.context.ApplicationScoped;
-import java.util.List;
+import io.casehub.blackboard.stage.Stage;
+import java.util.UUID;
 
 /**
- * Default: fires all eligible PlanItems — orchestration at Stage level, choreography within Stage.
+ * Published when a Stage's exit condition is satisfied. See casehubio/engine#76.
+ *
+ * <p><strong>Note:</strong> {@code stage} is passed by reference via {@link
+ * io.casehub.blackboard.event.BlackboardEventCodecRegistrar.LocalOnlyCodec}. Consumers must not
+ * retain this reference — the Stage object is mutable and its state will reflect subsequent
+ * lifecycle transitions.
  */
-@ApplicationScoped
-public class DefaultPlanningStrategy implements PlanningStrategy {
-
-  @Override
-  public List<PlanItem<?>> select(CaseContext context, List<PlanItem<?>> eligible) {
-    return eligible;
-  }
-}
+public record StageTerminatedEvent(UUID caseId, Stage stage) {}
