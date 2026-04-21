@@ -24,6 +24,7 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Predicate;
 
 /**
@@ -41,10 +42,10 @@ public class Stage {
 
   private final String stageId;
   private final String name;
-  private StageStatus status;
+  private final AtomicReference<StageStatus> status = new AtomicReference<>(StageStatus.PENDING);
   private final Instant createdAt;
-  private Instant activatedAt;
-  private Instant completedAt;
+  private volatile Instant activatedAt;
+  private volatile Instant completedAt;
   private String parentStageId; // null means root stage
 
   // Conditions — null means "no condition"
@@ -65,7 +66,6 @@ public class Stage {
   private Stage(String name) {
     this.stageId = UUID.randomUUID().toString();
     this.name = name;
-    this.status = StageStatus.PENDING;
     this.createdAt = Instant.now();
   }
 
@@ -117,34 +117,37 @@ public class Stage {
     return this;
   }
 
-  // Lifecycle transitions
+  // Lifecycle transitions — all use CAS so concurrent callers race atomically; exactly one wins
   public void activate() {
-    if (status == StageStatus.PENDING) {
-      status = StageStatus.ACTIVE;
+    if (status.compareAndSet(StageStatus.PENDING, StageStatus.ACTIVE)) {
       activatedAt = Instant.now();
     }
   }
 
   public void complete() {
-    if (status == StageStatus.ACTIVE || status == StageStatus.SUSPENDED) {
-      status = StageStatus.COMPLETED;
-      completedAt = Instant.now();
-    }
+    StageStatus current;
+    do {
+      current = status.get();
+      if (current != StageStatus.ACTIVE && current != StageStatus.SUSPENDED) return;
+    } while (!status.compareAndSet(current, StageStatus.COMPLETED));
+    completedAt = Instant.now();
   }
 
   public void terminate() {
-    if (status == StageStatus.ACTIVE || status == StageStatus.SUSPENDED) {
-      status = StageStatus.TERMINATED;
-      completedAt = Instant.now();
-    }
+    StageStatus current;
+    do {
+      current = status.get();
+      if (current != StageStatus.ACTIVE && current != StageStatus.SUSPENDED) return;
+    } while (!status.compareAndSet(current, StageStatus.TERMINATED));
+    completedAt = Instant.now();
   }
 
   public void suspend() {
-    if (status == StageStatus.ACTIVE) status = StageStatus.SUSPENDED;
+    status.compareAndSet(StageStatus.ACTIVE, StageStatus.SUSPENDED);
   }
 
   public void resume() {
-    if (status == StageStatus.SUSPENDED) status = StageStatus.ACTIVE;
+    status.compareAndSet(StageStatus.SUSPENDED, StageStatus.ACTIVE);
   }
 
   /**
@@ -154,20 +157,24 @@ public class Stage {
    * that arrived out of order.
    */
   public void fault() {
-    if (!isTerminal()) {
-      status = StageStatus.FAULTED;
-      completedAt = Instant.now();
-    }
+    StageStatus current;
+    do {
+      current = status.get();
+      if (isTerminalStatus(current)) return;
+    } while (!status.compareAndSet(current, StageStatus.FAULTED));
+    completedAt = Instant.now();
   }
 
   public boolean isTerminal() {
-    return status == StageStatus.COMPLETED
-        || status == StageStatus.TERMINATED
-        || status == StageStatus.FAULTED;
+    return isTerminalStatus(status.get());
   }
 
   public boolean isActive() {
-    return status == StageStatus.ACTIVE;
+    return status.get() == StageStatus.ACTIVE;
+  }
+
+  private static boolean isTerminalStatus(StageStatus s) {
+    return s == StageStatus.COMPLETED || s == StageStatus.TERMINATED || s == StageStatus.FAULTED;
   }
 
   // Containment mutations — sets handle deduplication atomically; no contains-before-add guard
@@ -206,7 +213,7 @@ public class Stage {
   }
 
   public StageStatus getStatus() {
-    return status;
+    return status.get();
   }
 
   public Instant getCreatedAt() {
