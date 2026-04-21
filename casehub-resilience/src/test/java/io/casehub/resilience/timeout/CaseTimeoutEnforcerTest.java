@@ -17,12 +17,14 @@ package io.casehub.resilience.timeout;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import io.casehub.api.model.CaseStatus;
 import io.casehub.engine.internal.engine.cache.CaseInstanceCache;
+import io.casehub.engine.internal.event.CaseStatusChanged;
 import io.casehub.engine.internal.event.EventBusAddresses;
 import io.casehub.engine.internal.model.CaseInstance;
 import io.casehub.engine.spi.CaseInstanceRepository;
@@ -129,7 +131,7 @@ class CaseTimeoutEnforcerTest {
   }
 
   @Test
-  void timedOutCase_faultedEventIsPublished() {
+  void timedOutCase_statusChangedEventIsPublished() {
     CaseInstance instance = runningInstance();
     UUID caseId = instance.getUuid();
     cache.put(instance);
@@ -140,7 +142,9 @@ class CaseTimeoutEnforcerTest {
 
     enforcer.scanForTimeouts();
 
-    verify(eventBus).publish(EventBusAddresses.CASE_FAULTED, caseId.toString());
+    // Enforcer publishes CASE_STATUS_CHANGED; CaseStatusChangedHandler then emits CASE_FAULTED.
+    verify(eventBus)
+        .publish(eq(EventBusAddresses.CASE_STATUS_CHANGED), any(CaseStatusChanged.class));
   }
 
   @Test

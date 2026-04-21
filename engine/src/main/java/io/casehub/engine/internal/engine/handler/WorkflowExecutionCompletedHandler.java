@@ -181,12 +181,10 @@ public class WorkflowExecutionCompletedHandler {
                   + "' — binding uses FAIL strategy. "
                   + "Refs casehubio/engine#45");
       default -> {
-        if (strategy != null) {
-          LOG.warnf(
-              "Unknown conflict resolver strategy '%s' for key '%s' — "
-                  + "falling back to LAST_WRITER_WINS. Refs casehubio/engine#45",
-              strategy, key);
-        }
+        LOG.warnf(
+            "Unknown conflict resolver strategy '%s' for key '%s' — "
+                + "falling back to LAST_WRITER_WINS. Refs casehubio/engine#45",
+            strategy, key);
         yield incoming;
       }
     };

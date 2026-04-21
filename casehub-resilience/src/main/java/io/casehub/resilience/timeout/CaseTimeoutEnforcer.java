@@ -18,6 +18,7 @@ package io.casehub.resilience.timeout;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.casehub.api.model.CaseStatus;
 import io.casehub.engine.internal.engine.cache.CaseInstanceCache;
+import io.casehub.engine.internal.event.CaseStatusChanged;
 import io.casehub.engine.internal.event.EventBusAddresses;
 import io.casehub.engine.internal.history.CaseHubEventType;
 import io.casehub.engine.internal.history.EventLog;
@@ -53,8 +54,10 @@ import org.jboss.logging.Logger;
  * uses point-to-point {@code request()} semantics and must not have additional consumers competing
  * to handle the message.
  *
- * <p>Cases that exceed the budget are transitioned to {@link CaseStatus#FAULTED} and a {@link
- * EventBusAddresses#CASE_FAULTED} event is published.
+ * <p>Cases that exceed the budget are transitioned to {@link CaseStatus#FAULTED}. A {@link
+ * EventBusAddresses#CASE_STATUS_CHANGED} event is published, which causes {@code
+ * CaseStatusChangedHandler} to persist the final state and emit {@link
+ * EventBusAddresses#CASE_FAULTED}.
  */
 @ApplicationScoped
 public class CaseTimeoutEnforcer {
@@ -129,6 +132,7 @@ public class CaseTimeoutEnforcer {
             "Case %s has been RUNNING for %s (limit: %s) — transitioning to FAULTED",
             caseId, elapsed, maxDuration);
 
+        String oldStatus = instance.getState().name();
         instance.setState(CaseStatus.FAULTED);
         runningStartTimes.remove(caseId);
 
@@ -147,7 +151,10 @@ public class CaseTimeoutEnforcer {
             .updateStateAndAppendEvent(instance, eventLog)
             .subscribe()
             .with(
-                ignored -> eventBus.publish(EventBusAddresses.CASE_FAULTED, caseId.toString()),
+                ignored ->
+                    eventBus.publish(
+                        EventBusAddresses.CASE_STATUS_CHANGED,
+                        new CaseStatusChanged(instance, oldStatus, CaseStatus.FAULTED.name())),
                 error ->
                     LOG.errorf(
                         error,
