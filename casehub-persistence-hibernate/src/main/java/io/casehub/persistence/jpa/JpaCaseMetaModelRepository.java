@@ -24,29 +24,37 @@ import java.time.Instant;
 import java.time.temporal.ChronoUnit;
 
 @ApplicationScoped
-public class JpaCaseMetaModelRepository implements CaseMetaModelRepository {
+public class JpaCaseMetaModelRepository extends AbstractJpaRepository
+    implements CaseMetaModelRepository {
 
   @Override
   public Uni<CaseMetaModel> findByKey(String namespace, String name, String version) {
-    return Panache.withSession(
-            () ->
-                CaseMetaModelEntity.<CaseMetaModelEntity>find(
-                        "namespace = ?1 and name = ?2 and version = ?3", namespace, name, version)
-                    .firstResult())
-        .map(entity -> entity == null ? null : fromEntity(entity));
+    return withSafeContext(
+        () ->
+            Panache.withSession(
+                    () ->
+                        CaseMetaModelEntity.<CaseMetaModelEntity>find(
+                                "namespace = ?1 and name = ?2 and version = ?3",
+                                namespace,
+                                name,
+                                version)
+                            .firstResult())
+                .map(entity -> entity == null ? null : fromEntity(entity)));
   }
 
   @Override
   public Uni<CaseMetaModel> save(CaseMetaModel metaModel) {
     CaseMetaModelEntity entity = toEntity(metaModel);
     entity.createdAt = Instant.now().truncatedTo(ChronoUnit.MICROS);
-    return Panache.withTransaction(() -> entity.persist())
-        .map(
-            v -> {
-              metaModel.setId(entity.id);
-              metaModel.setCreatedAt(entity.createdAt);
-              return metaModel;
-            });
+    return withSafeContext(
+        () ->
+            Panache.withTransaction(() -> entity.persist())
+                .map(
+                    v -> {
+                      metaModel.setId(entity.id);
+                      metaModel.setCreatedAt(entity.createdAt);
+                      return metaModel;
+                    }));
   }
 
   private CaseMetaModel fromEntity(CaseMetaModelEntity entity) {

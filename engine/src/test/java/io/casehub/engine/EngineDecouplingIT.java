@@ -20,12 +20,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import io.casehub.engine.internal.history.CaseHubEventType;
 import io.casehub.engine.internal.history.EventLog;
 import io.casehub.engine.internal.history.EventStreamType;
-import io.casehub.engine.spi.CaseInstanceRepository;
-import io.casehub.engine.spi.CaseMetaModelRepository;
 import io.casehub.engine.spi.EventLogRepository;
-import io.casehub.persistence.memory.InMemoryCaseInstanceRepository;
-import io.casehub.persistence.memory.InMemoryCaseMetaModelRepository;
-import io.casehub.persistence.memory.InMemoryEventLogRepository;
 import io.quarkus.test.junit.QuarkusTest;
 import jakarta.inject.Inject;
 import java.time.Instant;
@@ -34,24 +29,13 @@ import java.util.UUID;
 import org.junit.jupiter.api.Test;
 
 /**
- * Verifies that the engine uses in-memory repository implementations — no Docker, no PostgreSQL.
- * This test confirms the persistence decoupling is complete and functional end-to-end.
+ * Verifies that the EventLogRepository SPI is functional end-to-end regardless of the active
+ * persistence implementation (hibernate or memory).
  */
 @QuarkusTest
 class EngineDecouplingIT {
 
-  @Inject CaseMetaModelRepository caseMetaModelRepository;
-
-  @Inject CaseInstanceRepository caseInstanceRepository;
-
   @Inject EventLogRepository eventLogRepository;
-
-  @Test
-  void repositoriesAreInMemoryImplementations() {
-    assertThat(caseMetaModelRepository).isInstanceOf(InMemoryCaseMetaModelRepository.class);
-    assertThat(caseInstanceRepository).isInstanceOf(InMemoryCaseInstanceRepository.class);
-    assertThat(eventLogRepository).isInstanceOf(InMemoryEventLogRepository.class);
-  }
 
   @Test
   void eventLogRepository_appendAndFind_happyPath() {

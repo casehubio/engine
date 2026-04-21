@@ -42,6 +42,14 @@ public class WorkerExecutionScheduler {
     }
   }
 
+  public void scheduleRetry(JobDetail job, Trigger trigger) {
+    try {
+      scheduleRetryTrigger(job, trigger);
+    } catch (SchedulerException e) {
+      throw new RuntimeException("Quartz retry scheduling failed for jobKey=" + job.getKey(), e);
+    }
+  }
+
   public Uni<Void> scheduleOrRescheduleAsync(JobDetail job, Trigger trigger) {
     return Uni.createFrom()
         .item(
@@ -51,5 +59,48 @@ public class WorkerExecutionScheduler {
             })
         .runSubscriptionOn(Infrastructure.getDefaultWorkerPool())
         .replaceWithVoid();
+  }
+
+  public Uni<Void> scheduleRetryAsync(JobDetail job, Trigger trigger) {
+    return Uni.createFrom()
+        .item(
+            () -> {
+              scheduleRetry(job, trigger);
+              return (Void) null;
+            })
+        .runSubscriptionOn(Infrastructure.getDefaultWorkerPool())
+        .replaceWithVoid();
+  }
+
+  private void scheduleRetryTrigger(JobDetail job, Trigger trigger) throws SchedulerException {
+    if (quartz.rescheduleJob(trigger.getKey(), trigger) != null) {
+      return;
+    }
+
+    try {
+      quartz.scheduleJob(job, trigger);
+    } catch (ObjectAlreadyExistsException e) {
+      scheduleTriggerForExistingJob(job, trigger, e);
+    }
+  }
+
+  private void scheduleTriggerForExistingJob(
+      JobDetail job, Trigger trigger, ObjectAlreadyExistsException original)
+      throws SchedulerException {
+    try {
+      quartz.scheduleJob(trigger);
+    } catch (ObjectAlreadyExistsException e) {
+      if (quartz.rescheduleJob(trigger.getKey(), trigger) != null) {
+        return;
+      }
+      throw e;
+    } catch (SchedulerException e) {
+      if (!quartz.checkExists(job.getKey())) {
+        quartz.scheduleJob(job, trigger);
+        return;
+      }
+      original.addSuppressed(e);
+      throw original;
+    }
   }
 }
