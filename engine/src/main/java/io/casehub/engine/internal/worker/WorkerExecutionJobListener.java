@@ -20,6 +20,7 @@ import static org.quartz.TriggerBuilder.newTrigger;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import io.casehub.api.model.BackoffStrategy;
 import io.casehub.api.model.CaseDefinition;
 import io.casehub.api.model.ExecutionPolicy;
 import io.casehub.api.model.RetryPolicy;
@@ -40,6 +41,7 @@ import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
 import java.util.Date;
 import java.util.UUID;
+import java.util.concurrent.ThreadLocalRandom;
 import java.util.function.Supplier;
 import org.jboss.logging.Logger;
 import org.quartz.JobDetail;
@@ -239,7 +241,7 @@ public class WorkerExecutionJobListener implements JobListener {
             .build();
 
     workerExecutionScheduler
-        .scheduleOrRescheduleAsync(job, trigger)
+        .scheduleRetryAsync(job, trigger)
         .subscribe()
         .with(
             ignored -> LOG.infof("Rescheduled job: %s", jobKey),
@@ -293,16 +295,16 @@ public class WorkerExecutionJobListener implements JobListener {
   }
 
   /**
-   * Computes the retry delay using the policy's {@link io.casehub.api.model.BackoffStrategy}.
+   * Computes the retry delay using the policy's {@link BackoffStrategy}.
    * FIXED: constant delayMs. EXPONENTIAL: delayMs * 2^(attempt-1), capped at 30s.
    * EXPONENTIAL_WITH_JITTER: random in [0, exponential cap].
    */
   private static long computeBackoffDelayMs(RetryPolicy policy, long attemptNumber) {
     long baseDelayMs = policy.delayMs() != null ? policy.delayMs() : 0L;
-    io.casehub.api.model.BackoffStrategy strategy =
+    BackoffStrategy strategy =
         policy.backoffStrategy() != null
             ? policy.backoffStrategy()
-            : io.casehub.api.model.BackoffStrategy.FIXED;
+            : BackoffStrategy.FIXED;
     return switch (strategy) {
       case FIXED -> baseDelayMs;
       case EXPONENTIAL -> {
@@ -312,7 +314,7 @@ public class WorkerExecutionJobListener implements JobListener {
       case EXPONENTIAL_WITH_JITTER -> {
         long shift = Math.min(attemptNumber - 1, 30);
         long cap = Math.min(baseDelayMs * (1L << shift), 30_000L);
-        yield cap == 0 ? 0 : java.util.concurrent.ThreadLocalRandom.current().nextLong(cap + 1);
+        yield cap == 0 ? 0 : ThreadLocalRandom.current().nextLong(cap + 1);
       }
     };
   }
