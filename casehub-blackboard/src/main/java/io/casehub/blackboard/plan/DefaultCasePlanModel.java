@@ -17,12 +17,14 @@ package io.casehub.blackboard.plan;
 
 import io.casehub.blackboard.stage.Stage;
 import io.casehub.blackboard.stage.StageStatus;
+import io.casehub.blackboard.stage.SubCase;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.PriorityBlockingQueue;
 import java.util.stream.Collectors;
 
@@ -41,6 +43,7 @@ public class DefaultCasePlanModel implements CasePlanModel {
   private final ConcurrentHashMap<String, Stage> stages = new ConcurrentHashMap<>();
   private final ConcurrentHashMap<String, Boolean> milestones = new ConcurrentHashMap<>();
   private final ConcurrentHashMap<String, Object> state = new ConcurrentHashMap<>();
+  private final CopyOnWriteArrayList<SubCase> subCases = new CopyOnWriteArrayList<>();
   private volatile Map<String, Object> resourceBudget = Map.of();
   private volatile String focus;
   private volatile String focusRationale;
@@ -209,5 +212,15 @@ public class DefaultCasePlanModel implements CasePlanModel {
   public <T> Optional<T> get(String key, Class<T> type) {
     Object v = state.get(key);
     return (v != null && type.isInstance(v)) ? Optional.of((T) v) : Optional.empty();
+  }
+
+  @Override
+  public void addSubCase(SubCase s) {
+    subCases.add(java.util.Objects.requireNonNull(s));
+  }
+
+  @Override
+  public List<SubCase> getSubCases() {
+    return List.copyOf(subCases);
   }
 }

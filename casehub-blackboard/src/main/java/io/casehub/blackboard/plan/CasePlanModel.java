@@ -100,4 +100,9 @@ public interface CasePlanModel {
   void put(String key, Object value);
 
   <T> Optional<T> get(String key, Class<T> type);
+
+  /** Registers a sub-case to be launched as part of this case's work. See casehubio/engine#76. */
+  void addSubCase(io.casehub.blackboard.stage.SubCase subCase);
+
+  List<io.casehub.blackboard.stage.SubCase> getSubCases();
 }
