@@ -18,8 +18,12 @@ package io.casehub.engine.internal.engine.handler;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ObjectNode;
+import io.casehub.api.context.CaseContext;
+import io.casehub.api.model.Binding;
+import io.casehub.api.model.CaseDefinition;
 import io.casehub.api.model.Worker;
 import io.casehub.api.spi.ContextDiffStrategy;
+import io.casehub.engine.internal.engine.CaseDefinitionRegistry;
 import io.casehub.engine.internal.event.CaseContextChangedEvent;
 import io.casehub.engine.internal.event.EventBusAddresses;
 import io.casehub.engine.internal.event.WorkflowExecutionCompleted;
@@ -34,6 +38,7 @@ import io.vertx.mutiny.core.eventbus.EventBus;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
 import java.time.Instant;
+import java.util.List;
 import java.util.Map;
 import org.jboss.logging.Logger;
 
@@ -47,6 +52,7 @@ public class WorkflowExecutionCompletedHandler {
   @Inject EventBus eventBus;
   @Inject ContextDiffStrategy contextDiffStrategy;
   @Inject EventLogRepository eventLogRepository;
+  @Inject CaseDefinitionRegistry caseDefinitionRegistry;
 
   private static final ObjectMapper OBJECT_MAPPER = new ObjectMapper();
   private static final Logger LOG = Logger.getLogger(WorkflowExecutionCompletedHandler.class);
@@ -59,7 +65,7 @@ public class WorkflowExecutionCompletedHandler {
     final Instant now = Instant.now();
 
     JsonNode contextBefore = caseInstance.getCaseContext().snapshot().asJsonNode();
-    caseInstance.getCaseContext().setAll(rawOutput);
+    applyOutputWithConflictResolution(caseInstance, worker, rawOutput);
     JsonNode contextAfter = caseInstance.getCaseContext().asJsonNode();
     JsonNode diff = contextDiffStrategy.compute(contextBefore, contextAfter);
 
@@ -108,5 +114,73 @@ public class WorkflowExecutionCompletedHandler {
       metadata.set("contextChanges", contextDiff);
     }
     return metadata;
+  }
+
+  /**
+   * Writes each key from rawOutput to CaseContext, applying the conflict resolver strategy
+   * configured on the Binding that triggered this worker. If no strategy is set, the default is
+   * LAST_WRITER_WINS (overwrite). See casehubio/engine#45, #51.
+   */
+  private void applyOutputWithConflictResolution(
+      CaseInstance caseInstance, Worker worker, Map<String, Object> rawOutput) {
+    if (rawOutput.isEmpty()) {
+      return;
+    }
+    String strategy = resolveConflictStrategy(caseInstance, worker);
+    CaseContext caseContext = caseInstance.getCaseContext();
+    for (Map.Entry<String, Object> entry : rawOutput.entrySet()) {
+      String key = entry.getKey();
+      Object incoming = entry.getValue();
+      Object existing = caseContext.get(key);
+      Object resolved =
+          (existing != null) ? applyStrategy(strategy, key, existing, incoming) : incoming;
+      caseContext.set(key, resolved);
+    }
+  }
+
+  /**
+   * Finds the conflict resolver strategy for the given worker by looking up the binding whose
+   * capability matches one of the worker's capabilities. Returns null if no binding is found
+   * (default: LAST_WRITER_WINS).
+   */
+  private String resolveConflictStrategy(CaseInstance caseInstance, Worker worker) {
+    CaseDefinition definition =
+        caseDefinitionRegistry.getCaseDefinition(caseInstance.getCaseMetaModel());
+    if (definition == null
+        || definition.getBindings() == null
+        || worker.getCapabilities() == null) {
+      return null;
+    }
+    List<Binding> bindings = definition.getBindings();
+    for (Binding binding : bindings) {
+      if (binding.getCapability() == null) {
+        continue;
+      }
+      String capabilityName = binding.getCapability().getName();
+      boolean workerMatchesCapability =
+          worker.getCapabilities().stream().anyMatch(c -> c.getName().equals(capabilityName));
+      if (workerMatchesCapability) {
+        return binding.getConflictResolverStrategy();
+      }
+    }
+    return null;
+  }
+
+  /**
+   * Applies the named conflict resolution strategy. Null or unknown strategy defaults to
+   * LAST_WRITER_WINS (return incoming). See casehubio/engine#45, #51.
+   */
+  private Object applyStrategy(String strategy, String key, Object existing, Object incoming) {
+    if (strategy == null) return incoming; // default: last writer wins
+    return switch (strategy) {
+      case "FIRST_WRITER_WINS" -> existing;
+      case "FAIL" ->
+          throw new IllegalStateException(
+              "Conflicting writes to key '"
+                  + key
+                  + "' — binding uses FAIL strategy. "
+                  + "Refs casehubio/engine#45");
+      default -> incoming; // LAST_WRITER_WINS
+    };
   }
 }
