@@ -25,6 +25,7 @@ import io.casehub.blackboard.plan.PlanItem;
 import io.casehub.blackboard.plan.PlanItemStatus;
 import io.casehub.blackboard.stage.Stage;
 import io.casehub.engine.internal.engine.ExpressionEngineRegistry;
+import io.smallrye.mutiny.Uni;
 import jakarta.annotation.Priority;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.enterprise.inject.Alternative;
@@ -64,10 +65,10 @@ public class PlanningStrategyLoopControl implements LoopControl {
   @Inject ExpressionEngineRegistry expressionEngineRegistry;
 
   @Override
-  public List<Binding> select(PlanExecutionContext context, List<Binding> eligible) {
+  public Uni<List<Binding>> select(PlanExecutionContext context, List<Binding> eligible) {
     Optional<CasePlanModel> planModel = registry.find(context.definition());
     if (planModel.isEmpty()) {
-      return eligible; // no plan model — pure choreography
+      return Uni.createFrom().item(eligible); // no plan model — pure choreography
     }
 
     UUID caseId = context.caseId();
@@ -143,7 +144,7 @@ public class PlanningStrategyLoopControl implements LoopControl {
       }
     }
 
-    return result;
+    return Uni.createFrom().item(result);
   }
 
   // ---- plan instance construction ----
