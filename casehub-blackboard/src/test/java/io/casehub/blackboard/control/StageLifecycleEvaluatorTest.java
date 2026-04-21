@@ -118,4 +118,52 @@ class StageLifecycleEvaluatorTest {
     assertThat(stage.getStatus()).isEqualTo(StageStatus.PENDING);
     verifyNoInteractions(mockBus);
   }
+
+  @Test
+  void nested_stage_stays_pending_while_parent_is_pending() {
+    Stage parent = Stage.create("parent").withEntryCondition(c -> false); // never activates
+    Stage child = Stage.create("child").withParentStage(parent.getStageId());
+
+    plan.addStage(parent);
+    plan.addStage(child);
+
+    evaluator.evaluate(plan, ctx).await().indefinitely();
+
+    assertThat(parent.getStatus()).isEqualTo(StageStatus.PENDING);
+    assertThat(child.getStatus())
+        .as("child stage must stay PENDING when parent is not ACTIVE")
+        .isEqualTo(StageStatus.PENDING);
+  }
+
+  @Test
+  void nested_stage_activates_after_parent_becomes_active() {
+    Stage parent = Stage.create("parent"); // no entry condition — activates immediately
+    Stage child = Stage.create("child").withParentStage(parent.getStageId());
+
+    plan.addStage(parent);
+    plan.addStage(child);
+
+    // First cycle: parent activates. Child is still PENDING this cycle
+    // because getPendingStages() snapshot was taken before parent activated.
+    evaluator.evaluate(plan, ctx).await().indefinitely();
+    assertThat(parent.getStatus()).isEqualTo(StageStatus.ACTIVE);
+
+    // Second cycle: parent is now ACTIVE, child can activate
+    evaluator.evaluate(plan, ctx).await().indefinitely();
+    assertThat(child.getStatus())
+        .as("child stage must activate once parent is ACTIVE")
+        .isEqualTo(StageStatus.ACTIVE);
+  }
+
+  @Test
+  void root_stage_without_parent_activates_normally() {
+    Stage root = Stage.create("root"); // no parentStageId
+    plan.addStage(root);
+
+    evaluator.evaluate(plan, ctx).await().indefinitely();
+
+    assertThat(root.getStatus())
+        .as("root stage (no parent) must not be affected by parent-active guard")
+        .isEqualTo(StageStatus.ACTIVE);
+  }
 }
