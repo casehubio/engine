@@ -34,7 +34,7 @@ public class PlanItem implements Comparable<PlanItem> {
   private final String bindingName;
   private final String workerName;
   private final int priority;
-  private PlanItemStatus status;
+  private volatile PlanItemStatus status;
   private final Instant createdAt;
   private String parentStageId; // null means no parent stage
 

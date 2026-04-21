@@ -72,4 +72,12 @@ class PlanItemTest {
     item.setStatus(PlanItem.PlanItemStatus.CANCELLED);
     assertThat(item.getStatus()).isEqualTo(PlanItem.PlanItemStatus.CANCELLED);
   }
+
+  @Test
+  void status_field_is_volatile() throws NoSuchFieldException {
+    java.lang.reflect.Field field = PlanItem.class.getDeclaredField("status");
+    assertThat(java.lang.reflect.Modifier.isVolatile(field.getModifiers()))
+        .as("PlanItem.status must be volatile for cross-thread visibility")
+        .isTrue();
+  }
 }
