@@ -29,43 +29,37 @@ jobs:
               content: 'eyes'
             });
 
-      - name: Checkout PR
+      - name: Checkout repository
         uses: actions/checkout@v6
         with:
-          # Fetch all history to enable rebase
           fetch-depth: 0
-          # Use token with write permissions
           token: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Get PR details
         id: pr
-        uses: actions/github-script@v7
-        with:
-          script: |
-            const pr = await github.rest.pulls.get({
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              pull_number: context.issue.number
-            });
-            core.setOutput('head_ref', pr.data.head.ref);
-            core.setOutput('base_ref', pr.data.base.ref);
-            core.setOutput('head_sha', pr.data.head.sha);
-            core.setOutput('maintainer_can_modify', pr.data.maintainer_can_modify);
-            return pr.data;
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          # Get PR information
+          PR_DATA=$(gh pr view ${{ github.event.issue.number }} --json headRefName,baseRefName)
+          HEAD_REF=$(echo "$PR_DATA" | jq -r '.headRefName')
+          BASE_REF=$(echo "$PR_DATA" | jq -r '.baseRefName')
+
+          echo "head_ref=$HEAD_REF" >> $GITHUB_OUTPUT
+          echo "base_ref=$BASE_REF" >> $GITHUB_OUTPUT
 
       - name: Configure git
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
 
-      - name: Fetch and rebase
+      - name: Checkout PR and rebase
         id: rebase
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          # Fetch all branches
-          git fetch origin
-
-          # Checkout the PR branch
-          git checkout -B "${{ steps.pr.outputs.head_ref }}" "origin/${{ steps.pr.outputs.head_ref }}"
+          # Checkout PR branch (handles both fork and branch PRs)
+          gh pr checkout ${{ github.event.issue.number }}
 
           # Fetch base branch
           git fetch origin "${{ steps.pr.outputs.base_ref }}"
@@ -81,8 +75,10 @@ jobs:
 
       - name: Force push rebased branch
         if: steps.rebase.outputs.rebase_status == 'success'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          git push --force-with-lease origin "${{ steps.pr.outputs.head_ref }}"
+          git push --force-with-lease
 
       - name: React with success
         if: steps.rebase.outputs.rebase_status == 'success'
