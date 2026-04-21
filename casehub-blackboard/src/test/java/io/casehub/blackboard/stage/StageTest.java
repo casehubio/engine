@@ -216,4 +216,60 @@ class StageTest {
     assertThat(stage.getEntryCondition()).isNull();
     assertThat(stage.getStatus()).isEqualTo(StageStatus.PENDING);
   }
+
+  // ------------------------------------------------------------------ //
+  // Binding declarations (design-time, ADR-0002)                        //
+  // ------------------------------------------------------------------ //
+
+  @Test
+  void getContainedBindingNames_empty_by_default() {
+    assertThat(Stage.alwaysActivate("intake").getContainedBindingNames()).isEmpty();
+  }
+
+  @Test
+  void addBinding_stores_binding_name() {
+    Stage s = Stage.alwaysActivate("intake");
+    s.addBinding("trigger-on-docs");
+    assertThat(s.getContainedBindingNames()).containsExactly("trigger-on-docs");
+  }
+
+  @Test
+  void addBinding_null_throws() {
+    assertThatThrownBy(() -> Stage.alwaysActivate("intake").addBinding(null))
+        .isInstanceOf(NullPointerException.class);
+  }
+
+  @Test
+  void addBinding_same_name_twice_produces_no_duplicates() {
+    Stage s = Stage.alwaysActivate("intake");
+    s.addBinding("b1");
+    s.addBinding("b1");
+    assertThat(s.getContainedBindingNames()).containsExactly("b1");
+  }
+
+  @Test
+  void withBinding_returns_stage_for_chaining() {
+    Stage s = Stage.alwaysActivate("intake").withBinding("trigger-a").withBinding("trigger-b");
+    assertThat(s.getContainedBindingNames()).containsExactlyInAnyOrder("trigger-a", "trigger-b");
+  }
+
+  @Test
+  void builder_binding_method_declares_at_design_time() {
+    Stage s =
+        Stage.builder("intake")
+            .entryCondition(ctx -> true)
+            .binding("trigger-a")
+            .binding("trigger-b")
+            .build();
+    assertThat(s.getContainedBindingNames()).containsExactlyInAnyOrder("trigger-a", "trigger-b");
+  }
+
+  @Test
+  void getContainedBindingNames_returns_snapshot_not_live_set() {
+    Stage s = Stage.alwaysActivate("intake");
+    s.addBinding("b1");
+    java.util.Set<String> snapshot = s.getContainedBindingNames();
+    s.addBinding("b2");
+    assertThat(snapshot).containsExactly("b1"); // snapshot unaffected by later add
+  }
 }
