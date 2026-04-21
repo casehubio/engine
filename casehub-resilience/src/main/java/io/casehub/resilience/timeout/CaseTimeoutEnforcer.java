@@ -15,10 +15,15 @@
  */
 package io.casehub.resilience.timeout;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import io.casehub.api.model.CaseStatus;
 import io.casehub.engine.internal.engine.cache.CaseInstanceCache;
 import io.casehub.engine.internal.event.EventBusAddresses;
+import io.casehub.engine.internal.history.CaseHubEventType;
+import io.casehub.engine.internal.history.EventLog;
+import io.casehub.engine.internal.history.EventStreamType;
 import io.casehub.engine.internal.model.CaseInstance;
+import io.casehub.engine.spi.CaseInstanceRepository;
 import io.quarkus.scheduler.Scheduled;
 import io.vertx.mutiny.core.eventbus.EventBus;
 import jakarta.enterprise.context.ApplicationScoped;
@@ -27,8 +32,10 @@ import java.time.Clock;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.Optional;
+import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.stream.Collectors;
 import org.jboss.logging.Logger;
 
 /**
@@ -57,8 +64,11 @@ public class CaseTimeoutEnforcer {
   /** Default max run time — override with {@code casehub.resilience.timeout.max-duration}. */
   static final Duration DEFAULT_MAX_DURATION = Duration.ofMinutes(5);
 
+  private static final ObjectMapper OBJECT_MAPPER = new ObjectMapper();
+
   private final CaseInstanceCache cache;
   private final EventBus eventBus;
+  private final CaseInstanceRepository caseInstanceRepository;
   private final Duration maxDuration;
   private final Clock clock;
 
@@ -70,8 +80,9 @@ public class CaseTimeoutEnforcer {
 
   /** Production constructor — injected by CDI. */
   @Inject
-  public CaseTimeoutEnforcer(CaseInstanceCache cache, EventBus eventBus) {
-    this(cache, eventBus, DEFAULT_MAX_DURATION, Clock.systemUTC());
+  public CaseTimeoutEnforcer(
+      CaseInstanceCache cache, EventBus eventBus, CaseInstanceRepository caseInstanceRepository) {
+    this(cache, eventBus, caseInstanceRepository, DEFAULT_MAX_DURATION, Clock.systemUTC());
   }
 
   /**
@@ -79,9 +90,14 @@ public class CaseTimeoutEnforcer {
    * starting a Quarkus container.
    */
   CaseTimeoutEnforcer(
-      CaseInstanceCache cache, EventBus eventBus, Duration maxDuration, Clock clock) {
+      CaseInstanceCache cache,
+      EventBus eventBus,
+      CaseInstanceRepository caseInstanceRepository,
+      Duration maxDuration,
+      Clock clock) {
     this.cache = cache;
     this.eventBus = eventBus;
+    this.caseInstanceRepository = caseInstanceRepository;
     this.maxDuration = maxDuration;
     this.clock = clock;
   }
@@ -96,7 +112,9 @@ public class CaseTimeoutEnforcer {
   @Scheduled(every = "${casehub.resilience.timeout.check-interval:1s}")
   public void scanForTimeouts() {
     Instant now = Instant.now(clock);
-    for (CaseInstance instance : cache.getAll()) {
+    java.util.List<CaseInstance> snapshot = cache.getAll();
+
+    for (CaseInstance instance : snapshot) {
       if (instance.getState() != CaseStatus.RUNNING) {
         continue;
       }
@@ -110,11 +128,41 @@ public class CaseTimeoutEnforcer {
         LOG.warnf(
             "Case %s has been RUNNING for %s (limit: %s) — transitioning to FAULTED",
             caseId, elapsed, maxDuration);
+
         instance.setState(CaseStatus.FAULTED);
         runningStartTimes.remove(caseId);
-        eventBus.publish(EventBusAddresses.CASE_FAULTED, caseId.toString());
+
+        EventLog eventLog = new EventLog();
+        eventLog.setEventType(CaseHubEventType.CASE_FAULTED);
+        eventLog.setCaseId(caseId);
+        eventLog.setStreamType(EventStreamType.CASE);
+        eventLog.setTimestamp(now);
+        eventLog.setMetadata(
+            OBJECT_MAPPER
+                .createObjectNode()
+                .put("reason", "timeout")
+                .put("elapsed", elapsed.toString()));
+
+        caseInstanceRepository
+            .updateStateAndAppendEvent(instance, eventLog)
+            .subscribe()
+            .with(
+                ignored -> eventBus.publish(EventBusAddresses.CASE_FAULTED, caseId.toString()),
+                error ->
+                    LOG.errorf(
+                        error,
+                        "Failed to persist FAULTED state for case %s — state is already mutated in cache",
+                        caseId));
       }
     }
+
+    // Remove start-time entries for cases no longer tracked as RUNNING in the cache.
+    Set<UUID> activeIds =
+        snapshot.stream()
+            .filter(i -> i.getState() == CaseStatus.RUNNING)
+            .map(CaseInstance::getUuid)
+            .collect(Collectors.toSet());
+    runningStartTimes.keySet().retainAll(activeIds);
   }
 
   /**

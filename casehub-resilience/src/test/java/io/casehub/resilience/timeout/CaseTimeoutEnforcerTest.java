@@ -16,13 +16,17 @@
 package io.casehub.resilience.timeout;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
 
 import io.casehub.api.model.CaseStatus;
 import io.casehub.engine.internal.engine.cache.CaseInstanceCache;
 import io.casehub.engine.internal.event.EventBusAddresses;
 import io.casehub.engine.internal.model.CaseInstance;
+import io.casehub.engine.spi.CaseInstanceRepository;
+import io.smallrye.mutiny.Uni;
 import io.vertx.mutiny.core.eventbus.EventBus;
 import java.time.Clock;
 import java.time.Duration;
@@ -44,12 +48,16 @@ class CaseTimeoutEnforcerTest {
 
   private CaseInstanceCache cache;
   private EventBus eventBus;
+  private CaseInstanceRepository repository;
   private Clock fixedClock;
 
   @BeforeEach
   void setUp() {
     cache = new CaseInstanceCache();
     eventBus = mock(EventBus.class);
+    repository = mock(CaseInstanceRepository.class);
+    when(repository.updateStateAndAppendEvent(any(), any()))
+        .thenReturn(Uni.createFrom().voidItem());
     fixedClock = Clock.fixed(Instant.parse("2026-04-21T10:00:00Z"), ZoneOffset.UTC);
   }
 
@@ -63,7 +71,7 @@ class CaseTimeoutEnforcerTest {
   }
 
   private CaseTimeoutEnforcer enforcerWithMaxDuration(Duration maxDuration) {
-    return new CaseTimeoutEnforcer(cache, eventBus, maxDuration, fixedClock);
+    return new CaseTimeoutEnforcer(cache, eventBus, repository, maxDuration, fixedClock);
   }
 
   // ---- No-op cases ----------------------------------------------------------
@@ -136,6 +144,20 @@ class CaseTimeoutEnforcerTest {
   }
 
   @Test
+  void timedOutCase_persistenceIsInvoked() {
+    CaseInstance instance = runningInstance();
+    cache.put(instance);
+
+    Instant startedAt = Instant.parse("2026-04-21T09:50:00Z");
+    CaseTimeoutEnforcer enforcer = enforcerWithMaxDuration(Duration.ofMinutes(5));
+    enforcer.recordStartTime(instance.getUuid(), startedAt);
+
+    enforcer.scanForTimeouts();
+
+    verify(repository).updateStateAndAppendEvent(any(), any());
+  }
+
+  @Test
   void timedOutCase_startTimeIsRemovedAfterFault() {
     CaseInstance instance = runningInstance();
     UUID caseId = instance.getUuid();
@@ -180,6 +202,27 @@ class CaseTimeoutEnforcerTest {
     enforcer.scanForTimeouts();
 
     assertThat(instance.getState()).isEqualTo(CaseStatus.WAITING);
+  }
+
+  // ---- Memory-leak fix: stale runningStartTimes entries are pruned -----------
+
+  @Test
+  void completedCase_staleStartTimeIsRemovedOnNextScan() {
+    CaseInstance instance = runningInstance();
+    UUID caseId = instance.getUuid();
+    cache.put(instance);
+
+    CaseTimeoutEnforcer enforcer = enforcerWithMaxDuration(Duration.ofMinutes(5));
+    // Manually record a start time (simulating a previously RUNNING case).
+    enforcer.recordStartTime(caseId, Instant.parse("2026-04-21T09:59:00Z"));
+
+    // Case completes outside the enforcer (normal engine path).
+    instance.setState(CaseStatus.COMPLETED);
+
+    // Next scan: case is COMPLETED, not RUNNING — stale entry must be pruned.
+    enforcer.scanForTimeouts();
+
+    assertThat(enforcer.getStartTime(caseId)).isEmpty();
   }
 
   // ---- Multiple cases -------------------------------------------------------

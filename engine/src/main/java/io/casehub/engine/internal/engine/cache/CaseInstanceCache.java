@@ -39,7 +39,7 @@ public class CaseInstanceCache {
   }
 
   /** Returns a snapshot of all currently cached CaseInstances for timeout scanning. */
-  public java.util.Collection<CaseInstance> getAll() {
-    return java.util.Collections.unmodifiableCollection(cache.values());
+  public java.util.List<CaseInstance> getAll() {
+    return java.util.List.copyOf(cache.values());
   }
 }
