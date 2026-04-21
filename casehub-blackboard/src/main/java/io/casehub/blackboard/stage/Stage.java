@@ -69,8 +69,99 @@ public class Stage {
     this.createdAt = Instant.now();
   }
 
+  /**
+   * Creates a Stage with null entry condition (activates on every cycle).
+   *
+   * @deprecated Prefer {@link #alwaysActivate(String)} for explicit intent, or {@link
+   *     #builder(String)} when an entry condition is required.
+   */
+  @Deprecated(since = "1.0", forRemoval = false)
   public static Stage create(String name) {
     return new Stage(name);
+  }
+
+  /**
+   * Creates a Stage that activates on every evaluation cycle (null entry condition). Prefer this
+   * over {@link #create(String)} — the name makes the intent explicit.
+   */
+  public static Stage alwaysActivate(String name) {
+    return new Stage(name);
+  }
+
+  /**
+   * Returns a Builder requiring an explicit entry condition. Use {@link #alwaysActivate(String)}
+   * for always-on stages.
+   */
+  public static Builder builder(String name) {
+    return new Builder(name);
+  }
+
+  /** Builder requiring an explicit entry condition. */
+  public static final class Builder {
+    private final String name;
+    private ExpressionEvaluator entryCondition;
+    private ExpressionEvaluator exitCondition;
+    private boolean manualActivation = false;
+    private boolean autocomplete = true;
+    private String parentStageId;
+
+    private Builder(String name) {
+      this.name = java.util.Objects.requireNonNull(name, "name must not be null");
+    }
+
+    public Builder entryCondition(ExpressionEvaluator condition) {
+      this.entryCondition = condition;
+      return this;
+    }
+
+    public Builder entryCondition(Predicate<CaseContext> predicate) {
+      this.entryCondition = new LambdaExpressionEvaluator(predicate);
+      return this;
+    }
+
+    public Builder exitCondition(ExpressionEvaluator condition) {
+      this.exitCondition = condition;
+      return this;
+    }
+
+    public Builder exitCondition(Predicate<CaseContext> predicate) {
+      this.exitCondition = new LambdaExpressionEvaluator(predicate);
+      return this;
+    }
+
+    public Builder withManualActivation(boolean v) {
+      this.manualActivation = v;
+      return this;
+    }
+
+    public Builder withAutocomplete(boolean v) {
+      this.autocomplete = v;
+      return this;
+    }
+
+    public Builder withParentStage(String parentStageId) {
+      this.parentStageId = parentStageId;
+      return this;
+    }
+
+    public Stage build() {
+      if (entryCondition == null) {
+        throw new IllegalStateException(
+            "Stage.builder(\""
+                + name
+                + "\") requires entryCondition to be set. "
+                + "Use Stage.alwaysActivate(\""
+                + name
+                + "\") if the stage should activate on every cycle.");
+      }
+      Stage stage = new Stage(name);
+      stage.entryCondition = this.entryCondition;
+      stage.exitCondition = this.exitCondition;
+      stage.manualActivation = this.manualActivation;
+      stage.autocomplete = this.autocomplete;
+      if (this.parentStageId != null) stage.parentStageId = this.parentStageId;
+      return stage;
+    }
   }
 
   // Fluent builder-style configuration (called before adding to CasePlanModel)

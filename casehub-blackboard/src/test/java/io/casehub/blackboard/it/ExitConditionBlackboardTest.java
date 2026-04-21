@@ -62,8 +62,10 @@ class ExitConditionBlackboardTest {
 
     // Pre-activate the stage — StageLifecycleEvaluator only checks ACTIVE stages for exit
     Stage stage =
-        Stage.create("active-stage")
-            .withExitCondition(ctx -> "exited".equals(ctx.getPath("phase")));
+        Stage.builder("active-stage")
+            .entryCondition(ctx -> true)
+            .exitCondition(ctx -> "exited".equals(ctx.getPath("phase")))
+            .build();
     stage.activate();
     registry.get(caseId).get().addStage(stage);
 

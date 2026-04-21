@@ -164,7 +164,7 @@ class DefaultCasePlanModelTest {
 
   @Test
   void stage_management_add_and_retrieve() {
-    Stage stage = Stage.create("intake");
+    Stage stage = Stage.alwaysActivate("intake");
     plan.addStage(stage);
     assertThat(plan.getStage(stage.getStageId())).contains(stage);
     assertThat(plan.getAllStages()).containsExactly(stage);
@@ -172,8 +172,8 @@ class DefaultCasePlanModelTest {
 
   @Test
   void getPendingStages_and_getActiveStages_filter_by_status() {
-    Stage pending = Stage.create("pending-stage");
-    Stage active = Stage.create("active-stage");
+    Stage pending = Stage.alwaysActivate("pending-stage");
+    Stage active = Stage.alwaysActivate("active-stage");
     active.activate();
     plan.addStage(pending);
     plan.addStage(active);

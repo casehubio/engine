@@ -63,9 +63,13 @@ class SequentialStagesBlackboardTest {
     // stage-one: entry condition satisfied when phase=start (written by signal below)
     // stage-two: entry condition satisfied when phase=two (written by worker)
     Stage stage1 =
-        Stage.create("stage-one").withEntryCondition(ctx -> "start".equals(ctx.getPath("phase")));
+        Stage.builder("stage-one")
+            .entryCondition(ctx -> "start".equals(ctx.getPath("phase")))
+            .build();
     Stage stage2 =
-        Stage.create("stage-two").withEntryCondition(ctx -> "two".equals(ctx.getPath("phase")));
+        Stage.builder("stage-two")
+            .entryCondition(ctx -> "two".equals(ctx.getPath("phase")))
+            .build();
 
     registry.get(caseId).get().addStage(stage1);
     registry.get(caseId).get().addStage(stage2);

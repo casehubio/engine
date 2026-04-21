@@ -75,7 +75,7 @@ class StageBlackboardTest {
         .atMost(10, TimeUnit.SECONDS)
         .untilAsserted(() -> assertThat(registry.get(caseId)).isPresent());
 
-    Stage stage = Stage.create("unconditional-stage");
+    Stage stage = Stage.alwaysActivate("unconditional-stage");
     registry.get(caseId).get().addStage(stage);
 
     // Signal a probe value — triggers another CONTEXT_CHANGED → select() → stage evaluation
@@ -102,7 +102,7 @@ class StageBlackboardTest {
         .atMost(10, TimeUnit.SECONDS)
         .untilAsserted(() -> assertThat(registry.get(caseId)).isPresent());
 
-    Stage stage = Stage.create("conditional-stage").withEntryCondition(ctx -> true);
+    Stage stage = Stage.builder("conditional-stage").entryCondition(ctx -> true).build();
     registry.get(caseId).get().addStage(stage);
 
     signalCase.signal(caseId, "probe", "tick");
@@ -128,7 +128,7 @@ class StageBlackboardTest {
         .atMost(10, TimeUnit.SECONDS)
         .untilAsserted(() -> assertThat(registry.get(caseId)).isPresent());
 
-    Stage stage = Stage.create("blocked-stage").withEntryCondition(ctx -> false);
+    Stage stage = Stage.builder("blocked-stage").entryCondition(ctx -> false).build();
     registry.get(caseId).get().addStage(stage);
 
     signalCase.signal(caseId, "probe", "tick");
@@ -161,7 +161,8 @@ class StageBlackboardTest {
         .atMost(10, TimeUnit.SECONDS)
         .untilAsserted(() -> assertThat(registry.get(caseId)).isPresent());
 
-    Stage stage = Stage.create("exit-stage").withExitCondition(ctx -> true);
+    Stage stage =
+        Stage.builder("exit-stage").entryCondition(ctx -> true).exitCondition(ctx -> true).build();
     stage.activate(); // pre-activate — evaluator checks ACTIVE stages for exit condition
     registry.get(caseId).get().addStage(stage);
 
@@ -208,7 +209,7 @@ class StageBlackboardTest {
     CasePlanModel plan = registry.get(caseId).get();
 
     // Create an autocomplete stage — we'll link it to the real PlanItem after the worker is indexed
-    Stage stage = Stage.create("autocomplete-stage");
+    Stage stage = Stage.alwaysActivate("autocomplete-stage");
     stage.activate(); // must be ACTIVE for autocomplete to evaluate
     plan.addStage(stage);
 
@@ -272,7 +273,7 @@ class StageBlackboardTest {
     PlanItem syntheticItem = PlanItem.create("synthetic-binding", "synthetic-worker", 0);
     plan.addPlanItem(syntheticItem);
 
-    Stage stage = Stage.create("no-autocomplete-stage").withAutocomplete(false);
+    Stage stage = Stage.alwaysActivate("no-autocomplete-stage").withAutocomplete(false);
     stage.addPlanItem(syntheticItem.getPlanItemId());
     stage.addRequiredItem(syntheticItem.getPlanItemId());
     stage.activate();
@@ -312,8 +313,9 @@ class StageBlackboardTest {
         .atMost(10, TimeUnit.SECONDS)
         .untilAsserted(() -> assertThat(registry.get(caseId)).isPresent());
 
-    Stage parent = Stage.create("parent-stage"); // no entry condition — activates immediately
-    Stage child = Stage.create("child-stage").withParentStage(parent.getStageId());
+    Stage parent =
+        Stage.alwaysActivate("parent-stage"); // no entry condition — activates immediately
+    Stage child = Stage.alwaysActivate("child-stage").withParentStage(parent.getStageId());
 
     registry.get(caseId).get().addStage(parent);
     registry.get(caseId).get().addStage(child);
