@@ -1,0 +1,157 @@
+name: Automatic Rebase
+
+on:
+  issue_comment:
+    types: [created]
+
+permissions:
+  contents: write
+  pull-requests: write
+
+jobs:
+  rebase:
+    name: Rebase PR
+    # Only run on PR comments containing /rebase
+    if: |
+      github.event.issue.pull_request &&
+      contains(github.event.comment.body, '/rebase')
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: React to comment with eyes
+        uses: actions/github-script@v7
+        with:
+          script: |
+            await github.rest.reactions.createForIssueComment({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              comment_id: context.payload.comment.id,
+              content: 'eyes'
+            });
+
+      - name: Checkout PR
+        uses: actions/checkout@v6
+        with:
+          # Fetch all history to enable rebase
+          fetch-depth: 0
+          # Use token with write permissions
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Get PR details
+        id: pr
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const pr = await github.rest.pulls.get({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              pull_number: context.issue.number
+            });
+            core.setOutput('head_ref', pr.data.head.ref);
+            core.setOutput('base_ref', pr.data.base.ref);
+            core.setOutput('head_sha', pr.data.head.sha);
+            core.setOutput('maintainer_can_modify', pr.data.maintainer_can_modify);
+            return pr.data;
+
+      - name: Configure git
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+
+      - name: Fetch and rebase
+        id: rebase
+        run: |
+          # Fetch all branches
+          git fetch origin
+
+          # Checkout the PR branch
+          git checkout -B "${{ steps.pr.outputs.head_ref }}" "origin/${{ steps.pr.outputs.head_ref }}"
+
+          # Fetch base branch
+          git fetch origin "${{ steps.pr.outputs.base_ref }}"
+
+          # Perform rebase
+          if git rebase "origin/${{ steps.pr.outputs.base_ref }}"; then
+            echo "rebase_status=success" >> $GITHUB_OUTPUT
+          else
+            echo "rebase_status=conflict" >> $GITHUB_OUTPUT
+            git rebase --abort
+            exit 1
+          fi
+
+      - name: Force push rebased branch
+        if: steps.rebase.outputs.rebase_status == 'success'
+        run: |
+          git push --force-with-lease origin "${{ steps.pr.outputs.head_ref }}"
+
+      - name: React with success
+        if: steps.rebase.outputs.rebase_status == 'success'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            // Remove eyes reaction
+            await github.rest.reactions.deleteForIssueComment({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              comment_id: context.payload.comment.id,
+              reaction_id: (await github.rest.reactions.listForIssueComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                comment_id: context.payload.comment.id
+              })).data.find(r => r.content === 'eyes' && r.user.login === 'github-actions[bot]')?.id
+            });
+
+            // Add success reaction
+            await github.rest.reactions.createForIssueComment({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              comment_id: context.payload.comment.id,
+              content: 'rocket'
+            });
+
+            // Post success comment
+            await github.rest.issues.createComment({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: context.issue.number,
+              body: '✅ Successfully rebased onto `${{ steps.pr.outputs.base_ref }}`'
+            });
+
+      - name: React with failure
+        if: failure() && steps.rebase.outputs.rebase_status == 'conflict'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            // Remove eyes reaction
+            const reactions = await github.rest.reactions.listForIssueComment({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              comment_id: context.payload.comment.id
+            });
+            const eyesReaction = reactions.data.find(r =>
+              r.content === 'eyes' && r.user.login === 'github-actions[bot]'
+            );
+            if (eyesReaction) {
+              await github.rest.reactions.deleteForIssueComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                comment_id: context.payload.comment.id,
+                reaction_id: eyesReaction.id
+              });
+            }
+
+            // Add failure reaction
+            await github.rest.reactions.createForIssueComment({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              comment_id: context.payload.comment.id,
+              content: 'confused'
+            });
+
+            // Post failure comment
+            await github.rest.issues.createComment({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: context.issue.number,
+              body: '❌ Rebase failed due to merge conflicts. Please rebase manually:\n\n```bash\ngit fetch origin\ngit rebase origin/${{ steps.pr.outputs.base_ref }}\n# Resolve conflicts\ngit rebase --continue\ngit push --force-with-lease\n```'
+            });
