@@ -13,18 +13,17 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.casehub.blackboard.strategy;
+package io.casehub.blackboard.event;
 
-import io.casehub.api.context.CaseContext;
-import io.casehub.blackboard.plan.PlanItem;
-import java.util.List;
+import io.casehub.blackboard.stage.Stage;
+import java.util.UUID;
 
 /**
- * SPI for selecting which eligible {@link PlanItem}s to activate.
+ * Published when a Stage transitions PENDING → ACTIVE. See casehubio/engine#76.
  *
- * <p>{@code eligible} contains PlanItem&lt;Worker&gt; and PlanItem&lt;SubCase&gt; whose containing
- * Stage is ACTIVE and whose Binding trigger conditions have been evaluated as true by the engine.
+ * <p><strong>Note:</strong> {@code stage} is passed by reference via {@link
+ * io.casehub.blackboard.event.BlackboardEventCodecRegistrar.LocalOnlyCodec}. Consumers must not
+ * retain this reference — the Stage object is mutable and its state will reflect subsequent
+ * lifecycle transitions.
  */
-public interface PlanningStrategy {
-  List<PlanItem<?>> select(CaseContext context, List<PlanItem<?>> eligible);
-}
+public record StageActivatedEvent(UUID caseId, Stage stage) {}

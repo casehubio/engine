@@ -13,17 +13,14 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.casehub.blackboard.strategy;
+package io.casehub.blackboard.stage;
 
-import io.casehub.api.context.CaseContext;
-import io.casehub.api.model.CaseStatus;
-import io.casehub.blackboard.plan.PlanItemStatus;
-
-/**
- * Maps a completed sub-case's {@link CaseStatus} to a {@link PlanItemStatus} for the parent {@link
- * io.casehub.blackboard.plan.PlanItem}.
- */
-@FunctionalInterface
-public interface SubCaseCompletionStrategy {
-  PlanItemStatus resolve(CaseStatus subCaseStatus, CaseContext subCaseContext);
+/** Lifecycle states for a {@link Stage}. See casehubio/engine#76. */
+public enum StageStatus {
+  PENDING,
+  ACTIVE,
+  SUSPENDED,
+  COMPLETED,
+  TERMINATED,
+  FAULTED
 }
