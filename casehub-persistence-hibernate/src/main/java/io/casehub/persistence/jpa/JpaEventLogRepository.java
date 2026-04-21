@@ -26,81 +26,99 @@ import java.util.List;
 import java.util.UUID;
 
 @ApplicationScoped
-public class JpaEventLogRepository implements EventLogRepository {
+public class JpaEventLogRepository extends AbstractJpaRepository implements EventLogRepository {
 
   @Override
   public Uni<Void> append(EventLog eventLog) {
     EventLogEntity entity = toEntity(eventLog);
-    return Panache.withTransaction(() -> entity.persistAndFlush())
-        .invoke(
-            () -> {
-              eventLog.id = entity.id;
-              eventLog.setSeq(entity.seq);
-            })
-        .replaceWithVoid();
+    return withSafeContext(
+        () ->
+            Panache.withTransaction(() -> entity.persistAndFlush())
+                .invoke(
+                    () -> {
+                      eventLog.id = entity.id;
+                      eventLog.setSeq(entity.seq);
+                    })
+                .replaceWithVoid());
   }
 
   @Override
   public Uni<Long> appendAndReturnId(EventLog eventLog) {
     EventLogEntity entity = toEntity(eventLog);
-    return Panache.withTransaction(() -> entity.persistAndFlush())
-        .map(
-            v -> {
-              eventLog.id = entity.id;
-              eventLog.setSeq(entity.seq);
-              return entity.id;
-            });
+    return withSafeContext(
+        () ->
+            Panache.withTransaction(() -> entity.persistAndFlush())
+                .map(
+                    v -> {
+                      eventLog.id = entity.id;
+                      eventLog.setSeq(entity.seq);
+                      return entity.id;
+                    }));
   }
 
   @Override
   public Uni<EventLog> findById(Long id) {
-    return Panache.withSession(() -> EventLogEntity.<EventLogEntity>findById(id))
-        .map(entity -> entity == null ? null : fromEntity(entity));
+    return withSafeContext(
+        () ->
+            Panache.withSession(() -> EventLogEntity.<EventLogEntity>findById(id))
+                .map(entity -> entity == null ? null : fromEntity(entity)));
   }
 
   @Override
   public Uni<List<EventLog>> findSchedulingEvents(UUID caseId, String workerId) {
-    return Panache.withSession(
-            () ->
-                EventLogEntity.<EventLogEntity>find(
-                        "caseId = ?1 and workerId = ?2 and eventType in (?3, ?4, ?5)",
-                        caseId,
-                        workerId,
-                        CaseHubEventType.WORKER_SCHEDULED,
-                        CaseHubEventType.WORKER_EXECUTION_STARTED,
-                        CaseHubEventType.WORKER_EXECUTION_COMPLETED)
-                    .list())
-        .map(list -> list.stream().map(this::fromEntity).toList());
+    return withSafeContext(
+        () ->
+            Panache.withSession(
+                    () ->
+                        EventLogEntity.<EventLogEntity>find(
+                                "caseId = ?1 and workerId = ?2 and eventType in (?3, ?4, ?5)",
+                                caseId,
+                                workerId,
+                                CaseHubEventType.WORKER_SCHEDULED,
+                                CaseHubEventType.WORKER_EXECUTION_STARTED,
+                                CaseHubEventType.WORKER_EXECUTION_COMPLETED)
+                            .list())
+                .map(list -> list.stream().map(this::fromEntity).toList()));
   }
 
   @Override
   public Uni<List<EventLog>> findByTypes(Collection<CaseHubEventType> types) {
-    return Panache.withSession(
-            () ->
-                EventLogEntity.<EventLogEntity>find("eventType in ?1 order by seq asc", types)
-                    .list())
-        .map(list -> list.stream().map(this::fromEntity).toList());
+    return withSafeContext(
+        () ->
+            Panache.withSession(
+                    () ->
+                        EventLogEntity.<EventLogEntity>find(
+                                "eventType in ?1 order by seq asc", types)
+                            .list())
+                .map(list -> list.stream().map(this::fromEntity).toList()));
   }
 
   @Override
   public Uni<List<EventLog>> findByCaseAndTypes(UUID caseId, Collection<CaseHubEventType> types) {
-    return Panache.withSession(
-            () ->
-                EventLogEntity.<EventLogEntity>find(
-                        "caseId = ?1 and eventType in ?2 order by seq asc", caseId, types)
-                    .list())
-        .map(list -> list.stream().map(this::fromEntity).toList());
+    return withSafeContext(
+        () ->
+            Panache.withSession(
+                    () ->
+                        EventLogEntity.<EventLogEntity>find(
+                                "caseId = ?1 and eventType in ?2 order by seq asc", caseId, types)
+                            .list())
+                .map(list -> list.stream().map(this::fromEntity).toList()));
   }
 
   @Override
   public Uni<List<EventLog>> findByCaseAndWorkerAndType(
       UUID caseId, String workerId, CaseHubEventType type) {
-    return Panache.withSession(
-            () ->
-                EventLogEntity.<EventLogEntity>find(
-                        "caseId = ?1 and workerId = ?2 and eventType = ?3", caseId, workerId, type)
-                    .list())
-        .map(list -> list.stream().map(this::fromEntity).toList());
+    return withSafeContext(
+        () ->
+            Panache.withSession(
+                    () ->
+                        EventLogEntity.<EventLogEntity>find(
+                                "caseId = ?1 and workerId = ?2 and eventType = ?3",
+                                caseId,
+                                workerId,
+                                type)
+                            .list())
+                .map(list -> list.stream().map(this::fromEntity).toList()));
   }
 
   private EventLog fromEntity(EventLogEntity entity) {

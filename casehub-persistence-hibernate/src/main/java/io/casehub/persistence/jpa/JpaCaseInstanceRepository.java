@@ -25,56 +25,64 @@ import jakarta.enterprise.context.ApplicationScoped;
 import java.util.UUID;
 
 @ApplicationScoped
-public class JpaCaseInstanceRepository implements CaseInstanceRepository {
+public class JpaCaseInstanceRepository extends AbstractJpaRepository
+    implements CaseInstanceRepository {
 
   @Override
   public Uni<CaseInstance> save(CaseInstance instance) {
-    return Panache.withTransaction(
+    return withSafeContext(
         () ->
-            Panache.getSession()
-                .chain(
-                    session -> {
-                      CaseInstanceEntity entity = new CaseInstanceEntity();
-                      entity.uuid = instance.getUuid();
-                      entity.state = instance.getState();
-                      entity.parentPlanItemId = instance.getParentPlanItemId();
-                      if (instance.getCaseMetaModel() != null) {
-                        entity.caseMetaModel =
-                            session.getReference(
-                                CaseMetaModelEntity.class, instance.getCaseMetaModel().getId());
-                      }
-                      return entity
-                          .persist()
-                          .map(
-                              v -> {
-                                instance.id = entity.id;
-                                return instance;
-                              });
-                    }));
+            Panache.withTransaction(
+                () ->
+                    Panache.getSession()
+                        .chain(
+                            session -> {
+                              CaseInstanceEntity entity = new CaseInstanceEntity();
+                              entity.uuid = instance.getUuid();
+                              entity.state = instance.getState();
+                              entity.parentPlanItemId = instance.getParentPlanItemId();
+                              if (instance.getCaseMetaModel() != null) {
+                                entity.caseMetaModel =
+                                    session.getReference(
+                                        CaseMetaModelEntity.class,
+                                        instance.getCaseMetaModel().getId());
+                              }
+                              return entity
+                                  .persist()
+                                  .map(
+                                      v -> {
+                                        instance.id = entity.id;
+                                        return instance;
+                                      });
+                            })));
   }
 
   @Override
   public Uni<CaseInstance> update(CaseInstance instance) {
-    return Panache.withTransaction(
+    return withSafeContext(
         () ->
-            CaseInstanceEntity.<CaseInstanceEntity>findById(instance.id)
-                .invoke(
-                    entity -> {
-                      entity.state = instance.getState();
-                      entity.parentPlanItemId = instance.getParentPlanItemId();
-                    })
-                .replaceWith(instance));
+            Panache.withTransaction(
+                () ->
+                    CaseInstanceEntity.<CaseInstanceEntity>findById(instance.id)
+                        .invoke(
+                            entity -> {
+                              entity.state = instance.getState();
+                              entity.parentPlanItemId = instance.getParentPlanItemId();
+                            })
+                        .replaceWith(instance)));
   }
 
   @Override
   public Uni<CaseInstance> findByUuid(UUID uuid) {
-    return Panache.withSession(
-            () ->
-                CaseInstanceEntity.<CaseInstanceEntity>find(
-                        "from CaseInstanceEntity ci join fetch ci.caseMetaModel where ci.uuid = ?1",
-                        uuid)
-                    .firstResult())
-        .map(entity -> entity == null ? null : fromEntity(entity));
+    return withSafeContext(
+        () ->
+            Panache.withSession(
+                    () ->
+                        CaseInstanceEntity.<CaseInstanceEntity>find(
+                                "from CaseInstanceEntity ci join fetch ci.caseMetaModel where ci.uuid = ?1",
+                                uuid)
+                            .firstResult())
+                .map(entity -> entity == null ? null : fromEntity(entity)));
   }
 
   @Override
@@ -88,22 +96,24 @@ public class JpaCaseInstanceRepository implements CaseInstanceRepository {
     logEntity.payload = eventLog.getPayload();
     logEntity.metadata = eventLog.getMetadata();
 
-    return Panache.withTransaction(
-            () ->
-                CaseInstanceEntity.<CaseInstanceEntity>findById(instance.id)
-                    .chain(
-                        entity -> {
-                          entity.state = instance.getState();
-                          entity.parentPlanItemId = instance.getParentPlanItemId();
-                          return Panache.getSession().chain(s -> s.merge(entity));
-                        })
-                    .chain(merged -> logEntity.persistAndFlush()))
-        .invoke(
-            () -> {
-              eventLog.id = logEntity.id;
-              eventLog.setSeq(logEntity.seq);
-            })
-        .replaceWithVoid();
+    return withSafeContext(
+        () ->
+            Panache.withTransaction(
+                    () ->
+                        CaseInstanceEntity.<CaseInstanceEntity>findById(instance.id)
+                            .chain(
+                                entity -> {
+                                  entity.state = instance.getState();
+                                  entity.parentPlanItemId = instance.getParentPlanItemId();
+                                  return Panache.getSession().chain(s -> s.merge(entity));
+                                })
+                            .chain(merged -> logEntity.persistAndFlush()))
+                .invoke(
+                    () -> {
+                      eventLog.id = logEntity.id;
+                      eventLog.setSeq(logEntity.seq);
+                    })
+                .replaceWithVoid());
   }
 
   private CaseInstance fromEntity(CaseInstanceEntity entity) {

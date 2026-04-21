@@ -73,6 +73,7 @@ public class WorkerRetryExtendedTest {
     SignalTriggerRetryBean.failUntil.clear();
     TwoWorkerRetryBean.alphaAttempts.set(0);
     TwoWorkerRetryBean.betaAttempts.set(0);
+    TwoWorkerRetryBean.betaFailUntil.set(0);
   }
 
   // ------------------------------------------------------------------ //
