@@ -35,6 +35,20 @@ in `engine/src/test/resources/application.properties` — no Docker required.
 Domain objects (`CaseMetaModel`, `CaseInstance`, `EventLog`) are plain POJOs. The `id` field
 is public (`public Long id`) and set by the repository after save.
 
+## Engine Testing Without Docker
+
+PR #86 added a `persistence-memory` Maven profile for running engine integration tests without Docker:
+
+```bash
+TESTCONTAINERS_RYUK_DISABLED=true mvn test -pl engine \
+  -Ppersistence-memory \
+  -Dexcludes="**/SignalTest.java"
+```
+
+Without `-Ppersistence-memory`, `SignalDedupExtendedTest` and `WorkerScheduleDedupTest` fail at JUnit class discovery (not at test execution) with a `ClassSelector resolution failed` error — there is no clear indication that Docker is the root cause.
+
+**Note on interface changes in `api/`:** After any rebase that modifies a public interface, run `mvn compile -q` across the full reactor before pushing. Tests scoped with `-pl api,engine` will not catch compilation failures in downstream modules such as `casehub-blackboard`.
+
 ## Quartz
 
 Use RAM store — no JDBC store, no Quartz tables:
