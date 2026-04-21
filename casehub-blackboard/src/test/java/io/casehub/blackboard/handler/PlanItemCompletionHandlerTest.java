@@ -123,6 +123,38 @@ class PlanItemCompletionHandlerTest {
   }
 
   @Test
+  void completed_plan_item_is_removed_from_active_tracking() {
+    PlanItem item = PlanItem.create("binding-a", "worker-a", 0);
+    plan.addPlanItem(item);
+    registry.indexWorkerForCompletion(caseId, "worker-a", item.getPlanItemId());
+
+    handler.onWorkerFinished(eventFor("worker-a")).await().indefinitely();
+
+    assertThat(plan.hasActivePlanItem("binding-a"))
+        .as("completed PlanItem must be removed from active tracking")
+        .isFalse();
+  }
+
+  @Test
+  void autocomplete_with_unregistered_required_item_does_not_complete_stage() {
+    PlanItem item = PlanItem.create("binding-a", "worker-a", 0);
+    plan.addPlanItem(item);
+    registry.indexWorkerForCompletion(caseId, "worker-a", item.getPlanItemId());
+
+    Stage stage = Stage.create("intake");
+    stage.addRequiredItem("non-existent-id"); // not in plan
+    stage.activate();
+    plan.addStage(stage);
+
+    handler.onWorkerFinished(eventFor("worker-a")).await().indefinitely();
+
+    assertThat(stage.isTerminal())
+        .as("stage must not autocomplete when required item is not registered")
+        .isFalse();
+    verifyNoInteractions(mockBus);
+  }
+
+  @Test
   void autocomplete_false_stage_does_not_complete_even_when_all_done() {
     PlanItem item = PlanItem.create("binding-a", "worker-a", 0);
     plan.addPlanItem(item);
