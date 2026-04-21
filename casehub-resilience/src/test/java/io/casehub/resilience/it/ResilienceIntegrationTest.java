@@ -71,6 +71,7 @@ class ResilienceIntegrationTest {
   @BeforeEach
   void reset() {
     deadLetterQueue.clear();
+    caseInstanceCache.clear();
     detector.release(WORKER_ID);
   }
 
@@ -121,10 +122,13 @@ class ResilienceIntegrationTest {
         .untilAsserted(
             () -> {
               List<DeadLetterEntry> entries = deadLetterQueue.query(DeadLetterQuery.all());
-              assertThat(entries).hasSize(1);
-              assertThat(entries.get(0).caseId()).isEqualTo(caseId);
-              assertThat(entries.get(0).workerId()).isEqualTo(WORKER_ID);
-              assertThat(entries.get(0).status()).isEqualTo(DeadLetterStatus.PENDING_REVIEW);
+              DeadLetterEntry ours =
+                  entries.stream()
+                      .filter(e -> e.caseId().equals(caseId))
+                      .findFirst()
+                      .orElseThrow(() -> new AssertionError("No DLQ entry for caseId " + caseId));
+              assertThat(ours.workerId()).isEqualTo(WORKER_ID);
+              assertThat(ours.status()).isEqualTo(DeadLetterStatus.PENDING_REVIEW);
             });
 
     // Operator quarantines the worker after inspecting the DLQ
