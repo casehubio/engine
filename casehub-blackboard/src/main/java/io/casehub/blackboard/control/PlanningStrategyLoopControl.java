@@ -65,13 +65,12 @@ public class PlanningStrategyLoopControl implements LoopControl {
     UUID caseId = ctx.caseId();
     CasePlanModel plan = registry.getOrCreate(caseId);
 
-    // Create a PlanItem for each eligible Binding and add to agenda, skipping duplicates
+    // Create a PlanItem for each eligible Binding and add to agenda, skipping duplicates.
+    // addPlanItemIfAbsent performs the check-and-insert atomically — no TOCTOU window.
     eligible.forEach(
         binding -> {
-          if (!plan.hasActivePlanItem(binding.getName())) {
-            String workerName = resolveWorkerName(binding, ctx);
-            plan.addPlanItem(PlanItem.create(binding.getName(), workerName, 0));
-          }
+          String workerName = resolveWorkerName(binding, ctx);
+          plan.addPlanItemIfAbsent(PlanItem.create(binding.getName(), workerName, 0));
         });
 
     return stageLifecycleEvaluator

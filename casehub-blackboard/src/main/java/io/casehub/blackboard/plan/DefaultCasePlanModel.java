@@ -62,6 +62,26 @@ public class DefaultCasePlanModel implements CasePlanModel {
   }
 
   @Override
+  public boolean addPlanItemIfAbsent(PlanItem item) {
+    boolean[] added = {false};
+    activeByBinding.compute(
+        item.getBindingName(),
+        (k, existing) -> {
+          if (existing != null) {
+            PlanItem.PlanItemStatus s = existing.getStatus();
+            if (s == PlanItem.PlanItemStatus.PENDING || s == PlanItem.PlanItemStatus.RUNNING) {
+              return existing; // active item present — reject
+            }
+          }
+          agenda.add(item);
+          itemsById.put(item.getPlanItemId(), item);
+          added[0] = true;
+          return item;
+        });
+    return added[0];
+  }
+
+  @Override
   public void removePlanItem(String planItemId) {
     PlanItem item = itemsById.remove(planItemId);
     if (item != null) {

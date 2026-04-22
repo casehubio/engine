@@ -139,4 +139,13 @@ class StageTest {
     s.fault();
     assertThat(s.isTerminal()).isTrue();
   }
+
+  @Test
+  void status_field_is_atomic_reference() throws NoSuchFieldException {
+    java.lang.reflect.Field field = Stage.class.getDeclaredField("status");
+    field.setAccessible(true);
+    assertThat(field.getType())
+        .as("Stage.status must be AtomicReference to prevent concurrent transition races")
+        .isEqualTo(java.util.concurrent.atomic.AtomicReference.class);
+  }
 }
