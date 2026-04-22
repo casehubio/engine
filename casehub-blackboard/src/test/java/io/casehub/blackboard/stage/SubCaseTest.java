@@ -1,0 +1,88 @@
+/*
+ * Copyright 2026-Present The Case Hub Authors
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ * http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+package io.casehub.blackboard.stage;
+
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
+
+import io.casehub.api.model.CaseStatus;
+import io.casehub.blackboard.plan.DefaultCasePlanModel;
+import java.util.UUID;
+import org.junit.jupiter.api.Test;
+
+class SubCaseTest {
+
+  @Test
+  void namespace_name_version_required() {
+    assertThatThrownBy(() -> SubCase.builder().name("n").version("v").build())
+        .isInstanceOf(NullPointerException.class);
+    assertThatThrownBy(() -> SubCase.builder().namespace("ns").version("v").build())
+        .isInstanceOf(NullPointerException.class);
+    assertThatThrownBy(() -> SubCase.builder().namespace("ns").name("n").build())
+        .isInstanceOf(NullPointerException.class);
+  }
+
+  @Test
+  void fields_retained() {
+    SubCase sc = SubCase.builder().namespace("io.casehub").name("loan").version("1.0.0").build();
+    assertThat(sc.namespace()).isEqualTo("io.casehub");
+    assertThat(sc.name()).isEqualTo("loan");
+    assertThat(sc.version()).isEqualTo("1.0.0");
+  }
+
+  @Test
+  void default_strategy_used_when_not_specified() {
+    SubCase sc = SubCase.builder().namespace("ns").name("n").version("v").build();
+    assertThat(sc.completionStrategy()).isInstanceOf(DefaultSubCaseCompletionStrategy.class);
+  }
+
+  @Test
+  void custom_strategy_retained() {
+    SubCaseCompletionStrategy custom = s -> SubCaseCompletionStrategy.ItemStatus.COMPLETED;
+    SubCase sc =
+        SubCase.builder().namespace("ns").name("n").version("v").completionStrategy(custom).build();
+    assertThat(sc.completionStrategy()).isSameAs(custom);
+  }
+
+  @Test
+  void default_strategy_maps_completed_to_completed() {
+    DefaultSubCaseCompletionStrategy s = new DefaultSubCaseCompletionStrategy();
+    assertThat(s.mapToStageItemStatus(CaseStatus.COMPLETED))
+        .isEqualTo(SubCaseCompletionStrategy.ItemStatus.COMPLETED);
+  }
+
+  @Test
+  void default_strategy_maps_faulted_to_faulted() {
+    DefaultSubCaseCompletionStrategy s = new DefaultSubCaseCompletionStrategy();
+    assertThat(s.mapToStageItemStatus(CaseStatus.FAULTED))
+        .isEqualTo(SubCaseCompletionStrategy.ItemStatus.FAULTED);
+  }
+
+  @Test
+  void default_strategy_maps_running_to_terminated() {
+    DefaultSubCaseCompletionStrategy s = new DefaultSubCaseCompletionStrategy();
+    assertThat(s.mapToStageItemStatus(CaseStatus.RUNNING))
+        .isEqualTo(SubCaseCompletionStrategy.ItemStatus.TERMINATED);
+  }
+
+  @Test
+  void subcase_added_to_plan_model() {
+    DefaultCasePlanModel plan = new DefaultCasePlanModel(UUID.randomUUID());
+    SubCase sc = SubCase.builder().namespace("ns").name("n").version("v").build();
+    plan.addSubCase(sc);
+    assertThat(plan.getSubCases()).containsExactly(sc);
+  }
+}
