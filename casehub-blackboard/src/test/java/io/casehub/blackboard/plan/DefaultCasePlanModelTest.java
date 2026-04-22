@@ -92,8 +92,23 @@ class DefaultCasePlanModelTest {
 
   @Test
   void achieve_untracked_milestone_does_not_throw() {
+    // achieveMilestone records regardless of prior trackMilestone — no exception expected
     plan.achieveMilestone("unknown");
-    assertThat(plan.isMilestoneAchieved("unknown")).isFalse();
+  }
+
+  @Test
+  void achieveMilestone_before_trackMilestone_still_records_achievement() {
+    plan.achieveMilestone("docs-received");
+    assertThat(plan.isMilestoneAchieved("docs-received"))
+        .as("achieveMilestone must record regardless of trackMilestone call order")
+        .isTrue();
+  }
+
+  @Test
+  void trackMilestone_after_achieve_sees_already_achieved() {
+    plan.achieveMilestone("docs-received");
+    plan.trackMilestone("docs-received");
+    assertThat(plan.isMilestoneAchieved("docs-received")).isTrue();
   }
 
   @Test
