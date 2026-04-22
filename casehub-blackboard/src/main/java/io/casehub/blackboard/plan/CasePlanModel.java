@@ -49,6 +49,15 @@ public interface CasePlanModel {
    */
   boolean hasActivePlanItem(String bindingName);
 
+  /**
+   * Atomically adds the given PlanItem only if no PENDING or RUNNING item exists for the same
+   * binding name. The check and insert are a single atomic operation via {@code
+   * ConcurrentHashMap.compute()} — no TOCTOU window.
+   *
+   * @return true if the item was added; false if a duplicate was detected
+   */
+  boolean addPlanItemIfAbsent(PlanItem planItem);
+
   /** Returns only PENDING items, sorted highest-priority first. */
   List<PlanItem> getAgenda();
 
