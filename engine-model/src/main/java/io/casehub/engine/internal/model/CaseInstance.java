@@ -16,6 +16,7 @@
 package io.casehub.engine.internal.model;
 
 import io.casehub.api.context.CaseContext;
+import io.casehub.api.context.PropagationContext;
 import io.casehub.api.model.CaseStatus;
 import java.util.UUID;
 
@@ -29,6 +30,7 @@ public class CaseInstance {
   private UUID uuid;
   private long version = 0L;
   private CaseContext caseContext;
+  private PropagationContext propagationContext;
   private UUID parentPlanItemId;
   private CaseStatus state;
 
@@ -62,6 +64,14 @@ public class CaseInstance {
 
   public void setCaseContext(CaseContext caseContext) {
     this.caseContext = caseContext;
+  }
+
+  public PropagationContext getPropagationContext() {
+    return propagationContext;
+  }
+
+  public void setPropagationContext(PropagationContext propagationContext) {
+    this.propagationContext = propagationContext;
   }
 
   public UUID getParentPlanItemId() {
