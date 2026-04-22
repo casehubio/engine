@@ -23,6 +23,7 @@ import io.casehub.engine.internal.history.CaseHubEventType;
 import io.casehub.engine.internal.history.EventLog;
 import io.casehub.engine.internal.history.EventStreamType;
 import io.casehub.engine.internal.model.CaseInstance;
+import io.casehub.engine.internal.scheduler.SchedulerService;
 import io.casehub.engine.spi.CaseInstanceRepository;
 import io.quarkus.vertx.ConsumeEvent;
 import io.smallrye.mutiny.Uni;
@@ -45,6 +46,8 @@ public class CaseStatusChangedHandler {
   @Inject EventBus eventBus;
 
   @Inject CaseInstanceRepository caseInstanceRepository;
+
+  @Inject SchedulerService schedulerService;
 
   @ConsumeEvent(value = EventBusAddresses.CASE_STATUS_CHANGED)
   public Uni<Void> onCaseStatusChangedHandler(CaseStatusChanged event) {
@@ -71,6 +74,14 @@ public class CaseStatusChangedHandler {
 
     return caseInstanceRepository
         .updateStateAndAppendEvent(caseInstance, eventLog)
+        .chain(
+            () -> {
+              // Cancel all scheduled triggers when case reaches terminal state
+              if (isTerminalState(newState)) {
+                return schedulerService.cancelAllTriggers(caseInstance.getUuid());
+              }
+              return Uni.createFrom().voidItem();
+            })
         .invoke(
             () -> {
               String eventBusAddress = resolveStateAsString(newState);
@@ -78,6 +89,12 @@ public class CaseStatusChangedHandler {
                 eventBus.publish(eventBusAddress, caseInstance);
               }
             });
+  }
+
+  private boolean isTerminalState(CaseStatus state) {
+    return state == CaseStatus.COMPLETED
+        || state == CaseStatus.FAULTED
+        || state == CaseStatus.CANCELLED;
   }
 
   private CaseHubEventType resolveState(CaseStatus state) {

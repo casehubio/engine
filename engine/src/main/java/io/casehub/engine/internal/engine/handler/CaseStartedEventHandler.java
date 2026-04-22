@@ -23,6 +23,7 @@ import io.casehub.engine.internal.history.CaseHubEventType;
 import io.casehub.engine.internal.history.EventLog;
 import io.casehub.engine.internal.history.EventStreamType;
 import io.casehub.engine.internal.model.CaseInstance;
+import io.casehub.engine.internal.scheduler.SchedulerService;
 import io.casehub.engine.spi.EventLogRepository;
 import io.quarkus.vertx.ConsumeEvent;
 import io.smallrye.mutiny.Uni;
@@ -42,6 +43,8 @@ public class CaseStartedEventHandler {
 
   @Inject EventLogRepository eventLogRepository;
 
+  @Inject SchedulerService schedulerService;
+
   @ConsumeEvent(value = EventBusAddresses.CASE_STARTED)
   public Uni<Void> onCaseStarted(CaseStartedEvent event) {
     CaseInstance instance = event.instance();
@@ -56,6 +59,7 @@ public class CaseStartedEventHandler {
 
     return eventLogRepository
         .append(eventLog)
+        .chain(() -> schedulerService.registerScheduledTriggers(instance))
         .invoke(
             () ->
                 eventBus.publish(
