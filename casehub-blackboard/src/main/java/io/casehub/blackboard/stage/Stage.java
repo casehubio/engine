@@ -59,6 +59,12 @@ public class Stage {
   private final Set<String> containedStageIds = ConcurrentHashMap.newKeySet();
   private final Set<String> requiredItemIds = ConcurrentHashMap.newKeySet();
 
+  // Design-time binding declarations — see ADR-0002 and casehubio/engine#76.
+  // Presence of a binding name here means this Stage "owns" that binding: the binding will only
+  // be passed to PlanningStrategy when this Stage is ACTIVE.  Stages with no declarations are
+  // lifecycle-only and impose no gating.
+  private final Set<String> containedBindingNames = ConcurrentHashMap.newKeySet();
+
   // Behaviour
   private boolean autocomplete = true;
   private boolean manualActivation = false;
@@ -104,6 +110,7 @@ public class Stage {
     private boolean manualActivation = false;
     private boolean autocomplete = true;
     private String parentStageId;
+    private final java.util.Set<String> bindingNames = new java.util.HashSet<>();
 
     private Builder(String name) {
       this.name = java.util.Objects.requireNonNull(name, "name must not be null");
@@ -144,6 +151,16 @@ public class Stage {
       return this;
     }
 
+    /**
+     * Declares a design-time binding name for this Stage (ADR-0002). The binding will only pass
+     * through loop control when this Stage is ACTIVE. Multiple calls accumulate; no duplicates.
+     */
+    public Builder binding(String bindingName) {
+      java.util.Objects.requireNonNull(bindingName, "bindingName must not be null");
+      this.bindingNames.add(bindingName);
+      return this;
+    }
+
     public Stage build() {
       if (entryCondition == null) {
         throw new IllegalStateException(
@@ -160,6 +177,7 @@ public class Stage {
       stage.manualActivation = this.manualActivation;
       stage.autocomplete = this.autocomplete;
       if (this.parentStageId != null) stage.parentStageId = this.parentStageId;
+      stage.containedBindingNames.addAll(this.bindingNames);
       return stage;
     }
   }
@@ -294,6 +312,32 @@ public class Stage {
     requiredItemIds.add(itemId);
   }
 
+  /**
+   * Declares that this Stage "owns" the given binding name at design time (ADR-0002). The binding
+   * will only pass through {@link io.casehub.blackboard.control.PlanningStrategyLoopControl} when
+   * this Stage is ACTIVE. Stages with no binding declarations impose no gating (lifecycle-only).
+   *
+   * @param bindingName the binding name to gate; must not be null
+   */
+  public void addBinding(String bindingName) {
+    java.util.Objects.requireNonNull(bindingName, "bindingName must not be null");
+    containedBindingNames.add(bindingName);
+  }
+
+  /**
+   * Fluent alias for {@link #addBinding(String)} — returns {@code this} for chaining.
+   *
+   * <pre>{@code
+   * Stage.alwaysActivate("intake")
+   *     .withBinding("trigger-on-docs")
+   *     .withBinding("trigger-on-go");
+   * }</pre>
+   */
+  public Stage withBinding(String bindingName) {
+    addBinding(bindingName);
+    return this;
+  }
+
   // Getters
   public String getStageId() {
     return stageId;
@@ -345,6 +389,14 @@ public class Stage {
 
   public List<String> getRequiredItemIds() {
     return List.copyOf(requiredItemIds); // snapshot of the concurrent set
+  }
+
+  /**
+   * Returns an immutable snapshot of the design-time binding names declared for this Stage. Empty
+   * means the Stage is lifecycle-only (no binding gating). See ADR-0002.
+   */
+  public Set<String> getContainedBindingNames() {
+    return Set.copyOf(containedBindingNames);
   }
 
   public boolean isAutocomplete() {

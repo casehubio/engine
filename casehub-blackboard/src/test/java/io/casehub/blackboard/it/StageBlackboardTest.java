@@ -340,6 +340,58 @@ class StageBlackboardTest {
   }
 
   // ------------------------------------------------------------------ //
+  // Binding declarations (design-time gating, ADR-0002)                  //
+  // ------------------------------------------------------------------ //
+
+  /**
+   * Verifies that binding declarations on a Stage survive the full case lifecycle and that the
+   * Stage activates end-to-end when its entry condition is met (no entry condition = always
+   * activates).
+   *
+   * <p>The unit test {@link io.casehub.blackboard.control.BindingGatingTest} covers the gating
+   * logic in isolation. This integration test verifies that {@code containedBindingNames} is
+   * preserved on the Stage object stored in the plan model and that a stage with binding
+   * declarations activates normally — confirming no regression in the activation path. See ADR-0002
+   * and casehubio/engine#76.
+   */
+  @Test
+  void stage_binding_declarations_persist_and_stage_activates_end_to_end() {
+    UUID caseId = signalCase.startCase(Map.of("ready", true)).toCompletableFuture().join();
+
+    await()
+        .atMost(10, TimeUnit.SECONDS)
+        .untilAsserted(() -> assertThat(registry.get(caseId)).isPresent());
+
+    // Declare a binding on the stage at design time — ADR-0002 opt-in
+    Stage stage =
+        Stage.alwaysActivate("gating-stage").withBinding("trigger-on-go").withBinding("trigger-b");
+    registry.get(caseId).get().addStage(stage);
+
+    // Confirm binding declarations are present before any evaluation cycle
+    assertThat(stage.getContainedBindingNames())
+        .as("binding declarations must be present immediately after addBinding()")
+        .containsExactlyInAnyOrder("trigger-on-go", "trigger-b");
+
+    // Trigger an evaluation cycle — stage has no entry condition so it activates immediately
+    signalCase.signal(caseId, "probe", "tick");
+
+    // Stage activates despite having binding declarations — declarations gate bindings, not
+    // stage activation
+    await()
+        .atMost(10, TimeUnit.SECONDS)
+        .untilAsserted(
+            () ->
+                assertThat(stage.getStatus())
+                    .as("stage with binding declarations must still activate normally")
+                    .isEqualTo(StageStatus.ACTIVE));
+
+    // Binding declarations survive activation — data model integrity
+    assertThat(stage.getContainedBindingNames())
+        .as("binding declarations must be preserved after stage activation")
+        .containsExactlyInAnyOrder("trigger-on-go", "trigger-b");
+  }
+
+  // ------------------------------------------------------------------ //
   // Test beans                                                            //
   // ------------------------------------------------------------------ //
 

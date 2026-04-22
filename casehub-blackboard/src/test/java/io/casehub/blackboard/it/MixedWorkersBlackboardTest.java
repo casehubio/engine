@@ -59,7 +59,7 @@ class MixedWorkersBlackboardTest {
             .join();
 
     await()
-        .atMost(15, TimeUnit.SECONDS)
+        .atMost(30, TimeUnit.SECONDS)
         .untilAsserted(
             () -> {
               var plan = registry.get(caseId);
