@@ -88,8 +88,52 @@ public class PlanItem implements Comparable<PlanItem> {
     return status;
   }
 
-  public void setStatus(PlanItemStatus status) {
-    this.status = status;
+  /** Transitions PENDING → RUNNING. Throws if not currently PENDING. */
+  public void markRunning() {
+    if (status != PlanItemStatus.PENDING) {
+      throw new IllegalStateException(
+          "Cannot transition to RUNNING from " + status + " (planItemId=" + planItemId + ")");
+    }
+    status = PlanItemStatus.RUNNING;
+  }
+
+  /** Transitions RUNNING → COMPLETED. Throws if not currently RUNNING. */
+  public void markCompleted() {
+    if (status != PlanItemStatus.RUNNING) {
+      throw new IllegalStateException(
+          "Cannot transition to COMPLETED from " + status + " (planItemId=" + planItemId + ")");
+    }
+    status = PlanItemStatus.COMPLETED;
+  }
+
+  /** Transitions to FAULTED from PENDING or RUNNING. Throws if already terminal. */
+  public void markFaulted() {
+    if (status == PlanItemStatus.COMPLETED
+        || status == PlanItemStatus.FAULTED
+        || status == PlanItemStatus.CANCELLED) {
+      throw new IllegalStateException(
+          "Cannot fault a terminal PlanItem (status="
+              + status
+              + ", planItemId="
+              + planItemId
+              + ")");
+    }
+    status = PlanItemStatus.FAULTED;
+  }
+
+  /** Cancels from PENDING or RUNNING. Throws if already terminal. */
+  public void markCancelled() {
+    if (status == PlanItemStatus.COMPLETED
+        || status == PlanItemStatus.FAULTED
+        || status == PlanItemStatus.CANCELLED) {
+      throw new IllegalStateException(
+          "Cannot cancel a terminal PlanItem (status="
+              + status
+              + ", planItemId="
+              + planItemId
+              + ")");
+    }
+    status = PlanItemStatus.CANCELLED;
   }
 
   public Instant getCreatedAt() {

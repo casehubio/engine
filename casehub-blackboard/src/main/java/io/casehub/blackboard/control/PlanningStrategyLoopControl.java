@@ -136,7 +136,7 @@ public class PlanningStrategyLoopControl implements LoopControl {
           .findFirst()
           .ifPresent(
               pi -> {
-                pi.setStatus(PlanItem.PlanItemStatus.RUNNING);
+                pi.markRunning();
                 registry.indexWorkerForCompletion(caseId, pi.getWorkerName(), pi.getPlanItemId());
               });
     }

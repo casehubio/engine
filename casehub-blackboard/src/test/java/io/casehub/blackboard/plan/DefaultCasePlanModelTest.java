@@ -41,7 +41,7 @@ class DefaultCasePlanModelTest {
     PlanItem low = PlanItem.create("b-low", "w-low", 1);
     PlanItem high = PlanItem.create("b-high", "w-high", 10);
     PlanItem running = PlanItem.create("b-run", "w-run", 99);
-    running.setStatus(PlanItem.PlanItemStatus.RUNNING);
+    running.markRunning();
 
     plan.addPlanItem(low);
     plan.addPlanItem(high);
@@ -135,7 +135,7 @@ class DefaultCasePlanModelTest {
   @Test
   void hasActivePlanItem_true_for_running_item() {
     PlanItem item = PlanItem.create("binding-a", "worker-a", 0);
-    item.setStatus(PlanItem.PlanItemStatus.RUNNING);
+    item.markRunning();
     plan.addPlanItem(item);
     assertThat(plan.hasActivePlanItem("binding-a")).isTrue();
   }
@@ -143,7 +143,8 @@ class DefaultCasePlanModelTest {
   @Test
   void hasActivePlanItem_false_for_completed_item() {
     PlanItem item = PlanItem.create("binding-a", "worker-a", 0);
-    item.setStatus(PlanItem.PlanItemStatus.COMPLETED);
+    item.markRunning();
+    item.markCompleted();
     plan.addPlanItem(item);
     assertThat(plan.hasActivePlanItem("binding-a")).isFalse();
   }
@@ -156,7 +157,7 @@ class DefaultCasePlanModelTest {
   @Test
   void hasActivePlanItem_false_for_faulted_item() {
     PlanItem item = PlanItem.create("binding-a", "worker-a", 0);
-    item.setStatus(PlanItem.PlanItemStatus.FAULTED);
+    item.markFaulted();
     plan.addPlanItem(item);
     assertThat(plan.hasActivePlanItem("binding-a")).isFalse();
   }
@@ -200,7 +201,7 @@ class DefaultCasePlanModelTest {
   void addPlanItemIfAbsent_returns_false_when_running_item_exists() {
     PlanItem item = PlanItem.create("binding-a", "worker-a", 0);
     plan.addPlanItemIfAbsent(item);
-    item.setStatus(PlanItem.PlanItemStatus.RUNNING);
+    item.markRunning();
     PlanItem second = PlanItem.create("binding-a", "worker-a", 0);
     assertThat(plan.addPlanItemIfAbsent(second)).isFalse();
   }
@@ -209,7 +210,8 @@ class DefaultCasePlanModelTest {
   void addPlanItemIfAbsent_returns_true_when_prior_item_is_completed() {
     PlanItem first = PlanItem.create("binding-a", "worker-a", 0);
     plan.addPlanItemIfAbsent(first);
-    first.setStatus(PlanItem.PlanItemStatus.COMPLETED);
+    first.markRunning();
+    first.markCompleted();
     PlanItem second = PlanItem.create("binding-a", "worker-a", 0);
     assertThat(plan.addPlanItemIfAbsent(second)).isTrue();
   }
