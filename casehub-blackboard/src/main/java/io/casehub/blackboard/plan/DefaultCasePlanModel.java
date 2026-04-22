@@ -161,7 +161,7 @@ public class DefaultCasePlanModel implements CasePlanModel {
 
   @Override
   public void achieveMilestone(String name) {
-    milestones.computeIfPresent(name, (k, v) -> Boolean.TRUE);
+    milestones.put(name, Boolean.TRUE);
   }
 
   @Override

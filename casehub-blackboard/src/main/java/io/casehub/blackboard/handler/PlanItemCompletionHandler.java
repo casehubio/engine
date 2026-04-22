@@ -82,7 +82,9 @@ public class PlanItemCompletionHandler {
             item -> {
               item.setStatus(PlanItem.PlanItemStatus.COMPLETED);
               // activeByBinding self-cleans lazily in hasActivePlanItem() when it encounters a
-              // terminal item. itemsById retains completed items for post-completion observability.
+              // terminal item — so hasActivePlanItem("binding-x") returns false immediately after
+              // setStatus(COMPLETED). itemsById retains completed items for post-completion
+              // observability (e.g. integration-test assertions on PlanItem status).
               evaluateStageAutocomplete(caseId, plan, planItemId);
             });
 
@@ -100,7 +102,8 @@ public class PlanItemCompletionHandler {
                   itemId ->
                       plan.getPlanItem(itemId)
                           .map(pi -> pi.getStatus() == PlanItem.PlanItemStatus.COMPLETED)
-                          .orElse(false));
+                          .orElse(
+                              false)); // unregistered item — treat as not done, blocks autocomplete
 
       if (allDone) {
         stage.complete();
