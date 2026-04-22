@@ -16,6 +16,7 @@
 package io.casehub.blackboard.plan;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import java.util.ArrayList;
 import java.util.Collections;
@@ -51,25 +52,45 @@ class PlanItemTest {
   }
 
   @Test
-  void status_transitions_pending_to_running_to_completed() {
+  void markRunning_from_pending_succeeds() {
     PlanItem item = PlanItem.create("binding-a", "worker-a", 0);
-    item.setStatus(PlanItem.PlanItemStatus.RUNNING);
+    item.markRunning();
     assertThat(item.getStatus()).isEqualTo(PlanItem.PlanItemStatus.RUNNING);
-    item.setStatus(PlanItem.PlanItemStatus.COMPLETED);
+  }
+
+  @Test
+  void markRunning_from_running_throws() {
+    PlanItem item = PlanItem.create("binding-a", "worker-a", 0);
+    item.markRunning();
+    assertThatThrownBy(item::markRunning).isInstanceOf(IllegalStateException.class);
+  }
+
+  @Test
+  void markCompleted_from_running_succeeds() {
+    PlanItem item = PlanItem.create("binding-a", "worker-a", 0);
+    item.markRunning();
+    item.markCompleted();
     assertThat(item.getStatus()).isEqualTo(PlanItem.PlanItemStatus.COMPLETED);
   }
 
   @Test
-  void status_can_transition_to_faulted() {
+  void markCompleted_from_pending_throws() {
     PlanItem item = PlanItem.create("binding-a", "worker-a", 0);
-    item.setStatus(PlanItem.PlanItemStatus.FAULTED);
+    assertThatThrownBy(item::markCompleted).isInstanceOf(IllegalStateException.class);
+  }
+
+  @Test
+  void markFaulted_from_running_succeeds() {
+    PlanItem item = PlanItem.create("binding-a", "worker-a", 0);
+    item.markRunning();
+    item.markFaulted();
     assertThat(item.getStatus()).isEqualTo(PlanItem.PlanItemStatus.FAULTED);
   }
 
   @Test
-  void status_can_transition_to_cancelled() {
+  void markCancelled_from_pending_succeeds() {
     PlanItem item = PlanItem.create("binding-a", "worker-a", 0);
-    item.setStatus(PlanItem.PlanItemStatus.CANCELLED);
+    item.markCancelled();
     assertThat(item.getStatus()).isEqualTo(PlanItem.PlanItemStatus.CANCELLED);
   }
 

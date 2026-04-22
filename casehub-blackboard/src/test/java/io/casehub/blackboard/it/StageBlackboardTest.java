@@ -279,7 +279,8 @@ class StageBlackboardTest {
     plan.addStage(stage);
 
     // Manually complete the item — simulates what PlanItemCompletionHandler does for real workers
-    syntheticItem.setStatus(PlanItemStatus.COMPLETED);
+    syntheticItem.markRunning();
+    syntheticItem.markCompleted();
 
     // The PlanItemCompletionHandler fires only on WORKER_EXECUTION_FINISHED events. Since we
     // completed the item directly, the handler never runs for this item. Regardless, even if

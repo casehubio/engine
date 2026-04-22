@@ -80,10 +80,10 @@ public class PlanItemCompletionHandler {
     plan.getPlanItem(planItemId)
         .ifPresent(
             item -> {
-              item.setStatus(PlanItem.PlanItemStatus.COMPLETED);
+              item.markCompleted();
               // activeByBinding self-cleans lazily in hasActivePlanItem() when it encounters a
               // terminal item — so hasActivePlanItem("binding-x") returns false immediately after
-              // setStatus(COMPLETED). itemsById retains completed items for post-completion
+              // markCompleted(). itemsById retains completed items for post-completion
               // observability (e.g. integration-test assertions on PlanItem status).
               evaluateStageAutocomplete(caseId, plan, planItemId);
             });
