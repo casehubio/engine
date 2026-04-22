@@ -148,4 +148,33 @@ class StageTest {
         .as("Stage.status must be AtomicReference to prevent concurrent transition races")
         .isEqualTo(java.util.concurrent.atomic.AtomicReference.class);
   }
+
+  @Test
+  void fault_from_pending_transitions_to_faulted() {
+    Stage s = Stage.create("x");
+    s.fault();
+    assertThat(s.getStatus()).isEqualTo(StageStatus.FAULTED);
+    assertThat(s.isTerminal()).isTrue();
+  }
+
+  @Test
+  void fault_from_faulted_is_noop() {
+    Stage s = Stage.create("x");
+    s.fault();
+    s.fault(); // second call must not corrupt state
+    assertThat(s.getStatus())
+        .as("fault() on already-FAULTED stage must remain FAULTED")
+        .isEqualTo(StageStatus.FAULTED);
+  }
+
+  @Test
+  void fault_from_completed_is_noop() {
+    Stage s = Stage.create("x");
+    s.activate();
+    s.complete();
+    s.fault(); // must not overwrite COMPLETED
+    assertThat(s.getStatus())
+        .as("fault() must not overwrite a terminal COMPLETED state")
+        .isEqualTo(StageStatus.COMPLETED);
+  }
 }

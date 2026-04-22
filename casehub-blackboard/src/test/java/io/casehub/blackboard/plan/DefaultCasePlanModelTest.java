@@ -247,4 +247,22 @@ class DefaultCasePlanModelTest {
         .isEqualTo(1);
     assertThat(plan.getAgenda()).hasSize(1);
   }
+
+  @Test
+  void getTopPlanItems_with_zero_limit_returns_empty() {
+    plan.addPlanItem(PlanItem.create("b-a", "w-a", 5));
+    plan.addPlanItem(PlanItem.create("b-b", "w-b", 3));
+    assertThat(plan.getTopPlanItems(0))
+        .as("getTopPlanItems(0) must return empty, not all items")
+        .isEmpty();
+  }
+
+  @Test
+  void get_returns_empty_when_type_does_not_match() {
+    plan.put("count", 42);
+    assertThat(plan.get("count", String.class))
+        .as("get() must return empty when stored type does not match — no ClassCastException")
+        .isEmpty();
+    assertThat(plan.get("count", Integer.class)).contains(42);
+  }
 }

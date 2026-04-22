@@ -68,4 +68,18 @@ public abstract class PlanningStrategyContractTest {
     List<Binding> result = strategy().select(plan, ctx(), List.of()).await().indefinitely();
     assertThat(result).isNotNull();
   }
+
+  @Test
+  void result_does_not_contain_duplicates_when_eligible_has_duplicates() {
+    CasePlanModel plan = new DefaultCasePlanModel(UUID.randomUUID());
+    Binding b1 = mock(Binding.class);
+    List<Binding> eligibleWithDuplicate = List.of(b1, b1);
+
+    List<Binding> result =
+        strategy().select(plan, ctx(), eligibleWithDuplicate).await().indefinitely();
+
+    assertThat(result)
+        .as("strategy must not return duplicate bindings even if eligible list contains duplicates")
+        .doesNotHaveDuplicates();
+  }
 }
