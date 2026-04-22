@@ -16,6 +16,7 @@
 package io.casehub.blackboard.stage;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import org.junit.jupiter.api.Test;
 
@@ -176,5 +177,43 @@ class StageTest {
     assertThat(s.getStatus())
         .as("fault() must not overwrite a terminal COMPLETED state")
         .isEqualTo(StageStatus.COMPLETED);
+  }
+
+  @Test
+  void builder_without_entry_condition_throws() {
+    assertThatThrownBy(() -> Stage.builder("intake").build())
+        .isInstanceOf(IllegalStateException.class)
+        .hasMessageContaining("entryCondition");
+  }
+
+  @Test
+  void builder_with_entry_condition_creates_stage() {
+    Stage stage = Stage.builder("intake").entryCondition(ctx -> true).build();
+    assertThat(stage.getName()).isEqualTo("intake");
+    assertThat(stage.getEntryCondition()).isNotNull();
+    assertThat(stage.getStatus()).isEqualTo(StageStatus.PENDING);
+  }
+
+  @Test
+  void builder_fluent_options_retained() {
+    Stage stage =
+        Stage.builder("intake")
+            .entryCondition(ctx -> true)
+            .exitCondition(ctx -> false)
+            .withManualActivation(true)
+            .withAutocomplete(false)
+            .build();
+    assertThat(stage.getEntryCondition()).isNotNull();
+    assertThat(stage.getExitCondition()).isNotNull();
+    assertThat(stage.isManualActivation()).isTrue();
+    assertThat(stage.isAutocomplete()).isFalse();
+  }
+
+  @Test
+  void alwaysActivate_creates_stage_with_null_entry_condition() {
+    Stage stage = Stage.alwaysActivate("intake");
+    assertThat(stage.getName()).isEqualTo("intake");
+    assertThat(stage.getEntryCondition()).isNull();
+    assertThat(stage.getStatus()).isEqualTo(StageStatus.PENDING);
   }
 }

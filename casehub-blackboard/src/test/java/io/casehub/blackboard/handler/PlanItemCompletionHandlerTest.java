@@ -90,7 +90,7 @@ class PlanItemCompletionHandlerTest {
     item.markRunning(); // simulates indexSelectedForCompletion in PlanningStrategyLoopControl
     registry.indexWorkerForCompletion(caseId, "worker-a", item.getPlanItemId());
 
-    Stage stage = Stage.create("intake");
+    Stage stage = Stage.alwaysActivate("intake");
     stage.addPlanItem(item.getPlanItemId());
     stage.addRequiredItem(item.getPlanItemId());
     stage.activate();
@@ -111,7 +111,7 @@ class PlanItemCompletionHandlerTest {
     item1.markRunning(); // simulates indexSelectedForCompletion in PlanningStrategyLoopControl
     registry.indexWorkerForCompletion(caseId, "worker-a", item1.getPlanItemId());
 
-    Stage stage = Stage.create("intake");
+    Stage stage = Stage.alwaysActivate("intake");
     stage.addPlanItem(item1.getPlanItemId());
     stage.addPlanItem(item2.getPlanItemId());
     stage.addRequiredItem(item1.getPlanItemId());
@@ -146,7 +146,7 @@ class PlanItemCompletionHandlerTest {
     item.markRunning(); // simulates indexSelectedForCompletion in PlanningStrategyLoopControl
     registry.indexWorkerForCompletion(caseId, "worker-a", item.getPlanItemId());
 
-    Stage stage = Stage.create("intake");
+    Stage stage = Stage.alwaysActivate("intake");
     stage.addRequiredItem("non-existent-id"); // not in plan
     stage.activate();
     plan.addStage(stage);
@@ -166,7 +166,7 @@ class PlanItemCompletionHandlerTest {
     item.markRunning(); // simulates indexSelectedForCompletion in PlanningStrategyLoopControl
     registry.indexWorkerForCompletion(caseId, "worker-a", item.getPlanItemId());
 
-    Stage stage = Stage.create("intake").withAutocomplete(false);
+    Stage stage = Stage.alwaysActivate("intake").withAutocomplete(false);
     stage.addRequiredItem(item.getPlanItemId());
     stage.activate();
     plan.addStage(stage);

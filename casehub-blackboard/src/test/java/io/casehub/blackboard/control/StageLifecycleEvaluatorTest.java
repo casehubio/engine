@@ -54,7 +54,7 @@ class StageLifecycleEvaluatorTest {
 
   @Test
   void pending_stage_activates_when_entry_condition_met() {
-    Stage stage = Stage.create("intake").withEntryCondition(c -> true);
+    Stage stage = Stage.builder("intake").entryCondition(c -> true).build();
     plan.addStage(stage);
 
     evaluator.evaluate(plan, ctx).await().indefinitely();
@@ -65,7 +65,7 @@ class StageLifecycleEvaluatorTest {
 
   @Test
   void pending_stage_stays_pending_when_entry_condition_not_met() {
-    Stage stage = Stage.create("intake").withEntryCondition(c -> false);
+    Stage stage = Stage.builder("intake").entryCondition(c -> false).build();
     plan.addStage(stage);
 
     evaluator.evaluate(plan, ctx).await().indefinitely();
@@ -76,7 +76,7 @@ class StageLifecycleEvaluatorTest {
 
   @Test
   void pending_stage_with_no_entry_condition_activates() {
-    Stage stage = Stage.create("intake"); // no entry condition
+    Stage stage = Stage.alwaysActivate("intake"); // no entry condition
     plan.addStage(stage);
 
     evaluator.evaluate(plan, ctx).await().indefinitely();
@@ -86,7 +86,8 @@ class StageLifecycleEvaluatorTest {
 
   @Test
   void active_stage_terminates_when_exit_condition_met() {
-    Stage stage = Stage.create("intake").withExitCondition(c -> true);
+    Stage stage =
+        Stage.builder("intake").entryCondition(c -> true).exitCondition(c -> true).build();
     stage.activate();
     plan.addStage(stage);
 
@@ -98,7 +99,8 @@ class StageLifecycleEvaluatorTest {
 
   @Test
   void active_stage_stays_active_when_exit_condition_not_met() {
-    Stage stage = Stage.create("intake").withExitCondition(c -> false);
+    Stage stage =
+        Stage.builder("intake").entryCondition(c -> true).exitCondition(c -> false).build();
     stage.activate();
     plan.addStage(stage);
 
@@ -110,7 +112,8 @@ class StageLifecycleEvaluatorTest {
 
   @Test
   void manual_activation_stage_stays_pending_even_when_entry_met() {
-    Stage stage = Stage.create("intake").withEntryCondition(c -> true).withManualActivation(true);
+    Stage stage =
+        Stage.builder("intake").entryCondition(c -> true).withManualActivation(true).build();
     plan.addStage(stage);
 
     evaluator.evaluate(plan, ctx).await().indefinitely();
@@ -121,8 +124,8 @@ class StageLifecycleEvaluatorTest {
 
   @Test
   void nested_stage_stays_pending_while_parent_is_pending() {
-    Stage parent = Stage.create("parent").withEntryCondition(c -> false); // never activates
-    Stage child = Stage.create("child").withParentStage(parent.getStageId());
+    Stage parent = Stage.builder("parent").entryCondition(c -> false).build(); // never activates
+    Stage child = Stage.alwaysActivate("child").withParentStage(parent.getStageId());
 
     plan.addStage(parent);
     plan.addStage(child);
@@ -137,8 +140,8 @@ class StageLifecycleEvaluatorTest {
 
   @Test
   void nested_stage_activates_after_parent_becomes_active() {
-    Stage parent = Stage.create("parent"); // no entry condition — activates immediately
-    Stage child = Stage.create("child").withParentStage(parent.getStageId());
+    Stage parent = Stage.alwaysActivate("parent"); // no entry condition — activates immediately
+    Stage child = Stage.alwaysActivate("child").withParentStage(parent.getStageId());
 
     plan.addStage(parent);
     plan.addStage(child);
@@ -157,7 +160,7 @@ class StageLifecycleEvaluatorTest {
 
   @Test
   void root_stage_without_parent_activates_normally() {
-    Stage root = Stage.create("root"); // no parentStageId
+    Stage root = Stage.alwaysActivate("root"); // no parentStageId
     plan.addStage(root);
 
     evaluator.evaluate(plan, ctx).await().indefinitely();
