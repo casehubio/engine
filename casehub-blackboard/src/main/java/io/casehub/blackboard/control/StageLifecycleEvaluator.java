@@ -83,6 +83,14 @@ public class StageLifecycleEvaluator {
   private void activatePendingStages(CasePlanModel plan, PlanExecutionContext ctx) {
     for (Stage stage : plan.getPendingStages()) {
       if (stage.isManualActivation()) continue;
+
+      // Nested stage: only evaluate if parent is ACTIVE
+      if (stage.getParentStageId().isPresent()) {
+        String parentId = stage.getParentStageId().get();
+        boolean parentActive = plan.getStage(parentId).map(Stage::isActive).orElse(false);
+        if (!parentActive) continue;
+      }
+
       boolean conditionMet = evaluateCondition(stage.getEntryCondition(), ctx.caseContext());
       if (conditionMet) {
         stage.activate();

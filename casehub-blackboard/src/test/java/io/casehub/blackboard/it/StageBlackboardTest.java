@@ -296,6 +296,47 @@ class StageBlackboardTest {
   }
 
   // ------------------------------------------------------------------ //
+  // Nested stage — child activates only after parent is ACTIVE           //
+  // ------------------------------------------------------------------ //
+
+  /**
+   * Verifies nested stage only activates after its parent is ACTIVE. Two evaluation cycles are
+   * required: cycle 1 activates parent, cycle 2 activates child.
+   */
+  @Test
+  void nested_stage_activates_only_after_parent_is_active() {
+    UUID caseId = signalCase.startCase(Map.of("ready", true)).toCompletableFuture().join();
+
+    await()
+        .atMost(10, TimeUnit.SECONDS)
+        .untilAsserted(() -> assertThat(registry.get(caseId)).isPresent());
+
+    Stage parent = Stage.create("parent-stage"); // no entry condition — activates immediately
+    Stage child = Stage.create("child-stage").withParentStage(parent.getStageId());
+
+    registry.get(caseId).get().addStage(parent);
+    registry.get(caseId).get().addStage(child);
+
+    // Trigger cycle 1 — parent activates, child stays PENDING
+    signalCase.signal(caseId, "probe", "tick-1");
+
+    await()
+        .atMost(10, TimeUnit.SECONDS)
+        .untilAsserted(() -> assertThat(parent.getStatus()).isEqualTo(StageStatus.ACTIVE));
+
+    // Trigger cycle 2 — child now activates because parent is ACTIVE
+    signalCase.signal(caseId, "probe", "tick-2");
+
+    await()
+        .atMost(10, TimeUnit.SECONDS)
+        .untilAsserted(
+            () ->
+                assertThat(child.getStatus())
+                    .as("child must activate on the cycle after parent becomes ACTIVE")
+                    .isEqualTo(StageStatus.ACTIVE));
+  }
+
+  // ------------------------------------------------------------------ //
   // Test beans                                                            //
   // ------------------------------------------------------------------ //
 
