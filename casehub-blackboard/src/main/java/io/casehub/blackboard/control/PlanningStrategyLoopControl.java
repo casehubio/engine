@@ -29,7 +29,9 @@ import jakarta.enterprise.inject.Alternative;
 import jakarta.enterprise.inject.Instance;
 import jakarta.inject.Inject;
 import java.util.List;
+import java.util.Set;
 import java.util.UUID;
+import java.util.stream.Collectors;
 import org.jboss.logging.Logger;
 
 /**
@@ -77,9 +79,35 @@ public class PlanningStrategyLoopControl implements LoopControl {
           .forEach(c -> c.configure(plan, ctx));
     }
 
-    // Create a PlanItem for each eligible Binding and add to agenda, skipping duplicates.
+    // Stage-gating (ADR-0002): compute which binding names are "owned" by at least one stage
+    // (allStagedNames), and which of those stages are currently ACTIVE (activeStagedNames).
+    // Free-floating bindings (not in allStagedNames) always pass.
+    // Staged bindings only pass when their stage is ACTIVE.
+    // If no stage declares any binding, allStagedNames is empty → gatedEligible == eligible
+    // (pure choreography, no behaviour change).
+    Set<String> allStagedNames =
+        plan.getAllStages().stream()
+            .flatMap(s -> s.getContainedBindingNames().stream())
+            .collect(Collectors.toSet());
+
+    Set<String> activeStagedNames =
+        plan.getActiveStages().stream()
+            .flatMap(s -> s.getContainedBindingNames().stream())
+            .collect(Collectors.toSet());
+
+    List<Binding> gatedEligible =
+        allStagedNames.isEmpty()
+            ? eligible // fast path: pure choreography — avoid stream allocation
+            : eligible.stream()
+                .filter(
+                    b ->
+                        !allStagedNames.contains(b.getName()) // free-floating → always pass
+                            || activeStagedNames.contains(b.getName())) // staged → only if ACTIVE
+                .collect(Collectors.toList());
+
+    // Create a PlanItem for each gated-eligible Binding and add to agenda, skipping duplicates.
     // addPlanItemIfAbsent performs the check-and-insert atomically — no TOCTOU window.
-    eligible.forEach(
+    gatedEligible.forEach(
         binding -> {
           String workerName = resolveWorkerName(binding, ctx);
           plan.addPlanItemIfAbsent(PlanItem.create(binding.getName(), workerName, 0));
@@ -87,7 +115,7 @@ public class PlanningStrategyLoopControl implements LoopControl {
 
     return stageLifecycleEvaluator
         .evaluate(plan, ctx)
-        .chain(() -> planningStrategy.select(plan, ctx, eligible))
+        .chain(() -> planningStrategy.select(plan, ctx, gatedEligible))
         .invoke(selected -> indexSelectedForCompletion(caseId, selected, plan));
   }
 
