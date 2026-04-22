@@ -19,6 +19,7 @@ import static io.casehub.engine.internal.event.EventBusAddresses.CASE_STARTED;
 import static io.casehub.engine.internal.event.EventBusAddresses.SIGNAL_RECEIVED;
 
 import io.casehub.api.context.CaseContext;
+import io.casehub.api.context.PropagationContext;
 import io.casehub.api.model.CaseDefinition;
 import io.casehub.api.model.CaseStatus;
 import io.casehub.engine.internal.engine.cache.CaseInstanceCache;
@@ -31,15 +32,22 @@ import io.smallrye.mutiny.Uni;
 import io.vertx.mutiny.core.eventbus.EventBus;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
+import java.time.Duration;
+import java.util.Map;
+import java.util.Optional;
 import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
+import org.eclipse.microprofile.config.inject.ConfigProperty;
 import org.jboss.logging.Logger;
 
 @ApplicationScoped
 class CaseHubReactor {
 
   private static final Logger LOG = Logger.getLogger(CaseHubReactor.class);
+
+  @ConfigProperty(name = "casehub.resilience.timeout.max-duration")
+  Optional<Duration> maxDuration;
 
   @Inject CaseDefinitionRegistry caseDefinitionRegistry;
 
@@ -71,12 +79,18 @@ class CaseHubReactor {
   private Uni<CaseInstance> getCaseInstance(CaseDefinition definition, CaseContext context) {
     CaseMetaModel model = caseDefinitionRegistry.getCaseMetaModel(definition);
 
+    PropagationContext propagationContext =
+        maxDuration
+            .map(budget -> PropagationContext.createRoot(Map.of(), budget))
+            .orElse(PropagationContext.createRoot());
+
     CaseInstance instance = new CaseInstance();
     instance.setUuid(UUID.randomUUID());
     instance.setCaseMetaModel(model);
     instance.setVersion(0L);
     instance.setState(CaseStatus.RUNNING);
     instance.setCaseContext(context);
+    instance.setPropagationContext(propagationContext);
 
     caseInstanceCache.put(instance);
     return caseInstanceRepository.save(instance);
