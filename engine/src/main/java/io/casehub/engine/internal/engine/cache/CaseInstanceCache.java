@@ -37,4 +37,9 @@ public class CaseInstanceCache {
   public void clear() {
     cache.clear();
   }
+
+  /** Returns a snapshot of all currently cached CaseInstances for timeout scanning. */
+  public java.util.List<CaseInstance> getAll() {
+    return java.util.List.copyOf(cache.values());
+  }
 }

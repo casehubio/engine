@@ -295,16 +295,14 @@ public class WorkerExecutionJobListener implements JobListener {
   }
 
   /**
-   * Computes the retry delay using the policy's {@link BackoffStrategy}.
-   * FIXED: constant delayMs. EXPONENTIAL: delayMs * 2^(attempt-1), capped at 30s.
-   * EXPONENTIAL_WITH_JITTER: random in [0, exponential cap].
+   * Computes the retry delay using the policy's {@link BackoffStrategy}. FIXED: constant delayMs.
+   * EXPONENTIAL: delayMs * 2^(attempt-1), capped at 30s. EXPONENTIAL_WITH_JITTER: random in [0,
+   * exponential cap].
    */
   private static long computeBackoffDelayMs(RetryPolicy policy, long attemptNumber) {
     long baseDelayMs = policy.delayMs() != null ? policy.delayMs() : 0L;
     BackoffStrategy strategy =
-        policy.backoffStrategy() != null
-            ? policy.backoffStrategy()
-            : BackoffStrategy.FIXED;
+        policy.backoffStrategy() != null ? policy.backoffStrategy() : BackoffStrategy.FIXED;
     return switch (strategy) {
       case FIXED -> baseDelayMs;
       case EXPONENTIAL -> {
