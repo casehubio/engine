@@ -43,6 +43,7 @@ public class DefaultPlanningStrategy implements PlanningStrategy {
   @Override
   public Uni<List<Binding>> select(
       CasePlanModel plan, PlanExecutionContext context, List<Binding> eligible) {
-    return Uni.createFrom().item(eligible);
+    List<Binding> deduped = eligible.stream().distinct().toList();
+    return Uni.createFrom().item(deduped);
   }
 }
