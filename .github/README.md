@@ -142,6 +142,106 @@ git push --force-with-lease
 
 ---
 
+### 🔁 Rerun Tests (`workflows/retest.yml`)
+
+Automatically restart CI tests for a PR via comment command.
+
+**Trigger:** `/retest` command in PR comments
+
+**Purpose:** Restart flaky or failed tests without pushing new commits
+
+#### How to Use
+
+Comment on any pull request:
+
+```
+/retest
+```
+
+The bot will find the latest Maven CI workflow run for your PR and restart it.
+
+#### Workflow Steps
+
+1. **👀 Eyes reaction** — Bot acknowledges the `/retest` command
+2. **🔍 Find workflow run** — Locates the latest Maven CI run for this PR's HEAD SHA
+3. **🔄 Restart workflow** — Triggers `gh run rerun` to restart the tests
+4. **✅ Success** — 🚀 reaction + success comment with link to workflow run, **OR**
+5. **❌ Failure** — 😕 reaction + explanation (no run found or restart failed)
+
+#### Success Example
+
+```
+✅ Tests restarted — check the Actions tab
+```
+
+Click the link to see the restarted workflow run.
+
+#### When to Use
+
+- **Flaky test failure** — Test failed due to timing or resource issues
+- **Infrastructure failure** — CI encountered temporary network or service issues
+- **Post-discussion verification** — Verify tests still pass after review comments
+
+**Do NOT use if:**
+- You made code changes — push a commit instead to trigger fresh tests
+- Tests are consistently failing — fix the issue first
+
+#### Failure Cases
+
+**No workflow run found:**
+
+```
+❌ No workflow run found for this PR. Tests may not have run yet — push a commit to trigger them.
+```
+
+This happens when:
+- The PR has no CI runs yet (first push hasn't triggered tests)
+- All previous workflow runs were deleted
+
+**Solution:** Push a commit to trigger tests.
+
+**Restart failed:**
+
+```
+❌ Failed to restart tests. The workflow run may have already been rerun or deleted.
+```
+
+This happens when:
+- The workflow run was already manually rerun
+- The workflow run was deleted
+- GitHub API rate limit exceeded (rare)
+
+**Solution:** Check the Actions tab manually or wait a few minutes and try again.
+
+#### Permissions
+
+**Required permissions (automatically granted):**
+- `actions: write` — Restart workflow runs
+- `pull-requests: write` — Add reactions and comments
+
+#### Security
+
+✅ **Safe by design:**
+- Uses GitHub's `GITHUB_TOKEN` (scoped to the repository)
+- Only triggers on PRs (not issues or commits)
+- Cannot modify code or bypass checks
+- Only restarts existing workflow runs (doesn't create new ones with different code)
+
+❌ **What it cannot do:**
+- Run tests for code that hasn't been pushed
+- Bypass required status checks
+- Modify workflow files or test configuration
+- Access secrets from forks (security boundary maintained)
+
+#### Limitations
+
+- ⚠️ Works only on **pull requests** (not issues or commits)
+- ⚠️ Requires `/retest` on its own line (case-sensitive)
+- ⚠️ Only restarts the **latest** workflow run (not older runs)
+- ⚠️ Requires at least one previous CI run to exist
+
+---
+
 ## Contributing
 
 See [CONTRIBUTING.md](CONTRIBUTING.md) for:

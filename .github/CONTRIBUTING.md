@@ -42,6 +42,40 @@ The bot will react with 👀 to acknowledge your command, then perform the rebas
 
 ---
 
+### Rerun Tests
+
+Trigger a rerun of CI tests for your PR by commenting:
+
+```
+/retest
+```
+
+**How it works:**
+
+1. Comment `/retest` on any pull request
+2. The GitHub Action will automatically:
+   - Find the latest Maven CI workflow run for your PR
+   - Restart the workflow
+3. You'll receive a reaction and comment with the result:
+   - ✅ 🚀 **Success** — Tests restarted
+   - ❌ 😕 **Failure** — No workflow run found or restart failed
+
+**When to use:**
+
+- After fixing a flaky test failure
+- When CI encountered a temporary infrastructure issue
+- To verify tests still pass after discussion or review
+
+**Example:**
+
+```
+/retest
+```
+
+The bot will react with 👀 to acknowledge your command, then restart the tests.
+
+---
+
 ### Manual Rebase (when conflicts occur)
 
 If the automatic rebase fails due to conflicts, you'll need to rebase manually:
@@ -231,6 +265,20 @@ Violations will fail the build. Check locally:
 **Permissions required:**
 - Fork PRs: "Allow edits from maintainers" must be enabled
 - Branch PRs: Automatic
+
+### Rerun Tests (`retest.yml`)
+
+**Triggers:** `/retest` command in PR comments
+
+**What it does:**
+- Finds the latest Maven CI workflow run for the PR
+- Restarts the workflow to rerun all tests
+- Provides feedback via reactions and comments
+
+**When to use:**
+- Flaky test failures
+- Temporary CI infrastructure issues
+- Post-review verification without code changes
 
 ---
 
