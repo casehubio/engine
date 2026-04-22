@@ -56,8 +56,9 @@ class LambdaEntryConditionBlackboardTest {
         .untilAsserted(() -> assertThat(registry.get(caseId)).isPresent());
 
     Stage stage =
-        Stage.create("lambda-stage")
-            .withEntryCondition(ctx -> Integer.valueOf(42).equals(ctx.getPath("value")));
+        Stage.builder("lambda-stage")
+            .entryCondition(ctx -> Integer.valueOf(42).equals(ctx.getPath("value")))
+            .build();
     registry.get(caseId).get().addStage(stage);
 
     lambdaCase.signal(caseId, "probe", "tick");
@@ -81,8 +82,9 @@ class LambdaEntryConditionBlackboardTest {
         .untilAsserted(() -> assertThat(registry.get(caseId)).isPresent());
 
     Stage stage =
-        Stage.create("lambda-stage")
-            .withEntryCondition(ctx -> Integer.valueOf(42).equals(ctx.getPath("value")));
+        Stage.builder("lambda-stage")
+            .entryCondition(ctx -> Integer.valueOf(42).equals(ctx.getPath("value")))
+            .build();
     registry.get(caseId).get().addStage(stage);
 
     lambdaCase.signal(caseId, "probe", "tick");

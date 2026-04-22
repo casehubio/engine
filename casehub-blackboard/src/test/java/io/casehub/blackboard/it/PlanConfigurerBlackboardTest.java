@@ -182,7 +182,7 @@ class PlanConfigurerBlackboardTest {
     @Override
     public void configure(CasePlanModel plan, PlanExecutionContext context) {
       callCount.incrementAndGet();
-      plan.addStage(Stage.create("configurer-stage"));
+      plan.addStage(Stage.alwaysActivate("configurer-stage"));
     }
   }
 
