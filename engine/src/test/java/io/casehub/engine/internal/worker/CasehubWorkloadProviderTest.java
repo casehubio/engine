@@ -94,6 +94,20 @@ class CasehubWorkloadProviderTest {
     assertThat(provider.getActiveWorkCount("my-worker")).isZero();
   }
 
+  @Test
+  void jobDetailMissingWorkerId_doesNotCrash() throws SchedulerException {
+    Scheduler scheduler = mock(Scheduler.class);
+    JobKey key = new JobKey("hash-abc", "case-1");
+    JobDetail detail = mock(JobDetail.class);
+    JobDataMap dataMap = new JobDataMap(); // no workerId field
+    when(scheduler.getJobGroupNames()).thenReturn(List.of("case-1"));
+    when(scheduler.getJobKeys(GroupMatcher.groupEquals("case-1"))).thenReturn(Set.of(key));
+    when(scheduler.getJobDetail(key)).thenReturn(detail);
+    when(detail.getJobDataMap()).thenReturn(dataMap);
+    CasehubWorkloadProvider provider = new CasehubWorkloadProvider(scheduler);
+    assertThat(provider.getActiveWorkCount("any-worker")).isZero();
+  }
+
   private JobDetail jobDetailWithWorker(String workerId) {
     JobDetail detail = mock(JobDetail.class);
     JobDataMap dataMap = new JobDataMap();

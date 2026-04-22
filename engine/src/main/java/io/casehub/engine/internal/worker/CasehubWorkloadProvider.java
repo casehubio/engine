@@ -55,8 +55,11 @@ public class CasehubWorkloadProvider implements WorkloadProvider {
         Set<JobKey> keys = scheduler.getJobKeys(GroupMatcher.groupEquals(group));
         for (JobKey key : keys) {
           JobDetail detail = scheduler.getJobDetail(key);
-          if (detail != null && workerId.equals(detail.getJobDataMap().getString("workerId"))) {
-            count++;
+          if (detail != null) {
+            Object workerIdValue = detail.getJobDataMap().get("workerId");
+            if (workerId.equals(workerIdValue)) {
+              count++;
+            }
           }
         }
       }
