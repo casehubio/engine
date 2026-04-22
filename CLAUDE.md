@@ -35,6 +35,26 @@ in `engine/src/test/resources/application.properties` — no Docker required.
 Domain objects (`CaseMetaModel`, `CaseInstance`, `EventLog`) are plain POJOs. The `id` field
 is public (`public Long id`) and set by the repository after save.
 
+## casehub-blackboard Module
+
+Optional CMMN/Blackboard orchestration layer. Activated via CDI `@Alternative @Priority(10)` when on the classpath.
+
+**Build and test:**
+```bash
+mvn install -DskipTests -q          # install deps to local repo first
+TESTCONTAINERS_RYUK_DISABLED=true mvn clean test -pl casehub-blackboard
+```
+
+**Test conventions:**
+- `@QuarkusTest` classes MUST be named `*Test.java` — never `*IT.java`
+  (`*IT` is picked up by failsafe instead of surefire; produces `Tests run: 0` with no error)
+- In-memory SPI implementations for `@QuarkusTest` are copied into
+  `casehub-blackboard/src/test/java/io/casehub/persistence/memory/` (same pattern as engine)
+- `src/test/resources/application.properties` sets `quarkus.http.test-port=0` and activates
+  the in-memory alternatives via `quarkus.arc.selected-alternatives`
+
+**PRs:** #88 (async LoopControl), #89 (data model), #90 (orchestration + tests) — merge in order.
+
 ## Quartz
 
 Use RAM store — no JDBC store, no Quartz tables:
