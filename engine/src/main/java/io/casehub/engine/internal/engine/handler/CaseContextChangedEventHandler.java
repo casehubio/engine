@@ -215,9 +215,19 @@ public class CaseContextChangedEventHandler {
       return Uni.createFrom().voidItem();
     }
 
-    // Candidates are pre-filtered to this capability — pass null so WorkBroker skips its own
-    // capability filter and delegates directly to the strategy.
-    SelectionContext ctx = new SelectionContext(capability.getName(), null, null, null, null);
+    // requiredCapabilities is null: WorkerCandidate.of() creates candidates with an empty
+    // capabilities set (no capability tracking on candidates), so passing the capability name
+    // would cause WorkBroker to filter out all pre-screened candidates. Capability matching
+    // is already done above when building the candidates list.
+    SelectionContext ctx =
+        new SelectionContext(
+            capability.getName(),
+            null,
+            null, // see above: capability filtering already done on candidates
+            null,
+            null,
+            null,
+            null);
 
     AssignmentDecision decision =
         workBroker.apply(ctx, AssignmentTrigger.CREATED, candidates, selectionStrategy);
@@ -230,6 +240,13 @@ public class CaseContextChangedEventHandler {
     }
 
     String selectedId = decision.assigneeId();
+    if (selectedId == null) {
+      LOG.errorf(
+          "WorkBroker returned null assigneeId for non-noOp decision on capability '%s' — skipping",
+          capability.getName());
+      return Uni.createFrom().voidItem();
+    }
+
     Worker selectedWorker =
         workers.stream().filter(w -> w.getName().equals(selectedId)).findFirst().orElse(null);
 
