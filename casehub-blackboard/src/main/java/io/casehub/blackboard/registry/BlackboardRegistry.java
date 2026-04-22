@@ -19,6 +19,7 @@ import io.casehub.blackboard.plan.CasePlanModel;
 import io.casehub.blackboard.plan.DefaultCasePlanModel;
 import jakarta.enterprise.context.ApplicationScoped;
 import java.util.Optional;
+import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 
@@ -43,6 +44,9 @@ public class BlackboardRegistry {
   // caseId → (workerName → planItemId)
   private final ConcurrentHashMap<UUID, ConcurrentHashMap<String, String>> completionIndex =
       new ConcurrentHashMap<>();
+
+  // caseIds that have already been configured by BlackboardPlanConfigurer(s)
+  private final Set<UUID> configured = ConcurrentHashMap.newKeySet();
 
   /**
    * Returns the {@link CasePlanModel} for the given case, creating it if absent. Only {@link
@@ -69,12 +73,24 @@ public class BlackboardRegistry {
   }
 
   /**
-   * Evicts the plan model and completion index for a completed or terminated case. Call when a case
-   * reaches a terminal state to prevent unbounded memory growth. See casehubio/engine#84 for the
-   * persistence SPI that will eventually replace this in-memory registry.
+   * Atomically marks a case as configured by {@link
+   * io.casehub.blackboard.control.BlackboardPlanConfigurer}(s). Returns {@code true} only the first
+   * time this method is called for the given case — subsequent calls return {@code false}. This
+   * guarantees configurers are invoked exactly once per case instance.
+   */
+  public boolean markConfigured(UUID caseId) {
+    return configured.add(caseId);
+  }
+
+  /**
+   * Evicts the plan model, completion index, and configured marker for a completed or terminated
+   * case. Call when a case reaches a terminal state to prevent unbounded memory growth. See
+   * casehubio/engine#84 for the persistence SPI that will eventually replace this in-memory
+   * registry.
    */
   public void evict(UUID caseId) {
     planModels.remove(caseId);
     completionIndex.remove(caseId);
+    configured.remove(caseId);
   }
 }

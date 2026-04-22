@@ -26,6 +26,7 @@ import io.smallrye.mutiny.Uni;
 import jakarta.annotation.Priority;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.enterprise.inject.Alternative;
+import jakarta.enterprise.inject.Instance;
 import jakarta.inject.Inject;
 import java.util.List;
 import java.util.UUID;
@@ -49,21 +50,32 @@ public class PlanningStrategyLoopControl implements LoopControl {
   private final BlackboardRegistry registry;
   private final PlanningStrategy planningStrategy;
   private final StageLifecycleEvaluator stageLifecycleEvaluator;
+  private final Instance<BlackboardPlanConfigurer> configurers;
 
   @Inject
   public PlanningStrategyLoopControl(
       BlackboardRegistry registry,
       PlanningStrategy planningStrategy,
-      StageLifecycleEvaluator stageLifecycleEvaluator) {
+      StageLifecycleEvaluator stageLifecycleEvaluator,
+      Instance<BlackboardPlanConfigurer> configurers) {
     this.registry = registry;
     this.planningStrategy = planningStrategy;
     this.stageLifecycleEvaluator = stageLifecycleEvaluator;
+    this.configurers = configurers;
   }
 
   @Override
   public Uni<List<Binding>> select(PlanExecutionContext ctx, List<Binding> eligible) {
     UUID caseId = ctx.caseId();
     CasePlanModel plan = registry.getOrCreate(caseId);
+
+    // On the first select() call for a case, run all applicable BlackboardPlanConfigurer beans.
+    // markConfigured() is atomic — only returns true once, guaranteeing exactly-once invocation.
+    if (registry.markConfigured(caseId)) {
+      configurers.stream()
+          .filter(c -> c.supports(ctx.definition()))
+          .forEach(c -> c.configure(plan, ctx));
+    }
 
     // Create a PlanItem for each eligible Binding and add to agenda, skipping duplicates.
     // addPlanItemIfAbsent performs the check-and-insert atomically — no TOCTOU window.
