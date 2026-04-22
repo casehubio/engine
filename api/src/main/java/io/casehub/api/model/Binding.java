@@ -25,6 +25,7 @@ public class Binding {
   private final String name;
   private final Trigger on;
   private ExpressionEvaluator when;
+  private String conflictResolverStrategy;
 
   public Binding(String name, Capability capability, Trigger on) {
     this.name = name;
@@ -34,6 +35,10 @@ public class Binding {
 
   public void setWhen(ExpressionEvaluator when) {
     this.when = when;
+  }
+
+  public void setConflictResolverStrategy(String conflictResolverStrategy) {
+    this.conflictResolverStrategy = conflictResolverStrategy;
   }
 
   public Capability getCapability() {
@@ -52,6 +57,15 @@ public class Binding {
     return when;
   }
 
+  /**
+   * Strategy name for resolving concurrent writes to the same CaseContext key. Values:
+   * "LAST_WRITER_WINS" (default), "FIRST_WRITER_WINS", "FAIL". Null means use the default
+   * (LAST_WRITER_WINS). See casehubio/engine#45, #51.
+   */
+  public String getConflictResolverStrategy() {
+    return conflictResolverStrategy;
+  }
+
   public static Builder builder() {
     return new Builder();
   }
@@ -62,6 +76,7 @@ public class Binding {
     private Capability capability;
     private Trigger on;
     private ExpressionEvaluator when;
+    private String conflictResolverStrategy;
 
     private Builder() {}
 
@@ -90,6 +105,11 @@ public class Binding {
       return this;
     }
 
+    public Builder conflictResolverStrategy(String conflictResolverStrategy) {
+      this.conflictResolverStrategy = conflictResolverStrategy;
+      return this;
+    }
+
     public Binding build() {
       Binding rule =
           new Binding(
@@ -97,6 +117,7 @@ public class Binding {
               Objects.requireNonNull(capability),
               Objects.requireNonNull(on));
       rule.setWhen(when);
+      rule.setConflictResolverStrategy(conflictResolverStrategy);
       return rule;
     }
   }
