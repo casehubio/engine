@@ -81,9 +81,11 @@ class ChoreographySelectionTest {
   @Test
   void twoSequentialCases_eachSelectsExactlyOneWorker() throws Exception {
     for (int i = 0; i < 2; i++) {
+      // Measure delta — don't reset counters, which would race with async completions
+      int countBefore =
+          TwoWorkerSameCapabilityCase.workerACount.get()
+              + TwoWorkerSameCapabilityCase.workerBCount.get();
       cache.clear();
-      TwoWorkerSameCapabilityCase.workerACount.set(0);
-      TwoWorkerSameCapabilityCase.workerBCount.set(0);
 
       AtomicReference<UUID> caseIdRef = new AtomicReference<>();
       twoWorkerCase.startCase(Map.of("trigger", "go")).thenAccept(caseIdRef::set);
@@ -98,7 +100,8 @@ class ChoreographySelectionTest {
 
       int calls =
           TwoWorkerSameCapabilityCase.workerACount.get()
-              + TwoWorkerSameCapabilityCase.workerBCount.get();
+              + TwoWorkerSameCapabilityCase.workerBCount.get()
+              - countBefore;
       assertThat(calls).as("Case %d: exactly one worker must run", i).isEqualTo(1);
     }
   }
