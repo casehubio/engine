@@ -21,6 +21,8 @@ import com.fasterxml.jackson.databind.node.ObjectNode;
 import io.casehub.api.context.CaseContext;
 import io.casehub.api.model.Binding;
 import io.casehub.api.model.CaseDefinition;
+import io.casehub.api.model.CaseStatus;
+import io.casehub.api.model.WorkResult;
 import io.casehub.api.model.Worker;
 import io.casehub.api.spi.ContextDiffStrategy;
 import io.casehub.engine.internal.engine.CaseDefinitionRegistry;
@@ -31,6 +33,8 @@ import io.casehub.engine.internal.history.CaseHubEventType;
 import io.casehub.engine.internal.history.EventLog;
 import io.casehub.engine.internal.history.EventStreamType;
 import io.casehub.engine.internal.model.CaseInstance;
+import io.casehub.engine.internal.work.PendingWorkRegistry;
+import io.casehub.engine.spi.CaseInstanceRepository;
 import io.casehub.engine.spi.EventLogRepository;
 import io.quarkus.vertx.ConsumeEvent;
 import io.smallrye.mutiny.Uni;
@@ -53,6 +57,8 @@ public class WorkflowExecutionCompletedHandler {
   @Inject ContextDiffStrategy contextDiffStrategy;
   @Inject EventLogRepository eventLogRepository;
   @Inject CaseDefinitionRegistry caseDefinitionRegistry;
+  @Inject PendingWorkRegistry pendingWorkRegistry;
+  @Inject CaseInstanceRepository caseInstanceRepository;
 
   private static final ObjectMapper OBJECT_MAPPER = new ObjectMapper();
   private static final Logger LOG = Logger.getLogger(WorkflowExecutionCompletedHandler.class);
@@ -74,6 +80,7 @@ public class WorkflowExecutionCompletedHandler {
 
     return eventLogRepository
         .append(eventLog)
+        .chain(() -> resumeIfWaiting(caseInstance, worker, event.idempotency(), rawOutput, now))
         .invoke(
             () ->
                 eventBus.publish(
@@ -188,5 +195,64 @@ public class WorkflowExecutionCompletedHandler {
         yield incoming;
       }
     };
+  }
+
+  /**
+   * If the case is WAITING for this specific work (idempotency key matches {@code
+   * waitingForWorkId}), transitions it to RUNNING, clears the waiting field, persists a
+   * WORK_COMPLETED EventLog entry, and completes any registered {@link PendingWorkRegistry} future.
+   * Otherwise completes any registered future without changing case state, and returns immediately.
+   *
+   * <p>Must be called after the WORKER_EXECUTION_COMPLETED event is persisted and before
+   * CONTEXT_CHANGED is published, so the binding evaluator sees the case in RUNNING state.
+   */
+  private Uni<Void> resumeIfWaiting(
+      CaseInstance caseInstance,
+      Worker worker,
+      String idempotency,
+      Map<String, Object> rawOutput,
+      Instant now) {
+
+    boolean isWaiting = caseInstance.getState() == CaseStatus.WAITING;
+    boolean isMatchingWork =
+        idempotency != null && idempotency.equals(caseInstance.getWaitingForWorkId());
+
+    if (!isWaiting || !isMatchingWork) {
+      completeRegisteredFuture(idempotency, worker.getName(), rawOutput);
+      return Uni.createFrom().voidItem();
+    }
+
+    caseInstance.setState(CaseStatus.RUNNING);
+    caseInstance.setWaitingForWorkId(null);
+
+    EventLog workCompletedLog = new EventLog();
+    workCompletedLog.setCaseId(caseInstance.getUuid());
+    workCompletedLog.setWorkerId(worker.getName());
+    workCompletedLog.setStreamType(EventStreamType.CASE);
+    workCompletedLog.setTimestamp(now);
+    workCompletedLog.setEventType(CaseHubEventType.WORK_COMPLETED);
+    ObjectNode meta = OBJECT_MAPPER.createObjectNode();
+    meta.put("correlationKey", idempotency);
+    workCompletedLog.setMetadata(meta);
+
+    LOG.debugf(
+        "Resuming WAITING case %s → RUNNING (correlationKey=%s)",
+        caseInstance.getUuid(), idempotency);
+
+    return caseInstanceRepository
+        .updateStateAndAppendEvent(caseInstance, workCompletedLog)
+        .invoke(() -> completeRegisteredFuture(idempotency, worker.getName(), rawOutput));
+  }
+
+  /**
+   * Completes any futures registered in {@link PendingWorkRegistry} for the given correlationKey.
+   * No-op if nothing is registered.
+   */
+  private void completeRegisteredFuture(
+      String correlationKey, String workerId, Map<String, Object> output) {
+    if (correlationKey != null && pendingWorkRegistry.hasPending(correlationKey)) {
+      pendingWorkRegistry.complete(
+          correlationKey, WorkResult.completed(correlationKey, output, workerId));
+    }
   }
 }
