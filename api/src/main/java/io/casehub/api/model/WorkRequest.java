@@ -13,30 +13,17 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.casehub.engine.internal.history;
+package io.casehub.api.model;
 
-public enum CaseHubEventType {
-  CASE_STARTED,
-  CASE_COMPLETED,
-  CASE_FAULTED,
-  CASE_CANCELLED,
+import java.util.Map;
 
-  TASK_CREATED,
-  TASK_COMPLETED,
-  TASK_FAILED,
-  TASK_CANCELLED,
+/**
+ * Input to {@code WorkOrchestrator.submit()}. Describes the capability required and the data to
+ * pass to the selected worker.
+ */
+public record WorkRequest(String capability, Map<String, Object> input) {
 
-  WORKER_SCHEDULED,
-  WORKER_EXECUTION_STARTED,
-  WORKER_EXECUTION_COMPLETED,
-  WORKER_EXECUTION_FAILED,
-
-  WORK_SUBMITTED, // orchestrated work submitted via WorkOrchestrator
-  WORK_COMPLETED, // orchestrated work completed; case may resume from WAITING
-
-  SIGNAL_RECEIVED,
-
-  MILESTONE_REACHED,
-  GOAL_REACHED,
-  CASE_STATUS_CHANGED,
+  public static WorkRequest of(String capability, Map<String, Object> input) {
+    return new WorkRequest(capability, input == null ? Map.of() : input);
+  }
 }

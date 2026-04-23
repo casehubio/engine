@@ -41,6 +41,7 @@ public class JpaCaseInstanceRepository extends AbstractJpaRepository
                               entity.uuid = instance.getUuid();
                               entity.state = instance.getState();
                               entity.parentPlanItemId = instance.getParentPlanItemId();
+                              entity.waitingForWorkId = instance.getWaitingForWorkId();
                               if (instance.getCaseMetaModel() != null) {
                                 entity.caseMetaModel =
                                     session.getReference(
@@ -68,6 +69,7 @@ public class JpaCaseInstanceRepository extends AbstractJpaRepository
                             entity -> {
                               entity.state = instance.getState();
                               entity.parentPlanItemId = instance.getParentPlanItemId();
+                              entity.waitingForWorkId = instance.getWaitingForWorkId();
                             })
                         .replaceWith(instance)));
   }
@@ -105,6 +107,7 @@ public class JpaCaseInstanceRepository extends AbstractJpaRepository
                                 entity -> {
                                   entity.state = instance.getState();
                                   entity.parentPlanItemId = instance.getParentPlanItemId();
+                                  entity.waitingForWorkId = instance.getWaitingForWorkId();
                                   return Panache.getSession().chain(s -> s.merge(entity));
                                 })
                             .chain(merged -> logEntity.persistAndFlush()))
@@ -122,6 +125,7 @@ public class JpaCaseInstanceRepository extends AbstractJpaRepository
     instance.setUuid(entity.uuid);
     instance.setState(entity.state);
     instance.setParentPlanItemId(entity.parentPlanItemId);
+    instance.setWaitingForWorkId(entity.waitingForWorkId);
     if (entity.caseMetaModel != null) {
       instance.setCaseMetaModel(fromMetaEntity(entity.caseMetaModel));
     }

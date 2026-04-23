@@ -46,4 +46,7 @@ public class CaseInstanceEntity extends PanacheEntity {
 
   @Column(name = "parent_plan_item_id", nullable = true)
   public UUID parentPlanItemId;
+
+  @Column(name = "waiting_for_work_id", nullable = true, length = 255)
+  public String waitingForWorkId;
 }

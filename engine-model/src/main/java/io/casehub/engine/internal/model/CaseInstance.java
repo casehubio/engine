@@ -31,6 +31,7 @@ public class CaseInstance {
   private long version = 0L;
   private CaseContext caseContext;
   private PropagationContext propagationContext;
+  private String waitingForWorkId;
   private UUID parentPlanItemId;
   private CaseStatus state;
 
@@ -72,6 +73,14 @@ public class CaseInstance {
 
   public void setPropagationContext(PropagationContext propagationContext) {
     this.propagationContext = propagationContext;
+  }
+
+  public String getWaitingForWorkId() {
+    return waitingForWorkId;
+  }
+
+  public void setWaitingForWorkId(String waitingForWorkId) {
+    this.waitingForWorkId = waitingForWorkId;
   }
 
   public UUID getParentPlanItemId() {
