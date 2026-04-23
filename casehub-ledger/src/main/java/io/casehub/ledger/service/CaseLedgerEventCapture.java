@@ -21,16 +21,12 @@ import io.casehub.ledger.repository.CaseLedgerEntryRepository;
 import io.quarkiverse.ledger.runtime.config.LedgerConfig;
 import io.quarkiverse.ledger.runtime.model.ActorType;
 import io.quarkiverse.ledger.runtime.model.LedgerEntryType;
-import io.quarkiverse.ledger.runtime.model.LedgerMerkleFrontier;
-import io.quarkiverse.ledger.runtime.service.LedgerMerkleTree;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.enterprise.event.ObservesAsync;
 import jakarta.inject.Inject;
-import jakarta.persistence.EntityManager;
 import jakarta.transaction.Transactional;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
-import java.util.List;
 import org.jboss.logging.Logger;
 
 /**
@@ -51,8 +47,6 @@ public class CaseLedgerEventCapture {
   @Inject CaseLedgerEntryRepository ledgerRepo;
 
   @Inject LedgerConfig ledgerConfig;
-
-  @Inject EntityManager em;
 
   @Transactional
   void onCaseLifecycleEvent(@ObservesAsync CaseLifecycleEvent event) {
@@ -75,33 +69,14 @@ public class CaseLedgerEventCapture {
     entry.actorType = deriveActorType(event.actorId());
     entry.actorRole = event.actorRole() != null ? event.actorRole() : "System";
     // Set before hash computation — @PrePersist runs too late for canonical form
+    // Set before save() — @PrePersist runs too late for the canonical leaf hash.
     entry.occurredAt = Instant.now().truncatedTo(ChronoUnit.MILLIS);
 
-    if (ledgerConfig.hashChain().enabled()) {
-      entry.digest = LedgerMerkleTree.leafHash(entry);
-    }
-
+    // save() handles digest computation and Merkle frontier update internally.
     ledgerRepo.save(entry);
-
-    if (ledgerConfig.hashChain().enabled()) {
-      updateMerkleFrontier(entry);
-    }
 
     LOG.debugf(
         "Ledger entry written: caseId=%s seq=%d event=%s", event.caseId(), seq, event.eventType());
-  }
-
-  private void updateMerkleFrontier(final CaseLedgerEntry entry) {
-    final List<LedgerMerkleFrontier> current =
-        em.createNamedQuery("LedgerMerkleFrontier.findBySubjectId", LedgerMerkleFrontier.class)
-            .setParameter("subjectId", entry.subjectId)
-            .getResultList();
-    final List<LedgerMerkleFrontier> newFrontier =
-        LedgerMerkleTree.append(entry.digest, current, entry.subjectId);
-    em.createQuery("DELETE FROM LedgerMerkleFrontier f WHERE f.subjectId = :subjectId")
-        .setParameter("subjectId", entry.subjectId)
-        .executeUpdate();
-    newFrontier.forEach(em::persist);
   }
 
   private ActorType deriveActorType(final String actorId) {

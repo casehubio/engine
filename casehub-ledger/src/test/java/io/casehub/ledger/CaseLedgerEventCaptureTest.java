@@ -22,6 +22,7 @@ import io.casehub.ledger.model.CaseLedgerEntry;
 import io.casehub.ledger.repository.CaseLedgerEntryRepository;
 import io.quarkiverse.ledger.runtime.model.ActorType;
 import io.quarkiverse.ledger.runtime.model.LedgerEntryType;
+import io.quarkiverse.ledger.runtime.service.LedgerVerificationService;
 import io.quarkus.test.junit.QuarkusTest;
 import jakarta.enterprise.event.Event;
 import jakarta.inject.Inject;
@@ -44,6 +45,8 @@ class CaseLedgerEventCaptureTest {
   @Inject Event<CaseLifecycleEvent> lifecycleEvents;
 
   @Inject CaseLedgerEntryRepository repository;
+
+  @Inject LedgerVerificationService verificationService;
 
   @Test
   void happyPath_singleEvent_writesLedgerEntry() {
@@ -254,5 +257,62 @@ class CaseLedgerEventCaptureTest {
   @Transactional
   void robustness_findLatest_emptyForUnknownCase() {
     assertThat(repository.findLatestByCaseId(UUID.randomUUID())).isEmpty();
+  }
+
+  // ── Correctness: Merkle chain integrity ────────────────────────────────────
+
+  @Test
+  void merkleChain_singleEntry_verifies() {
+    final UUID caseId = UUID.randomUUID();
+
+    lifecycleEvents
+        .fireAsync(
+            new CaseLifecycleEvent(caseId, "StartCase", "CaseStarted", "RUNNING", null, "System"))
+        .toCompletableFuture()
+        .join();
+
+    Awaitility.await()
+        .atMost(5, TimeUnit.SECONDS)
+        .untilAsserted(
+            () -> {
+              final List<CaseLedgerEntry> entries = repository.findByCaseId(caseId);
+              assertThat(entries).hasSize(1);
+              assertThat(verificationService.verify(caseId))
+                  .as("Merkle chain must be intact after a single event")
+                  .isTrue();
+            });
+  }
+
+  @Test
+  void merkleChain_multipleEntries_verifies() {
+    final UUID caseId = UUID.randomUUID();
+
+    lifecycleEvents
+        .fireAsync(
+            new CaseLifecycleEvent(caseId, "StartCase", "CaseStarted", "RUNNING", null, "System"))
+        .toCompletableFuture()
+        .join();
+    lifecycleEvents
+        .fireAsync(
+            new CaseLifecycleEvent(
+                caseId, "SuspendCase", "CaseSuspended", "SUSPENDED", null, "System"))
+        .toCompletableFuture()
+        .join();
+    lifecycleEvents
+        .fireAsync(
+            new CaseLifecycleEvent(
+                caseId, "CompleteCase", "CaseCompleted", "COMPLETED", null, "System"))
+        .toCompletableFuture()
+        .join();
+
+    Awaitility.await()
+        .atMost(5, TimeUnit.SECONDS)
+        .untilAsserted(
+            () -> {
+              assertThat(repository.findByCaseId(caseId)).hasSize(3);
+              assertThat(verificationService.verify(caseId))
+                  .as("Merkle chain must be intact after three events")
+                  .isTrue();
+            });
   }
 }
