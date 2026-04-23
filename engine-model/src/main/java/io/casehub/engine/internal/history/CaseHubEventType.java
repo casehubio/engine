@@ -31,6 +31,9 @@ public enum CaseHubEventType {
   WORKER_EXECUTION_COMPLETED,
   WORKER_EXECUTION_FAILED,
 
+  WORK_SUBMITTED, // orchestrated work submitted via WorkOrchestrator
+  WORK_COMPLETED, // orchestrated work completed; case may resume from WAITING
+
   SIGNAL_RECEIVED,
 
   MILESTONE_REACHED,
