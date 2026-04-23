@@ -16,7 +16,10 @@ Plain POJOs with no Quarkus or JPA dependencies:
 - **Domain objects:** `CaseMetaModel`, `CaseInstance`, `EventLog`
 - **SPI interfaces:** `CaseMetaModelRepository`, `CaseInstanceRepository`, `EventLogRepository`
 - **Enums:** `CaseStatus`, `CaseHubEventType`, `EventStreamType`
+<<<<<<< feat/casehub-ledger-integration
 - **CDI events:** `CaseLifecycleEvent` — fired via `Event.fireAsync()` by lifecycle handlers; optional modules observe this to react to transitions without coupling to the engine
+=======
+>>>>>>> main
 
 ### Persistence (`casehub-persistence-hibernate`, in-memory test variant)
 
@@ -31,6 +34,7 @@ Orchestrates case execution via:
 - **`WorkflowExecutionCompletedHandler`** — processes work completion, resumes WAITING cases
 - **`EventLog`** — persistent audit trail of all decisions and state changes
 
+<<<<<<< feat/casehub-ledger-integration
 Lifecycle handlers fire `CaseLifecycleEvent` via `Event.fireAsync()` after their EventLog write. If no observer is registered (e.g. `casehub-ledger` absent), the event fires into the void — zero overhead.
 
 ### Audit Ledger (`casehub-ledger`, optional)
@@ -65,6 +69,8 @@ An optional module that writes an immutable, hash-chained audit record for every
 
 **Eventual consistency note:** `CaseLedgerEventCapture` runs in a separate transaction from the case state update (required by `@ObservesAsync` + reactive engine). In production the engine processes one lifecycle event per case at a time, so sequence numbers are assigned without races.
 
+=======
+>>>>>>> main
 ## Execution Models
 
 casehub-engine is a **hybrid choreography+orchestration engine**. Both models share the same worker selection infrastructure (`WorkBroker`, `WorkerSelectionStrategy`, `WorkloadProvider`) and the same Quartz execution layer.
@@ -191,6 +197,7 @@ The engine defines clean extension points via SPIs:
 
 External systems implement these SPIs to provide storage. The engine depends only on the SPIs, not on specific storage backends.
 
+<<<<<<< feat/casehub-ledger-integration
 ### Worker Provisioner SPIs
 
 Four dual-stack SPI interfaces (blocking + reactive) enable external systems to provision workers, observe lifecycle events, create channels for inter-worker communication, and build worker startup context from case lineage.
@@ -219,6 +226,8 @@ Four dual-stack SPI interfaces (blocking + reactive) enable external systems to 
 
 **SPI placement rule:** Operational SPIs (worker provisioning, lifecycle, channels) go in `api/spi/`; persistence SPIs (`CaseMetaModelRepository`, etc.) go in `engine-model/spi/`. This distinction clarifies intent: operational SPIs are about external system integration; persistence SPIs are about data durability.
 
+=======
+>>>>>>> main
 ## Configuration
 
 Configuration uses the `casehub.` prefix. Key properties:
@@ -258,7 +267,10 @@ TESTCONTAINERS_RYUK_DISABLED=true mvn test -Dtest=ChoreographySelectionTest
 **Near term:**
 - ✅ Hybrid choreography+orchestration (Q2 2026)
 - ✅ WAITING state durability (Q2 2026)
+<<<<<<< feat/casehub-ledger-integration
 - ✅ Immutable audit ledger (`casehub-ledger`, Q2 2026)
+=======
+>>>>>>> main
 - [ ] Human worker integration (Q2/Q3 2026)
 - [ ] Escalation rules and thresholds (Q3 2026)
 
@@ -278,5 +290,8 @@ TESTCONTAINERS_RYUK_DISABLED=true mvn test -Dtest=ChoreographySelectionTest
 - **ADR-0003** — Work/WorkItem/Task naming hierarchy
 - **casehubio/engine#121** — Original design discussion (closed by ADR-0003)
 - **casehubio/engine#131** — WorkBroker integration epic
+<<<<<<< feat/casehub-ledger-integration
 - **casehubio/engine#145** — quarkus-ledger integration epic
 - **mdproctor/quarkus-ledger#39** — CaseLedgerEntry tracking issue
+=======
+>>>>>>> main
