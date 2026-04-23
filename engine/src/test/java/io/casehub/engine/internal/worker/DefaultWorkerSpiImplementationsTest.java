@@ -28,6 +28,7 @@ import io.casehub.api.model.WorkerContext;
 import io.casehub.api.spi.ProvisioningException;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.UUID;
 import org.junit.jupiter.api.Test;
 
@@ -145,6 +146,112 @@ class DefaultWorkerSpiImplementationsTest {
   void emptyContextProvider_buildContext_propagationContextIsNotNull() {
     var provider = new EmptyWorkerContextProvider();
     WorkerContext ctx = provider.buildContext("worker-1", WorkRequest.of("task", Map.of()));
+    assertThat(ctx.propagationContext()).isNotNull();
+  }
+
+  // --- NoOpReactiveWorkerProvisioner ---
+
+  @Test
+  void noOpReactiveProvisioner_provision_uniFails_withProvisioningException() {
+    var provisioner = new NoOpReactiveWorkerProvisioner();
+    var ctx =
+        new ProvisionContext(
+            UUID.randomUUID(),
+            "task",
+            new WorkerContext(
+                "desc", null, null, List.of(), PropagationContext.createRoot(), Map.of()),
+            PropagationContext.createRoot());
+    assertThatThrownBy(() -> provisioner.provision(Set.of("cap"), ctx).await().indefinitely())
+        .isInstanceOf(ProvisioningException.class);
+  }
+
+  @Test
+  void noOpReactiveProvisioner_terminate_completesWithoutException() {
+    var provisioner = new NoOpReactiveWorkerProvisioner();
+    assertThatNoException()
+        .isThrownBy(() -> provisioner.terminate("worker-1").await().indefinitely());
+  }
+
+  @Test
+  void noOpReactiveProvisioner_getCapabilities_returnsEmptySet() {
+    var provisioner = new NoOpReactiveWorkerProvisioner();
+    assertThat(provisioner.getCapabilities().await().indefinitely()).isEmpty();
+  }
+
+  // --- NoOpReactiveWorkerStatusListener ---
+
+  @Test
+  void noOpReactiveStatusListener_onWorkerStarted_completesWithoutException() {
+    var listener = new NoOpReactiveWorkerStatusListener();
+    assertThatNoException()
+        .isThrownBy(() -> listener.onWorkerStarted("worker-1", Map.of()).await().indefinitely());
+  }
+
+  @Test
+  void noOpReactiveStatusListener_onWorkerCompleted_completesWithoutException() {
+    var listener = new NoOpReactiveWorkerStatusListener();
+    var result = WorkResult.completed("corr-1", Map.of(), "worker-1");
+    assertThatNoException()
+        .isThrownBy(() -> listener.onWorkerCompleted("worker-1", result).await().indefinitely());
+  }
+
+  @Test
+  void noOpReactiveStatusListener_onWorkerStalled_completesWithoutException() {
+    var listener = new NoOpReactiveWorkerStatusListener();
+    assertThatNoException()
+        .isThrownBy(() -> listener.onWorkerStalled("unknown-worker").await().indefinitely());
+  }
+
+  // --- NoOpReactiveCaseChannelProvider ---
+
+  @Test
+  void noOpReactiveChannelProvider_openChannel_returnsSentinelWithBackendTypeNone() {
+    var provider = new NoOpReactiveCaseChannelProvider();
+    CaseChannel ch = provider.openChannel(UUID.randomUUID(), "coordination").await().indefinitely();
+    assertThat(ch.backendType()).isEqualTo("none");
+    assertThat(ch.purpose()).isEqualTo("coordination");
+  }
+
+  @Test
+  void noOpReactiveChannelProvider_listChannels_returnsEmptyList() {
+    var provider = new NoOpReactiveCaseChannelProvider();
+    assertThat(provider.listChannels(UUID.randomUUID()).await().indefinitely()).isEmpty();
+  }
+
+  @Test
+  void noOpReactiveChannelProvider_postToChannel_completesWithoutException() {
+    var provider = new NoOpReactiveCaseChannelProvider();
+    CaseChannel ch = provider.openChannel(UUID.randomUUID(), "p").await().indefinitely();
+    assertThatNoException()
+        .isThrownBy(() -> provider.postToChannel(ch, "alice", "hello").await().indefinitely());
+  }
+
+  // --- EmptyReactiveWorkerContextProvider ---
+
+  @Test
+  void emptyReactiveContextProvider_buildContext_taskDescriptionMatchesCapability() {
+    var provider = new EmptyReactiveWorkerContextProvider();
+    WorkerContext ctx =
+        provider
+            .buildContext("worker-1", WorkRequest.of("researcher", Map.of()))
+            .await()
+            .indefinitely();
+    assertThat(ctx.taskDescription()).isEqualTo("researcher");
+  }
+
+  @Test
+  void emptyReactiveContextProvider_buildContext_priorWorkersIsEmpty() {
+    var provider = new EmptyReactiveWorkerContextProvider();
+    WorkerContext ctx =
+        provider.buildContext("worker-1", WorkRequest.of("task", Map.of())).await().indefinitely();
+    assertThat(ctx.priorWorkers()).isNotNull().isEmpty();
+  }
+
+  @Test
+  void emptyReactiveContextProvider_buildContext_propagationContextIsNotNull() {
+    var provider = new EmptyReactiveWorkerContextProvider();
+    WorkerContext ctx =
+        provider.buildContext("w", WorkRequest.of("task", Map.of())).await().indefinitely();
     assertThat(ctx.propagationContext()).isNotNull();
   }
 }

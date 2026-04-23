@@ -15,6 +15,7 @@
  */
 package io.casehub.api.spi;
 
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatNoException;
 
 import io.casehub.api.model.WorkResult;
@@ -25,16 +26,59 @@ import org.junit.jupiter.api.Test;
 class ReactiveWorkerStatusListenerContractTest {
 
   @Test
-  void noOp_allMethodsCompleteSuccessfully() {
+  void interface_hasOnWorkerStartedMethod() throws Exception {
+    assertThat(
+            ReactiveWorkerStatusListener.class.getMethod(
+                "onWorkerStarted", String.class, Map.class))
+        .isNotNull();
+  }
+
+  @Test
+  void interface_hasOnWorkerCompletedMethod() throws Exception {
+    assertThat(
+            ReactiveWorkerStatusListener.class.getMethod(
+                "onWorkerCompleted", String.class, WorkResult.class))
+        .isNotNull();
+  }
+
+  @Test
+  void interface_hasOnWorkerStalledMethod() throws Exception {
+    assertThat(ReactiveWorkerStatusListener.class.getMethod("onWorkerStalled", String.class))
+        .isNotNull();
+  }
+
+  @Test
+  void noOp_onWorkerStarted_completesSuccessfully() {
     ReactiveWorkerStatusListener listener = new NoOpStub();
-    WorkResult result = WorkResult.completed("corr-1", Map.of(), "worker-1");
     assertThatNoException()
         .isThrownBy(
-            () -> {
-              listener.onWorkerStarted("worker-1", Map.of()).await().indefinitely();
-              listener.onWorkerCompleted("worker-1", result).await().indefinitely();
-              listener.onWorkerStalled("worker-1").await().indefinitely();
-            });
+            () ->
+                listener
+                    .onWorkerStarted("worker-1", Map.of("session", "tmux-123"))
+                    .await()
+                    .indefinitely());
+  }
+
+  @Test
+  void noOp_onWorkerStarted_nullSessionMeta_completesSuccessfully() {
+    ReactiveWorkerStatusListener listener = new NoOpStub();
+    assertThatNoException()
+        .isThrownBy(() -> listener.onWorkerStarted("worker-1", null).await().indefinitely());
+  }
+
+  @Test
+  void noOp_onWorkerCompleted_completesSuccessfully() {
+    ReactiveWorkerStatusListener listener = new NoOpStub();
+    WorkResult result = WorkResult.completed("corr-1", Map.of("output", "done"), "worker-1");
+    assertThatNoException()
+        .isThrownBy(() -> listener.onWorkerCompleted("worker-1", result).await().indefinitely());
+  }
+
+  @Test
+  void noOp_onWorkerStalled_unknownWorker_completesSuccessfully() {
+    ReactiveWorkerStatusListener listener = new NoOpStub();
+    assertThatNoException()
+        .isThrownBy(() -> listener.onWorkerStalled("unknown-999").await().indefinitely());
   }
 
   static class NoOpStub implements ReactiveWorkerStatusListener {
