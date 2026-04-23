@@ -191,6 +191,34 @@ The engine defines clean extension points via SPIs:
 
 External systems implement these SPIs to provide storage. The engine depends only on the SPIs, not on specific storage backends.
 
+### Worker Provisioner SPIs
+
+Four dual-stack SPI interfaces (blocking + reactive) enable external systems to provision workers, observe lifecycle events, create channels for inter-worker communication, and build worker startup context from case lineage.
+
+| Blocking SPI | Reactive Mirror | Purpose |
+|---|---|---|
+| `WorkerProvisioner` | `ReactiveWorkerProvisioner` | Provision/terminate workers when a `PlanItem` is eligible but no workers are available; responds with allocated `WorkerSummary` |
+| `WorkerStatusListener` | `ReactiveWorkerStatusListener` | Lifecycle callbacks: `started()`, `completed()`, `stalled()` for observing worker state transitions |
+| `CaseChannelProvider` | `ReactiveCaseChannelProvider` | Open/close/post to backend-agnostic channels (Qhorus, Slack, email, etc.) for inter-worker communication |
+| `WorkerContextProvider` | `ReactiveWorkerContextProvider` | Build startup context from `CaseLedgerEntry` lineage (not `EventLog`) — includes prior worker summaries, causal chain metadata |
+
+**New model types** in `api/model/`:
+- `CaseChannel` — backend-agnostic channel reference with extensible `properties` map
+- `WorkerSummary` — prior worker's execution summary, includes `ledgerEntryId` (UUID of the `WORKER_EXECUTION_COMPLETED` ledger entry)
+- `WorkerContext` — startup context for a newly provisioned worker, includes `priorWorkers` list and channel references
+- `ProvisionContext` — input to `WorkerProvisioner.provision()`, contains the work request and case metadata
+
+**Default implementations** in `engine/internal/worker/`:
+- `NoOpWorkerProvisioner` — throws `ProvisioningException` to flag misconfiguration
+- `NoOpWorkerStatusListener` — silently ignores all lifecycle events
+- `NoOpCaseChannelProvider` — returns sentinel channels with `backendType = "none"`
+- `EmptyWorkerContextProvider` — returns minimal context with empty `priorWorkers` list
+- Four `@Alternative` reactive mirrors for optional reactive pipeline use (selected via `quarkus.arc.selected-alternatives`)
+
+**Causal chain:** When a worker completes, `CaseLedgerEventCapture` writes a `WORKER_EXECUTION_COMPLETED` entry to the ledger. The allocated `WorkerSummary` includes this entry's UUID as `ledgerEntryId`. New workers set `causedByEntryId` on their own ledger entries to this value, completing the causal chain across workers on a case. This enables `WorkerContextProvider.buildContext()` to reconstruct the full prior-worker history and surface it in the startup context.
+
+**SPI placement rule:** Operational SPIs (worker provisioning, lifecycle, channels) go in `api/spi/`; persistence SPIs (`CaseMetaModelRepository`, etc.) go in `engine-model/spi/`. This distinction clarifies intent: operational SPIs are about external system integration; persistence SPIs are about data durability.
+
 ## Configuration
 
 Configuration uses the `casehub.` prefix. Key properties:
