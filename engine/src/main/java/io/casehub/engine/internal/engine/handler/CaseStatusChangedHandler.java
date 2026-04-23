@@ -17,6 +17,7 @@ package io.casehub.engine.internal.engine.handler;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.casehub.api.model.CaseStatus;
+import io.casehub.engine.internal.event.CaseLifecycleEvent;
 import io.casehub.engine.internal.event.CaseStatusChanged;
 import io.casehub.engine.internal.event.EventBusAddresses;
 import io.casehub.engine.internal.history.CaseHubEventType;
@@ -29,6 +30,7 @@ import io.quarkus.vertx.ConsumeEvent;
 import io.smallrye.mutiny.Uni;
 import io.vertx.mutiny.core.eventbus.EventBus;
 import jakarta.enterprise.context.ApplicationScoped;
+import jakarta.enterprise.event.Event;
 import jakarta.inject.Inject;
 import java.time.Instant;
 import org.jboss.logging.Logger;
@@ -49,11 +51,13 @@ public class CaseStatusChangedHandler {
 
   @Inject SchedulerService schedulerService;
 
+  @Inject Event<CaseLifecycleEvent> lifecycleEvents;
+
   @ConsumeEvent(value = EventBusAddresses.CASE_STATUS_CHANGED)
   public Uni<Void> onCaseStatusChangedHandler(CaseStatusChanged event) {
-    CaseInstance caseInstance = event.instance();
-    CaseStatus newState = CaseStatus.valueOf(event.newStatus());
-    String oldStatus = event.oldStatus();
+    final CaseInstance caseInstance = event.instance();
+    final CaseStatus newState = CaseStatus.valueOf(event.newStatus());
+    final String oldStatus = event.oldStatus();
 
     LOG.infof(
         "Case status changed: caseId=%s, %s -> %s",
@@ -76,7 +80,6 @@ public class CaseStatusChangedHandler {
         .updateStateAndAppendEvent(caseInstance, eventLog)
         .chain(
             () -> {
-              // Cancel all scheduled triggers when case reaches terminal state
               if (isTerminalState(newState)) {
                 return schedulerService.cancelAllTriggers(caseInstance.getUuid());
               }
@@ -88,6 +91,14 @@ public class CaseStatusChangedHandler {
               if (eventBusAddress != null) {
                 eventBus.publish(eventBusAddress, caseInstance);
               }
+              lifecycleEvents.fireAsync(
+                  new CaseLifecycleEvent(
+                      caseInstance.getUuid(),
+                      resolveCommandType(newState),
+                      resolveEventType(newState),
+                      newState.name(),
+                      null,
+                      "System"));
             });
   }
 
@@ -110,6 +121,30 @@ public class CaseStatusChangedHandler {
       case COMPLETED -> EventBusAddresses.CASE_COMPLETED;
       case FAULTED -> EventBusAddresses.CASE_FAULTED;
       default -> null;
+    };
+  }
+
+  private String resolveCommandType(CaseStatus state) {
+    return switch (state) {
+      case COMPLETED -> "CompleteCase";
+      case FAULTED -> "FaultCase";
+      case CANCELLED -> "CancelCase";
+      case SUSPENDED -> "SuspendCase";
+      case WAITING -> "SubmitWork";
+      case RUNNING -> "ResumeCase";
+      default -> "TransitionCase";
+    };
+  }
+
+  private String resolveEventType(CaseStatus state) {
+    return switch (state) {
+      case COMPLETED -> "CaseCompleted";
+      case FAULTED -> "CaseFaulted";
+      case CANCELLED -> "CaseCancelled";
+      case SUSPENDED -> "CaseSuspended";
+      case WAITING -> "WorkSubmitted";
+      case RUNNING -> "CaseResumed";
+      default -> "CaseStatusChanged";
     };
   }
 }

@@ -26,6 +26,12 @@ jobs:
           repository: mdproctor/quarkus-work
           path: quarkus-work
 
+      - name: Checkout quarkus-ledger
+        uses: actions/checkout@v6
+        with:
+          repository: mdproctor/quarkus-ledger
+          path: quarkus-ledger
+
       - name: Set up Java 21
         uses: actions/setup-java@v5
         with:
@@ -36,6 +42,10 @@ jobs:
       - name: Install quarkus-work-api and quarkus-work-core
         run: mvn install -pl .,quarkus-work-api,quarkus-work-core -DskipTests -q
         working-directory: quarkus-work
+
+      - name: Install quarkus-ledger
+        run: mvn install -pl .,runtime,deployment -DskipTests -q
+        working-directory: quarkus-ledger
 
       - name: Build and test
         run: mvn -B package --file pom.xml
@@ -71,6 +81,12 @@ jobs:
           repository: mdproctor/quarkus-work
           path: quarkus-work
 
+      - name: Checkout quarkus-ledger
+        uses: actions/checkout@v6
+        with:
+          repository: mdproctor/quarkus-ledger
+          path: quarkus-ledger
+
       - name: Set up Java ${{ matrix.java }}
         uses: actions/setup-java@v5
         with:
@@ -81,6 +97,10 @@ jobs:
       - name: Install quarkus-work-api and quarkus-work-core
         run: mvn install -pl .,quarkus-work-api,quarkus-work-core -DskipTests -q
         working-directory: quarkus-work
+
+      - name: Install quarkus-ledger
+        run: mvn install -pl .,runtime,deployment -DskipTests -q
+        working-directory: quarkus-ledger
 
       - name: Set up Maven Wrapper for specified version
         run: mvn -N wrapper:wrapper -Dmaven=${{ matrix.mvn }}

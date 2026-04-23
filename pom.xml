@@ -88,6 +88,7 @@
         <module>engine</module>
         <module>casehub-blackboard</module>
         <module>casehub-resilience</module>
+        <module>casehub-ledger</module>
     </modules>
 
     <dependencyManagement>
