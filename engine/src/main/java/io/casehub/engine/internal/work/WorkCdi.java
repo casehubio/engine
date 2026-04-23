@@ -15,17 +15,32 @@
  */
 package io.casehub.engine.internal.work;
 
-/**
- * CDI configuration for quarkus-work-core beans.
- *
- * <p>WorkBroker, LeastLoadedStrategy, ClaimFirstStrategy, and NoOpWorkerRegistry are all annotated
- * {@code @ApplicationScoped} in the quarkus-work-core library and are discovered automatically by
- * the CDI container. No explicit producer methods are needed.
- *
- * <p>To select a specific WorkerSelectionStrategy, inject the concrete type directly (e.g.
- * {@code @Inject LeastLoadedStrategy}) rather than the interface, as multiple implementations are
- * present on the classpath.
- */
+import io.quarkiverse.work.api.WorkerRegistry;
+import io.quarkiverse.work.api.WorkerSelectionStrategy;
+import io.quarkiverse.work.core.strategy.LeastLoadedStrategy;
+import io.quarkiverse.work.core.strategy.NoOpWorkerRegistry;
+import io.quarkiverse.work.core.strategy.WorkBroker;
+import jakarta.enterprise.context.ApplicationScoped;
+import jakarta.enterprise.inject.Produces;
+
+@ApplicationScoped
 public class WorkCdi {
-  // Intentionally empty — quarkus-work-core provides its beans via @ApplicationScoped annotations.
+
+  @Produces
+  @ApplicationScoped
+  public WorkBroker workBroker() {
+    return new WorkBroker();
+  }
+
+  @Produces
+  @ApplicationScoped
+  public WorkerSelectionStrategy defaultSelectionStrategy() {
+    return new LeastLoadedStrategy();
+  }
+
+  @Produces
+  @ApplicationScoped
+  public WorkerRegistry defaultWorkerRegistry() {
+    return new NoOpWorkerRegistry();
+  }
 }
