@@ -23,7 +23,7 @@ jobs:
       - name: Checkout quarkus-workitems
         uses: actions/checkout@v6
         with:
-          repository: mdproctor/quarkus-workitems
+          repository: mdproctor/quarkus-work
           path: quarkus-workitems
           ref: 9707bc5
 
@@ -69,7 +69,7 @@ jobs:
       - name: Checkout quarkus-workitems
         uses: actions/checkout@v6
         with:
-          repository: mdproctor/quarkus-workitems
+          repository: mdproctor/quarkus-work
           path: quarkus-workitems
           ref: 9707bc5
 
