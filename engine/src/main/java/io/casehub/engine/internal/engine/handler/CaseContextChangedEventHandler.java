@@ -35,6 +35,13 @@ import io.casehub.engine.internal.event.MilestoneReachedEvent;
 import io.casehub.engine.internal.event.WorkerScheduleEvent;
 import io.casehub.engine.internal.model.CaseInstance;
 import io.casehub.engine.internal.model.CaseMetaModel;
+import io.quarkiverse.work.api.AssignmentDecision;
+import io.quarkiverse.work.api.AssignmentTrigger;
+import io.quarkiverse.work.api.SelectionContext;
+import io.quarkiverse.work.api.WorkerCandidate;
+import io.quarkiverse.work.api.WorkloadProvider;
+import io.quarkiverse.work.core.strategy.LeastLoadedStrategy;
+import io.quarkiverse.work.core.strategy.WorkBroker;
 import io.quarkus.vertx.ConsumeEvent;
 import io.smallrye.mutiny.Uni;
 import io.vertx.mutiny.core.eventbus.EventBus;
@@ -56,6 +63,12 @@ public class CaseContextChangedEventHandler {
   @Inject ExpressionEngineRegistry expressionEngineRegistry;
 
   @Inject LoopControl loopControl;
+
+  @Inject WorkBroker workBroker;
+
+  @Inject LeastLoadedStrategy selectionStrategy;
+
+  @Inject WorkloadProvider workloadProvider;
 
   @ConsumeEvent(value = EventBusAddresses.CONTEXT_CHANGED)
   public Uni<Void> onCaseStateContextChangedEventHandler(CaseContextChangedEvent event) {
@@ -178,29 +191,80 @@ public class CaseContextChangedEventHandler {
       CaseInstance caseInstance, List<Worker> workers, Binding binding, Capability capability) {
 
     if (workers == null || workers.isEmpty()) {
+      LOG.warnf("No workers defined; cannot schedule capability '%s'", capability.getName());
+      return Uni.createFrom().voidItem();
+    }
+
+    List<WorkerCandidate> candidates =
+        workers.stream()
+            .filter(w -> w.getCapabilities() != null)
+            .filter(
+                w ->
+                    w.getCapabilities().stream()
+                        .anyMatch(c -> c.getName().equals(capability.getName())))
+            .map(
+                w ->
+                    WorkerCandidate.of(w.getName())
+                        .withActiveWorkItemCount(workloadProvider.getActiveWorkCount(w.getName())))
+            .toList();
+
+    if (candidates.isEmpty()) {
       LOG.warnf(
-          "No workers defined; cannot schedule capability '%s' for rule '%s'",
+          "No workers match capability '%s' for binding '%s'",
           capability.getName(), binding.getName());
       return Uni.createFrom().voidItem();
     }
 
-    for (Worker worker : workers) {
-      if (worker.getCapabilities() == null) {
-        continue;
-      }
-      if (worker.getCapabilities().stream()
-          .noneMatch(c -> c.getName().equals(capability.getName()))) {
-        continue;
-      }
+    // requiredCapabilities is null: WorkerCandidate.of() creates candidates with an empty
+    // capabilities set (no capability tracking on candidates), so passing the capability name
+    // would cause WorkBroker to filter out all pre-screened candidates. Capability matching
+    // is already done above when building the candidates list.
+    SelectionContext ctx =
+        new SelectionContext(
+            capability.getName(),
+            null,
+            null, // see above: capability filtering already done on candidates
+            null,
+            null,
+            null,
+            null);
 
-      LOG.infof(
-          "Worker '%s' matches capability '%s' from rule '%s' -> scheduling",
-          worker.getName(), capability.getName(), binding.getName());
+    AssignmentDecision decision =
+        workBroker.apply(ctx, AssignmentTrigger.CREATED, candidates, selectionStrategy);
 
-      eventBus.publish(
-          EventBusAddresses.WORKER_SCHEDULE,
-          new WorkerScheduleEvent(caseInstance, worker, capability));
+    if (decision.isNoOp()) {
+      LOG.warnf(
+          "WorkBroker returned no assignment for capability '%s' binding '%s'",
+          capability.getName(), binding.getName());
+      return Uni.createFrom().voidItem();
     }
+
+    String selectedId = decision.assigneeId();
+    if (selectedId == null) {
+      LOG.errorf(
+          "WorkBroker returned null assigneeId for non-noOp decision on capability '%s' — skipping",
+          capability.getName());
+      return Uni.createFrom().voidItem();
+    }
+
+    Worker selectedWorker =
+        workers.stream().filter(w -> w.getName().equals(selectedId)).findFirst().orElse(null);
+
+    if (selectedWorker == null) {
+      LOG.errorf(
+          "WorkBroker selected worker '%s' but it was not found in the case definition",
+          selectedId);
+      return Uni.createFrom().voidItem();
+    }
+
+    LOG.infof(
+        "WorkBroker selected '%s' for capability '%s' (binding '%s')",
+        selectedId, capability.getName(), binding.getName());
+
+    eventBus.publish(
+        EventBusAddresses.WORKER_SCHEDULE,
+        new WorkerScheduleEvent(caseInstance, selectedWorker, capability));
+
     return Uni.createFrom().voidItem();
   }
 }
