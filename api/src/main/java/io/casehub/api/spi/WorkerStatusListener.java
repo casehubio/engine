@@ -39,7 +39,7 @@ public interface WorkerStatusListener {
    * Called when a worker has completed its assigned work.
    *
    * @param workerId the worker name/ID
-   * @param result the work result including status, output, and correlation key
+   * @param result the work result including status, output, and correlation key; must not be null
    */
   void onWorkerCompleted(String workerId, WorkResult result);
 
