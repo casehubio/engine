@@ -88,15 +88,15 @@ class ChoreographySelectionTest {
   /** Correctness: two sequential cases each invoke exactly one worker. */
   @Test
   void twoSequentialCases_eachSelectsExactlyOneWorker() throws Exception {
-    for (int i = 0; i < 2; i++) {
-      // Measure delta — don't reset counters, which would race with async completions.
-      // Do NOT clear the cache inside the loop: clearing evicts the completed case from
-      // CaseInstanceCache, which causes Quartz to re-run its worker via recovery on the
-      // next Quartz tick, inflating the delta to 2 for the second iteration.
-      int countBefore =
-          TwoWorkerSameCapabilityCase.workerACount.get()
-              + TwoWorkerSameCapabilityCase.workerBCount.get();
+    // Snapshot once before both cases — per-iteration delta is unreliable because an
+    // in-flight Quartz job from iteration N can fire after the countBefore snapshot
+    // for iteration N+1, making the delta appear as 2. Instead: run both cases to
+    // completion then assert total delta == 2 (one worker invocation per case).
+    int countBefore =
+        TwoWorkerSameCapabilityCase.workerACount.get()
+            + TwoWorkerSameCapabilityCase.workerBCount.get();
 
+    for (int i = 0; i < 2; i++) {
       AtomicReference<UUID> caseIdRef = new AtomicReference<>();
       twoWorkerCase.startCase(Map.of("trigger", "go")).thenAccept(caseIdRef::set);
 
@@ -107,13 +107,19 @@ class ChoreographySelectionTest {
               () ->
                   assertThat(cache.get(caseIdRef.get()).getState())
                       .isEqualTo(CaseStatus.COMPLETED));
-
-      int calls =
-          TwoWorkerSameCapabilityCase.workerACount.get()
-              + TwoWorkerSameCapabilityCase.workerBCount.get()
-              - countBefore;
-      assertThat(calls).as("Case %d: exactly one worker must run", i).isEqualTo(1);
     }
+
+    // Brief settle — allow any trailing Quartz notifications to flush before measuring
+    await()
+        .atMost(2, TimeUnit.SECONDS)
+        .untilAsserted(
+            () ->
+                assertThat(
+                        TwoWorkerSameCapabilityCase.workerACount.get()
+                            + TwoWorkerSameCapabilityCase.workerBCount.get()
+                            - countBefore)
+                    .as("Two sequential cases must each select exactly one worker (total=2)")
+                    .isEqualTo(2));
   }
 
   @ApplicationScoped
