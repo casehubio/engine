@@ -61,6 +61,13 @@ class CaseChannelTest {
   }
 
   @Test
+  void nullId_throwsIllegalArgumentException() {
+    assertThatThrownBy(() -> new CaseChannel(null, "name", "purpose", "none", Map.of()))
+        .isInstanceOf(IllegalArgumentException.class)
+        .hasMessageContaining("id");
+  }
+
+  @Test
   void blankBackendType_throwsIllegalArgumentException() {
     assertThatThrownBy(() -> new CaseChannel("ch-1", "name", "purpose", "", Map.of()))
         .isInstanceOf(IllegalArgumentException.class)

@@ -23,6 +23,9 @@ import java.util.Map;
  * <p>Backend-agnostic: a Qhorus implementation sets {@code backendType = "qhorus"} and populates
  * {@code properties} with Qhorus-specific metadata (e.g. endpoint URL). The {@code properties} map
  * is always immutable.
+ *
+ * @throws IllegalArgumentException if id or backendType is blank, or if properties contains null
+ *     values
  */
 public record CaseChannel(
     String id, String name, String purpose, String backendType, Map<String, Object> properties) {
@@ -31,6 +34,15 @@ public record CaseChannel(
     if (id == null || id.isBlank()) throw new IllegalArgumentException("id must not be blank");
     if (backendType == null || backendType.isBlank())
       throw new IllegalArgumentException("backendType must not be blank");
-    properties = properties == null ? Map.of() : Map.copyOf(properties);
+    if (properties != null) {
+      properties.forEach(
+          (k, v) -> {
+            if (v == null)
+              throw new IllegalArgumentException("properties must not contain null values");
+          });
+      properties = Map.copyOf(properties);
+    } else {
+      properties = Map.of();
+    }
   }
 }

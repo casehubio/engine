@@ -23,7 +23,7 @@ class ProvisioningExceptionTest {
 
   @Test
   void isUncheckedException() {
-    assertThat(RuntimeException.class).isAssignableFrom(ProvisioningException.class);
+    assertThat(new ProvisioningException("x")).isInstanceOf(RuntimeException.class);
   }
 
   @Test

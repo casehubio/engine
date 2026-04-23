@@ -16,6 +16,8 @@
 package io.casehub.api.model;
 
 import io.casehub.api.context.PropagationContext;
+import java.util.Collections;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
@@ -40,6 +42,9 @@ public record WorkerContext(
 
   public WorkerContext {
     priorWorkers = priorWorkers == null ? List.of() : List.copyOf(priorWorkers);
-    properties = properties == null ? Map.of() : Map.copyOf(properties);
+    properties =
+        properties == null
+            ? Map.of()
+            : Collections.unmodifiableMap(new LinkedHashMap<>(properties));
   }
 }
