@@ -19,6 +19,7 @@ import static io.casehub.engine.internal.history.CaseHubEventType.MILESTONE_REAC
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.casehub.api.model.Milestone;
+import io.casehub.engine.internal.event.CaseLifecycleEvent;
 import io.casehub.engine.internal.event.EventBusAddresses;
 import io.casehub.engine.internal.event.MilestoneReachedEvent;
 import io.casehub.engine.internal.history.EventLog;
@@ -28,6 +29,7 @@ import io.casehub.engine.spi.EventLogRepository;
 import io.quarkus.vertx.ConsumeEvent;
 import io.smallrye.mutiny.Uni;
 import jakarta.enterprise.context.ApplicationScoped;
+import jakarta.enterprise.event.Event;
 import jakarta.inject.Inject;
 import java.time.Instant;
 
@@ -39,10 +41,12 @@ public class MilestoneReachedEventHandler {
 
   @Inject EventLogRepository eventLogRepository;
 
+  @Inject Event<CaseLifecycleEvent> lifecycleEvents;
+
   @ConsumeEvent(value = EventBusAddresses.MILESTONE_REACHED)
   public Uni<Void> onMilestoneReachedEventHandler(MilestoneReachedEvent event) {
-    CaseInstance caseInstance = event.caseInstance();
-    Milestone milestone = event.milestone();
+    final CaseInstance caseInstance = event.caseInstance();
+    final Milestone milestone = event.milestone();
 
     EventLog eventLog = new EventLog();
     eventLog.setCaseId(caseInstance.getUuid());
@@ -55,6 +59,17 @@ public class MilestoneReachedEventHandler {
             .put("name", milestone.getName())
             .put("description", milestone.getDescription()));
 
-    return eventLogRepository.append(eventLog);
+    return eventLogRepository
+        .append(eventLog)
+        .invoke(
+            () ->
+                lifecycleEvents.fireAsync(
+                    new CaseLifecycleEvent(
+                        caseInstance.getUuid(),
+                        "ReachMilestone",
+                        "MilestoneReached",
+                        caseInstance.getState().name(),
+                        null,
+                        "System")));
   }
 }

@@ -25,6 +25,7 @@ import io.casehub.api.model.Goal;
 import io.casehub.api.model.GoalBasedCompletion;
 import io.casehub.api.model.GoalExpression;
 import io.casehub.engine.internal.engine.CaseDefinitionRegistry;
+import io.casehub.engine.internal.event.CaseLifecycleEvent;
 import io.casehub.engine.internal.event.CaseStatusChanged;
 import io.casehub.engine.internal.event.EventBusAddresses;
 import io.casehub.engine.internal.event.GoalReachedEvent;
@@ -36,6 +37,7 @@ import io.quarkus.vertx.ConsumeEvent;
 import io.smallrye.mutiny.Uni;
 import io.vertx.mutiny.core.eventbus.EventBus;
 import jakarta.enterprise.context.ApplicationScoped;
+import jakarta.enterprise.event.Event;
 import jakarta.inject.Inject;
 import java.time.Instant;
 import java.util.Set;
@@ -54,14 +56,16 @@ public class GoalReachedEventHandler {
 
   @Inject EventLogRepository eventLogRepository;
 
+  @Inject Event<CaseLifecycleEvent> lifecycleEvents;
+
   private static final ObjectMapper OBJECT_MAPPER = new ObjectMapper();
 
   @ConsumeEvent(value = EventBusAddresses.GOAL_REACHED)
   public Uni<Void> onGoalReachedEventHandler(GoalReachedEvent event) {
-    CaseInstance caseInstance = event.caseInstance();
+    final CaseInstance caseInstance = event.caseInstance();
     CaseDefinition definition =
         caseDefinitionRegistry.getCaseDefinition(caseInstance.getCaseMetaModel());
-    Goal goal = event.goal();
+    final Goal goal = event.goal();
 
     EventLog eventLog = new EventLog();
     eventLog.setCaseId(caseInstance.getUuid());
@@ -78,6 +82,16 @@ public class GoalReachedEventHandler {
 
     return eventLogRepository
         .append(eventLog)
+        .invoke(
+            () ->
+                lifecycleEvents.fireAsync(
+                    new CaseLifecycleEvent(
+                        caseInstance.getUuid(),
+                        "ReachGoal",
+                        "GoalReached",
+                        caseInstance.getState().name(),
+                        null,
+                        "System")))
         .chain(() -> evaluateCompletion(caseInstance, definition.getCompletion()));
   }
 

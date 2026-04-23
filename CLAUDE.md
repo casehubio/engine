@@ -35,6 +35,23 @@ in `engine/src/test/resources/application.properties` — no Docker required.
 Domain objects (`CaseMetaModel`, `CaseInstance`, `EventLog`) are plain POJOs. The `id` field
 is public (`public Long id`) and set by the repository after save.
 
+## Worker Provisioner SPIs
+
+Eight interfaces in `api/src/main/java/io/casehub/api/spi/` (four blocking + four reactive mirrors):
+
+- `WorkerProvisioner` / `ReactiveWorkerProvisioner` — provision and terminate workers
+- `WorkerStatusListener` / `ReactiveWorkerStatusListener` — lifecycle callbacks (started, completed, stalled)
+- `CaseChannelProvider` / `ReactiveCaseChannelProvider` — open/close/post to backend-agnostic channels
+- `WorkerContextProvider` / `ReactiveWorkerContextProvider` — build startup context from ledger lineage
+
+**Default implementations** in `engine/src/main/java/io/casehub/engine/internal/worker/`:
+- `NoOpWorkerProvisioner`, `NoOpWorkerStatusListener`, `NoOpCaseChannelProvider`, `EmptyWorkerContextProvider`
+- Four `@Alternative` reactive mirrors for optional reactive pipeline use
+
+**SPI placement rule:** Operational SPIs (worker provisioning, lifecycle, channels) go in `api/spi/`; persistence SPIs (`CaseMetaModelRepository`, etc.) go in `engine-model/spi/`. This clarifies intent: operational SPIs are about external system integration; persistence SPIs are about data durability.
+
+To add a new operational SPI: define the interface in `api/spi/`, add a no-op default in `engine/internal/worker/`, add contract tests in `api/src/test/java/io/casehub/api/spi/`, and add engine unit tests in `engine/src/test/java/io/casehub/engine/internal/worker/DefaultWorkerSpiImplementationsTest.java`.
+
 ## casehub-blackboard Module
 
 Optional CMMN/Blackboard orchestration layer. Activated via CDI `@Alternative @Priority(10)` when on the classpath.
