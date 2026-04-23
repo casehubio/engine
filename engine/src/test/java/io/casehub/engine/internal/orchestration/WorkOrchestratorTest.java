@@ -38,7 +38,7 @@ import io.casehub.engine.internal.work.PendingWorkRegistry;
 import io.casehub.engine.spi.CaseInstanceRepository;
 import io.casehub.engine.spi.EventLogRepository;
 import io.quarkiverse.work.api.AssignmentDecision;
-import io.quarkiverse.work.api.WorkerSelectionStrategy;
+import io.quarkiverse.work.core.strategy.LeastLoadedStrategy;
 import io.quarkiverse.work.api.WorkloadProvider;
 import io.quarkiverse.work.core.strategy.WorkBroker;
 import io.smallrye.mutiny.Uni;
@@ -52,7 +52,7 @@ import org.junit.jupiter.api.Test;
 class WorkOrchestratorTest {
 
   private WorkBroker workBroker;
-  private WorkerSelectionStrategy strategy;
+  private LeastLoadedStrategy strategy;
   private WorkloadProvider workloadProvider;
   private EventBus eventBus;
   private PendingWorkRegistry registry;
@@ -65,7 +65,7 @@ class WorkOrchestratorTest {
   @BeforeEach
   void setUp() {
     workBroker = mock(WorkBroker.class);
-    strategy = mock(WorkerSelectionStrategy.class);
+    strategy = mock(LeastLoadedStrategy.class);
     workloadProvider = mock(WorkloadProvider.class);
     eventBus = mock(EventBus.class);
     registry = new PendingWorkRegistry();
