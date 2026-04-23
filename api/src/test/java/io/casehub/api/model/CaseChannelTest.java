@@ -80,4 +80,13 @@ class CaseChannelTest {
     var b = new CaseChannel("ch-1", "n", "p", "qhorus", Map.of());
     assertThat(a).isEqualTo(b);
   }
+
+  @Test
+  void propertiesWithNullValue_throwsIllegalArgumentException() {
+    java.util.Map<String, Object> withNull = new java.util.HashMap<>();
+    withNull.put("endpoint", null);
+    assertThatThrownBy(() -> new CaseChannel("ch-1", "name", "purpose", "qhorus", withNull))
+        .isInstanceOf(IllegalArgumentException.class)
+        .hasMessageContaining("null values");
+  }
 }

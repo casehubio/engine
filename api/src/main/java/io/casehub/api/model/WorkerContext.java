@@ -42,6 +42,8 @@ public record WorkerContext(
 
   public WorkerContext {
     priorWorkers = priorWorkers == null ? List.of() : List.copyOf(priorWorkers);
+    // WorkerContext.properties are arbitrary implementor hints — null values are tolerated
+    // (unlike CaseChannel.properties which are validated backend configuration).
     properties =
         properties == null
             ? Map.of()

@@ -197,7 +197,7 @@ Four dual-stack SPI interfaces (blocking + reactive) enable external systems to 
 
 | Blocking SPI | Reactive Mirror | Purpose |
 |---|---|---|
-| `WorkerProvisioner` | `ReactiveWorkerProvisioner` | Provision/terminate workers when a `PlanItem` is eligible but no workers are available; responds with allocated `WorkerSummary` |
+| `WorkerProvisioner` | `ReactiveWorkerProvisioner` | Provision/terminate workers when a `PlanItem` is eligible but no workers are available; responds with the registered `Worker` |
 | `WorkerStatusListener` | `ReactiveWorkerStatusListener` | Lifecycle callbacks: `started()`, `completed()`, `stalled()` for observing worker state transitions |
 | `CaseChannelProvider` | `ReactiveCaseChannelProvider` | Open/close/post to backend-agnostic channels (Qhorus, Slack, email, etc.) for inter-worker communication |
 | `WorkerContextProvider` | `ReactiveWorkerContextProvider` | Build startup context from `CaseLedgerEntry` lineage (not `EventLog`) — includes prior worker summaries, causal chain metadata |
