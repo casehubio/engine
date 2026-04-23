@@ -16,26 +16,34 @@
 package io.casehub.engine.internal.worker;
 
 import io.casehub.api.model.WorkResult;
-import io.casehub.api.spi.WorkerStatusListener;
+import io.casehub.api.spi.ReactiveWorkerStatusListener;
+import io.smallrye.mutiny.Uni;
 import jakarta.enterprise.context.ApplicationScoped;
+import jakarta.enterprise.inject.Alternative;
 import java.util.Map;
 
-/** Default no-op WorkerStatusListener. Silently ignores all lifecycle events. */
+/**
+ * Reactive no-op WorkerStatusListener. Silently ignores all lifecycle events.
+ *
+ * <p>Marked {@code @Alternative} — not the primary bean. Activate explicitly when a reactive
+ * listener is needed but no real implementation is registered.
+ */
+@Alternative
 @ApplicationScoped
-public class NoOpWorkerStatusListener implements WorkerStatusListener {
+public class NoOpReactiveWorkerStatusListener implements ReactiveWorkerStatusListener {
 
   @Override
-  public void onWorkerStarted(String workerId, Map<String, String> sessionMeta) {
-    // intentional no-op
+  public Uni<Void> onWorkerStarted(String workerId, Map<String, String> sessionMeta) {
+    return Uni.createFrom().voidItem();
   }
 
   @Override
-  public void onWorkerCompleted(String workerId, WorkResult result) {
-    // intentional no-op
+  public Uni<Void> onWorkerCompleted(String workerId, WorkResult result) {
+    return Uni.createFrom().voidItem();
   }
 
   @Override
-  public void onWorkerStalled(String workerId) {
-    // intentional no-op
+  public Uni<Void> onWorkerStalled(String workerId) {
+    return Uni.createFrom().voidItem();
   }
 }

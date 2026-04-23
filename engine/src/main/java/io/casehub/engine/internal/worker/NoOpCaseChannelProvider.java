@@ -23,29 +23,29 @@ import java.util.Map;
 import java.util.UUID;
 
 /**
- * Default no-op CaseChannelProvider. Returns sentinel channels with
- * {@code backendType = "none"}. All write operations are no-ops.
+ * Default no-op CaseChannelProvider. Returns sentinel channels with {@code backendType = "none"}.
+ * All write operations are no-ops.
  */
 @ApplicationScoped
 public class NoOpCaseChannelProvider implements CaseChannelProvider {
 
-    @Override
-    public CaseChannel openChannel(UUID caseId, String purpose) {
-        return new CaseChannel(caseId + "/" + purpose, purpose, purpose, "none", Map.of());
-    }
+  @Override
+  public CaseChannel openChannel(UUID caseId, String purpose) {
+    return new CaseChannel(caseId + "/" + purpose, purpose, purpose, "none", Map.of());
+  }
 
-    @Override
-    public void postToChannel(CaseChannel channel, String from, String content) {
-        // intentional no-op
-    }
+  @Override
+  public void postToChannel(CaseChannel channel, String from, String content) {
+    // intentional no-op
+  }
 
-    @Override
-    public void closeChannel(CaseChannel channel) {
-        // intentional no-op
-    }
+  @Override
+  public void closeChannel(CaseChannel channel) {
+    // intentional no-op
+  }
 
-    @Override
-    public List<CaseChannel> listChannels(UUID caseId) {
-        return List.of();
-    }
+  @Override
+  public List<CaseChannel> listChannels(UUID caseId) {
+    return List.of();
+  }
 }
