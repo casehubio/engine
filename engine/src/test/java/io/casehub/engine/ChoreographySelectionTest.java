@@ -89,11 +89,13 @@ class ChoreographySelectionTest {
   @Test
   void twoSequentialCases_eachSelectsExactlyOneWorker() throws Exception {
     for (int i = 0; i < 2; i++) {
-      // Measure delta — don't reset counters, which would race with async completions
+      // Measure delta — don't reset counters, which would race with async completions.
+      // Do NOT clear the cache inside the loop: clearing evicts the completed case from
+      // CaseInstanceCache, which causes Quartz to re-run its worker via recovery on the
+      // next Quartz tick, inflating the delta to 2 for the second iteration.
       int countBefore =
           TwoWorkerSameCapabilityCase.workerACount.get()
               + TwoWorkerSameCapabilityCase.workerBCount.get();
-      cache.clear();
 
       AtomicReference<UUID> caseIdRef = new AtomicReference<>();
       twoWorkerCase.startCase(Map.of("trigger", "go")).thenAccept(caseIdRef::set);
