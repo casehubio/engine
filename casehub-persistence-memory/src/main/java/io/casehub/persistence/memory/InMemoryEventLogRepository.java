@@ -24,10 +24,13 @@ import jakarta.enterprise.inject.Alternative;
 import java.util.Collection;
 import java.util.Comparator;
 import java.util.List;
+import java.util.Objects;
+import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
+import java.util.stream.Collectors;
 
 @Alternative
 @ApplicationScoped
@@ -145,6 +148,39 @@ public class InMemoryEventLogRepository implements EventLogRepository {
                           && type == e.getEventType())
               .toList();
       return Uni.createFrom().item(result);
+    } finally {
+      rwLock.readLock().unlock();
+    }
+  }
+
+  @Override
+  public Uni<List<String>> findSubmittedWorkWithoutCompletion() {
+    rwLock.readLock().lock();
+    try {
+      Set<String> submitted =
+          store.values().stream()
+              .filter(e -> e.getEventType() == CaseHubEventType.WORK_SUBMITTED)
+              .map(
+                  e ->
+                      e.getMetadata() != null
+                          ? e.getMetadata().path("correlationKey").asText(null)
+                          : null)
+              .filter(Objects::nonNull)
+              .collect(Collectors.toSet());
+
+      Set<String> completed =
+          store.values().stream()
+              .filter(e -> e.getEventType() == CaseHubEventType.WORK_COMPLETED)
+              .map(
+                  e ->
+                      e.getMetadata() != null
+                          ? e.getMetadata().path("correlationKey").asText(null)
+                          : null)
+              .filter(Objects::nonNull)
+              .collect(Collectors.toSet());
+
+      submitted.removeAll(completed);
+      return Uni.createFrom().item(List.copyOf(submitted));
     } finally {
       rwLock.readLock().unlock();
     }

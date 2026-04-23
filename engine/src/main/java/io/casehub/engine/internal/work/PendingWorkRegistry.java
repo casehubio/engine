@@ -16,7 +16,12 @@
 package io.casehub.engine.internal.work;
 
 import io.casehub.api.model.WorkResult;
+import io.casehub.engine.spi.EventLogRepository;
+import io.quarkus.runtime.StartupEvent;
+import jakarta.annotation.Priority;
 import jakarta.enterprise.context.ApplicationScoped;
+import jakarta.enterprise.event.Observes;
+import jakarta.inject.Inject;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
@@ -38,8 +43,28 @@ public class PendingWorkRegistry {
 
   private static final Logger LOG = Logger.getLogger(PendingWorkRegistry.class);
 
+  @Inject EventLogRepository eventLogRepository;
+
   private final ConcurrentHashMap<String, List<CompletableFuture<WorkResult>>> pending =
       new ConcurrentHashMap<>();
+
+  void onStart(@Observes @Priority(30) StartupEvent ev) {
+    eventLogRepository
+        .findSubmittedWorkWithoutCompletion()
+        .subscribe()
+        .with(
+            correlationKeys -> {
+              for (String key : correlationKeys) {
+                if (!hasPending(key)) {
+                  register(key);
+                  LOG.infof(
+                      "PendingWorkRegistry: re-registered future for recovered correlationKey=%s",
+                      key);
+                }
+              }
+            },
+            err -> LOG.errorf(err, "Failed to recover pending work futures on startup"));
+  }
 
   /**
    * Registers a new future for the given correlationKey. Multiple futures per key are supported
