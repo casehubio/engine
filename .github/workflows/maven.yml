@@ -20,13 +20,13 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v6
 
-      - name: Checkout quarkus-workitems
+      - name: Checkout quarkus-work
         uses: actions/checkout@v6
         with:
           repository: mdproctor/quarkus-work
-          path: quarkus-workitems
+          path: quarkus-work
 
-      - name: Set up Java 17
+      - name: Set up Java 21 (required by quarkus-work)
         uses: actions/setup-java@v5
         with:
           java-version: '21'
@@ -35,7 +35,14 @@ jobs:
 
       - name: Install quarkus-work-api and quarkus-work-core
         run: mvn install -pl .,quarkus-work-api,quarkus-work-core -DskipTests -q
-        working-directory: quarkus-workitems
+        working-directory: quarkus-work
+
+      - name: Set up Java 17 (casehub-engine target)
+        uses: actions/setup-java@v5
+        with:
+          java-version: '17'
+          distribution: 'temurin'
+          cache: maven
 
       - name: Build and test
         run: mvn -B package --file pom.xml
@@ -59,28 +66,35 @@ jobs:
       fail-fast: false
       matrix:
         mvn: ['3.9.14']
-        java: ['21']
+        java: ['17']
 
     steps:
       - name: Checkout
         uses: actions/checkout@v6
 
-      - name: Checkout quarkus-workitems
+      - name: Checkout quarkus-work
         uses: actions/checkout@v6
         with:
           repository: mdproctor/quarkus-work
-          path: quarkus-workitems
+          path: quarkus-work
 
-      - name: Set up Java ${{ matrix.java }}
+      - name: Set up Java 21 (required by quarkus-work)
         uses: actions/setup-java@v5
         with:
-          java-version: ${{ matrix.java }}
+          java-version: '21'
           distribution: 'temurin'
           cache: maven
 
       - name: Install quarkus-work-api and quarkus-work-core
         run: mvn install -pl .,quarkus-work-api,quarkus-work-core -DskipTests -q
-        working-directory: quarkus-workitems
+        working-directory: quarkus-work
+
+      - name: Set up Java ${{ matrix.java }} (casehub-engine target)
+        uses: actions/setup-java@v5
+        with:
+          java-version: ${{ matrix.java }}
+          distribution: 'temurin'
+          cache: maven
 
       - name: Set up Maven Wrapper for specified version
         run: mvn -N wrapper:wrapper -Dmaven=${{ matrix.mvn }}
