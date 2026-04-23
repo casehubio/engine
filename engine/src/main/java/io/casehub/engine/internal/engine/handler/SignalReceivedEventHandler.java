@@ -22,6 +22,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import io.casehub.engine.internal.engine.cache.CaseInstanceCache;
 import io.casehub.engine.internal.engine.recovery.WorkerExecutionRecoveryService;
 import io.casehub.engine.internal.event.CaseContextChangedEvent;
+import io.casehub.engine.internal.event.CaseLifecycleEvent;
 import io.casehub.engine.internal.event.EventBusAddresses;
 import io.casehub.engine.internal.event.SignalReceivedEvent;
 import io.casehub.engine.internal.history.CaseHubEventType;
@@ -35,6 +36,7 @@ import io.vertx.mutiny.core.Vertx;
 import io.vertx.mutiny.core.eventbus.EventBus;
 import io.vertx.mutiny.core.shareddata.Lock;
 import jakarta.enterprise.context.ApplicationScoped;
+import jakarta.enterprise.event.Event;
 import jakarta.inject.Inject;
 import java.time.Instant;
 import java.util.Optional;
@@ -59,6 +61,8 @@ public class SignalReceivedEventHandler {
   @Inject WorkerExecutionRecoveryService recoveryService;
 
   @Inject EventLogRepository eventLogRepository;
+
+  @Inject Event<CaseLifecycleEvent> lifecycleEvents;
 
   @ConsumeEvent(value = EventBusAddresses.SIGNAL_RECEIVED)
   public Uni<Void> onSignalReceived(SignalReceivedEvent event) {
@@ -107,9 +111,18 @@ public class SignalReceivedEventHandler {
     return eventLogRepository
         .append(eventLog)
         .invoke(
-            () ->
-                eventBus.publish(
-                    CONTEXT_CHANGED, new CaseContextChangedEvent(instance, contextSnapshot)))
+            () -> {
+              eventBus.publish(
+                  CONTEXT_CHANGED, new CaseContextChangedEvent(instance, contextSnapshot));
+              lifecycleEvents.fireAsync(
+                  new CaseLifecycleEvent(
+                      instance.getUuid(),
+                      "SignalCase",
+                      "SignalReceived",
+                      instance.getState().name(),
+                      null,
+                      "System"));
+            })
         .replaceWithVoid()
         .onFailure()
         .invoke(

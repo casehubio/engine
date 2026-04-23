@@ -17,6 +17,7 @@ package io.casehub.engine.internal.engine.handler;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import io.casehub.engine.internal.event.CaseContextChangedEvent;
+import io.casehub.engine.internal.event.CaseLifecycleEvent;
 import io.casehub.engine.internal.event.CaseStartedEvent;
 import io.casehub.engine.internal.event.EventBusAddresses;
 import io.casehub.engine.internal.history.CaseHubEventType;
@@ -29,6 +30,7 @@ import io.quarkus.vertx.ConsumeEvent;
 import io.smallrye.mutiny.Uni;
 import io.vertx.mutiny.core.eventbus.EventBus;
 import jakarta.enterprise.context.ApplicationScoped;
+import jakarta.enterprise.event.Event;
 import jakarta.inject.Inject;
 import java.time.Instant;
 import org.jboss.logging.Logger;
@@ -45,10 +47,12 @@ public class CaseStartedEventHandler {
 
   @Inject SchedulerService schedulerService;
 
+  @Inject Event<CaseLifecycleEvent> lifecycleEvents;
+
   @ConsumeEvent(value = EventBusAddresses.CASE_STARTED)
   public Uni<Void> onCaseStarted(CaseStartedEvent event) {
-    CaseInstance instance = event.instance();
-    JsonNode contextSnapshot = instance.getCaseContext().asJsonNode();
+    final CaseInstance instance = event.instance();
+    final JsonNode contextSnapshot = instance.getCaseContext().asJsonNode();
 
     EventLog eventLog = new EventLog();
     eventLog.setCaseId(instance.getUuid());
@@ -61,9 +65,18 @@ public class CaseStartedEventHandler {
         .append(eventLog)
         .chain(() -> schedulerService.registerScheduledTriggers(instance))
         .invoke(
-            () ->
-                eventBus.publish(
-                    EventBusAddresses.CONTEXT_CHANGED,
-                    new CaseContextChangedEvent(instance, contextSnapshot)));
+            () -> {
+              eventBus.publish(
+                  EventBusAddresses.CONTEXT_CHANGED,
+                  new CaseContextChangedEvent(instance, contextSnapshot));
+              lifecycleEvents.fireAsync(
+                  new CaseLifecycleEvent(
+                      instance.getUuid(),
+                      "StartCase",
+                      "CaseStarted",
+                      instance.getState().name(),
+                      null,
+                      "System"));
+            });
   }
 }

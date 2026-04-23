@@ -1,0 +1,120 @@
+/*
+ * Copyright 2026-Present The Case Hub Authors
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ * http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+package io.casehub.ledger.service;
+
+import io.casehub.engine.internal.event.CaseLifecycleEvent;
+import io.casehub.ledger.model.CaseLedgerEntry;
+import io.casehub.ledger.repository.CaseLedgerEntryRepository;
+import io.quarkiverse.ledger.runtime.config.LedgerConfig;
+import io.quarkiverse.ledger.runtime.model.ActorType;
+import io.quarkiverse.ledger.runtime.model.LedgerEntryType;
+import io.quarkiverse.ledger.runtime.model.LedgerMerkleFrontier;
+import io.quarkiverse.ledger.runtime.service.LedgerMerkleTree;
+import jakarta.enterprise.context.ApplicationScoped;
+import jakarta.enterprise.event.ObservesAsync;
+import jakarta.inject.Inject;
+import jakarta.persistence.EntityManager;
+import jakarta.transaction.Transactional;
+import java.time.Instant;
+import java.time.temporal.ChronoUnit;
+import java.util.List;
+import org.jboss.logging.Logger;
+
+/**
+ * CDI observer that writes a {@link CaseLedgerEntry} for every case lifecycle transition.
+ *
+ * <p>The engine fires {@link CaseLifecycleEvent} via {@code Event.fireAsync()} from Vert.x
+ * handlers. This observer receives the event on a managed executor thread, making it safe to use
+ * blocking JPA and {@code @Transactional}. Each write is in its own transaction — eventual
+ * consistency with respect to the case state update is acceptable for an audit log.
+ *
+ * <p>If this module is absent, lifecycle events fire into the void — no coupling to the engine.
+ */
+@ApplicationScoped
+public class CaseLedgerEventCapture {
+
+  private static final Logger LOG = Logger.getLogger(CaseLedgerEventCapture.class);
+
+  @Inject CaseLedgerEntryRepository ledgerRepo;
+
+  @Inject LedgerConfig ledgerConfig;
+
+  @Inject EntityManager em;
+
+  @Transactional
+  void onCaseLifecycleEvent(@ObservesAsync CaseLifecycleEvent event) {
+    if (!ledgerConfig.enabled()) {
+      return;
+    }
+
+    final int seq =
+        ledgerRepo.findLatestByCaseId(event.caseId()).map(e -> e.sequenceNumber + 1).orElse(1);
+
+    final CaseLedgerEntry entry = new CaseLedgerEntry();
+    entry.caseId = event.caseId();
+    entry.subjectId = event.caseId();
+    entry.sequenceNumber = seq;
+    entry.entryType = LedgerEntryType.EVENT;
+    entry.commandType = event.commandType();
+    entry.eventType = event.eventType();
+    entry.caseStatus = event.caseStatus();
+    entry.actorId = event.actorId() != null ? event.actorId() : "system";
+    entry.actorType = deriveActorType(event.actorId());
+    entry.actorRole = event.actorRole() != null ? event.actorRole() : "System";
+    // Set before hash computation — @PrePersist runs too late for canonical form
+    entry.occurredAt = Instant.now().truncatedTo(ChronoUnit.MILLIS);
+
+    if (ledgerConfig.hashChain().enabled()) {
+      entry.digest = LedgerMerkleTree.leafHash(entry);
+    }
+
+    ledgerRepo.save(entry);
+
+    if (ledgerConfig.hashChain().enabled()) {
+      updateMerkleFrontier(entry);
+    }
+
+    LOG.debugf(
+        "Ledger entry written: caseId=%s seq=%d event=%s", event.caseId(), seq, event.eventType());
+  }
+
+  private void updateMerkleFrontier(final CaseLedgerEntry entry) {
+    final List<LedgerMerkleFrontier> current =
+        em.createNamedQuery("LedgerMerkleFrontier.findBySubjectId", LedgerMerkleFrontier.class)
+            .setParameter("subjectId", entry.subjectId)
+            .getResultList();
+    final List<LedgerMerkleFrontier> newFrontier =
+        LedgerMerkleTree.append(entry.digest, current, entry.subjectId);
+    em.createQuery("DELETE FROM LedgerMerkleFrontier f WHERE f.subjectId = :subjectId")
+        .setParameter("subjectId", entry.subjectId)
+        .executeUpdate();
+    newFrontier.forEach(em::persist);
+  }
+
+  private ActorType deriveActorType(final String actorId) {
+    if (actorId == null) {
+      return ActorType.SYSTEM;
+    }
+    // Versioned persona format: "model:persona@version" — e.g. "claude:casehub-agent@v1"
+    if (actorId.contains(":") || actorId.contains("@")) {
+      return ActorType.AGENT;
+    }
+    if (actorId.equals("system")) {
+      return ActorType.SYSTEM;
+    }
+    return ActorType.HUMAN;
+  }
+}
