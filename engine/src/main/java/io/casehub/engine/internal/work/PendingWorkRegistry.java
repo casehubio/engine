@@ -47,7 +47,9 @@ public class PendingWorkRegistry {
    */
   public CompletableFuture<WorkResult> register(String correlationKey) {
     CompletableFuture<WorkResult> future = new CompletableFuture<>();
-    pending.computeIfAbsent(correlationKey, k -> new ArrayList<>()).add(future);
+    synchronized (pending) {
+      pending.computeIfAbsent(correlationKey, k -> new ArrayList<>()).add(future);
+    }
     LOG.debugf("Registered pending future for correlationKey=%s", correlationKey);
     return future;
   }
@@ -55,9 +57,15 @@ public class PendingWorkRegistry {
   /**
    * Completes all futures registered under {@code correlationKey} with the given result and removes
    * the entry. No-op if no future is registered.
+   *
+   * <p>Futures are completed outside the synchronized block to avoid deadlock if completion
+   * callbacks attempt to register new futures.
    */
   public void complete(String correlationKey, WorkResult result) {
-    List<CompletableFuture<WorkResult>> futures = pending.remove(correlationKey);
+    List<CompletableFuture<WorkResult>> futures;
+    synchronized (pending) {
+      futures = pending.remove(correlationKey);
+    }
     if (futures == null) {
       return;
     }
@@ -71,7 +79,9 @@ public class PendingWorkRegistry {
 
   /** Returns true if at least one future is registered for the given key. */
   public boolean hasPending(String correlationKey) {
-    List<CompletableFuture<WorkResult>> futures = pending.get(correlationKey);
-    return futures != null && !futures.isEmpty();
+    synchronized (pending) {
+      List<CompletableFuture<WorkResult>> futures = pending.get(correlationKey);
+      return futures != null && !futures.isEmpty();
+    }
   }
 }
