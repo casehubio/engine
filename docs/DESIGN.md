@@ -16,6 +16,7 @@ Plain POJOs with no Quarkus or JPA dependencies:
 - **Domain objects:** `CaseMetaModel`, `CaseInstance`, `EventLog`
 - **SPI interfaces:** `CaseMetaModelRepository`, `CaseInstanceRepository`, `EventLogRepository`
 - **Enums:** `CaseStatus`, `CaseHubEventType`, `EventStreamType`
+- **CDI events:** `CaseLifecycleEvent` — fired via `Event.fireAsync()` by lifecycle handlers; optional modules observe this to react to transitions without coupling to the engine
 
 ### Persistence (`casehub-persistence-hibernate`, in-memory test variant)
 
@@ -29,6 +30,40 @@ Orchestrates case execution via:
 - **`WorkerScheduleEventHandler`** — schedules work in Quartz
 - **`WorkflowExecutionCompletedHandler`** — processes work completion, resumes WAITING cases
 - **`EventLog`** — persistent audit trail of all decisions and state changes
+
+Lifecycle handlers fire `CaseLifecycleEvent` via `Event.fireAsync()` after their EventLog write. If no observer is registered (e.g. `casehub-ledger` absent), the event fires into the void — zero overhead.
+
+### Audit Ledger (`casehub-ledger`, optional)
+
+An optional module that writes an immutable, hash-chained audit record for every significant case lifecycle transition. Depends on `engine-model` (for `CaseLifecycleEvent`) and `quarkus-ledger` — no dependency on the `engine` module itself.
+
+| Class | Role |
+|---|---|
+| `CaseLedgerEntry` | `LedgerEntry` subclass (JOINED inheritance) — adds `caseId`, `commandType`, `eventType`, `caseStatus` |
+| `CaseLedgerEntryRepository` | Extends `JpaLedgerEntryRepository`; `@ApplicationScoped` activates it as the CDI `LedgerEntryRepository` bean |
+| `CaseLedgerEventCapture` | `@ObservesAsync CaseLifecycleEvent` — writes entry in its own `@Transactional` block on a managed executor thread |
+
+**Flyway migration:** V2000 (`case_ledger_entry` table + FK to `ledger_entry`). V1000–V1004 are reserved by quarkus-ledger.
+
+**Observed transitions:**
+
+| Command | Event | Notes |
+|---|---|---|
+| StartCase | CaseStarted | First entry — seq=1 |
+| SuspendCase | CaseSuspended | Admin pause |
+| ResumeCase | CaseResumed | |
+| SubmitWork | WorkSubmitted | WAITING transition |
+| CompleteWork | WorkCompleted | Resume from WAITING |
+| SignalCase | SignalReceived | External trigger |
+| ReachMilestone | MilestoneReached | |
+| ReachGoal | GoalReached | |
+| CompleteCase | CaseCompleted | Final entry |
+| FaultCase | CaseFaulted | Error termination |
+| CancelCase | CaseCancelled | |
+
+**Actor type inference:** `"system"` or null → `SYSTEM`; versioned persona (`model:persona@version`, e.g. `claude:casehub-agent@v1`) → `AGENT`; anything else → `HUMAN`.
+
+**Eventual consistency note:** `CaseLedgerEventCapture` runs in a separate transaction from the case state update (required by `@ObservesAsync` + reactive engine). In production the engine processes one lifecycle event per case at a time, so sequence numbers are assigned without races.
 
 ## Execution Models
 
@@ -195,6 +230,7 @@ TESTCONTAINERS_RYUK_DISABLED=true mvn test -Dtest=ChoreographySelectionTest
 **Near term:**
 - ✅ Hybrid choreography+orchestration (Q2 2026)
 - ✅ WAITING state durability (Q2 2026)
+- ✅ Immutable audit ledger (`casehub-ledger`, Q2 2026)
 - [ ] Human worker integration (Q2/Q3 2026)
 - [ ] Escalation rules and thresholds (Q3 2026)
 
@@ -214,3 +250,5 @@ TESTCONTAINERS_RYUK_DISABLED=true mvn test -Dtest=ChoreographySelectionTest
 - **ADR-0003** — Work/WorkItem/Task naming hierarchy
 - **casehubio/engine#121** — Original design discussion (closed by ADR-0003)
 - **casehubio/engine#131** — WorkBroker integration epic
+- **casehubio/engine#145** — quarkus-ledger integration epic
+- **mdproctor/quarkus-ledger#39** — CaseLedgerEntry tracking issue
