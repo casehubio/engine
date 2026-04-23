@@ -25,6 +25,7 @@ jobs:
         with:
           repository: mdproctor/quarkus-workitems
           path: quarkus-workitems
+          ref: 9707bc5
 
       - name: Set up Java 17
         uses: actions/setup-java@v5
@@ -70,6 +71,7 @@ jobs:
         with:
           repository: mdproctor/quarkus-workitems
           path: quarkus-workitems
+          ref: 9707bc5
 
       - name: Set up Java ${{ matrix.java }}
         uses: actions/setup-java@v5
