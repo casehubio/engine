@@ -15,32 +15,39 @@
  */
 package io.casehub.engine.internal.work;
 
-import io.quarkiverse.work.api.WorkerRegistry;
-import io.quarkiverse.work.api.WorkerSelectionStrategy;
-import io.quarkiverse.work.core.strategy.LeastLoadedStrategy;
-import io.quarkiverse.work.core.strategy.NoOpWorkerRegistry;
-import io.quarkiverse.work.core.strategy.WorkBroker;
-import jakarta.enterprise.context.ApplicationScoped;
-import jakarta.enterprise.inject.Produces;
-
-@ApplicationScoped
+/**
+ * CDI documentation anchor for quarkus-work-core bean discovery.
+ *
+ * <h2>Why this class has no producers</h2>
+ *
+ * <p>{@code quarkus-work-core} annotates its key beans directly with {@code @ApplicationScoped}:
+ *
+ * <ul>
+ *   <li>{@code WorkBroker} — trigger gate, capability filter, strategy dispatch
+ *   <li>{@code LeastLoadedStrategy} — routes work to the least-loaded worker
+ *   <li>{@code ClaimFirstStrategy} — leaves the pool open for claim-first behaviour
+ *   <li>{@code NoOpWorkerRegistry} — group resolution no-op; workers come from CaseDefinition
+ * </ul>
+ *
+ * <p>Quarkus Arc discovers and registers all of the above automatically. Adding {@code @Produces}
+ * methods here for the same types would create duplicate CDI beans and cause startup failures.
+ *
+ * <h2>Injection rule: always inject the concrete strategy type</h2>
+ *
+ * <p>Because two {@code WorkerSelectionStrategy} implementations ({@code LeastLoadedStrategy} and
+ * {@code ClaimFirstStrategy}) are both active CDI beans, injecting by the interface type causes
+ * an {@code AmbiguousResolutionException} at startup. Always inject the concrete type you want:
+ *
+ * <pre>{@code
+ * // Correct — unambiguous:
+ * @Inject LeastLoadedStrategy selectionStrategy;
+ *
+ * // Wrong — ambiguous, fails at startup:
+ * @Inject WorkerSelectionStrategy selectionStrategy;
+ * }</pre>
+ *
+ * <p>All casehub-engine injection points follow this rule.
+ */
 public class WorkCdi {
-
-  @Produces
-  @ApplicationScoped
-  public WorkBroker workBroker() {
-    return new WorkBroker();
-  }
-
-  @Produces
-  @ApplicationScoped
-  public WorkerSelectionStrategy defaultSelectionStrategy() {
-    return new LeastLoadedStrategy();
-  }
-
-  @Produces
-  @ApplicationScoped
-  public WorkerRegistry defaultWorkerRegistry() {
-    return new NoOpWorkerRegistry();
-  }
+  // Intentionally empty. quarkus-work-core handles its own bean registration.
 }
