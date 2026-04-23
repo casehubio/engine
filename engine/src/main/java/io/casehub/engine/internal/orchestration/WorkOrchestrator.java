@@ -38,7 +38,7 @@ import io.quarkiverse.work.api.AssignmentDecision;
 import io.quarkiverse.work.api.AssignmentTrigger;
 import io.quarkiverse.work.api.SelectionContext;
 import io.quarkiverse.work.api.WorkerCandidate;
-import io.quarkiverse.work.api.WorkerSelectionStrategy;
+
 import io.quarkiverse.work.api.WorkloadProvider;
 import io.quarkiverse.work.core.strategy.WorkBroker;
 import io.vertx.mutiny.core.eventbus.EventBus;
@@ -67,7 +67,7 @@ public class WorkOrchestrator {
   private static final ObjectMapper OBJECT_MAPPER = new ObjectMapper();
 
   private final WorkBroker workBroker;
-  private final WorkerSelectionStrategy selectionStrategy;
+  private final LeastLoadedStrategy selectionStrategy;
   private final WorkloadProvider workloadProvider;
   private final EventBus eventBus;
   private final PendingWorkRegistry pendingWorkRegistry;
@@ -79,7 +79,7 @@ public class WorkOrchestrator {
   @Inject
   public WorkOrchestrator(
       WorkBroker workBroker,
-      WorkerSelectionStrategy selectionStrategy,
+      LeastLoadedStrategy selectionStrategy,
       WorkloadProvider workloadProvider,
       EventBus eventBus,
       PendingWorkRegistry pendingWorkRegistry,
