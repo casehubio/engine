@@ -34,7 +34,7 @@ jobs:
           cache: maven
 
       - name: Install quarkus-work-api and quarkus-work-core
-        run: mvn install -pl quarkus-work-api,quarkus-work-core -DskipTests -q
+        run: mvn install -pl .,quarkus-work-api,quarkus-work-core -DskipTests -q
         working-directory: quarkus-workitems
 
       - name: Build and test
@@ -79,7 +79,7 @@ jobs:
           cache: maven
 
       - name: Install quarkus-work-api and quarkus-work-core
-        run: mvn install -pl quarkus-work-api,quarkus-work-core -DskipTests -q
+        run: mvn install -pl .,quarkus-work-api,quarkus-work-core -DskipTests -q
         working-directory: quarkus-workitems
 
       - name: Set up Maven Wrapper for specified version
