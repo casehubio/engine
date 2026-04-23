@@ -53,14 +53,21 @@ class ChoreographySelectionTest {
 
   @BeforeEach
   void clear() {
+    // Clear the case cache only. Do NOT reset workerACount/workerBCount here — resetting shared
+    // static counters races with in-flight Quartz jobs from previous tests that fire after the
+    // reset but before this test's case runs, making the final count appear as 2 instead of 1.
+    // All counter assertions use a before/after delta instead.
     cache.clear();
-    TwoWorkerSameCapabilityCase.workerACount.set(0);
-    TwoWorkerSameCapabilityCase.workerBCount.set(0);
   }
 
   /** Happy path: two workers with the same capability — only one is called. */
   @Test
   void twoWorkersSharedCapability_onlyOneIsSelected() throws Exception {
+    // Snapshot before starting — guards against in-flight jobs from previous tests
+    int countBefore =
+        TwoWorkerSameCapabilityCase.workerACount.get()
+            + TwoWorkerSameCapabilityCase.workerBCount.get();
+
     AtomicReference<UUID> caseIdRef = new AtomicReference<>();
     twoWorkerCase.startCase(Map.of("trigger", "go")).thenAccept(caseIdRef::set);
 
@@ -71,10 +78,11 @@ class ChoreographySelectionTest {
             () ->
                 assertThat(cache.get(caseIdRef.get()).getState()).isEqualTo(CaseStatus.COMPLETED));
 
-    int totalCalls =
+    int delta =
         TwoWorkerSameCapabilityCase.workerACount.get()
-            + TwoWorkerSameCapabilityCase.workerBCount.get();
-    assertThat(totalCalls).as("WorkBroker must select exactly one worker, not both").isEqualTo(1);
+            + TwoWorkerSameCapabilityCase.workerBCount.get()
+            - countBefore;
+    assertThat(delta).as("WorkBroker must select exactly one worker, not both").isEqualTo(1);
   }
 
   /** Correctness: two sequential cases each invoke exactly one worker. */
