@@ -13,30 +13,13 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.casehub.engine.internal.history;
+package io.casehub.api.model;
 
-public enum CaseHubEventType {
-  CASE_STARTED,
-  CASE_COMPLETED,
-  CASE_FAULTED,
-  CASE_CANCELLED,
-
-  TASK_CREATED,
-  TASK_COMPLETED,
-  TASK_FAILED,
-  TASK_CANCELLED,
-
-  WORKER_SCHEDULED,
-  WORKER_EXECUTION_STARTED,
-  WORKER_EXECUTION_COMPLETED,
-  WORKER_EXECUTION_FAILED,
-
-  WORK_SUBMITTED, // orchestrated work submitted via WorkOrchestrator
-  WORK_COMPLETED, // orchestrated work completed; case may resume from WAITING
-
-  SIGNAL_RECEIVED,
-
-  MILESTONE_REACHED,
-  GOAL_REACHED,
-  CASE_STATUS_CHANGED,
+/** Lifecycle states of a unit of orchestrated work submitted via WorkOrchestrator. */
+public enum WorkStatus {
+  PENDING,
+  RUNNING,
+  COMPLETED,
+  FAULTED,
+  CANCELLED
 }
