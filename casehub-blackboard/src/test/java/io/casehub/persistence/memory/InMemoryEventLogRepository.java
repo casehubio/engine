@@ -104,4 +104,9 @@ public class InMemoryEventLogRepository implements EventLogRepository {
             .toList();
     return Uni.createFrom().item(result);
   }
+
+  @Override
+  public Uni<List<String>> findSubmittedWorkWithoutCompletion() {
+    return Uni.createFrom().item(List.of());
+  }
 }

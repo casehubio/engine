@@ -23,6 +23,7 @@ import io.smallrye.mutiny.Uni;
 import jakarta.enterprise.context.ApplicationScoped;
 import java.util.Collection;
 import java.util.List;
+import java.util.Objects;
 import java.util.UUID;
 
 @ApplicationScoped
@@ -119,6 +120,26 @@ public class JpaEventLogRepository extends AbstractJpaRepository implements Even
                                 type)
                             .list())
                 .map(list -> list.stream().map(this::fromEntity).toList()));
+  }
+
+  @Override
+  public Uni<List<String>> findSubmittedWorkWithoutCompletion() {
+    return withSafeContext(
+        () ->
+            Panache.withSession(
+                () ->
+                    EventLogEntity.<EventLogEntity>list(
+                            "eventType", CaseHubEventType.WORK_SUBMITTED)
+                        .map(
+                            submitted ->
+                                submitted.stream()
+                                    .map(
+                                        e ->
+                                            e.metadata != null
+                                                ? e.metadata.path("correlationKey").asText(null)
+                                                : null)
+                                    .filter(Objects::nonNull)
+                                    .toList())));
   }
 
   private EventLog fromEntity(EventLogEntity entity) {

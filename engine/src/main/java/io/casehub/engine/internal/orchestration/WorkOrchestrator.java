@@ -38,7 +38,6 @@ import io.quarkiverse.work.api.AssignmentDecision;
 import io.quarkiverse.work.api.AssignmentTrigger;
 import io.quarkiverse.work.api.SelectionContext;
 import io.quarkiverse.work.api.WorkerCandidate;
-
 import io.quarkiverse.work.api.WorkloadProvider;
 import io.quarkiverse.work.core.strategy.LeastLoadedStrategy;
 import io.quarkiverse.work.core.strategy.WorkBroker;

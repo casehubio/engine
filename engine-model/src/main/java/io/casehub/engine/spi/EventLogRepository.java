@@ -57,4 +57,11 @@ public interface EventLogRepository {
   /** Find events for a specific case, worker, and event type (all criteria must match). */
   Uni<List<EventLog>> findByCaseAndWorkerAndType(
       UUID caseId, String workerId, CaseHubEventType type);
+
+  /**
+   * Returns correlation keys (idempotency hashes) for WORK_SUBMITTED events that have no matching
+   * WORK_COMPLETED entry. Used by PendingWorkRegistry on startup to re-register futures for
+   * in-flight orchestrated work that survived a JVM restart.
+   */
+  Uni<List<String>> findSubmittedWorkWithoutCompletion();
 }
