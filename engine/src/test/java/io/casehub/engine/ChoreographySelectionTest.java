@@ -34,6 +34,7 @@ import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
 import java.util.Map;
 import java.util.UUID;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
@@ -44,6 +45,10 @@ import org.junit.jupiter.api.Test;
  * Verifies that WorkBroker selects exactly one worker when multiple workers share the same
  * capability. Previously, all capable workers were scheduled — this is the regression this test
  * guards against.
+ *
+ * <p>Each case run passes a unique {@code runId} in the context. Workers record their invocation
+ * count per {@code runId}, so in-flight Quartz jobs from previous test cases cannot inflate the
+ * count for the current case — they update a different key in the map.
  */
 @QuarkusTest
 class ChoreographySelectionTest {
@@ -53,23 +58,16 @@ class ChoreographySelectionTest {
 
   @BeforeEach
   void clear() {
-    // Clear the case cache only. Do NOT reset workerACount/workerBCount here — resetting shared
-    // static counters races with in-flight Quartz jobs from previous tests that fire after the
-    // reset but before this test's case runs, making the final count appear as 2 instead of 1.
-    // All counter assertions use a before/after delta instead.
     cache.clear();
+    TwoWorkerSameCapabilityCase.runCounts.clear();
   }
 
   /** Happy path: two workers with the same capability — only one is called. */
   @Test
   void twoWorkersSharedCapability_onlyOneIsSelected() throws Exception {
-    // Snapshot before starting — guards against in-flight jobs from previous tests
-    int countBefore =
-        TwoWorkerSameCapabilityCase.workerACount.get()
-            + TwoWorkerSameCapabilityCase.workerBCount.get();
-
+    String runId = UUID.randomUUID().toString();
     AtomicReference<UUID> caseIdRef = new AtomicReference<>();
-    twoWorkerCase.startCase(Map.of("trigger", "go")).thenAccept(caseIdRef::set);
+    twoWorkerCase.startCase(Map.of("trigger", "go", "runId", runId)).thenAccept(caseIdRef::set);
 
     await().atMost(5, TimeUnit.SECONDS).until(() -> caseIdRef.get() != null);
     await()
@@ -78,27 +76,20 @@ class ChoreographySelectionTest {
             () ->
                 assertThat(cache.get(caseIdRef.get()).getState()).isEqualTo(CaseStatus.COMPLETED));
 
-    int delta =
-        TwoWorkerSameCapabilityCase.workerACount.get()
-            + TwoWorkerSameCapabilityCase.workerBCount.get()
-            - countBefore;
-    assertThat(delta).as("WorkBroker must select exactly one worker, not both").isEqualTo(1);
+    int calls =
+        TwoWorkerSameCapabilityCase.runCounts.getOrDefault(runId, new AtomicInteger()).get();
+    assertThat(calls).as("WorkBroker must select exactly one worker, not both").isEqualTo(1);
   }
 
   /** Correctness: two sequential cases each invoke exactly one worker. */
   @Test
   void twoSequentialCases_eachSelectsExactlyOneWorker() throws Exception {
-    // Snapshot once before both cases — per-iteration delta is unreliable because an
-    // in-flight Quartz job from iteration N can fire after the countBefore snapshot
-    // for iteration N+1, making the delta appear as 2. Instead: run both cases to
-    // completion then assert total delta == 2 (one worker invocation per case).
-    int countBefore =
-        TwoWorkerSameCapabilityCase.workerACount.get()
-            + TwoWorkerSameCapabilityCase.workerBCount.get();
-
     for (int i = 0; i < 2; i++) {
+      // Each iteration has its own runId — stale jobs from the previous iteration can
+      // only increment that iteration's counter, not this one.
+      String runId = UUID.randomUUID().toString();
       AtomicReference<UUID> caseIdRef = new AtomicReference<>();
-      twoWorkerCase.startCase(Map.of("trigger", "go")).thenAccept(caseIdRef::set);
+      twoWorkerCase.startCase(Map.of("trigger", "go", "runId", runId)).thenAccept(caseIdRef::set);
 
       await().atMost(5, TimeUnit.SECONDS).until(() -> caseIdRef.get() != null);
       await()
@@ -107,31 +98,24 @@ class ChoreographySelectionTest {
               () ->
                   assertThat(cache.get(caseIdRef.get()).getState())
                       .isEqualTo(CaseStatus.COMPLETED));
-    }
 
-    // Brief settle — allow any trailing Quartz notifications to flush before measuring
-    await()
-        .atMost(2, TimeUnit.SECONDS)
-        .untilAsserted(
-            () ->
-                assertThat(
-                        TwoWorkerSameCapabilityCase.workerACount.get()
-                            + TwoWorkerSameCapabilityCase.workerBCount.get()
-                            - countBefore)
-                    .as("Two sequential cases must each select exactly one worker (total=2)")
-                    .isEqualTo(2));
+      int calls =
+          TwoWorkerSameCapabilityCase.runCounts.getOrDefault(runId, new AtomicInteger()).get();
+      assertThat(calls).as("Case %d: exactly one worker must run", i).isEqualTo(1);
+    }
   }
 
   @ApplicationScoped
   public static class TwoWorkerSameCapabilityCase extends CaseHub {
 
-    static final AtomicInteger workerACount = new AtomicInteger(0);
-    static final AtomicInteger workerBCount = new AtomicInteger(0);
+    /** Worker invocation count keyed by the unique runId passed in the case context. */
+    static final ConcurrentHashMap<String, AtomicInteger> runCounts = new ConcurrentHashMap<>();
 
     private final Capability capability =
         Capability.builder()
             .name("do-work")
-            .inputSchema("{ trigger: .trigger }")
+            // runId flows through so workers can record their invocation against the right key
+            .inputSchema("{ trigger: .trigger, runId: .runId }")
             .outputSchema("{ result: \"done\" }")
             .build();
 
@@ -151,7 +135,7 @@ class ChoreographySelectionTest {
                   .capabilities(capability)
                   .function(
                       input -> {
-                        workerACount.incrementAndGet();
+                        record(input);
                         return Map.of("result", "done");
                       })
                   .build(),
@@ -160,7 +144,7 @@ class ChoreographySelectionTest {
                   .capabilities(capability)
                   .function(
                       input -> {
-                        workerBCount.incrementAndGet();
+                        record(input);
                         return Map.of("result", "done");
                       })
                   .build())
@@ -173,6 +157,13 @@ class ChoreographySelectionTest {
           .goals(goal)
           .completion(GoalExpression.allOf(goal))
           .build();
+    }
+
+    private static void record(Map<String, Object> input) {
+      Object runId = input.get("runId");
+      if (runId != null) {
+        runCounts.computeIfAbsent(runId.toString(), k -> new AtomicInteger()).incrementAndGet();
+      }
     }
   }
 }
