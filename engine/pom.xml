@@ -61,12 +61,10 @@
         <dependency>
             <groupId>io.quarkiverse.work</groupId>
             <artifactId>quarkus-work-api</artifactId>
-            <version>0.2-SNAPSHOT</version>
         </dependency>
         <dependency>
             <groupId>io.quarkiverse.work</groupId>
             <artifactId>quarkus-work-core</artifactId>
-            <version>0.2-SNAPSHOT</version>
         </dependency>
         <dependency>
             <groupId>io.quarkus</groupId>

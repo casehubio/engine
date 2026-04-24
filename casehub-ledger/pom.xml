@@ -24,7 +24,6 @@
         <dependency>
             <groupId>io.quarkiverse.ledger</groupId>
             <artifactId>quarkus-ledger</artifactId>
-            <version>0.2-SNAPSHOT</version>
         </dependency>
 
         <!-- CDI + JPA (blocking) for EntityManager -->
