@@ -60,7 +60,7 @@
         <version.jakarta.inject>2.0.1</version.jakarta.inject>
         <version.org.jsonschema2pojo>1.3.3</version.org.jsonschema2pojo>
 
-        <version.quarkus.platform>3.31.1</version.quarkus.platform>
+        <version.quarkus.platform>3.32.2</version.quarkus.platform>
         <version.quarkus.flow>0.6.0</version.quarkus.flow>
         <version.io.fabric8.zjsonpatch>7.5.2</version.io.fabric8.zjsonpatch>
         <version.io.serverlessworkflow>7.13.4.Final</version.io.serverlessworkflow>
@@ -432,5 +432,18 @@
             </plugins>
         </pluginManagement>
     </build>
+
+    <distributionManagement>
+        <repository>
+            <id>github</id>
+            <name>casehubio GitHub Packages</name>
+            <url>https://maven.pkg.github.com/casehubio/casehub-engine</url>
+        </repository>
+        <snapshotRepository>
+            <id>github</id>
+            <name>casehubio GitHub Packages</name>
+            <url>https://maven.pkg.github.com/casehubio/casehub-engine</url>
+        </snapshotRepository>
+    </distributionManagement>
 
 </project>
