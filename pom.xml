@@ -104,14 +104,6 @@
 
     <dependencyManagement>
         <dependencies>
-            <!-- casehub-parent BOM — manages quarkus-ledger and quarkus-work versions -->
-            <dependency>
-                <groupId>io.casehubio</groupId>
-                <artifactId>casehub-parent</artifactId>
-                <version>0.2-SNAPSHOT</version>
-                <type>pom</type>
-                <scope>import</scope>
-            </dependency>
             <dependency>
                 <groupId>io.quarkus.platform</groupId>
                 <artifactId>quarkus-bom</artifactId>
@@ -162,6 +154,15 @@
                 <groupId>com.squareup.okhttp3</groupId>
                 <artifactId>mockwebserver</artifactId>
                 <version>${version.com.squareup.okhttp3.mockwebserver}</version>
+            </dependency>
+            <!-- casehub-parent BOM last — provides quarkus-ledger and quarkus-work versions
+                 without overriding casehub-engine's own Quarkus/serverlessworkflow versions -->
+            <dependency>
+                <groupId>io.casehubio</groupId>
+                <artifactId>casehub-parent</artifactId>
+                <version>0.2-SNAPSHOT</version>
+                <type>pom</type>
+                <scope>import</scope>
             </dependency>
         </dependencies>
     </dependencyManagement>
