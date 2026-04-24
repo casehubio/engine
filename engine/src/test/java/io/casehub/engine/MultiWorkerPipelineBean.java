@@ -161,17 +161,17 @@ public class MultiWorkerPipelineBean extends CaseHub {
         .milestones(
             Milestone.builder()
                 .name("documentValidated")
-                .condition(".step == \"validated\"")
+                .completionCriteria(".step == \"validated\"")
                 .description("Document has been validated")
                 .build(),
             Milestone.builder()
                 .name("documentEnriched")
-                .condition(".step == \"enriched\"")
+                .completionCriteria(".step == \"enriched\"")
                 .description("Document has been enriched")
                 .build(),
             Milestone.builder()
                 .name("documentPublished")
-                .condition(".step == \"published\"")
+                .completionCriteria(".step == \"published\"")
                 .description("Document has been published")
                 .build())
         .goals(goal)

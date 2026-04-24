@@ -157,7 +157,7 @@ public class CaseContextChangedEventHandler {
 
     for (Milestone milestone : milestones) {
       if (!expressionEngineRegistry.evaluate(
-          milestone.getCondition(), caseInstance.getCaseContext())) continue;
+          milestone.getCompletionCriteria(), caseInstance.getCaseContext())) continue;
 
       LOG.infof("Milestone '%s' REACHED! Publishing MilestoneReachedEvent", milestone.getName());
 

@@ -25,6 +25,7 @@ import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+import io.casehub.api.context.CaseContext;
 import io.casehub.api.model.Binding;
 import io.casehub.api.model.Capability;
 import io.casehub.api.model.CaseDefinition;
@@ -35,7 +36,10 @@ import io.casehub.api.model.GoalExpression;
 import io.casehub.api.model.GoalKind;
 import io.casehub.api.model.Milestone;
 import io.casehub.api.model.PredicateBasedCompletion;
+import io.casehub.api.model.evaluator.ExpressionEvaluator;
 import io.casehub.api.model.evaluator.JQExpressionEvaluator;
+import io.casehub.api.model.evaluator.LambdaExpressionEvaluator;
+import java.util.function.Predicate;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
@@ -274,7 +278,7 @@ class ModelBuilderTest {
     void nullName_throws() {
       assertThrows(
           NullPointerException.class,
-          () -> Milestone.builder().name(null).condition(".x == true").build());
+          () -> Milestone.builder().name(null).completionCriteria(".x == true").build());
     }
 
     @Test
@@ -283,10 +287,7 @@ class ModelBuilderTest {
       assertThrows(
           NullPointerException.class,
           () ->
-              Milestone.builder()
-                  .name("m")
-                  .condition((io.casehub.api.model.evaluator.ExpressionEvaluator) null)
-                  .build());
+              Milestone.builder().name("m").completionCriteria((ExpressionEvaluator) null).build());
     }
 
     @Test
@@ -294,24 +295,33 @@ class ModelBuilderTest {
     void nullStringCondition_throws() {
       assertThrows(
           NullPointerException.class,
-          () -> Milestone.builder().name("m").condition((String) null).build());
+          () -> Milestone.builder().name("m").completionCriteria((String) null).build());
     }
 
     @Test
     @DisplayName("condition(String) creates JQExpressionEvaluator")
     void conditionString_createsJQEvaluator() {
-      final var m = Milestone.builder().name("m").condition(".done == true").build();
-      assertInstanceOf(JQExpressionEvaluator.class, m.getCondition());
-      assertEquals(".done == true", ((JQExpressionEvaluator) m.getCondition()).expression());
+      final var m = Milestone.builder().name("m").completionCriteria(".done == true").build();
+      assertInstanceOf(JQExpressionEvaluator.class, m.getCompletionCriteria());
+      assertEquals(
+          ".done == true", ((JQExpressionEvaluator) m.getCompletionCriteria()).expression());
     }
 
     @Test
     @DisplayName("equals: same name/condition/description are equal")
     void equals_sameFields_equal() {
       final var a =
-          Milestone.builder().name("m").condition(".x == true").description("desc").build();
+          Milestone.builder()
+              .name("m")
+              .completionCriteria(".x == true")
+              .description("desc")
+              .build();
       final var b =
-          Milestone.builder().name("m").condition(".x == true").description("desc").build();
+          Milestone.builder()
+              .name("m")
+              .completionCriteria(".x == true")
+              .description("desc")
+              .build();
       assertEquals(a, b);
       assertEquals(a.hashCode(), b.hashCode());
     }
@@ -319,23 +329,23 @@ class ModelBuilderTest {
     @Test
     @DisplayName("equals: different name is not equal")
     void equals_differentName_notEqual() {
-      final var a = Milestone.builder().name("m1").condition(".x == true").build();
-      final var b = Milestone.builder().name("m2").condition(".x == true").build();
+      final var a = Milestone.builder().name("m1").completionCriteria(".x == true").build();
+      final var b = Milestone.builder().name("m2").completionCriteria(".x == true").build();
       assertNotEquals(a, b);
     }
 
     @Test
     @DisplayName("equals: different condition is not equal")
     void equals_differentCondition_notEqual() {
-      final var a = Milestone.builder().name("m").condition(".x == true").build();
-      final var b = Milestone.builder().name("m").condition(".y == true").build();
+      final var a = Milestone.builder().name("m").completionCriteria(".x == true").build();
+      final var b = Milestone.builder().name("m").completionCriteria(".y == true").build();
       assertNotEquals(a, b);
     }
 
     @Test
     @DisplayName("description is optional — null default")
     void descriptionDefaultsToNull() {
-      final var m = Milestone.builder().name("m").condition(".x == true").build();
+      final var m = Milestone.builder().name("m").completionCriteria(".x == true").build();
       assertNull(m.getDescription());
     }
 
@@ -343,7 +353,11 @@ class ModelBuilderTest {
     @DisplayName("description setter works")
     void descriptionSetter() {
       final var m =
-          Milestone.builder().name("m").condition(".x == true").description("my milestone").build();
+          Milestone.builder()
+              .name("m")
+              .completionCriteria(".x == true")
+              .description("my milestone")
+              .build();
       assertEquals("my milestone", m.getDescription());
     }
 
@@ -351,12 +365,8 @@ class ModelBuilderTest {
     @DisplayName("condition(Predicate) creates LambdaExpressionEvaluator")
     void conditionPredicate_createsLambdaEvaluator() {
       final var m =
-          Milestone.builder()
-              .name("m")
-              .condition((io.casehub.api.context.CaseContext ctx) -> true)
-              .build();
-      assertInstanceOf(
-          io.casehub.api.model.evaluator.LambdaExpressionEvaluator.class, m.getCondition());
+          Milestone.builder().name("m").completionCriteria((CaseContext ctx) -> true).build();
+      assertInstanceOf(LambdaExpressionEvaluator.class, m.getCompletionCriteria());
     }
 
     @Test
@@ -367,8 +377,7 @@ class ModelBuilderTest {
           () ->
               Milestone.builder()
                   .name("m")
-                  .condition(
-                      (java.util.function.Predicate<io.casehub.api.context.CaseContext>) null)
+                  .completionCriteria((Predicate<CaseContext>) null)
                   .build());
     }
   }
@@ -397,7 +406,7 @@ class ModelBuilderTest {
           () ->
               Goal.builder()
                   .name("g")
-                  .condition((io.casehub.api.model.evaluator.ExpressionEvaluator) null)
+                  .condition((ExpressionEvaluator) null)
                   .kind(GoalKind.SUCCESS)
                   .build());
     }
@@ -494,11 +503,10 @@ class ModelBuilderTest {
       final var g =
           Goal.builder()
               .name("g")
-              .condition((io.casehub.api.context.CaseContext ctx) -> true)
+              .condition((CaseContext ctx) -> true)
               .kind(GoalKind.SUCCESS)
               .build();
-      assertInstanceOf(
-          io.casehub.api.model.evaluator.LambdaExpressionEvaluator.class, g.getCondition());
+      assertInstanceOf(LambdaExpressionEvaluator.class, g.getCondition());
     }
 
     @Test
@@ -509,8 +517,7 @@ class ModelBuilderTest {
           () ->
               Goal.builder()
                   .name("g")
-                  .condition(
-                      (java.util.function.Predicate<io.casehub.api.context.CaseContext>) null)
+                  .condition((Predicate<CaseContext>) null)
                   .kind(GoalKind.SUCCESS)
                   .build());
     }
