@@ -104,6 +104,7 @@
     </dependencies>
 
     <properties>
+        <maven.deploy.skip>false</maven.deploy.skip>
         <engine.test.extra.jvm.args/>
     </properties>
 
@@ -184,6 +185,7 @@
         <profile>
             <id>persistence-memory</id>
             <properties>
+        <maven.deploy.skip>false</maven.deploy.skip>
                 <engine.test.extra.jvm.args>-Dquarkus.test.profile=memory</engine.test.extra.jvm.args>
             </properties>
             <dependencies>

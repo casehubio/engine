@@ -37,7 +37,7 @@ jobs:
 
       - name: Build, test and publish (main)
         if: github.event_name == 'push'
-        run: mvn --batch-mode deploy
+        run: mvn --batch-mode verify
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 

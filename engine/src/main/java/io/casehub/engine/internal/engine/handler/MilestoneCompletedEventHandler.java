@@ -1,0 +1,178 @@
+/*
+ * Copyright 2026-Present The Case Hub Authors
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ * http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+package io.casehub.engine.internal.engine.handler;
+
+import static io.casehub.engine.internal.event.EventBusAddresses.CONTEXT_CHANGED;
+import static io.casehub.engine.internal.history.CaseHubEventType.MILESTONE_COMPLETED;
+
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import io.casehub.api.context.CaseContext;
+import io.casehub.api.model.Milestone;
+import io.casehub.api.model.MilestoneLifecycleStatus;
+import io.casehub.api.model.SlaStatus;
+import io.casehub.engine.internal.event.CaseContextChangedEvent;
+import io.casehub.engine.internal.event.EventBusAddresses;
+import io.casehub.engine.internal.event.MilestoneCompletedEvent;
+import io.casehub.engine.internal.history.EventLog;
+import io.casehub.engine.internal.history.EventStreamType;
+import io.casehub.engine.internal.model.CaseInstance;
+import io.casehub.engine.spi.EventLogRepository;
+import io.quarkus.vertx.ConsumeEvent;
+import io.smallrye.mutiny.Uni;
+import io.smallrye.mutiny.infrastructure.Infrastructure;
+import io.vertx.mutiny.core.eventbus.EventBus;
+import jakarta.enterprise.context.ApplicationScoped;
+import jakarta.inject.Inject;
+import java.time.Instant;
+import java.util.HashMap;
+import java.util.Map;
+import org.jboss.logging.Logger;
+import org.quartz.JobKey;
+import org.quartz.Scheduler;
+import org.quartz.SchedulerException;
+
+/**
+ * Handles {@link MilestoneCompletedEvent}: records to EventLog, updates CaseContext, cancels SLA
+ * timeout job.
+ */
+@ApplicationScoped
+public class MilestoneCompletedEventHandler {
+
+  private static final Logger LOG = Logger.getLogger(MilestoneCompletedEventHandler.class);
+  private static final ObjectMapper OBJECT_MAPPER = new ObjectMapper();
+
+  @Inject EventLogRepository eventLogRepository;
+  @Inject EventBus eventBus;
+  @Inject Scheduler quartz;
+
+  @ConsumeEvent(value = EventBusAddresses.MILESTONE_COMPLETED)
+  public Uni<Void> onMilestoneCompleted(MilestoneCompletedEvent event) {
+    CaseInstance caseInstance = event.caseInstance();
+    Milestone milestone = event.milestone();
+    Instant completedAt = event.completedAt();
+    SlaStatus slaStatusAtCompletion = event.slaStatusAtCompletion();
+
+    return recordEventLog(event)
+        .chain(() -> updateCaseContext(caseInstance, milestone, completedAt, slaStatusAtCompletion))
+        .chain(() -> cancelSlaTimeoutJob(caseInstance, milestone))
+        .onFailure()
+        .invoke(
+            t ->
+                LOG.errorf(
+                    t,
+                    "Failed to process MILESTONE_COMPLETED for caseId=%s milestone=%s",
+                    caseInstance.getUuid(),
+                    milestone.getName()));
+  }
+
+  private Uni<Void> recordEventLog(MilestoneCompletedEvent event) {
+    CaseInstance caseInstance = event.caseInstance();
+    Milestone milestone = event.milestone();
+
+    EventLog eventLog = new EventLog();
+    eventLog.setCaseId(caseInstance.getUuid());
+    eventLog.setEventType(MILESTONE_COMPLETED);
+    eventLog.setStreamType(EventStreamType.CASE);
+    eventLog.setTimestamp(event.completedAt());
+
+    var payload =
+        OBJECT_MAPPER
+            .createObjectNode()
+            .put("milestoneName", milestone.getName())
+            .put("lifecycleStatus", MilestoneLifecycleStatus.COMPLETED.name())
+            .put("slaStatus", event.slaStatusAtCompletion().name())
+            .put("completedAt", event.completedAt().toString());
+
+    eventLog.setPayload(payload);
+
+    LOG.infof(
+        "Recording MILESTONE_COMPLETED for case=%s milestone=%s slaStatus=%s",
+        caseInstance.getUuid(), milestone.getName(), event.slaStatusAtCompletion());
+
+    return eventLogRepository.append(eventLog);
+  }
+
+  private Uni<Void> updateCaseContext(
+      CaseInstance caseInstance,
+      Milestone milestone,
+      Instant completedAt,
+      SlaStatus slaStatusAtCompletion) {
+    CaseContext context = caseInstance.getCaseContext();
+
+    Map<String, Object> milestoneState = new HashMap<>();
+    milestoneState.put("lifecycleStatus", MilestoneLifecycleStatus.COMPLETED.name());
+    milestoneState.put("slaStatus", slaStatusAtCompletion.name());
+    milestoneState.put("completedAt", completedAt.toString());
+
+    context.setPath("milestones." + milestone.getName(), milestoneState);
+
+    LOG.debugf(
+        "Updated CaseContext for case=%s milestone=%s: lifecycleStatus=COMPLETED, completedAt=%s",
+        caseInstance.getUuid(), milestone.getName(), completedAt);
+
+    // Publish CONTEXT_CHANGED event to notify other components
+    JsonNode contextSnapshot = context.asJsonNode();
+    eventBus.publish(CONTEXT_CHANGED, new CaseContextChangedEvent(caseInstance, contextSnapshot));
+
+    return Uni.createFrom().voidItem();
+  }
+
+  private Uni<Void> cancelSlaTimeoutJob(CaseInstance caseInstance, Milestone milestone) {
+    String jobId = caseInstance.getUuid() + "|milestone|" + milestone.getName();
+    JobKey jobKey = JobKey.jobKey(jobId);
+
+    // Offload blocking Quartz call to worker pool
+    return Uni.createFrom()
+        .item(
+            () -> {
+              try {
+                boolean deleted = quartz.deleteJob(jobKey);
+                if (deleted) {
+                  LOG.infof(
+                      "Cancelled SLA timeout job for case=%s milestone=%s",
+                      caseInstance.getUuid(), milestone.getName());
+                } else {
+                  LOG.debugf(
+                      "SLA timeout job not found for case=%s milestone=%s (already fired or never scheduled)",
+                      caseInstance.getUuid(), milestone.getName());
+                }
+                return null;
+              } catch (SchedulerException e) {
+                LOG.errorf(
+                    e,
+                    "Failed to cancel SLA timeout job for caseId=%s milestone=%s",
+                    caseInstance.getUuid(),
+                    milestone.getName());
+                throw new RuntimeException(
+                    String.format(
+                        "Quartz job cancellation failed for caseId=%s milestone=%s",
+                        caseInstance.getUuid(), milestone.getName()),
+                    e);
+              }
+            })
+        .runSubscriptionOn(Infrastructure.getDefaultWorkerPool())
+        .onFailure()
+        .invoke(
+            t ->
+                LOG.errorf(
+                    t,
+                    "Error during SLA timeout job cancellation for caseId=%s milestone=%s",
+                    caseInstance.getUuid(),
+                    milestone.getName()))
+        .replaceWithVoid();
+  }
+}

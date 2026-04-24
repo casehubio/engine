@@ -19,6 +19,7 @@ import io.casehub.api.context.CaseContext;
 import io.casehub.api.model.evaluator.ExpressionEvaluator;
 import io.casehub.api.model.evaluator.JQExpressionEvaluator;
 import io.casehub.api.model.evaluator.LambdaExpressionEvaluator;
+import java.time.Duration;
 import java.util.Objects;
 import java.util.function.Predicate;
 
@@ -39,21 +40,44 @@ import java.util.function.Predicate;
  *
  * <pre>{@code
  * // Milestones: intermediate waypoints
- * Milestone.builder().name("documents-received").condition(".docsUploaded == true").build()
- * Milestone.builder().name("credit-check-complete").condition(".creditScore != null").build()
- * Milestone.builder().name("underwriting-done").condition(".underwritingStatus == \"complete\"").build()
+ * Milestone.builder().name("documents-received").completionCriteria(".docsUploaded == true").build()
+ * Milestone.builder().name("credit-check-complete").completionCriteria(".creditScore != null").build()
+ * Milestone.builder().name("underwriting-done").completionCriteria(".underwritingStatus == \"complete\"").build()
  *
  * // Goals: terminal outcomes
  * Goal.builder().name("loan-approved").condition(".decision == \"approved\"").kind(GoalKind.SUCCESS).build()
  * Goal.builder().name("loan-rejected").condition(".decision == \"rejected\"").kind(GoalKind.FAILURE).build()
  * }</pre>
  *
+ * <h3>Lifecycle States</h3>
+ *
+ * <p>Milestones progress through lifecycle states tracked via {@link MilestoneLifecycleStatus}:
+ *
+ * <ul>
+ *   <li><b>PENDING</b> — waiting for {@code entryCriteria} to become true
+ *   <li><b>ACTIVE</b> — {@code entryCriteria} met, working toward {@code completionCriteria}
+ *   <li><b>COMPLETED</b> — {@code completionCriteria} met
+ * </ul>
+ *
+ * <h3>SLA Tracking</h3>
+ *
+ * <p>Optional {@code slaDuration} enables SLA deadline tracking via {@link SlaStatus}:
+ *
+ * <ul>
+ *   <li><b>NOT_STARTED</b> — milestone not yet activated (PENDING)
+ *   <li><b>ON_TRACK</b> — activated, within SLA deadline
+ *   <li><b>BREACHED</b> — SLA deadline passed
+ * </ul>
+ *
+ * <p>SLA status is orthogonal to lifecycle: a milestone can be COMPLETED + BREACHED (late
+ * completion).
+ *
  * <h3>Lightweight use</h3>
  *
- * <p>By default, when the condition becomes true, a {@code MilestoneReachedEvent} is published on
- * the event bus and recorded in the {@link io.casehub.engine.internal.history.EventLog} as {@code
- * MILESTONE_REACHED}. No further tracking occurs. This is sufficient for observability, dashboards,
- * and audit trails.
+ * <p>By default, when the completionCriteria becomes true, a {@code MilestoneReachedEvent} is
+ * published on the event bus and recorded in the {@link
+ * io.casehub.engine.internal.history.EventLog} as {@code MILESTONE_REACHED}. No further tracking
+ * occurs. This is sufficient for observability, dashboards, and audit trails.
  *
  * <h3>Lifecycle use (Phase 2 — with {@code CasePlanModel})</h3>
  *
@@ -65,21 +89,47 @@ import java.util.function.Predicate;
  */
 public class Milestone {
 
+  private static final ExpressionEvaluator DEFAULT_ENTRY_CRITERIA =
+      new LambdaExpressionEvaluator(ctx -> true);
+
   private final String name;
-  private final ExpressionEvaluator condition;
+  private final ExpressionEvaluator entryCriteria;
+  private final ExpressionEvaluator completionCriteria;
+  private final Duration slaDuration;
+  private final SlaStartFrom slaStartFrom;
   private String description;
 
-  public Milestone(String name, ExpressionEvaluator condition) {
+  public Milestone(
+      String name,
+      ExpressionEvaluator entryCriteria,
+      ExpressionEvaluator completionCriteria,
+      Duration slaDuration,
+      SlaStartFrom slaStartFrom) {
     this.name = name;
-    this.condition = condition;
+    this.entryCriteria = entryCriteria;
+    this.completionCriteria = completionCriteria;
+    this.slaDuration = slaDuration;
+    this.slaStartFrom = slaStartFrom;
   }
 
   public String getName() {
     return name;
   }
 
-  public ExpressionEvaluator getCondition() {
-    return condition;
+  public ExpressionEvaluator getEntryCriteria() {
+    return entryCriteria;
+  }
+
+  public ExpressionEvaluator getCompletionCriteria() {
+    return completionCriteria;
+  }
+
+  public Duration getSlaDuration() {
+    return slaDuration;
+  }
+
+  public SlaStartFrom getSlaStartFrom() {
+    return slaStartFrom;
   }
 
   public String getDescription() {
@@ -97,7 +147,10 @@ public class Milestone {
   public static class Builder {
 
     private String name;
-    private ExpressionEvaluator condition;
+    private ExpressionEvaluator entryCriteria;
+    private ExpressionEvaluator completionCriteria;
+    private Duration slaDuration;
+    private SlaStartFrom slaStartFrom = SlaStartFrom.MILESTONE_ACTIVATED;
     private String description;
 
     private Builder() {}
@@ -107,22 +160,54 @@ public class Milestone {
       return this;
     }
 
-    public Builder condition(ExpressionEvaluator condition) {
-      this.condition = condition;
+    public Builder entryCriteria(ExpressionEvaluator entryCriteria) {
+      this.entryCriteria = entryCriteria;
       return this;
     }
 
-    public Builder condition(String condition) {
-      this.condition =
+    public Builder entryCriteria(String entryCriteria) {
+      this.entryCriteria =
           new JQExpressionEvaluator(
-              Objects.requireNonNull(condition, "condition must not be null"));
+              Objects.requireNonNull(entryCriteria, "entryCriteria must not be null"));
       return this;
     }
 
-    public Builder condition(Predicate<CaseContext> predicate) {
-      this.condition =
+    public Builder entryCriteria(Predicate<CaseContext> predicate) {
+      this.entryCriteria =
           new LambdaExpressionEvaluator(
-              Objects.requireNonNull(predicate, "condition must not be null"));
+              Objects.requireNonNull(predicate, "entryCriteria must not be null"));
+      return this;
+    }
+
+    public Builder completionCriteria(ExpressionEvaluator completionCriteria) {
+      this.completionCriteria = completionCriteria;
+      return this;
+    }
+
+    public Builder completionCriteria(String completionCriteria) {
+      this.completionCriteria =
+          new JQExpressionEvaluator(
+              Objects.requireNonNull(completionCriteria, "completionCriteria must not be null"));
+      return this;
+    }
+
+    public Builder completionCriteria(Predicate<CaseContext> predicate) {
+      this.completionCriteria =
+          new LambdaExpressionEvaluator(
+              Objects.requireNonNull(predicate, "completionCriteria must not be null"));
+      return this;
+    }
+
+    public Builder slaDuration(Duration slaDuration) {
+      if (slaDuration != null && (slaDuration.isNegative() || slaDuration.isZero())) {
+        throw new IllegalArgumentException("slaDuration must be positive");
+      }
+      this.slaDuration = slaDuration;
+      return this;
+    }
+
+    public Builder slaStartFrom(SlaStartFrom slaStartFrom) {
+      this.slaStartFrom = slaStartFrom;
       return this;
     }
 
@@ -132,8 +217,19 @@ public class Milestone {
     }
 
     public Milestone build() {
+      // Default entryCriteria to always-true if not set
+      ExpressionEvaluator finalEntryCriteria = entryCriteria;
+      if (finalEntryCriteria == null) {
+        finalEntryCriteria = DEFAULT_ENTRY_CRITERIA;
+      }
+
       Milestone milestone =
-          new Milestone(Objects.requireNonNull(name), Objects.requireNonNull(condition));
+          new Milestone(
+              Objects.requireNonNull(name, "name must not be null"),
+              finalEntryCriteria,
+              Objects.requireNonNull(completionCriteria, "completionCriteria must not be null"),
+              slaDuration,
+              slaStartFrom);
       milestone.setDescription(description);
       return milestone;
     }
@@ -143,12 +239,16 @@ public class Milestone {
   public boolean equals(Object o) {
     if (!(o instanceof Milestone milestone)) return false;
     return Objects.equals(name, milestone.name)
-        && Objects.equals(condition, milestone.condition)
+        && Objects.equals(entryCriteria, milestone.entryCriteria)
+        && Objects.equals(completionCriteria, milestone.completionCriteria)
+        && Objects.equals(slaDuration, milestone.slaDuration)
+        && slaStartFrom == milestone.slaStartFrom
         && Objects.equals(description, milestone.description);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(name, condition, description);
+    return Objects.hash(
+        name, entryCriteria, completionCriteria, slaDuration, slaStartFrom, description);
   }
 }

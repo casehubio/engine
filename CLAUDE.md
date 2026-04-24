@@ -78,3 +78,20 @@ Use RAM store — no JDBC store, no Quartz tables:
 ```properties
 quarkus.quartz.store-type=ram
 ```
+
+## Ecosystem Conventions
+
+All casehubio projects align on these conventions:
+
+**Quarkus version:** `version.quarkus.platform` in root `pom.xml`, currently `3.32.2`. All ecosystem projects must match. When bumping, bump all projects together.
+
+**GitHub Packages — dependency resolution:** Root `pom.xml` has `<repositories>` with `id=github` pointing to `https://maven.pkg.github.com/casehubio/*`. CI uses `server-id: github` + `GITHUB_TOKEN` in `actions/setup-java`.
+
+**Cross-project dependency versions** are properties in root `pom.xml`:
+- `version.io.quarkiverse.work` — quarkus-work-api and quarkus-work-core (`0.2-SNAPSHOT`)
+- `version.io.quarkiverse.ledger` — quarkus-ledger (`0.2-SNAPSHOT`)
+
+Submodule poms reference `${version.io.quarkiverse.work}` etc. — no hardcoded versions.
+
+**Publishing:** `maven.deploy.skip=true` is set in root `pom.xml` properties. Only modules that produce publishable JARs (`api`, `engine-model`, `engine`, `casehub-ledger`) override with `maven.deploy.skip=false`. The root aggregator POM is not published to GitHub Packages.
+

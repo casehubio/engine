@@ -39,8 +39,8 @@ import java.util.function.Predicate;
  *
  * <pre>{@code
  * // Milestones: intermediate waypoints (no polarity)
- * Milestone.builder().name("documents-received").condition(".docsUploaded == true").build()
- * Milestone.builder().name("credit-check-complete").condition(".creditScore != null").build()
+ * Milestone.builder().name("documents-received").completionCriteria(".docsUploaded == true").build()
+ * Milestone.builder().name("credit-check-complete").completionCriteria(".creditScore != null").build()
  *
  * // Goals: terminal outcomes (SUCCESS or FAILURE)
  * Goal.builder().name("loan-approved").condition(".decision == \"approved\"").kind(GoalKind.SUCCESS).build()

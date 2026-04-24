@@ -28,6 +28,7 @@ import io.casehub.engine.internal.event.WorkflowExecutionCompleted;
 import io.casehub.engine.internal.history.EventLog;
 import io.casehub.engine.internal.model.CaseInstance;
 import io.casehub.engine.internal.util.ReactiveUtils;
+import io.casehub.engine.spi.EventLogRepository;
 import io.serverlessworkflow.api.types.Workflow;
 import io.serverlessworkflow.impl.WorkflowModel;
 import io.smallrye.mutiny.Uni;
@@ -58,7 +59,7 @@ public class WorkerExecutionTask implements Job {
 
   @Inject WorkerExecutionRecoveryService workerExecutionRecoveryService;
 
-  @Inject io.casehub.engine.spi.EventLogRepository eventLogRepository;
+  @Inject EventLogRepository eventLogRepository;
 
   private static final ObjectMapper OBJECT_MAPPER = new ObjectMapper();
 

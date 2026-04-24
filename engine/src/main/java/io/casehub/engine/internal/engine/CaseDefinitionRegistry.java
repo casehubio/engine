@@ -149,7 +149,12 @@ public class CaseDefinitionRegistry {
     }
     if (definition.getMilestones() != null) {
       for (Milestone milestone : definition.getMilestones()) {
-        expressionEngineRegistry.validate(milestone.getCondition());
+        if (milestone.getEntryCriteria() != null) {
+          expressionEngineRegistry.validate(milestone.getEntryCriteria());
+        }
+        if (milestone.getCompletionCriteria() != null) {
+          expressionEngineRegistry.validate(milestone.getCompletionCriteria());
+        }
       }
     }
     if (definition.getGoals() != null) {

@@ -76,7 +76,7 @@ public class YamlSimpleCaseHubBeanTest {
     assertEquals("documentProcessed", def.getMilestones().get(0).getName());
     assertEquals(
         ".status == \"processed\"",
-        ((JQExpressionEvaluator) def.getMilestones().get(0).getCondition()).expression());
+        ((JQExpressionEvaluator) def.getMilestones().get(0).getCompletionCriteria()).expression());
 
     // goals
     assertEquals(1, def.getGoals().size());
