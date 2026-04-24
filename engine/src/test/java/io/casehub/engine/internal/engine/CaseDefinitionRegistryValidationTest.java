@@ -130,7 +130,7 @@ class CaseDefinitionRegistryValidationTest {
             .milestones(
                 Milestone.builder()
                     .name("bad-milestone")
-                    .condition(new JQExpressionEvaluator(".phase ??? nope"))
+                    .completionCriteria(new JQExpressionEvaluator(".phase ??? nope"))
                     .build())
             .build();
 

@@ -54,7 +54,10 @@ public class WorkerExecutionRecoveryService {
           CaseHubEventType.WORKER_SCHEDULED,
           CaseHubEventType.WORKER_EXECUTION_STARTED,
           CaseHubEventType.WORKER_EXECUTION_COMPLETED,
-          CaseHubEventType.WORKER_EXECUTION_FAILED);
+          CaseHubEventType.WORKER_EXECUTION_FAILED,
+          CaseHubEventType.MILESTONE_ACTIVATED,
+          CaseHubEventType.MILESTONE_COMPLETED,
+          CaseHubEventType.MILESTONE_SLA_VIOLATED);
 
   @Inject CaseInstanceRepository caseInstanceRepository;
 
@@ -132,7 +135,10 @@ public class WorkerExecutionRecoveryService {
                     EnumSet.of(
                         CaseHubEventType.CASE_STARTED,
                         CaseHubEventType.WORKER_EXECUTION_COMPLETED,
-                        CaseHubEventType.SIGNAL_RECEIVED)))
+                        CaseHubEventType.SIGNAL_RECEIVED,
+                        CaseHubEventType.MILESTONE_ACTIVATED,
+                        CaseHubEventType.MILESTONE_COMPLETED,
+                        CaseHubEventType.MILESTONE_SLA_VIOLATED)))
         .map(
             eventLogs -> {
               CaseContext caseContext = new CaseContextImpl();
@@ -157,6 +163,12 @@ public class WorkerExecutionRecoveryService {
                   }
                 } else if (eventLog.getEventType() == CaseHubEventType.WORKER_EXECUTION_COMPLETED) {
                   caseContext.setAll(payloadAsMap(eventLog.getPayload()));
+                } else if (eventLog.getEventType() == CaseHubEventType.MILESTONE_ACTIVATED) {
+                  applyMilestoneActivatedEvent(caseContext, eventLog);
+                } else if (eventLog.getEventType() == CaseHubEventType.MILESTONE_COMPLETED) {
+                  applyMilestoneCompletedEvent(caseContext, eventLog);
+                } else if (eventLog.getEventType() == CaseHubEventType.MILESTONE_SLA_VIOLATED) {
+                  applyMilestoneSLAViolatedEvent(caseContext, eventLog);
                 } else {
                   LOG.warnf(
                       "Unexpected event type in rebuildStateContext: %s", eventLog.getEventType());
@@ -190,5 +202,57 @@ public class WorkerExecutionRecoveryService {
 
   private <T> Uni<T> runOnSafeContext(java.util.function.Supplier<Uni<? extends T>> supplier) {
     return ReactiveUtils.runOnSafeVertxContext(vertx, supplier);
+  }
+
+  private void applyMilestoneActivatedEvent(CaseContext caseContext, EventLog eventLog) {
+    JsonNode payload = eventLog.getPayload();
+    if (payload == null || payload.isNull()) {
+      return;
+    }
+    String milestoneName = payload.path("milestoneName").asText(null);
+    if (milestoneName == null) {
+      return;
+    }
+    String prefix = "milestones." + milestoneName + ".";
+    caseContext.setPath(
+        prefix + "lifecycleStatus", payload.path("lifecycleStatus").asText("ACTIVE"));
+    caseContext.setPath(prefix + "slaStatus", payload.path("slaStatus").asText("ON_TRACK"));
+    if (payload.has("activatedAt")) {
+      caseContext.setPath(prefix + "activatedAt", payload.get("activatedAt").asText());
+    }
+    if (payload.has("slaDeadline")) {
+      caseContext.setPath(prefix + "slaDeadline", payload.get("slaDeadline").asText());
+    }
+  }
+
+  private void applyMilestoneCompletedEvent(CaseContext caseContext, EventLog eventLog) {
+    JsonNode payload = eventLog.getPayload();
+    if (payload == null || payload.isNull()) {
+      return;
+    }
+    String milestoneName = payload.path("milestoneName").asText(null);
+    if (milestoneName == null) {
+      return;
+    }
+    String prefix = "milestones." + milestoneName + ".";
+    caseContext.setPath(
+        prefix + "lifecycleStatus", payload.path("lifecycleStatus").asText("COMPLETED"));
+    caseContext.setPath(prefix + "slaStatus", payload.path("slaStatus").asText("ON_TRACK"));
+    if (payload.has("completedAt")) {
+      caseContext.setPath(prefix + "completedAt", payload.get("completedAt").asText());
+    }
+  }
+
+  private void applyMilestoneSLAViolatedEvent(CaseContext caseContext, EventLog eventLog) {
+    JsonNode payload = eventLog.getPayload();
+    if (payload == null || payload.isNull()) {
+      return;
+    }
+    String milestoneName = payload.path("milestoneName").asText(null);
+    if (milestoneName == null) {
+      return;
+    }
+    String prefix = "milestones." + milestoneName + ".";
+    caseContext.setPath(prefix + "slaStatus", payload.path("slaStatus").asText("BREACHED"));
   }
 }

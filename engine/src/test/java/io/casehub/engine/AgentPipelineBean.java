@@ -143,17 +143,17 @@ public class AgentPipelineBean extends CaseHub {
         .milestones(
             Milestone.builder()
                 .name("documentFetched")
-                .condition(".step == \"fetched\"")
+                .completionCriteria(".step == \"fetched\"")
                 .description("Document data has been fetched from API")
                 .build(),
             Milestone.builder()
                 .name("sentimentAnalyzed")
-                .condition(".step == \"analyzed\"")
+                .completionCriteria(".step == \"analyzed\"")
                 .description("Document sentiment has been analyzed")
                 .build(),
             Milestone.builder()
                 .name("contentSummarized")
-                .condition(".step == \"summarized\"")
+                .completionCriteria(".step == \"summarized\"")
                 .description("Document content has been summarized")
                 .build())
         .goals(goal)

@@ -366,7 +366,10 @@ class BasicBlackboardTest {
             .build();
 
     private final Milestone docsReceived =
-        Milestone.builder().name("docs-received").condition(".docsUploaded == true").build();
+        Milestone.builder()
+            .name("docs-received")
+            .completionCriteria(".docsUploaded == true")
+            .build();
 
     @Override
     public CaseDefinition getDefinition() {

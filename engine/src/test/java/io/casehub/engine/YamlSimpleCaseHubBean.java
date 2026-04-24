@@ -107,7 +107,10 @@ public class YamlSimpleCaseHubBean extends CaseHub {
     if (schema.getSpec().getMilestones() != null) {
       for (io.casehub.model.Milestone sm : schema.getSpec().getMilestones()) {
         Milestone milestone =
-            new Milestone(sm.getName(), new JQExpressionEvaluator(sm.getCondition()));
+            Milestone.builder()
+                .name(sm.getName())
+                .completionCriteria(new JQExpressionEvaluator(sm.getCondition()))
+                .build();
         milestone.setDescription(sm.getDescription());
         def.getMilestones().add(milestone);
       }

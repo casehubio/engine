@@ -99,7 +99,7 @@ public class SimpleCaseHubBean extends CaseHub {
         .milestones(
             Milestone.builder()
                 .name("documentProcessed")
-                .condition(".status == \"processed\"")
+                .completionCriteria(".status == \"processed\"")
                 .description("Milestone reached when document is processed")
                 .build())
         .goals(goal)
