@@ -29,7 +29,14 @@ jobs:
           server-username: GITHUB_ACTOR
           server-password: GITHUB_TOKEN
 
-      - name: Build, test and publish
+      - name: Build and test (PR)
+        if: github.event_name == 'pull_request'
+        run: mvn --batch-mode verify
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Build, test and publish (main)
+        if: github.event_name == 'push'
         run: mvn --batch-mode deploy
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
