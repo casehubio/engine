@@ -1,119 +1,51 @@
-name: Java CI with Maven
+name: Build, Test and Publish
 
 on:
+  push:
+    branches: [main]
   pull_request:
+    branches: [main]
 
 permissions:
   contents: read
+  packages: write
 
 jobs:
-  os-test:
-    name: Build and test (${{ matrix.os }})
-    runs-on: ${{ matrix.os }}
-
-    strategy:
-      fail-fast: false
-      matrix:
-        os: [ubuntu-latest]
+  build:
+    name: Build and test
+    runs-on: ubuntu-latest
 
     steps:
       - name: Checkout
-        uses: actions/checkout@v6
-
-      - name: Checkout quarkus-work
-        uses: actions/checkout@v6
-        with:
-          repository: mdproctor/quarkus-work
-          path: quarkus-work
-
-      - name: Checkout quarkus-ledger
-        uses: actions/checkout@v6
-        with:
-          repository: mdproctor/quarkus-ledger
-          path: quarkus-ledger
+        uses: actions/checkout@v4
 
       - name: Set up Java 21
-        uses: actions/setup-java@v5
+        uses: actions/setup-java@v4
         with:
           java-version: '21'
           distribution: 'temurin'
           cache: maven
+          server-id: github
+          server-username: GITHUB_ACTOR
+          server-password: GITHUB_TOKEN
 
-      - name: Install quarkus-work-api and quarkus-work-core
-        run: mvn install -pl .,quarkus-work-api,quarkus-work-core -DskipTests -q
-        working-directory: quarkus-work
+      - name: Build and test (PR)
+        if: github.event_name == 'pull_request'
+        run: mvn --batch-mode verify
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Install quarkus-ledger
-        run: mvn install -pl .,runtime,deployment -DskipTests -q
-        working-directory: quarkus-ledger
-
-      - name: Build and test
-        run: mvn -B package --file pom.xml
-
-      - name: Upload Surefire reports
-        uses: actions/upload-artifact@v7
-        if: always()
-        with:
-          name: surefire-reports-${{ matrix.os }}
-          path: |
-            **/target/surefire-reports/*
-            **/target/failsafe-reports/*
-          if-no-files-found: ignore
-          retention-days: 5
-
-  maven-version-test:
-    name: Maven compatibility (Maven ${{ matrix.mvn }}, Java ${{ matrix.java }})
-    runs-on: ubuntu-latest
-
-    strategy:
-      fail-fast: false
-      matrix:
-        mvn: ['3.9.14']
-        java: ['21']
-
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v6
-
-      - name: Checkout quarkus-work
-        uses: actions/checkout@v6
-        with:
-          repository: mdproctor/quarkus-work
-          path: quarkus-work
-
-      - name: Checkout quarkus-ledger
-        uses: actions/checkout@v6
-        with:
-          repository: mdproctor/quarkus-ledger
-          path: quarkus-ledger
-
-      - name: Set up Java ${{ matrix.java }}
-        uses: actions/setup-java@v5
-        with:
-          java-version: ${{ matrix.java }}
-          distribution: 'temurin'
-          cache: maven
-
-      - name: Install quarkus-work-api and quarkus-work-core
-        run: mvn install -pl .,quarkus-work-api,quarkus-work-core -DskipTests -q
-        working-directory: quarkus-work
-
-      - name: Install quarkus-ledger
-        run: mvn install -pl .,runtime,deployment -DskipTests -q
-        working-directory: quarkus-ledger
-
-      - name: Set up Maven Wrapper for specified version
-        run: mvn -N wrapper:wrapper -Dmaven=${{ matrix.mvn }}
-
-      - name: Build and test
-        run: ./mvnw -B package --file pom.xml
-        shell: bash
+      - name: Build, test and publish (main)
+        if: github.event_name == 'push'
+        run: mvn --batch-mode deploy
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Upload Surefire reports
-        uses: actions/upload-artifact@v7
+        uses: actions/upload-artifact@v4
         if: always()
         with:
-          name: surefire-reports-mvn-${{ matrix.mvn }}-java-${{ matrix.java }}
+          name: surefire-reports
           path: |
             **/target/surefire-reports/*
             **/target/failsafe-reports/*

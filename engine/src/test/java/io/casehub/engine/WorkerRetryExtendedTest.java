@@ -221,10 +221,16 @@ public class WorkerRetryExtendedTest {
                     failCount + 1,
                     FlexibleRetryBean.attempts.getOrDefault(taskId, new AtomicInteger()).get()));
 
-    assertEquals(
-        failCount,
-        findEvents(caseId, CaseHubEventType.WORKER_EXECUTION_FAILED).size(),
-        "One WORKER_EXECUTION_FAILED entry must exist per failed attempt");
+    // Fold event log assertion into await — the DB write is async and may not
+    // have committed by the time the attempt counter reaches failCount+1.
+    await()
+        .atMost(10, TimeUnit.SECONDS)
+        .untilAsserted(
+            () ->
+                assertEquals(
+                    failCount,
+                    findEvents(caseId, CaseHubEventType.WORKER_EXECUTION_FAILED).size(),
+                    "One WORKER_EXECUTION_FAILED entry must exist per failed attempt"));
   }
 
   /**
@@ -276,11 +282,16 @@ public class WorkerRetryExtendedTest {
                 assertEquals(
                     3, FlexibleRetryBean.attempts.getOrDefault(taskId, new AtomicInteger()).get()));
 
-    List<EventLog> scheduledEvents = findWorkerEvents(caseId, CaseHubEventType.WORKER_SCHEDULED);
-    assertEquals(
-        1,
-        scheduledEvents.size(),
-        "Exactly one WORKER_SCHEDULED row must exist regardless of retry count");
+    // Fold event log assertion into await — the DB write is async and may not
+    // have committed by the time the attempt counter reaches 3.
+    await()
+        .atMost(10, TimeUnit.SECONDS)
+        .untilAsserted(
+            () ->
+                assertEquals(
+                    1,
+                    findWorkerEvents(caseId, CaseHubEventType.WORKER_SCHEDULED).size(),
+                    "Exactly one WORKER_SCHEDULED row must exist regardless of retry count"));
   }
 
   /** WORKER_EXECUTION_COMPLETED must appear exactly once even after multiple failed attempts. */
@@ -299,10 +310,16 @@ public class WorkerRetryExtendedTest {
                 assertEquals(
                     3, FlexibleRetryBean.attempts.getOrDefault(taskId, new AtomicInteger()).get()));
 
-    assertEquals(
-        1,
-        findWorkerEvents(caseId, CaseHubEventType.WORKER_EXECUTION_COMPLETED).size(),
-        "Exactly one WORKER_EXECUTION_COMPLETED entry must exist after retry success");
+    // Fold event log assertion into await — the DB write is async and may not
+    // have committed by the time the attempt counter reaches 3.
+    await()
+        .atMost(10, TimeUnit.SECONDS)
+        .untilAsserted(
+            () ->
+                assertEquals(
+                    1,
+                    findWorkerEvents(caseId, CaseHubEventType.WORKER_EXECUTION_COMPLETED).size(),
+                    "Exactly one WORKER_EXECUTION_COMPLETED entry must exist after retry success"));
   }
 
   /**
