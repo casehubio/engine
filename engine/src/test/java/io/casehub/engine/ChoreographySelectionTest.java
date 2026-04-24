@@ -152,7 +152,10 @@ class ChoreographySelectionTest {
               Binding.builder()
                   .name("trigger")
                   .capability(capability)
-                  .on(new ContextChangeTrigger(".trigger == \"go\""))
+                  // Guard on .result == null: prevents re-firing after worker writes output.
+                  // Without this, CONTEXT_CHANGED fires again post-completion and the binding
+                  // re-evaluates while the case is still transitioning, scheduling a second worker.
+                  .on(new ContextChangeTrigger(".trigger == \"go\" and .result == null"))
                   .build())
           .goals(goal)
           .completion(GoalExpression.allOf(goal))
