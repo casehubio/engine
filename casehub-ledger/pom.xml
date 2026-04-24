@@ -21,10 +21,11 @@
             <version>${project.version}</version>
         </dependency>
 
-        <!-- Ledger library — version managed by casehub-parent BOM -->
+        <!-- Ledger library -->
         <dependency>
             <groupId>io.quarkiverse.ledger</groupId>
             <artifactId>quarkus-ledger</artifactId>
+            <version>1.0.0-SNAPSHOT</version>
         </dependency>
 
         <!-- CDI + JPA (blocking) for EntityManager -->

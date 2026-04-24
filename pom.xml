@@ -91,27 +91,8 @@
         <module>casehub-ledger</module>
     </modules>
 
-    <repositories>
-        <repository>
-            <id>github-casehubio</id>
-            <name>casehubio GitHub Packages</name>
-            <url>https://maven.pkg.github.com/casehubio/*</url>
-            <snapshots>
-                <enabled>true</enabled>
-            </snapshots>
-        </repository>
-    </repositories>
-
     <dependencyManagement>
         <dependencies>
-            <!-- casehub-parent BOM — manages all casehubio artifact versions -->
-            <dependency>
-                <groupId>io.casehubio</groupId>
-                <artifactId>casehub-parent</artifactId>
-                <version>0.2-SNAPSHOT</version>
-                <type>pom</type>
-                <scope>import</scope>
-            </dependency>
             <dependency>
                 <groupId>io.quarkus.platform</groupId>
                 <artifactId>quarkus-bom</artifactId>
