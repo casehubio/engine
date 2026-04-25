@@ -43,10 +43,6 @@
             <artifactId>quarkus-arc</artifactId>
         </dependency>
         <dependency>
-            <groupId>io.quarkus</groupId>
-            <artifactId>quarkus-quartz</artifactId>
-        </dependency>
-        <dependency>
             <groupId>io.quarkiverse.flow</groupId>
             <artifactId>quarkus-flow</artifactId>
         </dependency>
@@ -70,7 +66,6 @@
             <groupId>io.casehub</groupId>
             <artifactId>scheduler-quartz</artifactId>
             <version>${project.version}</version>
-            <scope>test</scope>
         </dependency>
         <dependency>
             <groupId>io.quarkus</groupId>
