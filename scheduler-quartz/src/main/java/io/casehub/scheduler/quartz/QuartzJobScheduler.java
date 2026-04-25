@@ -13,16 +13,19 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.casehub.engine.internal.scheduler;
+package io.casehub.scheduler.quartz;
 
 import static org.quartz.CronScheduleBuilder.cronSchedule;
 import static org.quartz.JobBuilder.newJob;
 import static org.quartz.SimpleScheduleBuilder.simpleSchedule;
 import static org.quartz.TriggerBuilder.newTrigger;
 
+import io.casehub.engine.internal.scheduler.JobIdentifier;
+import io.casehub.engine.internal.scheduler.ScheduleStrategy;
 import io.casehub.engine.internal.scheduler.ScheduleStrategy.CronSchedule;
 import io.casehub.engine.internal.scheduler.ScheduleStrategy.DelaySchedule;
 import io.casehub.engine.internal.scheduler.ScheduleStrategy.FixedAtSchedule;
+import io.casehub.engine.internal.scheduler.ScheduledJobRequest;
 import io.casehub.engine.spi.JobScheduler;
 import io.smallrye.mutiny.Uni;
 import io.smallrye.mutiny.unchecked.Unchecked;
