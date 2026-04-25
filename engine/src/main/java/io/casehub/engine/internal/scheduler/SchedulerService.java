@@ -15,11 +15,6 @@
  */
 package io.casehub.engine.internal.scheduler;
 
-import static org.quartz.CronScheduleBuilder.cronSchedule;
-import static org.quartz.JobBuilder.newJob;
-import static org.quartz.SimpleScheduleBuilder.simpleSchedule;
-import static org.quartz.TriggerBuilder.newTrigger;
-
 import io.casehub.api.model.Binding;
 import io.casehub.api.model.Capability;
 import io.casehub.api.model.CaseDefinition;
@@ -28,24 +23,18 @@ import io.casehub.api.model.Worker;
 import io.casehub.api.model.evaluator.ExpressionEvaluator;
 import io.casehub.engine.internal.engine.CaseDefinitionRegistry;
 import io.casehub.engine.internal.model.CaseInstance;
+import io.casehub.engine.internal.scheduler.ScheduleStrategy.CronSchedule;
+import io.casehub.engine.internal.scheduler.ScheduleStrategy.DelaySchedule;
+import io.casehub.engine.spi.JobScheduler;
 import io.smallrye.mutiny.Uni;
-import io.smallrye.mutiny.unchecked.Unchecked;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
 import java.util.ArrayList;
-import java.util.Date;
+import java.util.HashMap;
 import java.util.List;
-import java.util.Set;
+import java.util.Map;
 import java.util.UUID;
 import org.jboss.logging.Logger;
-import org.quartz.CronTrigger;
-import org.quartz.JobDetail;
-import org.quartz.JobKey;
-import org.quartz.Scheduler;
-import org.quartz.SchedulerException;
-import org.quartz.SimpleTrigger;
-import org.quartz.Trigger;
-import org.quartz.impl.matchers.GroupMatcher;
 
 /**
  * Service for scheduling time-based triggers for Case Hub bindings.
@@ -74,7 +63,7 @@ public class SchedulerService {
 
   private static final Logger LOG = Logger.getLogger(SchedulerService.class);
 
-  @Inject Scheduler quartz;
+  @Inject JobScheduler scheduler;
 
   @Inject CaseDefinitionRegistry caseDefinitionRegistry;
 
@@ -149,26 +138,25 @@ public class SchedulerService {
   public Uni<Void> scheduleWorker(
       UUID caseId, Binding binding, ScheduleTrigger trigger, Worker worker) {
 
-    return Uni.createFrom()
-        .item(
-            () -> {
-              JobKey jobKey = createJobKey(caseId, binding.getName());
-              JobDetail job = createJobDetail(jobKey, caseId, binding, worker, null);
-              Trigger quartzTrigger = createQuartzTrigger(jobKey, trigger);
+    JobIdentifier jobId = createJobIdentifier(caseId, binding.getName());
+    ScheduleStrategy schedule = toScheduleStrategy(trigger);
+    Map<String, Object> jobData = createJobData(caseId, binding, worker);
 
-              try {
-                quartz.scheduleJob(job, quartzTrigger);
+    ScheduledJobRequest request =
+        ScheduledJobRequest.builder()
+            .jobId(jobId)
+            .schedule(schedule)
+            .jobClass(ScheduledTriggerJob.class)
+            .data(jobData)
+            .build();
+
+    return scheduler
+        .schedule(request)
+        .invoke(
+            () ->
                 LOG.infof(
                     "Scheduled unconditional trigger: case=%s, binding=%s, trigger=%s",
-                    caseId, binding.getName(), trigger);
-              } catch (SchedulerException e) {
-                throw new RuntimeException(
-                    "Failed to schedule trigger for binding: " + binding.getName(), e);
-              }
-
-              return null;
-            })
-        .replaceWithVoid();
+                    caseId, binding.getName(), trigger));
   }
 
   /**
@@ -189,28 +177,25 @@ public class SchedulerService {
       ExpressionEvaluator condition,
       Worker worker) {
 
-    return Uni.createFrom()
-        .item(
-            Unchecked.supplier(
-                () -> {
-                  JobKey jobKey = createJobKey(caseId, binding.getName());
-                  JobDetail job = createJobDetail(jobKey, caseId, binding, worker, condition);
-                  Trigger quartzTrigger = createQuartzTrigger(jobKey, trigger);
+    JobIdentifier jobId = createJobIdentifier(caseId, binding.getName());
+    ScheduleStrategy schedule = toScheduleStrategy(trigger);
+    Map<String, Object> jobData = createJobData(caseId, binding, worker);
 
-                  try {
-                    quartz.scheduleJob(job, quartzTrigger);
-                    LOG.infof(
-                        "Scheduled conditional trigger: case=%s, binding=%s, trigger=%s, condition=%s",
-                        caseId, binding.getName(), trigger, condition);
-                  } catch (SchedulerException e) {
-                    throw new RuntimeException(
-                        "Failed to schedule conditional trigger for binding: " + binding.getName(),
-                        e);
-                  }
+    ScheduledJobRequest request =
+        ScheduledJobRequest.builder()
+            .jobId(jobId)
+            .schedule(schedule)
+            .jobClass(ConditionalScheduledTriggerJob.class)
+            .data(jobData)
+            .build();
 
-                  return null;
-                }))
-        .replaceWithVoid();
+    return scheduler
+        .schedule(request)
+        .invoke(
+            () ->
+                LOG.infof(
+                    "Scheduled conditional trigger: case=%s, binding=%s, trigger=%s, condition=%s",
+                    caseId, binding.getName(), trigger, condition));
   }
 
   /**
@@ -222,28 +207,18 @@ public class SchedulerService {
    * @return Uni that completes when all triggers are cancelled
    */
   public Uni<Void> cancelAllTriggers(UUID caseId) {
-    return Uni.createFrom()
-        .item(
-            Unchecked.supplier(
-                () -> {
-                  try {
-                    String groupName = "case-" + caseId;
-                    GroupMatcher<JobKey> matcher = GroupMatcher.jobGroupEquals(groupName);
-                    Set<JobKey> jobKeys = quartz.getJobKeys(matcher);
+    String groupName = "case-" + caseId;
 
-                    if (!jobKeys.isEmpty()) {
-                      quartz.deleteJobs(new ArrayList<>(jobKeys));
-                      LOG.infof(
-                          "Cancelled %d scheduled triggers for case %s", jobKeys.size(), caseId);
-                    } else {
-                      LOG.debugf("No scheduled triggers to cancel for case %s", caseId);
-                    }
-                  } catch (SchedulerException e) {
-                    throw new RuntimeException("Failed to cancel triggers for case: " + caseId, e);
-                  }
-
-                  return null;
-                }))
+    return scheduler
+        .cancelGroup(groupName)
+        .invoke(
+            count -> {
+              if (count > 0) {
+                LOG.infof("Cancelled %d scheduled triggers for case %s", count, caseId);
+              } else {
+                LOG.debugf("No scheduled triggers to cancel for case %s", caseId);
+              }
+            })
         .replaceWithVoid();
   }
 
@@ -255,76 +230,42 @@ public class SchedulerService {
    * @return Uni that completes when the trigger is cancelled
    */
   public Uni<Void> cancelTrigger(UUID caseId, String bindingName) {
-    return Uni.createFrom()
-        .item(
-            Unchecked.supplier(
-                () -> {
-                  try {
-                    JobKey jobKey = createJobKey(caseId, bindingName);
-                    boolean deleted = quartz.deleteJob(jobKey);
+    JobIdentifier jobId = createJobIdentifier(caseId, bindingName);
 
-                    if (deleted) {
-                      LOG.infof(
-                          "Cancelled scheduled trigger: case=%s, binding=%s", caseId, bindingName);
-                    } else {
-                      LOG.debugf(
-                          "No trigger found to cancel: case=%s, binding=%s", caseId, bindingName);
-                    }
-                  } catch (SchedulerException e) {
-                    throw new RuntimeException(
-                        "Failed to cancel trigger for binding: " + bindingName, e);
-                  }
-
-                  return null;
-                }))
+    return scheduler
+        .cancel(jobId)
+        .invoke(
+            deleted -> {
+              if (deleted) {
+                LOG.infof("Cancelled scheduled trigger: case=%s, binding=%s", caseId, bindingName);
+              } else {
+                LOG.debugf("No trigger found to cancel: case=%s, binding=%s", caseId, bindingName);
+              }
+            })
         .replaceWithVoid();
   }
 
-  private JobKey createJobKey(UUID caseId, String bindingName) {
-    return new JobKey("binding-" + bindingName, "case-" + caseId);
+  private JobIdentifier createJobIdentifier(UUID caseId, String bindingName) {
+    return JobIdentifier.of("binding-" + bindingName, "case-" + caseId);
   }
 
-  private JobDetail createJobDetail(
-      JobKey jobKey, UUID caseId, Binding binding, Worker worker, ExpressionEvaluator condition) {
-
-    Class<? extends org.quartz.Job> jobClass =
-        (condition != null) ? ConditionalScheduledTriggerJob.class : ScheduledTriggerJob.class;
-
-    return newJob(jobClass)
-        .withIdentity(jobKey)
-        .storeDurably(false)
-        .usingJobData("caseId", caseId.toString())
-        .usingJobData("bindingName", binding.getName())
-        .usingJobData("capabilityName", binding.getCapability().getName())
-        .usingJobData("workerName", worker.getName())
-        .build();
-  }
-
-  private Trigger createQuartzTrigger(JobKey jobKey, ScheduleTrigger trigger) {
+  private ScheduleStrategy toScheduleStrategy(ScheduleTrigger trigger) {
     if (trigger.isCron()) {
-      return createCronTrigger(jobKey, trigger.getCron());
+      return new CronSchedule(trigger.getCron());
     } else if (trigger.isDelay()) {
-      return createDelayTrigger(jobKey, trigger.getDelay().toMillis());
+      return new DelaySchedule(trigger.getDelay().toMillis());
     } else {
       throw new IllegalArgumentException("ScheduleTrigger must have either cron or delay set");
     }
   }
 
-  private CronTrigger createCronTrigger(JobKey jobKey, String cronExpression) {
-    return newTrigger()
-        .withIdentity("trigger-" + jobKey.getName(), jobKey.getGroup())
-        .withSchedule(cronSchedule(cronExpression))
-        .build();
-  }
-
-  private SimpleTrigger createDelayTrigger(JobKey jobKey, long delayMillis) {
-    Date startTime = new Date(System.currentTimeMillis() + delayMillis);
-
-    return newTrigger()
-        .withIdentity("trigger-" + jobKey.getName(), jobKey.getGroup())
-        .startAt(startTime)
-        .withSchedule(simpleSchedule().withRepeatCount(0)) // one-shot
-        .build();
+  private Map<String, Object> createJobData(UUID caseId, Binding binding, Worker worker) {
+    Map<String, Object> data = new HashMap<>();
+    data.put("caseId", caseId.toString());
+    data.put("bindingName", binding.getName());
+    data.put("capabilityName", binding.getCapability().getName());
+    data.put("workerName", worker.getName());
+    return data;
   }
 
   private Worker findWorkerForCapability(CaseDefinition definition, Capability capability) {

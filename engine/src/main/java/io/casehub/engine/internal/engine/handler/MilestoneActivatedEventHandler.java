@@ -31,28 +31,21 @@ import io.casehub.engine.internal.history.EventLog;
 import io.casehub.engine.internal.history.EventStreamType;
 import io.casehub.engine.internal.milestone.MilestoneSLATimeoutJob;
 import io.casehub.engine.internal.model.CaseInstance;
+import io.casehub.engine.internal.scheduler.JobIdentifier;
+import io.casehub.engine.internal.scheduler.ScheduleStrategy.FixedAtSchedule;
+import io.casehub.engine.internal.scheduler.ScheduledJobRequest;
 import io.casehub.engine.spi.EventLogRepository;
+import io.casehub.engine.spi.JobScheduler;
 import io.quarkus.vertx.ConsumeEvent;
 import io.smallrye.mutiny.Uni;
-import io.smallrye.mutiny.infrastructure.Infrastructure;
 import io.vertx.mutiny.core.eventbus.EventBus;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
 import java.time.Duration;
 import java.time.Instant;
-import java.util.Date;
 import java.util.HashMap;
 import java.util.Map;
 import org.jboss.logging.Logger;
-import org.quartz.JobBuilder;
-import org.quartz.JobDataMap;
-import org.quartz.JobDetail;
-import org.quartz.JobKey;
-import org.quartz.ObjectAlreadyExistsException;
-import org.quartz.Scheduler;
-import org.quartz.SchedulerException;
-import org.quartz.Trigger;
-import org.quartz.TriggerBuilder;
 
 /**
  * Handles {@link MilestoneActivatedEvent}: records to EventLog, updates CaseContext, schedules SLA
@@ -66,7 +59,7 @@ public class MilestoneActivatedEventHandler {
 
   @Inject EventLogRepository eventLogRepository;
   @Inject EventBus eventBus;
-  @Inject Scheduler quartz;
+  @Inject JobScheduler scheduler;
 
   @ConsumeEvent(value = EventBusAddresses.MILESTONE_ACTIVATED)
   public Uni<Void> onMilestoneActivated(MilestoneActivatedEvent event) {
@@ -158,55 +151,27 @@ public class MilestoneActivatedEventHandler {
       return Uni.createFrom().voidItem();
     }
 
-    String jobId = caseInstance.getUuid() + "|milestone|" + milestone.getName();
-    JobKey jobKey = JobKey.jobKey(jobId);
+    JobIdentifier jobId =
+        JobIdentifier.of("milestone-" + milestone.getName(), "case-" + caseInstance.getUuid());
 
-    JobDataMap jobData = new JobDataMap();
+    Map<String, Object> jobData = new HashMap<>();
     jobData.put("caseId", caseInstance.getUuid().toString());
     jobData.put("milestoneName", milestone.getName());
 
-    JobDetail job =
-        JobBuilder.newJob(MilestoneSLATimeoutJob.class)
-            .withIdentity(jobKey)
-            .usingJobData(jobData)
+    ScheduledJobRequest request =
+        ScheduledJobRequest.builder()
+            .jobId(jobId)
+            .schedule(new FixedAtSchedule(slaDeadline.toEpochMilli()))
+            .jobClass(MilestoneSLATimeoutJob.class)
+            .data(jobData)
             .build();
 
-    Trigger trigger =
-        TriggerBuilder.newTrigger()
-            .withIdentity(jobId + "-trigger")
-            .startAt(Date.from(slaDeadline))
-            .build();
-
-    // Offload blocking Quartz call to worker pool (C1)
-    return Uni.createFrom()
-        .item(
-            () -> {
-              try {
-                quartz.scheduleJob(job, trigger);
+    return scheduler
+        .schedule(request)
+        .invoke(
+            () ->
                 LOG.infof(
                     "Scheduled SLA timeout job for milestone=%s at %s",
-                    milestone.getName(), slaDeadline);
-                return null;
-              } catch (ObjectAlreadyExistsException e) {
-                // Job already scheduled = idempotency (C2)
-                LOG.debugf(
-                    "SLA timeout job already exists for caseId=%s milestone=%s - treating as success",
-                    caseInstance.getUuid(), milestone.getName());
-                return null;
-              } catch (SchedulerException e) {
-                LOG.errorf(
-                    e,
-                    "Failed to schedule SLA timeout job for caseId=%s milestone=%s",
-                    caseInstance.getUuid(),
-                    milestone.getName());
-                throw new RuntimeException(
-                    String.format(
-                        "Quartz scheduling failed for caseId=%s milestone=%s",
-                        caseInstance.getUuid(), milestone.getName()),
-                    e);
-              }
-            })
-        .runSubscriptionOn(Infrastructure.getDefaultWorkerPool())
-        .replaceWithVoid();
+                    milestone.getName(), slaDeadline));
   }
 }
