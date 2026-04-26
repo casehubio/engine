@@ -474,12 +474,12 @@
         <repository>
             <id>github</id>
             <name>casehubio GitHub Packages</name>
-            <url>https://maven.pkg.github.com/casehubio/casehub-engine</url>
+            <url>https://maven.pkg.github.com/casehubio/engine</url>
         </repository>
         <snapshotRepository>
             <id>github</id>
             <name>casehubio GitHub Packages</name>
-            <url>https://maven.pkg.github.com/casehubio/casehub-engine</url>
+            <url>https://maven.pkg.github.com/casehubio/engine</url>
             <uniqueVersion>false</uniqueVersion>
         </snapshotRepository>
     </distributionManagement>
