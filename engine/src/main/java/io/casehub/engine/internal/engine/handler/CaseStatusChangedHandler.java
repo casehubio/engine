@@ -18,6 +18,7 @@ package io.casehub.engine.internal.engine.handler;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.casehub.api.model.CaseStatus;
 import io.casehub.api.spi.CaseChannelProvider;
+import io.casehub.engine.internal.event.CaseContextChangedEvent;
 import io.casehub.engine.internal.event.CaseLifecycleEvent;
 import io.casehub.engine.internal.event.CaseStatusChanged;
 import io.casehub.engine.internal.event.EventBusAddresses;
@@ -97,6 +98,13 @@ public class CaseStatusChangedHandler {
               if (eventBusAddress != null) {
                 eventBus.publish(eventBusAddress, caseInstance);
               }
+              // On resume (SUSPENDED → RUNNING), re-evaluate the context so eligible workers fire.
+              if (newState == CaseStatus.RUNNING) {
+                eventBus.publish(
+                    EventBusAddresses.CONTEXT_CHANGED,
+                    new CaseContextChangedEvent(
+                        caseInstance, caseInstance.getCaseContext().asJsonNode()));
+              }
               lifecycleEvents.fireAsync(
                   new CaseLifecycleEvent(
                       caseInstance.getUuid(),
@@ -118,6 +126,7 @@ public class CaseStatusChangedHandler {
     return switch (state) {
       case COMPLETED -> CaseHubEventType.CASE_COMPLETED;
       case FAULTED -> CaseHubEventType.CASE_FAULTED;
+      case CANCELLED -> CaseHubEventType.CASE_CANCELLED;
       default -> CaseHubEventType.CASE_STATUS_CHANGED;
     };
   }
