@@ -52,6 +52,8 @@ Eight interfaces in `api/src/main/java/io/casehub/api/spi/` (four blocking + fou
 
 To add a new operational SPI: define the interface in `api/spi/`, add a no-op default in `engine/internal/worker/`, add contract tests in `api/src/test/java/io/casehub/api/spi/`, and add engine unit tests in `engine/src/test/java/io/casehub/engine/internal/worker/DefaultWorkerSpiImplementationsTest.java`.
 
+**To test SPI wiring:** use `@Alternative @Priority(1) @ApplicationScoped` static inner classes in `@QuarkusTest` with `static` recording fields reset in `@BeforeEach`. This activates the recording bean globally across the test suite without Mockito. See `SpiWiringIntegrationTest` for the pattern.
+
 ## casehub-blackboard Module
 
 Optional CMMN/Blackboard orchestration layer. Activated via CDI `@Alternative @Priority(10)` when on the classpath.
