@@ -91,6 +91,7 @@
         <module>codegen</module>
         <module>schema</module>
         <module>engine-model</module>
+        <module>scheduler-quartz</module>
         <module>casehub-persistence-memory</module>
         <module>casehub-persistence-hibernate</module>
         <module>engine</module>
