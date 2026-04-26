@@ -93,5 +93,5 @@ All casehubio projects align on these conventions:
 
 Submodule poms reference `${version.io.quarkiverse.work}` etc. — no hardcoded versions.
 
-**Publishing:** `maven.deploy.skip=true` is set in root `pom.xml` properties. Only modules that produce publishable JARs (`api`, `engine-model`, `engine`, `casehub-ledger`) override with `maven.deploy.skip=false`. The root aggregator POM is not published to GitHub Packages.
+**Publishing:** `maven.deploy.skip=false` is the default in root `pom.xml` properties — the root parent POM (`io.casehub:parent`) IS published to GitHub Packages. Downstream consumers need it to resolve the effective POM of child artifacts (`api`, `engine`, etc.). Modules that should not be published override with `<maven.deploy.skip>true</maven.deploy.skip>` in their own `<properties>`.
 
