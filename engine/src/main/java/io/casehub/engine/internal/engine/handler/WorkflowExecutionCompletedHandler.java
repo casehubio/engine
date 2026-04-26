@@ -25,6 +25,7 @@ import io.casehub.api.model.CaseStatus;
 import io.casehub.api.model.WorkResult;
 import io.casehub.api.model.Worker;
 import io.casehub.api.spi.ContextDiffStrategy;
+import io.casehub.api.spi.WorkerStatusListener;
 import io.casehub.engine.internal.engine.CaseDefinitionRegistry;
 import io.casehub.engine.internal.event.CaseContextChangedEvent;
 import io.casehub.engine.internal.event.EventBusAddresses;
@@ -59,6 +60,7 @@ public class WorkflowExecutionCompletedHandler {
   @Inject CaseDefinitionRegistry caseDefinitionRegistry;
   @Inject PendingWorkRegistry pendingWorkRegistry;
   @Inject CaseInstanceRepository caseInstanceRepository;
+  @Inject WorkerStatusListener workerStatusListener;
 
   private static final ObjectMapper OBJECT_MAPPER = new ObjectMapper();
   private static final Logger LOG = Logger.getLogger(WorkflowExecutionCompletedHandler.class);
@@ -81,6 +83,11 @@ public class WorkflowExecutionCompletedHandler {
     return eventLogRepository
         .append(eventLog)
         .chain(() -> resumeIfWaiting(caseInstance, worker, event.idempotency(), rawOutput, now))
+        .invoke(
+            () ->
+                workerStatusListener.onWorkerCompleted(
+                    worker.getName(),
+                    WorkResult.completed(event.idempotency(), rawOutput, worker.getName())))
         .invoke(
             () ->
                 eventBus.publish(

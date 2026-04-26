@@ -17,6 +17,7 @@ package io.casehub.engine.internal.engine.handler;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.casehub.api.model.CaseStatus;
+import io.casehub.api.spi.CaseChannelProvider;
 import io.casehub.engine.internal.event.CaseLifecycleEvent;
 import io.casehub.engine.internal.event.CaseStatusChanged;
 import io.casehub.engine.internal.event.EventBusAddresses;
@@ -53,6 +54,8 @@ public class CaseStatusChangedHandler {
 
   @Inject Event<CaseLifecycleEvent> lifecycleEvents;
 
+  @Inject CaseChannelProvider caseChannelProvider;
+
   @ConsumeEvent(value = EventBusAddresses.CASE_STATUS_CHANGED)
   public Uni<Void> onCaseStatusChangedHandler(CaseStatusChanged event) {
     final CaseInstance caseInstance = event.instance();
@@ -81,6 +84,9 @@ public class CaseStatusChangedHandler {
         .chain(
             () -> {
               if (isTerminalState(newState)) {
+                caseChannelProvider
+                    .listChannels(caseInstance.getUuid())
+                    .forEach(caseChannelProvider::closeChannel);
                 return schedulerService.cancelAllTriggers(caseInstance.getUuid());
               }
               return Uni.createFrom().voidItem();
