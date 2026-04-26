@@ -30,11 +30,10 @@ import io.casehub.engine.internal.event.MilestoneCompletedEvent;
 import io.casehub.engine.internal.history.EventLog;
 import io.casehub.engine.internal.history.EventStreamType;
 import io.casehub.engine.internal.model.CaseInstance;
-import io.casehub.engine.internal.scheduler.JobIdentifier;
 import io.casehub.engine.spi.EventLogRepository;
-import io.casehub.engine.spi.JobScheduler;
 import io.quarkus.vertx.ConsumeEvent;
 import io.smallrye.mutiny.Uni;
+import io.smallrye.mutiny.infrastructure.Infrastructure;
 import io.vertx.mutiny.core.eventbus.EventBus;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
@@ -42,6 +41,9 @@ import java.time.Instant;
 import java.util.HashMap;
 import java.util.Map;
 import org.jboss.logging.Logger;
+import org.quartz.JobKey;
+import org.quartz.Scheduler;
+import org.quartz.SchedulerException;
 
 /**
  * Handles {@link MilestoneCompletedEvent}: records to EventLog, updates CaseContext, cancels SLA
@@ -55,7 +57,7 @@ public class MilestoneCompletedEventHandler {
 
   @Inject EventLogRepository eventLogRepository;
   @Inject EventBus eventBus;
-  @Inject JobScheduler scheduler;
+  @Inject Scheduler quartz;
 
   @ConsumeEvent(value = EventBusAddresses.MILESTONE_COMPLETED)
   public Uni<Void> onMilestoneCompleted(MilestoneCompletedEvent event) {
@@ -130,23 +132,47 @@ public class MilestoneCompletedEventHandler {
   }
 
   private Uni<Void> cancelSlaTimeoutJob(CaseInstance caseInstance, Milestone milestone) {
-    JobIdentifier jobId =
-        JobIdentifier.of("milestone-" + milestone.getName(), "case-" + caseInstance.getUuid());
+    String jobId = caseInstance.getUuid() + "|milestone|" + milestone.getName();
+    JobKey jobKey = JobKey.jobKey(jobId);
 
-    return scheduler
-        .cancel(jobId)
-        .invoke(
-            deleted -> {
-              if (deleted) {
-                LOG.infof(
-                    "Cancelled SLA timeout job for case=%s milestone=%s",
-                    caseInstance.getUuid(), milestone.getName());
-              } else {
-                LOG.debugf(
-                    "SLA timeout job not found for case=%s milestone=%s (already fired or never scheduled)",
-                    caseInstance.getUuid(), milestone.getName());
+    // Offload blocking Quartz call to worker pool
+    return Uni.createFrom()
+        .item(
+            () -> {
+              try {
+                boolean deleted = quartz.deleteJob(jobKey);
+                if (deleted) {
+                  LOG.infof(
+                      "Cancelled SLA timeout job for case=%s milestone=%s",
+                      caseInstance.getUuid(), milestone.getName());
+                } else {
+                  LOG.debugf(
+                      "SLA timeout job not found for case=%s milestone=%s (already fired or never scheduled)",
+                      caseInstance.getUuid(), milestone.getName());
+                }
+                return null;
+              } catch (SchedulerException e) {
+                LOG.errorf(
+                    e,
+                    "Failed to cancel SLA timeout job for caseId=%s milestone=%s",
+                    caseInstance.getUuid(),
+                    milestone.getName());
+                throw new RuntimeException(
+                    String.format(
+                        "Quartz job cancellation failed for caseId=%s milestone=%s",
+                        caseInstance.getUuid(), milestone.getName()),
+                    e);
               }
             })
+        .runSubscriptionOn(Infrastructure.getDefaultWorkerPool())
+        .onFailure()
+        .invoke(
+            t ->
+                LOG.errorf(
+                    t,
+                    "Error during SLA timeout job cancellation for caseId=%s milestone=%s",
+                    caseInstance.getUuid(),
+                    milestone.getName()))
         .replaceWithVoid();
   }
 }
