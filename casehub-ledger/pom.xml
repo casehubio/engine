@@ -13,6 +13,10 @@
     <name>Case Hub :: Ledger</name>
     <description>Optional immutable audit ledger — hash-chained case lifecycle entries via quarkus-ledger</description>
 
+    <properties>
+        <maven.deploy.skip>false</maven.deploy.skip>
+    </properties>
+
     <dependencies>
         <!-- CaseLifecycleEvent lives in engine-model (no CDI beans — safe as compile dep) -->
         <dependency>
