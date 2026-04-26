@@ -16,6 +16,7 @@
 package io.casehub.engine.internal.engine.handler;
 
 import com.fasterxml.jackson.databind.JsonNode;
+import io.casehub.api.spi.CaseChannelProvider;
 import io.casehub.engine.internal.event.CaseContextChangedEvent;
 import io.casehub.engine.internal.event.CaseLifecycleEvent;
 import io.casehub.engine.internal.event.CaseStartedEvent;
@@ -49,6 +50,8 @@ public class CaseStartedEventHandler {
 
   @Inject Event<CaseLifecycleEvent> lifecycleEvents;
 
+  @Inject CaseChannelProvider caseChannelProvider;
+
   @ConsumeEvent(value = EventBusAddresses.CASE_STARTED)
   public Uni<Void> onCaseStarted(CaseStartedEvent event) {
     final CaseInstance instance = event.instance();
@@ -60,6 +63,8 @@ public class CaseStartedEventHandler {
     eventLog.setStreamType(EventStreamType.CASE);
     eventLog.setTimestamp(Instant.now());
     eventLog.setPayload(contextSnapshot);
+
+    caseChannelProvider.openChannel(instance.getUuid(), "coordination");
 
     return eventLogRepository
         .append(eventLog)
