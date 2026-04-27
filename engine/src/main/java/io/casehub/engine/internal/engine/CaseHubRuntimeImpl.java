@@ -45,6 +45,21 @@ class CaseHubRuntimeImpl implements CaseHubRuntime {
   }
 
   @Override
+  public void cancelCase(UUID caseId) {
+    reactor.cancelCase(caseId);
+  }
+
+  @Override
+  public void suspendCase(UUID caseId) {
+    reactor.suspendCase(caseId);
+  }
+
+  @Override
+  public void resumeCase(UUID caseId) {
+    reactor.resumeCase(caseId);
+  }
+
+  @Override
   public CompletionStage<Object> query(UUID caseId, String path) {
     return reactor.query(caseId, path);
   }
