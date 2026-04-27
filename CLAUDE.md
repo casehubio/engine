@@ -72,8 +72,6 @@ TESTCONTAINERS_RYUK_DISABLED=true mvn clean test -pl casehub-blackboard
 - `src/test/resources/application.properties` sets `quarkus.http.test-port=0` and activates
   the in-memory alternatives via `quarkus.arc.selected-alternatives`
 
-**PRs:** #88 (async LoopControl), #89 (data model), #90 (orchestration + tests) — merge in order.
-
 ## Quartz
 
 Use RAM store — no JDBC store, no Quartz tables:
@@ -97,3 +95,15 @@ Submodule poms reference `${version.io.quarkiverse.work}` etc. — no hardcoded 
 
 **Publishing:** `maven.deploy.skip=false` is the default in root `pom.xml` properties — the root parent POM (`io.casehub:parent`) IS published to GitHub Packages. Downstream consumers need it to resolve the effective POM of child artifacts (`api`, `engine`, etc.). Modules that should not be published override with `<maven.deploy.skip>true</maven.deploy.skip>` in their own `<properties>`.
 
+## casehub-work-adapter Module
+
+Bridges quarkus-work `WorkItemLifecycleEvent` CDI events to CaseHub `PlanItem` transitions via `BlackboardRegistry`. Choreography path only — fires `CONTEXT_CHANGED` for engine re-evaluation.
+
+**Test setup** (when depending on `quarkus-work` full module):
+- Add `quarkus-work-testing` test dep — provides `@Alternative @Priority` in-memory WorkItem stores
+- Add `quarkus-jdbc-h2` test dep — quarkus-work JPA entities require a datasource even in tests
+- Use `quarkus.arc.selected-alternatives` to activate `casehub-persistence-memory` repos
+- Add `@Alternative @Priority(1)` static inner class stub for `WorkloadProvider` — quarkus-work ships `JpaWorkloadProvider` which clashes with `CasehubWorkloadProvider` from the engine
+- Set `quarkus.quartz.store-type=ram` and `quarkus.hibernate-orm.schema-management.strategy=drop-and-create`
+
+`callerRef` format: `case:{caseId}/pi:{planItemId}` — use `CallerRef.encode()` / `CallerRef.parse()`.
