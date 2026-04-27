@@ -97,6 +97,7 @@
         <module>casehub-blackboard</module>
         <module>casehub-resilience</module>
         <module>casehub-ledger</module>
+        <module>casehub-testing</module>
     </modules>
 
     <repositories>
