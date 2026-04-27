@@ -16,7 +16,6 @@
 package io.casehub.blackboard.it;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.awaitility.Awaitility.await;
 
 import io.casehub.api.engine.CaseHub;
 import io.casehub.api.model.Binding;
@@ -24,13 +23,17 @@ import io.casehub.api.model.Capability;
 import io.casehub.api.model.CaseDefinition;
 import io.casehub.api.model.ContextChangeTrigger;
 import io.casehub.api.model.Worker;
+import io.casehub.blackboard.event.PlanItemCompletedEvent;
 import io.casehub.blackboard.plan.PlanItem.PlanItemStatus;
 import io.casehub.blackboard.registry.BlackboardRegistry;
 import io.quarkus.test.junit.QuarkusTest;
 import jakarta.enterprise.context.ApplicationScoped;
+import jakarta.enterprise.event.ObservesAsync;
 import jakarta.inject.Inject;
 import java.util.Map;
 import java.util.UUID;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
 import org.junit.jupiter.api.Test;
 
@@ -41,43 +44,81 @@ import org.junit.jupiter.api.Test;
  * <p>Design: each binding has its own disjoint trigger key ({@code phaseA} / {@code phaseB}) so the
  * workers self-falsify their own trigger condition. This prevents re-trigger loops — each worker
  * runs exactly once and reaches COMPLETED.
+ *
+ * <p>Test strategy: event-driven via {@link PlanItemCompletedEvent}. The observer captures the
+ * exact {@code planItemId} from the event (not from a subsequent {@link
+ * BlackboardRegistry#getPlanItemId} lookup which may have been overwritten by a re-triggered
+ * PlanItem). By verifying the specific planItemId from the event, the assertion is correct even if
+ * a sibling worker's context update triggers a second scheduling attempt.
+ *
+ * <p>Race-free: {@link WorkerCompletionObserver} uses {@code ConcurrentHashMap.computeIfAbsent} for
+ * per-worker futures, so it is safe regardless of whether the event fires before or after the test
+ * registers the future.
  */
 @QuarkusTest
 class MixedWorkersBlackboardTest {
 
   @Inject BlackboardRegistry registry;
   @Inject MixedCaseBean mixedCase;
+  @Inject WorkerCompletionObserver observer;
 
   @Test
-  void two_workers_with_different_capabilities_both_complete() {
-    // Each worker fires on its own disjoint trigger key (phaseA / phaseB) and writes
-    // that key to "done" to self-falsify the trigger — no re-fire.
+  void two_workers_with_different_capabilities_both_complete() throws Exception {
     UUID caseId =
         mixedCase
             .startCase(Map.of("phaseA", "start", "phaseB", "start"))
             .toCompletableFuture()
             .join();
 
-    await()
-        .atMost(30, TimeUnit.SECONDS)
-        .untilAsserted(
-            () -> {
-              var plan = registry.get(caseId);
-              assertThat(plan).isPresent();
+    CompletableFuture<String> aFuture = observer.awaitWorker(caseId, "worker-a");
+    CompletableFuture<String> bFuture = observer.awaitWorker(caseId, "worker-b");
 
-              var itemAId = registry.getPlanItemId(caseId, "worker-a");
-              var itemBId = registry.getPlanItemId(caseId, "worker-b");
+    // Wait for both workers — futures carry the exact planItemId from the completion event.
+    CompletableFuture.allOf(aFuture, bFuture).get(30, TimeUnit.SECONDS);
 
-              assertThat(itemAId).as("worker-a must be indexed").isPresent();
-              assertThat(itemBId).as("worker-b must be indexed").isPresent();
+    // Verify the specific planItemId that completed (not getPlanItemId which may be overwritten).
+    String aPlanItemId = aFuture.get();
+    String bPlanItemId = bFuture.get();
 
-              assertThat(plan.get().getPlanItem(itemAId.get()).map(i -> i.getStatus()))
-                  .as("worker-a PlanItem must be COMPLETED")
-                  .contains(PlanItemStatus.COMPLETED);
-              assertThat(plan.get().getPlanItem(itemBId.get()).map(i -> i.getStatus()))
-                  .as("worker-b PlanItem must be COMPLETED")
-                  .contains(PlanItemStatus.COMPLETED);
-            });
+    var plan = registry.get(caseId);
+    assertThat(plan).isPresent();
+
+    assertThat(plan.get().getPlanItem(aPlanItemId).map(i -> i.getStatus()))
+        .as("worker-a PlanItem must be COMPLETED")
+        .contains(PlanItemStatus.COMPLETED);
+    assertThat(plan.get().getPlanItem(bPlanItemId).map(i -> i.getStatus()))
+        .as("worker-b PlanItem must be COMPLETED")
+        .contains(PlanItemStatus.COMPLETED);
+  }
+
+  /**
+   * Observes {@link PlanItemCompletedEvent} and signals per-worker futures with the exact {@code
+   * planItemId} from the event. Race-free: {@code computeIfAbsent} ensures the future exists
+   * whether the event fires before or after the test registers via {@link #awaitWorker}.
+   */
+  @ApplicationScoped
+  public static class WorkerCompletionObserver {
+
+    private final ConcurrentHashMap<String, CompletableFuture<String>> futures =
+        new ConcurrentHashMap<>();
+
+    void onPlanItemCompleted(@ObservesAsync PlanItemCompletedEvent event) {
+      futures
+          .computeIfAbsent(key(event.caseId(), event.workerName()), k -> new CompletableFuture<>())
+          .complete(event.planItemId());
+    }
+
+    /**
+     * Returns a future that completes with the {@code planItemId} of the completed PlanItem. Safe
+     * to call before or after the event fires.
+     */
+    public CompletableFuture<String> awaitWorker(UUID caseId, String workerName) {
+      return futures.computeIfAbsent(key(caseId, workerName), k -> new CompletableFuture<>());
+    }
+
+    private static String key(UUID caseId, String workerName) {
+      return caseId + ":" + workerName;
+    }
   }
 
   /**
