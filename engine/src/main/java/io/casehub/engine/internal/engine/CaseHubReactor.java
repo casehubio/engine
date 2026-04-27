@@ -16,6 +16,7 @@
 package io.casehub.engine.internal.engine;
 
 import static io.casehub.engine.internal.event.EventBusAddresses.CASE_STARTED;
+import static io.casehub.engine.internal.event.EventBusAddresses.CASE_STATUS_CHANGED;
 import static io.casehub.engine.internal.event.EventBusAddresses.SIGNAL_RECEIVED;
 
 import io.casehub.api.context.CaseContext;
@@ -24,6 +25,7 @@ import io.casehub.api.model.CaseDefinition;
 import io.casehub.api.model.CaseStatus;
 import io.casehub.engine.internal.engine.cache.CaseInstanceCache;
 import io.casehub.engine.internal.event.CaseStartedEvent;
+import io.casehub.engine.internal.event.CaseStatusChanged;
 import io.casehub.engine.internal.event.SignalReceivedEvent;
 import io.casehub.engine.internal.model.CaseInstance;
 import io.casehub.engine.internal.model.CaseMetaModel;
@@ -98,6 +100,56 @@ class CaseHubReactor {
 
   void signal(UUID caseId, String path, Object value) {
     eventBus.publish(SIGNAL_RECEIVED, new SignalReceivedEvent(caseId, path, value));
+  }
+
+  void cancelCase(UUID caseId) {
+    final CaseInstance instance = requireInstance(caseId);
+    final CaseStatus current = instance.getState();
+    if (current == CaseStatus.COMPLETED
+        || current == CaseStatus.FAULTED
+        || current == CaseStatus.CANCELLED) {
+      throw new IllegalStateException(
+          "Cannot cancel case in terminal state " + current + ": caseId=" + caseId);
+    }
+    eventBus.publish(
+        CASE_STATUS_CHANGED,
+        new CaseStatusChanged(instance, current.name(), CaseStatus.CANCELLED.name()));
+  }
+
+  void suspendCase(UUID caseId) {
+    final CaseInstance instance = requireInstance(caseId);
+    if (instance.getState() != CaseStatus.RUNNING) {
+      throw new IllegalStateException(
+          "Can only suspend a RUNNING case, current state: "
+              + instance.getState()
+              + ": caseId="
+              + caseId);
+    }
+    eventBus.publish(
+        CASE_STATUS_CHANGED,
+        new CaseStatusChanged(instance, CaseStatus.RUNNING.name(), CaseStatus.SUSPENDED.name()));
+  }
+
+  void resumeCase(UUID caseId) {
+    final CaseInstance instance = requireInstance(caseId);
+    if (instance.getState() != CaseStatus.SUSPENDED) {
+      throw new IllegalStateException(
+          "Can only resume a SUSPENDED case, current state: "
+              + instance.getState()
+              + ": caseId="
+              + caseId);
+    }
+    eventBus.publish(
+        CASE_STATUS_CHANGED,
+        new CaseStatusChanged(instance, CaseStatus.SUSPENDED.name(), CaseStatus.RUNNING.name()));
+  }
+
+  private CaseInstance requireInstance(UUID caseId) {
+    final CaseInstance instance = caseInstanceCache.get(caseId);
+    if (instance == null) {
+      throw new IllegalArgumentException("Case instance not found: " + caseId);
+    }
+    return instance;
   }
 
   CompletionStage<Object> query(UUID caseId, String path) {
