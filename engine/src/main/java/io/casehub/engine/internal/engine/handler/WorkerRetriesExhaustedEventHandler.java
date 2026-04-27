@@ -17,6 +17,7 @@ package io.casehub.engine.internal.engine.handler;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.casehub.api.model.CaseStatus;
+import io.casehub.api.spi.WorkerStatusListener;
 import io.casehub.engine.internal.engine.cache.CaseInstanceCache;
 import io.casehub.engine.internal.event.CaseStatusChanged;
 import io.casehub.engine.internal.event.EventBusAddresses;
@@ -50,6 +51,8 @@ public class WorkerRetriesExhaustedEventHandler {
 
   @Inject CaseInstanceRepository caseInstanceRepository;
 
+  @Inject WorkerStatusListener workerStatusListener;
+
   @ConsumeEvent(value = EventBusAddresses.WORKER_RETRIES_EXHAUSTED)
   public Uni<Void> onWorkerRetriesExhaustedEvent(WorkerRetriesExhaustedEvent event) {
     CaseInstance caseInstance = caseInstanceCache.get(event.caseId());
@@ -75,6 +78,7 @@ public class WorkerRetriesExhaustedEventHandler {
               LOG.warnf(
                   "Worker retries exhausted for caseId=%s, workerId=%s",
                   event.caseId(), event.workerId());
+              workerStatusListener.onWorkerStalled(event.workerId());
               eventBus.publish(
                   EventBusAddresses.CASE_STATUS_CHANGED,
                   new CaseStatusChanged(caseInstance, oldStatus, CaseStatus.FAULTED.name()));

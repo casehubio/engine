@@ -25,6 +25,7 @@ import io.casehub.api.model.CaseDefinition;
 import io.casehub.api.model.ExecutionPolicy;
 import io.casehub.api.model.RetryPolicy;
 import io.casehub.api.model.Worker;
+import io.casehub.api.spi.WorkerStatusListener;
 import io.casehub.engine.internal.engine.CaseDefinitionRegistry;
 import io.casehub.engine.internal.engine.recovery.WorkerExecutionRecoveryService;
 import io.casehub.engine.internal.event.EventBusAddresses;
@@ -56,6 +57,8 @@ public class WorkerExecutionJobListener implements JobListener {
 
   @Inject Vertx vertx;
 
+  @Inject WorkerStatusListener workerStatusListener;
+
   @Inject WorkerExecutionScheduler workerExecutionScheduler;
 
   @Inject CaseDefinitionRegistry caseDefinitionRegistry;
@@ -83,7 +86,9 @@ public class WorkerExecutionJobListener implements JobListener {
 
     String jobName = context.getJobDetail().getKey().toString();
     String idempotency = context.getMergedJobDataMap().getString("inputDataHash");
+    String workerId = context.getMergedJobDataMap().getString("workerId");
     LOG.infof("Job is about to be executed: %s, idempotency=%s", jobName, idempotency);
+    workerStatusListener.onWorkerStarted(workerId, null);
 
     EventLog eventLog =
         createEventLog(
