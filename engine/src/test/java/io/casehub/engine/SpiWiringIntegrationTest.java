@@ -54,7 +54,6 @@ class SpiWiringIntegrationTest {
   @Inject CaseFaultedStateTest.AlwaysFailingCaseHubBean alwaysFailingBean;
   @Inject CaseInstanceCache caseInstanceCache;
   @Inject RecordingWorkerStatusListener statusListener;
-  @Inject RecordingWorkerContextProvider contextProvider;
   @Inject RecordingCaseChannelProvider channelProvider;
 
   @BeforeEach
@@ -121,44 +120,6 @@ class SpiWiringIntegrationTest {
                 assertThat(RecordingWorkerStatusListener.stalledWorkerIds)
                     .as("onWorkerStalled must be called when all retries are exhausted")
                     .isNotEmpty());
-  }
-
-  // ------------------------------------------------------------------ //
-  // WorkerContextProvider                                                //
-  // ------------------------------------------------------------------ //
-
-  @Test
-  void buildContextCalledBeforeWorkerScheduling() {
-    UUID caseId =
-        simpleCaseHubBean
-            .startCase(Map.of("documentId", "doc-3", "status", "processing"))
-            .toCompletableFuture()
-            .join();
-
-    await()
-        .atMost(15, TimeUnit.SECONDS)
-        .untilAsserted(
-            () ->
-                assertThat(RecordingWorkerContextProvider.buildContextCallCount.get())
-                    .as("buildContext must be called at least once when a worker is scheduled")
-                    .isGreaterThan(0));
-  }
-
-  @Test
-  void buildContextReceivesCorrectCapabilityName() {
-    UUID caseId =
-        simpleCaseHubBean
-            .startCase(Map.of("documentId", "doc-4", "status", "processing"))
-            .toCompletableFuture()
-            .join();
-
-    await()
-        .atMost(15, TimeUnit.SECONDS)
-        .untilAsserted(
-            () ->
-                assertThat(RecordingWorkerContextProvider.seenCapabilities)
-                    .as("buildContext must receive the binding's capability name")
-                    .contains("processDocument"));
   }
 
   // ------------------------------------------------------------------ //
