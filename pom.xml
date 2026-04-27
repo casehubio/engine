@@ -98,6 +98,7 @@
         <module>casehub-resilience</module>
         <module>casehub-ledger</module>
         <module>casehub-testing</module>
+        <module>casehub-work-adapter</module>
     </modules>
 
     <repositories>
@@ -174,6 +175,11 @@
             <dependency>
                 <groupId>io.quarkiverse.work</groupId>
                 <artifactId>quarkus-work-core</artifactId>
+                <version>${version.io.quarkiverse.work}</version>
+            </dependency>
+            <dependency>
+                <groupId>io.quarkiverse.work</groupId>
+                <artifactId>quarkus-work</artifactId>
                 <version>${version.io.quarkiverse.work}</version>
             </dependency>
             <dependency>
