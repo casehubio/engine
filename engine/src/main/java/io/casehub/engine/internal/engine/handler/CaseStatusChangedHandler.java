@@ -17,6 +17,7 @@ package io.casehub.engine.internal.engine.handler;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.casehub.api.model.CaseStatus;
+import io.casehub.engine.internal.event.CaseContextChangedEvent;
 import io.casehub.engine.internal.event.CaseLifecycleEvent;
 import io.casehub.engine.internal.event.CaseStatusChanged;
 import io.casehub.engine.internal.event.EventBusAddresses;
