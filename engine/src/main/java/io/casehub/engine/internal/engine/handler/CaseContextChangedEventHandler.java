@@ -79,7 +79,8 @@ public class CaseContextChangedEventHandler {
     }
 
     CaseMetaModel caseMetaModel = caseInstance.getCaseMetaModel();
-    CaseDefinition caseefinition = caseDefinitionRegistry.getCaseDefinition(caseMetaModel);
+    CaseDefinition caseefinition =
+        caseMetaModel != null ? caseDefinitionRegistry.getCaseDefinition(caseMetaModel) : null;
 
     if (caseefinition == null) {
       return Uni.createFrom()
