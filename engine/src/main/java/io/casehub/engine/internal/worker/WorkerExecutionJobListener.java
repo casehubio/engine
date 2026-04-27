@@ -43,6 +43,7 @@ import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.enterprise.event.Event;
 import jakarta.inject.Inject;
 import java.util.Date;
+import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.function.Supplier;
@@ -93,7 +94,7 @@ public class WorkerExecutionJobListener implements JobListener {
     String workerId = context.getMergedJobDataMap().getString("workerId");
     String caseHubInstanceUuid = context.getMergedJobDataMap().getString("caseHubInstanceUuid");
     LOG.infof("Job is about to be executed: %s, idempotency=%s", jobName, idempotency);
-    workerStatusListener.onWorkerStarted(workerId, null);
+    workerStatusListener.onWorkerStarted(workerId, Map.of("caseId", caseHubInstanceUuid));
     lifecycleEvents.fireAsync(
         new CaseLifecycleEvent(
             UUID.fromString(caseHubInstanceUuid),
