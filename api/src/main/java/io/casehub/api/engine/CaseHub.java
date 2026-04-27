@@ -39,6 +39,18 @@ public abstract class CaseHub {
     runtime.signal(caseId, path, value);
   }
 
+  public void cancelCase(UUID caseId) {
+    runtime.cancelCase(caseId);
+  }
+
+  public void suspendCase(UUID caseId) {
+    runtime.suspendCase(caseId);
+  }
+
+  public void resumeCase(UUID caseId) {
+    runtime.resumeCase(caseId);
+  }
+
   public CompletionStage<Object> query(UUID caseId, String path) {
     return runtime.query(caseId, path);
   }
