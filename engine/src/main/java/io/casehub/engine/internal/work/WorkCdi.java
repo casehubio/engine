@@ -35,8 +35,8 @@ package io.casehub.engine.internal.work;
  * <h2>Injection rule: always inject the concrete strategy type</h2>
  *
  * <p>Because two {@code WorkerSelectionStrategy} implementations ({@code LeastLoadedStrategy} and
- * {@code ClaimFirstStrategy}) are both active CDI beans, injecting by the interface type causes
- * an {@code AmbiguousResolutionException} at startup. Always inject the concrete type you want:
+ * {@code ClaimFirstStrategy}) are both active CDI beans, injecting by the interface type causes an
+ * {@code AmbiguousResolutionException} at startup. Always inject the concrete type you want:
  *
  * <pre>{@code
  * // Correct — unambiguous:
