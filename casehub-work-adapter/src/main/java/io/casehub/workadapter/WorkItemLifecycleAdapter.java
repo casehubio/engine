@@ -1,0 +1,134 @@
+/*
+ * Copyright 2026-Present The Case Hub Authors
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ * http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+package io.casehub.workadapter;
+
+import io.casehub.blackboard.plan.CasePlanModel;
+import io.casehub.blackboard.plan.PlanItem;
+import io.casehub.blackboard.registry.BlackboardRegistry;
+import io.casehub.engine.internal.event.CaseContextChangedEvent;
+import io.casehub.engine.internal.event.EventBusAddresses;
+import io.casehub.engine.internal.util.ReactiveUtils;
+import io.casehub.engine.spi.CaseInstanceRepository;
+import io.quarkiverse.work.runtime.event.WorkItemLifecycleEvent;
+import io.quarkiverse.work.runtime.model.WorkItem;
+import io.quarkiverse.work.runtime.model.WorkItemStatus;
+import io.vertx.core.Vertx;
+import io.vertx.mutiny.core.eventbus.EventBus;
+import jakarta.enterprise.context.ApplicationScoped;
+import jakarta.enterprise.event.ObservesAsync;
+import jakarta.inject.Inject;
+import java.time.Duration;
+import org.jboss.logging.Logger;
+
+/**
+ * Translates terminal quarkus-work {@link WorkItemLifecycleEvent}s into CaseHub PlanItem
+ * transitions and fires {@code CONTEXT_CHANGED} to trigger engine re-evaluation.
+ *
+ * <p>Choreography path: the engine's binding evaluator picks up the next step automatically once
+ * the PlanItem status changes and the context-changed signal arrives. Refs
+ * casehubio/quarkus-work#136.
+ *
+ * <p>Only processes events whose {@code callerRef} matches the CaseHub format {@code
+ * case:{caseId}/pi:{planItemId}} — other WorkItems are ignored.
+ */
+@ApplicationScoped
+public class WorkItemLifecycleAdapter {
+
+  private static final Logger LOG = Logger.getLogger(WorkItemLifecycleAdapter.class);
+  private static final Duration TIMEOUT = Duration.ofSeconds(5);
+
+  @Inject BlackboardRegistry registry;
+
+  @Inject CaseInstanceRepository caseInstanceRepository;
+
+  @Inject EventBus eventBus;
+
+  @Inject Vertx vertx;
+
+  void onWorkItemLifecycle(@ObservesAsync WorkItemLifecycleEvent event) {
+    WorkItemStatus status = event.status();
+    if (status != WorkItemStatus.COMPLETED
+        && status != WorkItemStatus.REJECTED
+        && status != WorkItemStatus.CANCELLED
+        && status != WorkItemStatus.EXPIRED
+        && status != WorkItemStatus.ESCALATED) return;
+
+    if (!(event.source() instanceof WorkItem workItem)) return;
+
+    CallerRef ref = CallerRef.parse(workItem.callerRef);
+    if (ref == null) return;
+
+    CasePlanModel plan = registry.get(ref.caseId()).orElse(null);
+    if (plan == null) {
+      LOG.debugf(
+          "No CasePlanModel for caseId=%s — case may have completed or not use blackboard",
+          ref.caseId());
+      return;
+    }
+
+    PlanItem item = plan.getPlanItem(ref.planItemId()).orElse(null);
+    if (item == null) {
+      LOG.warnf("PlanItem %s not found in case %s", ref.planItemId(), ref.caseId());
+      return;
+    }
+
+    if (!applyStatus(item, status)) return;
+
+    ReactiveUtils.runOnSafeVertxContext(
+            vertx,
+            () ->
+                caseInstanceRepository
+                    .findByUuid(ref.caseId())
+                    .invoke(
+                        instance -> {
+                          if (instance == null) {
+                            LOG.warnf(
+                                "CaseInstance not found for caseId=%s — cannot fire CONTEXT_CHANGED",
+                                ref.caseId());
+                            return;
+                          }
+                          eventBus.publish(
+                              EventBusAddresses.CONTEXT_CHANGED,
+                              new CaseContextChangedEvent(
+                                  instance, instance.getCaseContext().asJsonNode()));
+                        }))
+        .await()
+        .atMost(TIMEOUT);
+  }
+
+  /**
+   * Applies the terminal WorkItemStatus to the PlanItem. Returns false if the transition is invalid
+   * (e.g. item already terminal), in which case no CONTEXT_CHANGED should be fired.
+   */
+  private boolean applyStatus(PlanItem item, WorkItemStatus status) {
+    try {
+      switch (status) {
+        case COMPLETED -> item.markCompleted();
+        case CANCELLED -> item.markCancelled();
+        case REJECTED, EXPIRED, ESCALATED -> item.markFaulted();
+        default -> {
+          return false;
+        }
+      }
+      return true;
+    } catch (IllegalStateException e) {
+      LOG.warnf(
+          "Cannot transition PlanItem %s (current=%s) for WorkItemStatus %s: %s",
+          item.getPlanItemId(), item.getStatus(), status, e.getMessage());
+      return false;
+    }
+  }
+}
