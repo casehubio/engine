@@ -259,6 +259,54 @@ class CaseLedgerEventCaptureTest {
     assertThat(repository.findLatestByCaseId(UUID.randomUUID())).isEmpty();
   }
 
+  @Test
+  void workerExecutionStarted_writesLedgerEntry_withWorkerIdAsActorId() {
+    final UUID caseId = UUID.randomUUID();
+    final String workerId = "researcher-worker";
+
+    lifecycleEvents.fireAsync(
+        new CaseLifecycleEvent(
+            caseId, "ExecuteWorker", "WorkerExecutionStarted", null, workerId, "WORKER"));
+
+    Awaitility.await()
+        .atMost(5, TimeUnit.SECONDS)
+        .untilAsserted(
+            () -> {
+              final List<CaseLedgerEntry> entries = repository.findByCaseId(caseId);
+              assertThat(entries).hasSize(1);
+              final CaseLedgerEntry entry = entries.get(0);
+              assertThat(entry.commandType).isEqualTo("ExecuteWorker");
+              assertThat(entry.eventType).isEqualTo("WorkerExecutionStarted");
+              assertThat(entry.caseStatus).isNull();
+              assertThat(entry.actorId).isEqualTo(workerId);
+              assertThat(entry.actorRole).isEqualTo("WORKER");
+            });
+  }
+
+  @Test
+  void workerExecutionCompleted_writesLedgerEntry_withWorkerIdAsActorId() {
+    final UUID caseId = UUID.randomUUID();
+    final String workerId = "analyst-worker";
+
+    lifecycleEvents.fireAsync(
+        new CaseLifecycleEvent(
+            caseId, "ExecuteWorker", "WorkerExecutionCompleted", "RUNNING", workerId, "WORKER"));
+
+    Awaitility.await()
+        .atMost(5, TimeUnit.SECONDS)
+        .untilAsserted(
+            () -> {
+              final List<CaseLedgerEntry> entries = repository.findByCaseId(caseId);
+              assertThat(entries).hasSize(1);
+              final CaseLedgerEntry entry = entries.get(0);
+              assertThat(entry.commandType).isEqualTo("ExecuteWorker");
+              assertThat(entry.eventType).isEqualTo("WorkerExecutionCompleted");
+              assertThat(entry.caseStatus).isEqualTo("RUNNING");
+              assertThat(entry.actorId).isEqualTo(workerId);
+              assertThat(entry.actorRole).isEqualTo("WORKER");
+            });
+  }
+
   // ── Correctness: Merkle chain integrity ────────────────────────────────────
 
   @Test
