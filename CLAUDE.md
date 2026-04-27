@@ -1,5 +1,30 @@
 # CLAUDE.md
 
+## Platform Context
+
+This repo is one component of the casehubio multi-repo platform. **Before implementing anything — any feature, SPI, data model, or abstraction — run the Platform Coherence Protocol.**
+
+The protocol asks: Does this already exist elsewhere? Is this the right repo for it? Does this create a consolidation opportunity? Is this consistent with how the platform handles the same concern in other repos?
+
+**Platform architecture (fetch before any implementation decision):**
+```
+https://raw.githubusercontent.com/casehubio/casehub-parent/main/docs/PLATFORM.md
+```
+
+**This repo's deep-dive:**
+```
+https://raw.githubusercontent.com/casehubio/casehub-parent/main/docs/repos/casehub-engine.md
+```
+
+**Other repo deep-dives** (fetch the relevant ones when your implementation touches their domain):
+- quarkus-ledger: `https://raw.githubusercontent.com/casehubio/casehub-parent/main/docs/repos/quarkus-ledger.md`
+- quarkus-work: `https://raw.githubusercontent.com/casehubio/casehub-parent/main/docs/repos/quarkus-work.md`
+- quarkus-qhorus: `https://raw.githubusercontent.com/casehubio/casehub-parent/main/docs/repos/quarkus-qhorus.md`
+- claudony: `https://raw.githubusercontent.com/casehubio/casehub-parent/main/docs/repos/claudony.md`
+- casehub-connectors: `https://raw.githubusercontent.com/casehubio/casehub-parent/main/docs/repos/casehub-connectors.md`
+
+---
+
 ## No Migration Tooling
 
 This project has no installed instances to migrate. Do not add:
@@ -52,6 +77,8 @@ Eight interfaces in `api/src/main/java/io/casehub/api/spi/` (four blocking + fou
 
 To add a new operational SPI: define the interface in `api/spi/`, add a no-op default in `engine/internal/worker/`, add contract tests in `api/src/test/java/io/casehub/api/spi/`, and add engine unit tests in `engine/src/test/java/io/casehub/engine/internal/worker/DefaultWorkerSpiImplementationsTest.java`.
 
+**To test SPI wiring:** use `@Alternative @Priority(1) @ApplicationScoped` static inner classes in `@QuarkusTest` with `static` recording fields reset in `@BeforeEach`. This activates the recording bean globally across the test suite without Mockito. See `SpiWiringIntegrationTest` for the pattern.
+
 ## casehub-blackboard Module
 
 Optional CMMN/Blackboard orchestration layer. Activated via CDI `@Alternative @Priority(10)` when on the classpath.
@@ -69,8 +96,6 @@ TESTCONTAINERS_RYUK_DISABLED=true mvn clean test -pl casehub-blackboard
   `casehub-blackboard/src/test/java/io/casehub/persistence/memory/` (same pattern as engine)
 - `src/test/resources/application.properties` sets `quarkus.http.test-port=0` and activates
   the in-memory alternatives via `quarkus.arc.selected-alternatives`
-
-**PRs:** #88 (async LoopControl), #89 (data model), #90 (orchestration + tests) — merge in order.
 
 ## Quartz
 
@@ -95,3 +120,15 @@ Submodule poms reference `${version.io.quarkiverse.work}` etc. — no hardcoded 
 
 **Publishing:** `maven.deploy.skip=false` is the default in root `pom.xml` properties — the root parent POM (`io.casehub:parent`) IS published to GitHub Packages. Downstream consumers need it to resolve the effective POM of child artifacts (`api`, `engine`, etc.). Modules that should not be published override with `<maven.deploy.skip>true</maven.deploy.skip>` in their own `<properties>`.
 
+## casehub-work-adapter Module
+
+Bridges quarkus-work `WorkItemLifecycleEvent` CDI events to CaseHub `PlanItem` transitions via `BlackboardRegistry`. Choreography path only — fires `CONTEXT_CHANGED` for engine re-evaluation.
+
+**Test setup** (when depending on `quarkus-work` full module):
+- Add `quarkus-work-testing` test dep — provides `@Alternative @Priority` in-memory WorkItem stores
+- Add `quarkus-jdbc-h2` test dep — quarkus-work JPA entities require a datasource even in tests
+- Use `quarkus.arc.selected-alternatives` to activate `casehub-persistence-memory` repos
+- Add `@Alternative @Priority(1)` static inner class stub for `WorkloadProvider` — quarkus-work ships `JpaWorkloadProvider` which clashes with `CasehubWorkloadProvider` from the engine
+- Set `quarkus.quartz.store-type=ram` and `quarkus.hibernate-orm.schema-management.strategy=drop-and-create`
+
+`callerRef` format: `case:{caseId}/pi:{planItemId}` — use `CallerRef.encode()` / `CallerRef.parse()`.
