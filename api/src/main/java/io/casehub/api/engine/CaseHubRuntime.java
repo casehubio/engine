@@ -28,6 +28,30 @@ public interface CaseHubRuntime {
 
   void signal(UUID caseId, String path, Object value);
 
+  /**
+   * Cancels a case. Valid from any non-terminal state (RUNNING, SUSPENDED, WAITING).
+   *
+   * @throws IllegalArgumentException if the case is not found
+   * @throws IllegalStateException if the case is already in a terminal state
+   */
+  void cancelCase(UUID caseId);
+
+  /**
+   * Suspends a running case. No new workers will fire while the case is suspended.
+   *
+   * @throws IllegalArgumentException if the case is not found
+   * @throws IllegalStateException if the case is not in RUNNING state
+   */
+  void suspendCase(UUID caseId);
+
+  /**
+   * Resumes a suspended case and re-evaluates context so eligible workers can fire.
+   *
+   * @throws IllegalArgumentException if the case is not found
+   * @throws IllegalStateException if the case is not in SUSPENDED state
+   */
+  void resumeCase(UUID caseId);
+
   CompletionStage<Object> query(UUID caseId, String path);
 
   <T> CompletionStage<T> query(UUID caseId, String path, Class<T> clazz);
