@@ -28,6 +28,7 @@ import io.casehub.api.spi.ContextDiffStrategy;
 import io.casehub.api.spi.WorkerStatusListener;
 import io.casehub.engine.internal.engine.CaseDefinitionRegistry;
 import io.casehub.engine.internal.event.CaseContextChangedEvent;
+import io.casehub.engine.internal.event.CaseLifecycleEvent;
 import io.casehub.engine.internal.event.EventBusAddresses;
 import io.casehub.engine.internal.event.WorkflowExecutionCompleted;
 import io.casehub.engine.internal.history.CaseHubEventType;
@@ -41,6 +42,7 @@ import io.quarkus.vertx.ConsumeEvent;
 import io.smallrye.mutiny.Uni;
 import io.vertx.mutiny.core.eventbus.EventBus;
 import jakarta.enterprise.context.ApplicationScoped;
+import jakarta.enterprise.event.Event;
 import jakarta.inject.Inject;
 import java.time.Instant;
 import java.util.List;
@@ -55,6 +57,7 @@ import org.jboss.logging.Logger;
 public class WorkflowExecutionCompletedHandler {
 
   @Inject EventBus eventBus;
+  @Inject Event<CaseLifecycleEvent> lifecycleEvents;
   @Inject ContextDiffStrategy contextDiffStrategy;
   @Inject EventLogRepository eventLogRepository;
   @Inject CaseDefinitionRegistry caseDefinitionRegistry;
@@ -88,6 +91,16 @@ public class WorkflowExecutionCompletedHandler {
                 workerStatusListener.onWorkerCompleted(
                     worker.getName(),
                     WorkResult.completed(event.idempotency(), rawOutput, worker.getName())))
+        .invoke(
+            () ->
+                lifecycleEvents.fireAsync(
+                    new CaseLifecycleEvent(
+                        caseInstance.getUuid(),
+                        "ExecuteWorker",
+                        "WorkerExecutionCompleted",
+                        caseInstance.getState().name(),
+                        worker.getName(),
+                        "WORKER")))
         .invoke(
             () ->
                 eventBus.publish(

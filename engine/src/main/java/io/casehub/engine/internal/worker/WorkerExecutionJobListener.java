@@ -28,6 +28,7 @@ import io.casehub.api.model.Worker;
 import io.casehub.api.spi.WorkerStatusListener;
 import io.casehub.engine.internal.engine.CaseDefinitionRegistry;
 import io.casehub.engine.internal.engine.recovery.WorkerExecutionRecoveryService;
+import io.casehub.engine.internal.event.CaseLifecycleEvent;
 import io.casehub.engine.internal.event.EventBusAddresses;
 import io.casehub.engine.internal.event.WorkerRetriesExhaustedEvent;
 import io.casehub.engine.internal.history.CaseHubEventType;
@@ -39,6 +40,7 @@ import io.smallrye.mutiny.Uni;
 import io.vertx.core.Vertx;
 import io.vertx.mutiny.core.eventbus.EventBus;
 import jakarta.enterprise.context.ApplicationScoped;
+import jakarta.enterprise.event.Event;
 import jakarta.inject.Inject;
 import java.util.Date;
 import java.util.UUID;
@@ -58,6 +60,8 @@ public class WorkerExecutionJobListener implements JobListener {
   @Inject Vertx vertx;
 
   @Inject WorkerStatusListener workerStatusListener;
+
+  @Inject Event<CaseLifecycleEvent> lifecycleEvents;
 
   @Inject WorkerExecutionScheduler workerExecutionScheduler;
 
@@ -87,8 +91,17 @@ public class WorkerExecutionJobListener implements JobListener {
     String jobName = context.getJobDetail().getKey().toString();
     String idempotency = context.getMergedJobDataMap().getString("inputDataHash");
     String workerId = context.getMergedJobDataMap().getString("workerId");
+    String caseHubInstanceUuid = context.getMergedJobDataMap().getString("caseHubInstanceUuid");
     LOG.infof("Job is about to be executed: %s, idempotency=%s", jobName, idempotency);
     workerStatusListener.onWorkerStarted(workerId, null);
+    lifecycleEvents.fireAsync(
+        new CaseLifecycleEvent(
+            UUID.fromString(caseHubInstanceUuid),
+            "ExecuteWorker",
+            "WorkerExecutionStarted",
+            null,
+            workerId,
+            "WORKER"));
 
     EventLog eventLog =
         createEventLog(
