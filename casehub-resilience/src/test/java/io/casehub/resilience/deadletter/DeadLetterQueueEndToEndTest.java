@@ -37,6 +37,7 @@ import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.UUID;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
@@ -55,6 +56,7 @@ class DeadLetterQueueEndToEndTest {
   @Inject FastFailingCaseHub fastFailingCase;
   @Inject CaseInstanceCache caseInstanceCache;
   @Inject DeadLetterQueue deadLetterQueue;
+  @Inject DeadLetterReplayService replayService;
 
   @BeforeEach
   void clearQueue() {
@@ -133,6 +135,31 @@ class DeadLetterQueueEndToEndTest {
 
     assertThat(pending).isEmpty();
     assertThat(discarded).hasSize(1);
+  }
+
+  /** Replay on a FAULTED case must be rejected gracefully — returns empty, entry stays PENDING. */
+  @Test
+  void failedWorker_dlqEntry_replayOnFaultedCase_returnsEmpty() {
+    UUID caseId =
+        alwaysFailingCase.startCase(Map.of("status", "start")).toCompletableFuture().join();
+
+    await()
+        .atMost(30, TimeUnit.SECONDS)
+        .until(
+            () ->
+                !deadLetterQueue
+                    .query(DeadLetterQuery.withStatus(DeadLetterStatus.PENDING_REVIEW))
+                    .isEmpty());
+
+    DeadLetterEntry entry =
+        deadLetterQueue.query(DeadLetterQuery.withStatus(DeadLetterStatus.PENDING_REVIEW)).get(0);
+    assertThat(entry.caseId()).isEqualTo(caseId);
+    assertThat(entry.replayAttempts()).isZero();
+
+    // Case is FAULTED — replay must be rejected gracefully
+    Optional<DeadLetterEntry> result = replayService.replay(entry.deadLetterId());
+    assertThat(result).isEmpty();
+    assertThat(entry.status()).isEqualTo(DeadLetterStatus.PENDING_REVIEW);
   }
 
   // ---- CaseHub bean: always fails, 2 retries (fast) -------------------------
