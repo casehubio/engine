@@ -53,7 +53,9 @@ class PlanItemCompletionHandlerTest {
   void setUp() {
     registry = new BlackboardRegistry();
     mockBus = mock(EventBus.class);
-    handler = new PlanItemCompletionHandler(registry, mockBus);
+    handler =
+        new PlanItemCompletionHandler(
+            registry, mockBus, mock(jakarta.enterprise.event.Event.class));
     caseId = UUID.randomUUID();
     plan = (DefaultCasePlanModel) registry.getOrCreate(caseId);
   }
