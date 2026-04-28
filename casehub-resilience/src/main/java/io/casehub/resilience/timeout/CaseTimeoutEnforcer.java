@@ -17,7 +17,6 @@ package io.casehub.resilience.timeout;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.casehub.api.model.CaseStatus;
-import io.casehub.engine.internal.engine.cache.CaseInstanceCache;
 import io.casehub.engine.internal.event.CaseStatusChanged;
 import io.casehub.engine.internal.event.EventBusAddresses;
 import io.casehub.engine.internal.history.CaseHubEventType;
@@ -25,6 +24,7 @@ import io.casehub.engine.internal.history.EventLog;
 import io.casehub.engine.internal.history.EventStreamType;
 import io.casehub.engine.internal.model.CaseInstance;
 import io.casehub.engine.spi.CaseInstanceRepository;
+import io.casehub.engine.spi.cache.CaseInstanceCache;
 import io.quarkus.scheduler.Scheduled;
 import io.vertx.mutiny.core.eventbus.EventBus;
 import jakarta.enterprise.context.ApplicationScoped;

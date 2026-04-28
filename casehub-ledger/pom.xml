@@ -21,7 +21,7 @@
         <!-- CaseLifecycleEvent lives in engine-model (no CDI beans — safe as compile dep) -->
         <dependency>
             <groupId>io.casehub</groupId>
-            <artifactId>engine-model</artifactId>
+            <artifactId>casehub-engine-common</artifactId>
             <version>${project.version}</version>
         </dependency>
 

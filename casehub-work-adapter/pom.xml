@@ -41,6 +41,12 @@
             <scope>test</scope>
         </dependency>
         <dependency>
+            <groupId>io.casehub</groupId>
+            <artifactId>scheduler-quartz</artifactId>
+            <version>${project.version}</version>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
             <groupId>io.quarkiverse.work</groupId>
             <artifactId>quarkus-work-testing</artifactId>
             <version>${version.io.quarkiverse.work}</version>

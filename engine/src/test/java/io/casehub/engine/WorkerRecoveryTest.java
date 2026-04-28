@@ -22,13 +22,13 @@ import io.casehub.api.engine.CaseHub;
 import io.casehub.api.model.Capability;
 import io.casehub.api.model.CaseDefinition;
 import io.casehub.api.model.Worker;
-import io.casehub.engine.internal.engine.cache.CaseInstanceCache;
-import io.casehub.engine.internal.engine.recovery.WorkerExecutionRecoveryService;
 import io.casehub.engine.internal.history.CaseHubEventType;
 import io.casehub.engine.internal.history.EventLog;
 import io.casehub.engine.internal.history.EventStreamType;
-import io.casehub.engine.internal.util.WorkerExecutionKeys;
+import io.casehub.engine.internal.utils.WorkerExecutionKeys;
 import io.casehub.engine.spi.EventLogRepository;
+import io.casehub.engine.spi.cache.CaseInstanceCache;
+import io.casehub.engine.spi.recovery.WorkerExecutionRecoveryService;
 import io.quarkus.test.junit.QuarkusTest;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
@@ -73,13 +73,15 @@ public class WorkerRecoveryTest {
     scheduledEvent.setMetadata(
         OBJECT_MAPPER.valueToTree(
             Map.of(
-                "workerName", "recovery-worker",
-                "capabilityName", "recoverCapability",
+                "workerName",
+                "recovery-worker",
+                "capabilityName",
+                "recoverCapability",
                 "inputDataHash",
-                    WorkerExecutionKeys.inputDataHash(
-                        "recovery-worker",
-                        "recoverCapability",
-                        Map.of("documentId", "doc-recovery", "status", "scheduled")))));
+                WorkerExecutionKeys.inputDataHash(
+                    "recovery-worker",
+                    "recoverCapability",
+                    Map.of("documentId", "doc-recovery", "status", "scheduled")))));
     scheduledEvent.setPayload(
         OBJECT_MAPPER.valueToTree(
             Map.of(

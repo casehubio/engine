@@ -20,7 +20,7 @@ import io.casehub.blackboard.plan.PlanItem;
 import io.casehub.blackboard.registry.BlackboardRegistry;
 import io.casehub.engine.internal.event.CaseContextChangedEvent;
 import io.casehub.engine.internal.event.EventBusAddresses;
-import io.casehub.engine.internal.util.ReactiveUtils;
+import io.casehub.engine.internal.utils.ReactiveUtils;
 import io.casehub.engine.spi.CaseInstanceRepository;
 import io.quarkiverse.work.runtime.event.WorkItemLifecycleEvent;
 import io.quarkiverse.work.runtime.model.WorkItem;

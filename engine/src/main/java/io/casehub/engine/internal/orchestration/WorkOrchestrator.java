@@ -22,16 +22,15 @@ import io.casehub.api.model.CaseStatus;
 import io.casehub.api.model.WorkRequest;
 import io.casehub.api.model.WorkResult;
 import io.casehub.api.model.Worker;
-import io.casehub.engine.internal.engine.CaseDefinitionRegistry;
-import io.casehub.engine.internal.engine.cache.CaseInstanceCache;
 import io.casehub.engine.internal.event.EventBusAddresses;
 import io.casehub.engine.internal.event.WorkerScheduleEvent;
 import io.casehub.engine.internal.history.CaseHubEventType;
 import io.casehub.engine.internal.history.EventLog;
 import io.casehub.engine.internal.history.EventStreamType;
 import io.casehub.engine.internal.model.CaseInstance;
-import io.casehub.engine.internal.util.WorkerExecutionKeys;
+import io.casehub.engine.internal.utils.WorkerExecutionKeys;
 import io.casehub.engine.internal.work.PendingWorkRegistry;
+import io.casehub.engine.spi.CaseDefinitionRegistry;
 import io.casehub.engine.spi.CaseInstanceRepository;
 import io.casehub.engine.spi.EventLogRepository;
 import io.quarkiverse.work.api.AssignmentDecision;
@@ -74,7 +73,6 @@ public class WorkOrchestrator {
   private final CaseDefinitionRegistry caseDefinitionRegistry;
   private final CaseInstanceRepository caseInstanceRepository;
   private final EventLogRepository eventLogRepository;
-  private final CaseInstanceCache cache;
 
   @Inject
   public WorkOrchestrator(
@@ -85,8 +83,7 @@ public class WorkOrchestrator {
       PendingWorkRegistry pendingWorkRegistry,
       CaseDefinitionRegistry caseDefinitionRegistry,
       CaseInstanceRepository caseInstanceRepository,
-      EventLogRepository eventLogRepository,
-      CaseInstanceCache cache) {
+      EventLogRepository eventLogRepository) {
     this.workBroker = workBroker;
     this.selectionStrategy = selectionStrategy;
     this.workloadProvider = workloadProvider;
@@ -95,7 +92,6 @@ public class WorkOrchestrator {
     this.caseDefinitionRegistry = caseDefinitionRegistry;
     this.caseInstanceRepository = caseInstanceRepository;
     this.eventLogRepository = eventLogRepository;
-    this.cache = cache;
   }
 
   /**

@@ -28,8 +28,8 @@ import io.casehub.api.model.GoalKind;
 import io.casehub.api.model.ScheduleTrigger;
 import io.casehub.api.model.Worker;
 import io.casehub.api.model.evaluator.JQExpressionEvaluator;
-import io.casehub.engine.internal.engine.cache.CaseInstanceCache;
 import io.casehub.engine.internal.model.CaseInstance;
+import io.casehub.engine.spi.cache.CaseInstanceCache;
 import io.quarkus.test.junit.QuarkusTest;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
@@ -47,6 +47,8 @@ class ScheduleTriggerSimpleTest {
   @Inject CronTriggerTestBean cronBean;
   @Inject ConditionalTriggerTestBean conditionalBean;
   @Inject ConditionalTriggerNotMetTestBean conditionalNotMetBean;
+  @Inject ConditionalTriggerBecomesReadyTestBean conditionalBecomesReadyBean;
+  @Inject ConditionalTriggerBecomesBlockedTestBean conditionalBecomesBlockedBean;
   @Inject MultipleTriggerTestBean multipleTriggersBean;
   @Inject CancellationTestBean cancellationBean;
   @Inject CaseInstanceCache caseInstanceCache;
@@ -57,6 +59,8 @@ class ScheduleTriggerSimpleTest {
     CronTriggerTestBean.executionCount.set(0);
     ConditionalTriggerTestBean.executionCount.set(0);
     ConditionalTriggerNotMetTestBean.executionCount.set(0);
+    ConditionalTriggerBecomesReadyTestBean.executionCount.set(0);
+    ConditionalTriggerBecomesBlockedTestBean.executionCount.set(0);
     MultipleTriggerTestBean.worker1Count.set(0);
     MultipleTriggerTestBean.worker2Count.set(0);
     CancellationTestBean.executionCount.set(0);
@@ -131,6 +135,54 @@ class ScheduleTriggerSimpleTest {
     } catch (org.awaitility.core.ConditionTimeoutException e) {
       // Expected - condition was not met, so worker never executed
       assertThat(ConditionalTriggerNotMetTestBean.executionCount.get()).isEqualTo(0);
+    }
+  }
+
+  @Test
+  void conditionalTriggerEvaluatesLatestContextWhenConditionBecomesMetBeforeFire() {
+    java.util.UUID caseId =
+        conditionalBecomesReadyBean
+            .startCase(Map.of("status", "not-ready"))
+            .toCompletableFuture()
+            .join();
+
+    assertThat(ConditionalTriggerBecomesReadyTestBean.executionCount.get()).isEqualTo(0);
+
+    conditionalBecomesReadyBean.signal(caseId, "status", "ready");
+
+    await()
+        .atMost(10, TimeUnit.SECONDS)
+        .pollInterval(100, TimeUnit.MILLISECONDS)
+        .untilAsserted(
+            () ->
+                assertThat(ConditionalTriggerBecomesReadyTestBean.executionCount.get())
+                    .isEqualTo(1));
+  }
+
+  @Test
+  void conditionalTriggerEvaluatesLatestContextWhenConditionBecomesFalseBeforeFire() {
+    java.util.UUID caseId =
+        conditionalBecomesBlockedBean
+            .startCase(Map.of("status", "ready"))
+            .toCompletableFuture()
+            .join();
+
+    assertThat(ConditionalTriggerBecomesBlockedTestBean.executionCount.get()).isEqualTo(0);
+
+    conditionalBecomesBlockedBean.signal(caseId, "status", "blocked");
+
+    try {
+      await()
+          .atMost(5, TimeUnit.SECONDS)
+          .pollInterval(100, TimeUnit.MILLISECONDS)
+          .untilAsserted(
+              () ->
+                  assertThat(ConditionalTriggerBecomesBlockedTestBean.executionCount.get())
+                      .isGreaterThan(0));
+
+      throw new AssertionError("Worker should not have executed after condition became false");
+    } catch (org.awaitility.core.ConditionTimeoutException e) {
+      assertThat(ConditionalTriggerBecomesBlockedTestBean.executionCount.get()).isEqualTo(0);
     }
   }
 
@@ -343,6 +395,92 @@ class ScheduleTriggerSimpleTest {
 
       return CaseDefinition.builder()
           .name("schedule-test-conditional-not-met")
+          .namespace("test")
+          .version("1.0")
+          .capabilities(cap)
+          .workers(worker)
+          .bindings(binding)
+          .build();
+    }
+  }
+
+  @ApplicationScoped
+  static class ConditionalTriggerBecomesReadyTestBean extends CaseHub {
+    static final AtomicInteger executionCount = new AtomicInteger(0);
+
+    @Override
+    public CaseDefinition getDefinition() {
+      Capability cap =
+          Capability.builder()
+              .name("doWork")
+              .inputSchema("{ }")
+              .outputSchema("{ workDone: .workDone }")
+              .build();
+
+      Worker worker =
+          Worker.builder()
+              .name("worker")
+              .capabilities(cap)
+              .function(
+                  ctx -> {
+                    executionCount.incrementAndGet();
+                    return Map.of("workDone", true);
+                  })
+              .build();
+
+      Binding binding =
+          Binding.builder()
+              .name("conditional-becomes-ready-work")
+              .capability(cap)
+              .on(ScheduleTrigger.delay(Duration.ofSeconds(2)))
+              .when(new JQExpressionEvaluator(".status == \"ready\""))
+              .build();
+
+      return CaseDefinition.builder()
+          .name("schedule-test-conditional-becomes-ready")
+          .namespace("test")
+          .version("1.0")
+          .capabilities(cap)
+          .workers(worker)
+          .bindings(binding)
+          .build();
+    }
+  }
+
+  @ApplicationScoped
+  static class ConditionalTriggerBecomesBlockedTestBean extends CaseHub {
+    static final AtomicInteger executionCount = new AtomicInteger(0);
+
+    @Override
+    public CaseDefinition getDefinition() {
+      Capability cap =
+          Capability.builder()
+              .name("doWork")
+              .inputSchema("{ }")
+              .outputSchema("{ workDone: .workDone }")
+              .build();
+
+      Worker worker =
+          Worker.builder()
+              .name("worker")
+              .capabilities(cap)
+              .function(
+                  ctx -> {
+                    executionCount.incrementAndGet();
+                    return Map.of("workDone", true);
+                  })
+              .build();
+
+      Binding binding =
+          Binding.builder()
+              .name("conditional-becomes-blocked-work")
+              .capability(cap)
+              .on(ScheduleTrigger.delay(Duration.ofSeconds(2)))
+              .when(new JQExpressionEvaluator(".status == \"ready\""))
+              .build();
+
+      return CaseDefinition.builder()
+          .name("schedule-test-conditional-becomes-blocked")
           .namespace("test")
           .version("1.0")
           .capabilities(cap)
