@@ -97,6 +97,8 @@ TESTCONTAINERS_RYUK_DISABLED=true mvn clean test -pl casehub-blackboard
 - `src/test/resources/application.properties` sets `quarkus.http.test-port=0` and activates
   the in-memory alternatives via `quarkus.arc.selected-alternatives`
 
+**Event-driven test pattern for blackboard integration tests:** use `PlanItemCompletedEvent` (CDI async) + a `@ApplicationScoped WorkerCompletionObserver` with `ConcurrentHashMap<key, CompletableFuture<String>>`. Both observer and test use `computeIfAbsent` — race-free regardless of event/registration order. The future value carries the exact `planItemId` from the event. Do NOT do a post-event `BlackboardRegistry.getPlanItemId()` lookup — it may be overwritten by a re-triggered PlanItem. See `MixedWorkersBlackboardTest` for the pattern.
+
 ## Quartz
 
 Use RAM store — no JDBC store, no Quartz tables:
@@ -132,3 +134,9 @@ Bridges quarkus-work `WorkItemLifecycleEvent` CDI events to CaseHub `PlanItem` t
 - Set `quarkus.quartz.store-type=ram` and `quarkus.hibernate-orm.schema-management.strategy=drop-and-create`
 
 `callerRef` format: `case:{caseId}/pi:{planItemId}` — use `CallerRef.encode()` / `CallerRef.parse()`.
+
+## PR Workflow
+
+All implementation work goes through the `mdproctor/engine` fork — never commit directly to `casehubio/engine`. One branch per concern, rebased against upstream main before opening a PR. Every PR must be linked to a GitHub issue; every commit must reference an issue (`Refs #N` or `Closes #N`). CI must be green before review request.
+
+Fork CI runs `verify` only (build + test). Upstream CI runs `verify` + `deploy` on merge. This is enforced in `maven.yml` via `github.repository == 'casehubio/casehub-engine'`.
