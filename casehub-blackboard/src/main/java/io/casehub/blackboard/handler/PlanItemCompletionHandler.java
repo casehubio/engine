@@ -16,6 +16,7 @@
 package io.casehub.blackboard.handler;
 
 import io.casehub.blackboard.event.BlackboardEventBusAddresses;
+import io.casehub.blackboard.event.PlanItemCompletedEvent;
 import io.casehub.blackboard.event.StageCompletedEvent;
 import io.casehub.blackboard.plan.CasePlanModel;
 import io.casehub.blackboard.plan.PlanItem;
@@ -27,6 +28,7 @@ import io.quarkus.vertx.ConsumeEvent;
 import io.smallrye.mutiny.Uni;
 import io.vertx.mutiny.core.eventbus.EventBus;
 import jakarta.enterprise.context.ApplicationScoped;
+import jakarta.enterprise.event.Event;
 import jakarta.inject.Inject;
 import java.util.UUID;
 import org.jboss.logging.Logger;
@@ -54,11 +56,16 @@ public class PlanItemCompletionHandler {
 
   private final BlackboardRegistry registry;
   private final EventBus eventBus;
+  private final Event<PlanItemCompletedEvent> planItemCompletedEvents;
 
   @Inject
-  public PlanItemCompletionHandler(BlackboardRegistry registry, EventBus eventBus) {
+  public PlanItemCompletionHandler(
+      BlackboardRegistry registry,
+      EventBus eventBus,
+      Event<PlanItemCompletedEvent> planItemCompletedEvents) {
     this.registry = registry;
     this.eventBus = eventBus;
+    this.planItemCompletedEvents = planItemCompletedEvents;
   }
 
   @ConsumeEvent(EventBusAddresses.WORKER_EXECUTION_FINISHED)
@@ -86,6 +93,10 @@ public class PlanItemCompletionHandler {
               // markCompleted(). itemsById retains completed items for post-completion
               // observability (e.g. integration-test assertions on PlanItem status).
               evaluateStageAutocomplete(caseId, plan, planItemId);
+              // Fire after markCompleted() — observers see the exact planItemId that completed,
+              // not the current completionIndex which may have been overwritten by a re-trigger.
+              planItemCompletedEvents.fireAsync(
+                  new PlanItemCompletedEvent(caseId, planItemId, workerName));
             });
 
     return Uni.createFrom().voidItem();
