@@ -17,6 +17,7 @@ package io.casehub.persistence.jpa;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import io.casehub.engine.internal.history.CaseHubEventType;
 import io.casehub.engine.internal.history.EventLog;
 import io.casehub.engine.internal.history.EventStreamType;
@@ -36,8 +37,7 @@ class JpaEventLogRepositoryTest {
 
   @Inject EventLogRepository repository;
 
-  private static final com.fasterxml.jackson.databind.ObjectMapper OBJECT_MAPPER =
-      new com.fasterxml.jackson.databind.ObjectMapper();
+  private static final ObjectMapper OBJECT_MAPPER = new ObjectMapper();
 
   @Test
   void append_populatesIdAndSeq() {
