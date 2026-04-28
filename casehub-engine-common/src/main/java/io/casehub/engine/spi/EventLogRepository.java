@@ -18,6 +18,7 @@ package io.casehub.engine.spi;
 import io.casehub.engine.internal.history.CaseHubEventType;
 import io.casehub.engine.internal.history.EventLog;
 import io.smallrye.mutiny.Uni;
+import java.time.Instant;
 import java.util.Collection;
 import java.util.List;
 import java.util.UUID;
@@ -41,9 +42,18 @@ public interface EventLogRepository {
 
   /**
    * Find all scheduling-lifecycle events (WORKER_SCHEDULED, WORKER_EXECUTION_STARTED,
-   * WORKER_EXECUTION_COMPLETED) for the given case and worker, ordered by seq ascending.
+   * WORKER_EXECUTION_COMPLETED) for the given case and worker, ordered by seq ascending. When
+   * {@code after} is non-null, only events with {@code timestamp > after} are returned.
    */
-  Uni<List<EventLog>> findSchedulingEvents(UUID caseId, String workerId);
+  Uni<List<EventLog>> findSchedulingEvents(UUID caseId, String workerId, Instant after);
+
+  /**
+   * Convenience overload with no time cutoff — equivalent to {@code findSchedulingEvents(caseId,
+   * workerId, null)}.
+   */
+  default Uni<List<EventLog>> findSchedulingEvents(UUID caseId, String workerId) {
+    return findSchedulingEvents(caseId, workerId, null);
+  }
 
   /**
    * Find all events matching the given types across all cases, ordered by seq ascending. Used by
