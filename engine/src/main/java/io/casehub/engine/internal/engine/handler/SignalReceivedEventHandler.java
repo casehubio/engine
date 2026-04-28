@@ -19,8 +19,6 @@ import static io.casehub.engine.internal.event.EventBusAddresses.CONTEXT_CHANGED
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import io.casehub.engine.internal.engine.cache.CaseInstanceCache;
-import io.casehub.engine.internal.engine.recovery.WorkerExecutionRecoveryService;
 import io.casehub.engine.internal.event.CaseContextChangedEvent;
 import io.casehub.engine.internal.event.CaseLifecycleEvent;
 import io.casehub.engine.internal.event.EventBusAddresses;
@@ -30,6 +28,8 @@ import io.casehub.engine.internal.history.EventLog;
 import io.casehub.engine.internal.history.EventStreamType;
 import io.casehub.engine.internal.model.CaseInstance;
 import io.casehub.engine.spi.EventLogRepository;
+import io.casehub.engine.spi.cache.CaseInstanceCache;
+import io.casehub.engine.spi.recovery.WorkerExecutionRecoveryService;
 import io.quarkus.vertx.ConsumeEvent;
 import io.smallrye.mutiny.Uni;
 import io.vertx.mutiny.core.Vertx;

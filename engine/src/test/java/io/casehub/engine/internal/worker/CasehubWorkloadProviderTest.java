@@ -19,6 +19,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
+import io.casehub.engine.scheduler.quartz.QuartzWorkerExecutionManager;
 import java.util.List;
 import java.util.Set;
 import org.junit.jupiter.api.Test;
@@ -35,7 +36,8 @@ class CasehubWorkloadProviderTest {
   void noJobsScheduled_returnsZero() throws SchedulerException {
     Scheduler scheduler = mock(Scheduler.class);
     when(scheduler.getJobGroupNames()).thenReturn(List.of());
-    CasehubWorkloadProvider provider = new CasehubWorkloadProvider(scheduler);
+    CasehubWorkloadProvider provider =
+        new CasehubWorkloadProvider(new QuartzWorkerExecutionManager(scheduler));
     assertThat(provider.getActiveWorkCount("some-worker")).isZero();
   }
 
@@ -50,7 +52,8 @@ class CasehubWorkloadProviderTest {
     when(scheduler.getJobKeys(GroupMatcher.groupEquals("case-1"))).thenReturn(Set.of(key));
     when(scheduler.getJobDetail(key)).thenReturn(detail);
     when(detail.getJobDataMap()).thenReturn(dataMap);
-    CasehubWorkloadProvider provider = new CasehubWorkloadProvider(scheduler);
+    CasehubWorkloadProvider provider =
+        new CasehubWorkloadProvider(new QuartzWorkerExecutionManager(scheduler));
     assertThat(provider.getActiveWorkCount("my-worker")).isEqualTo(1);
   }
 
@@ -69,7 +72,8 @@ class CasehubWorkloadProviderTest {
     when(scheduler.getJobDetail(key1)).thenReturn(detail1);
     when(scheduler.getJobDetail(key2)).thenReturn(detail2);
     when(scheduler.getJobDetail(key3)).thenReturn(detail3);
-    CasehubWorkloadProvider provider = new CasehubWorkloadProvider(scheduler);
+    CasehubWorkloadProvider provider =
+        new CasehubWorkloadProvider(new QuartzWorkerExecutionManager(scheduler));
     assertThat(provider.getActiveWorkCount("target-worker")).isEqualTo(2);
     assertThat(provider.getActiveWorkCount("other-worker")).isEqualTo(1);
   }
@@ -78,7 +82,8 @@ class CasehubWorkloadProviderTest {
   void schedulerThrows_returnsZero() throws SchedulerException {
     Scheduler scheduler = mock(Scheduler.class);
     when(scheduler.getJobGroupNames()).thenThrow(new SchedulerException("simulated failure"));
-    CasehubWorkloadProvider provider = new CasehubWorkloadProvider(scheduler);
+    CasehubWorkloadProvider provider =
+        new CasehubWorkloadProvider(new QuartzWorkerExecutionManager(scheduler));
     assertThat(provider.getActiveWorkCount("any-worker")).isZero();
   }
 
@@ -90,7 +95,8 @@ class CasehubWorkloadProviderTest {
     when(scheduler.getJobGroupNames()).thenReturn(List.of("case-1"));
     when(scheduler.getJobKeys(GroupMatcher.groupEquals("case-1"))).thenReturn(Set.of(key));
     when(scheduler.getJobDetail(key)).thenReturn(detail);
-    CasehubWorkloadProvider provider = new CasehubWorkloadProvider(scheduler);
+    CasehubWorkloadProvider provider =
+        new CasehubWorkloadProvider(new QuartzWorkerExecutionManager(scheduler));
     assertThat(provider.getActiveWorkCount("my-worker")).isZero();
   }
 
@@ -104,7 +110,8 @@ class CasehubWorkloadProviderTest {
     when(scheduler.getJobKeys(GroupMatcher.groupEquals("case-1"))).thenReturn(Set.of(key));
     when(scheduler.getJobDetail(key)).thenReturn(detail);
     when(detail.getJobDataMap()).thenReturn(dataMap);
-    CasehubWorkloadProvider provider = new CasehubWorkloadProvider(scheduler);
+    CasehubWorkloadProvider provider =
+        new CasehubWorkloadProvider(new QuartzWorkerExecutionManager(scheduler));
     assertThat(provider.getActiveWorkCount("any-worker")).isZero();
   }
 

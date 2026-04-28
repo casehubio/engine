@@ -16,9 +16,9 @@
 package io.casehub.testing;
 
 import io.casehub.api.model.Worker;
-import io.casehub.engine.internal.engine.CaseDefinitionRegistry;
 import io.casehub.engine.internal.event.EventBusAddresses;
 import io.casehub.engine.internal.event.WorkflowExecutionCompleted;
+import io.casehub.engine.spi.CaseDefinitionRegistry;
 import io.casehub.engine.spi.CaseInstanceRepository;
 import io.smallrye.mutiny.Uni;
 import io.vertx.mutiny.core.eventbus.EventBus;
