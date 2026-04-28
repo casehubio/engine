@@ -179,6 +179,7 @@ Every significant decision is recorded with full provenance:
 - **WORKER_EXECUTION_STARTED** — Quartz job started
 - **WORKER_EXECUTION_COMPLETED** — worker finished, output applied
 - **WORKER_EXECUTION_FAILED** — worker threw
+- **DEAD_LETTERED** — entry moved to DLQ after retries exhausted (see `casehub-resilience`)
 - **WORK_SUBMITTED** — orchestrated work submitted (includes correlation key)
 - **WORK_COMPLETED** — orchestrated work completed (case resumes if WAITING)
 - **SIGNAL_RECEIVED** — external signal (human input, webhook, etc.)
@@ -262,6 +263,32 @@ TESTCONTAINERS_RYUK_DISABLED=true mvn test -pl engine
 TESTCONTAINERS_RYUK_DISABLED=true mvn test -Dtest=ChoreographySelectionTest
 ```
 
+## Resilience (`casehub-resilience`)
+
+Optional module providing failure handling, conflict resolution, poison-pill detection, and timeout enforcement. Activated on the classpath alongside `engine`.
+
+### Failure and Retry Lifecycle
+
+Worker execution failures are captured as `WORKER_EXECUTION_FAILED` EventLog entries. `PoisonPillWorkerExecutionGuard` detects repeat failures on the same work item and routes them out of the normal execution loop. `BackoffDelayCalculator` computes exponential delays for retry scheduling. `CaseTimeoutEnforcer` monitors running cases and transitions them to `FAULTED` when a configured deadline is exceeded.
+
+When retries are exhausted, `DeadLetterEventHandler` routes the entry to `DeadLetterQueue` with status `PENDING_REVIEW`.
+
+### Dead Letter Queue Replay
+
+When retries are exhausted, `DeadLetterEventHandler` routes the entry to `DeadLetterQueue` (PENDING_REVIEW). Two replay mechanisms are available:
+
+**Explicit replay:** `DeadLetterReplayService.replay(deadLetterId)` recovers the original worker input from the `WORKER_SCHEDULED` EventLog entry and publishes a fresh `WorkerScheduleEvent`. Returns empty if the case is in a terminal state, the EventLog entry is missing, or the case definition cannot be resolved.
+
+**Auto-replay:** `DeadLetterAutoReplayJob` (scheduled, disabled by default). Configuration:
+- `casehub.dlq.auto-replay.enabled` (default: false)
+- `casehub.dlq.auto-replay.interval` (default: PT30M)
+- `casehub.dlq.auto-replay.delays` (default: PT30M,PT2H,PT8H)
+- `casehub.dlq.auto-replay.max-attempts` (default: 3)
+
+Entries that exhaust max-attempts stay PENDING_REVIEW for manual triage.
+
+`DeadLetterEntry` tracks `replayAttempts` and `lastReplayAttemptAt` for eligibility evaluation.
+
 ## Roadmap
 
 **Near term:**
@@ -271,6 +298,7 @@ TESTCONTAINERS_RYUK_DISABLED=true mvn test -Dtest=ChoreographySelectionTest
 - ✅ Immutable audit ledger (`casehub-ledger`, Q2 2026)
 =======
 >>>>>>> main
+- ✅ DLQ replay — explicit API and optional auto-replay scheduler (Q2 2026)
 - [ ] Human worker integration (Q2/Q3 2026)
 - [ ] Escalation rules and thresholds (Q3 2026)
 
@@ -290,6 +318,7 @@ TESTCONTAINERS_RYUK_DISABLED=true mvn test -Dtest=ChoreographySelectionTest
 - **ADR-0003** — Work/WorkItem/Task naming hierarchy
 - **casehubio/engine#121** — Original design discussion (closed by ADR-0003)
 - **casehubio/engine#131** — WorkBroker integration epic
+- **casehubio/engine#194** — DLQ replay implementation epic
 <<<<<<< feat/casehub-ledger-integration
 - **casehubio/engine#145** — quarkus-ledger integration epic
 - **mdproctor/quarkus-ledger#39** — CaseLedgerEntry tracking issue
