@@ -16,7 +16,7 @@
     <dependencies>
         <dependency>
             <groupId>io.casehub</groupId>
-            <artifactId>engine-model</artifactId>
+            <artifactId>casehub-engine-common</artifactId>
             <version>${project.version}</version>
         </dependency>
 
@@ -40,5 +40,4 @@
             <scope>test</scope>
         </dependency>
     </dependencies>
-
 </project>

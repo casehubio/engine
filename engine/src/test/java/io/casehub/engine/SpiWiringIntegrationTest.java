@@ -26,7 +26,7 @@ import io.casehub.api.model.WorkerContext;
 import io.casehub.api.spi.CaseChannelProvider;
 import io.casehub.api.spi.WorkerContextProvider;
 import io.casehub.api.spi.WorkerStatusListener;
-import io.casehub.engine.internal.engine.cache.CaseInstanceCache;
+import io.casehub.engine.spi.cache.CaseInstanceCache;
 import io.quarkus.test.junit.QuarkusTest;
 import jakarta.annotation.Priority;
 import jakarta.enterprise.context.ApplicationScoped;

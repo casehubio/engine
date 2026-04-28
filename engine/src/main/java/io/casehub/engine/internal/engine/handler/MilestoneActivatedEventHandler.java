@@ -29,13 +29,12 @@ import io.casehub.engine.internal.event.EventBusAddresses;
 import io.casehub.engine.internal.event.MilestoneActivatedEvent;
 import io.casehub.engine.internal.history.EventLog;
 import io.casehub.engine.internal.history.EventStreamType;
-import io.casehub.engine.internal.milestone.MilestoneSLATimeoutJob;
 import io.casehub.engine.internal.model.CaseInstance;
 import io.casehub.engine.internal.scheduler.JobIdentifier;
 import io.casehub.engine.internal.scheduler.ScheduleStrategy.FixedAtSchedule;
 import io.casehub.engine.internal.scheduler.ScheduledJobRequest;
 import io.casehub.engine.spi.EventLogRepository;
-import io.casehub.engine.spi.JobScheduler;
+import io.casehub.engine.spi.scheduler.JobScheduler;
 import io.quarkus.vertx.ConsumeEvent;
 import io.smallrye.mutiny.Uni;
 import io.vertx.mutiny.core.eventbus.EventBus;
@@ -115,6 +114,14 @@ public class MilestoneActivatedEventHandler {
   private Uni<Void> updateCaseContext(
       CaseInstance caseInstance, Milestone milestone, Instant activatedAt, Instant slaDeadline) {
     CaseContext context = caseInstance.getCaseContext();
+    String lifecyclePath = "milestones." + milestone.getName() + ".lifecycleStatus";
+    String currentLifecycleStatus = context.getPathAsString(lifecyclePath);
+    if (isTerminalLifecycleStatus(currentLifecycleStatus)) {
+      LOG.debugf(
+          "Skipping stale MILESTONE_ACTIVATED for case=%s milestone=%s because current status is %s",
+          caseInstance.getUuid(), milestone.getName(), currentLifecycleStatus);
+      return Uni.createFrom().voidItem();
+    }
 
     Map<String, Object> milestoneState = new HashMap<>();
     milestoneState.put("lifecycleStatus", MilestoneLifecycleStatus.ACTIVE.name());
@@ -138,6 +145,15 @@ public class MilestoneActivatedEventHandler {
 
   private Uni<Void> scheduleSlaTimeoutJob(
       CaseInstance caseInstance, Milestone milestone, Instant slaDeadline) {
+    String lifecyclePath = "milestones." + milestone.getName() + ".lifecycleStatus";
+    String currentLifecycleStatus = caseInstance.getCaseContext().getPathAsString(lifecyclePath);
+    if (!MilestoneLifecycleStatus.ACTIVE.name().equals(currentLifecycleStatus)) {
+      LOG.debugf(
+          "Skipping SLA timeout job for case=%s milestone=%s because current status is %s",
+          caseInstance.getUuid(), milestone.getName(), currentLifecycleStatus);
+      return Uni.createFrom().voidItem();
+    }
+
     if (slaDeadline == null) {
       LOG.debugf("No SLA configured for milestone=%s, skipping timeout job", milestone.getName());
       return Uni.createFrom().voidItem();
@@ -158,20 +174,22 @@ public class MilestoneActivatedEventHandler {
     jobData.put("caseId", caseInstance.getUuid().toString());
     jobData.put("milestoneName", milestone.getName());
 
-    ScheduledJobRequest request =
-        ScheduledJobRequest.builder()
-            .jobId(jobId)
-            .schedule(new FixedAtSchedule(slaDeadline.toEpochMilli()))
-            .jobClass(MilestoneSLATimeoutJob.class)
-            .data(jobData)
-            .build();
-
     return scheduler
-        .schedule(request)
+        .schedule(
+            ScheduledJobRequest.builder()
+                .jobId(jobId)
+                .schedule(new FixedAtSchedule(slaDeadline.toEpochMilli()))
+                .data(jobData))
         .invoke(
             () ->
                 LOG.infof(
                     "Scheduled SLA timeout job for milestone=%s at %s",
                     milestone.getName(), slaDeadline));
+  }
+
+  private boolean isTerminalLifecycleStatus(String lifecycleStatus) {
+    return MilestoneLifecycleStatus.COMPLETED.name().equals(lifecycleStatus)
+        || MilestoneLifecycleStatus.FAILED.name().equals(lifecycleStatus)
+        || MilestoneLifecycleStatus.CANCELLED.name().equals(lifecycleStatus);
   }
 }

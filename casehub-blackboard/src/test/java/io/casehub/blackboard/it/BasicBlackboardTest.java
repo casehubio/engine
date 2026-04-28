@@ -31,7 +31,7 @@ import io.casehub.api.model.Milestone;
 import io.casehub.api.model.Worker;
 import io.casehub.blackboard.plan.PlanItem.PlanItemStatus;
 import io.casehub.blackboard.registry.BlackboardRegistry;
-import io.casehub.engine.internal.engine.cache.CaseInstanceCache;
+import io.casehub.engine.spi.cache.CaseInstanceCache;
 import io.quarkus.test.junit.QuarkusTest;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;

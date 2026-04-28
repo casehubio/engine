@@ -32,7 +32,7 @@ import io.casehub.engine.internal.history.EventStreamType;
 import io.casehub.engine.internal.model.CaseInstance;
 import io.casehub.engine.internal.scheduler.JobIdentifier;
 import io.casehub.engine.spi.EventLogRepository;
-import io.casehub.engine.spi.JobScheduler;
+import io.casehub.engine.spi.scheduler.JobScheduler;
 import io.quarkus.vertx.ConsumeEvent;
 import io.smallrye.mutiny.Uni;
 import io.vertx.mutiny.core.eventbus.EventBus;

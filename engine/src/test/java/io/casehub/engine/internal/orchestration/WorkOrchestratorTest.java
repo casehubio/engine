@@ -29,14 +29,15 @@ import io.casehub.api.model.CaseStatus;
 import io.casehub.api.model.WorkRequest;
 import io.casehub.api.model.WorkResult;
 import io.casehub.api.model.Worker;
-import io.casehub.engine.internal.engine.CaseDefinitionRegistry;
-import io.casehub.engine.internal.engine.cache.CaseInstanceCache;
+import io.casehub.engine.internal.engine.cache.CaseInstanceCacheImpl;
 import io.casehub.engine.internal.event.WorkerScheduleEvent;
 import io.casehub.engine.internal.model.CaseInstance;
 import io.casehub.engine.internal.model.CaseMetaModel;
 import io.casehub.engine.internal.work.PendingWorkRegistry;
+import io.casehub.engine.spi.CaseDefinitionRegistry;
 import io.casehub.engine.spi.CaseInstanceRepository;
 import io.casehub.engine.spi.EventLogRepository;
+import io.casehub.engine.spi.cache.CaseInstanceCache;
 import io.quarkiverse.work.api.AssignmentDecision;
 import io.quarkiverse.work.api.WorkloadProvider;
 import io.quarkiverse.work.core.strategy.LeastLoadedStrategy;
@@ -72,7 +73,7 @@ class WorkOrchestratorTest {
     caseDefinitionRegistry = mock(CaseDefinitionRegistry.class);
     caseInstanceRepository = mock(CaseInstanceRepository.class);
     eventLogRepository = mock(EventLogRepository.class);
-    cache = new CaseInstanceCache();
+    cache = new CaseInstanceCacheImpl();
 
     when(workloadProvider.getActiveWorkCount(any())).thenReturn(0);
     when(caseInstanceRepository.updateStateAndAppendEvent(any(), any()))
@@ -88,8 +89,7 @@ class WorkOrchestratorTest {
             registry,
             caseDefinitionRegistry,
             caseInstanceRepository,
-            eventLogRepository,
-            cache);
+            eventLogRepository);
   }
 
   // ---- happy path -----------------------------------------------------------
