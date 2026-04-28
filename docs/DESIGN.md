@@ -30,7 +30,7 @@ Manages storage and retrieval of domain objects. Uses JPA/Panache for production
 Orchestrates case execution via:
 
 - **`CaseContextChangedEventHandler`** — watches for context changes, evaluates bindings, triggers choreography
-- **`WorkerScheduleEventHandler`** — schedules work in Quartz
+- **`WorkerScheduleEventHandler`** — calls `WorkerContextProvider.buildContext()` then schedules work in Quartz
 - **`WorkflowExecutionCompletedHandler`** — processes work completion, resumes WAITING cases
 - **`EventLog`** — persistent audit trail of all decisions and state changes
 
@@ -77,15 +77,21 @@ casehub-engine is a **hybrid choreography+orchestration engine**. Both models sh
 
 ### Choreography (Binding-Driven)
 
-Context changes trigger binding evaluations. When a binding's condition is met, `CaseContextChangedEventHandler` builds a `WorkerCandidate` list from capable workers, calls `WorkBroker.apply()` with `LeastLoadedStrategy`, and publishes a `WorkerScheduleEvent` for the selected worker. The case remains `RUNNING` throughout.
+Context changes trigger binding evaluations. When a binding's condition is met, `CaseContextChangedEventHandler` builds a `WorkerCandidate` list from capable workers, calls `WorkBroker.apply()` with `LeastLoadedStrategy`, and publishes a `WorkerScheduleEvent` for the selected worker. If no pre-defined workers match a capability, the engine calls `tryProvision()` to attempt dynamic provisioning via the registered `WorkerProvisioner` SPI. The case remains `RUNNING` throughout.
 
 ```
 CaseContext change
   → CaseContextChangedEventHandler.publishWorkerSchedules()
   → WorkBroker.apply(SelectionContext, CREATED, candidates, LeastLoadedStrategy)
-  → AssignmentDecision.assignTo(workerId)
-  → WorkerScheduleEvent → WorkerScheduleEventHandler → Quartz
+  → AssignmentDecision.assignTo(workerId)                [candidates found]
+  → WorkerScheduleEvent → WorkerScheduleEventHandler
+      → WorkerContextProvider.buildContext()             [always called]
+      → Quartz
   → WorkflowExecutionCompleted → CaseContext updated → next binding fires
+
+  → tryProvision(caseInstance, capability)               [no candidates]
+      → WorkerProvisioner.provision() if capability advertised
+      → ProvisioningException caught; binding stays eligible
 ```
 
 **Semantics:**
