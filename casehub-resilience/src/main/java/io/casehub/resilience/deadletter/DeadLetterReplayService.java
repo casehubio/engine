@@ -72,11 +72,7 @@ public class DeadLetterReplayService {
    * entry cannot be replayed.
    */
   public Optional<DeadLetterEntry> replay(String deadLetterId) {
-    DeadLetterEntry entry =
-        deadLetterQueue.query(DeadLetterQuery.all()).stream()
-            .filter(e -> e.deadLetterId().equals(deadLetterId))
-            .findFirst()
-            .orElse(null);
+    DeadLetterEntry entry = deadLetterQueue.findById(deadLetterId);
 
     if (entry == null) {
       LOG.warnf("DLQ replay: entry not found: %s", deadLetterId);

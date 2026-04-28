@@ -64,6 +64,15 @@ public class DeadLetterQueue {
   }
 
   /**
+   * Returns the entry with the given ID, or {@code null} if not found. O(1) lookup.
+   *
+   * @param deadLetterId the entry ID
+   */
+  public DeadLetterEntry findById(String deadLetterId) {
+    return store.get(deadLetterId);
+  }
+
+  /**
    * Marks the entry as {@link DeadLetterStatus#DISCARDED}. No-op if the ID is not found.
    *
    * @param deadLetterId the entry to discard

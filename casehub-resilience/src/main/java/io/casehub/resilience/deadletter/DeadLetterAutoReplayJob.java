@@ -120,9 +120,8 @@ public class DeadLetterAutoReplayJob {
     if (attemptIndex >= delays.size()) return false;
 
     Duration requiredDelay = delays.get(attemptIndex);
-    if (entry.lastReplayAttemptAt() == null) {
-      return requiredDelay.isZero() || requiredDelay.toSeconds() <= 1;
-    }
-    return entry.lastReplayAttemptAt().plus(requiredDelay).isBefore(Instant.now());
+    Instant baseline =
+        entry.lastReplayAttemptAt() != null ? entry.lastReplayAttemptAt() : entry.arrivedAt();
+    return baseline.plus(requiredDelay).isBefore(Instant.now());
   }
 }
