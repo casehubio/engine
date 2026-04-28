@@ -36,6 +36,9 @@ class JpaEventLogRepositoryTest {
 
   @Inject EventLogRepository repository;
 
+  private static final com.fasterxml.jackson.databind.ObjectMapper OBJECT_MAPPER =
+      new com.fasterxml.jackson.databind.ObjectMapper();
+
   @Test
   void append_populatesIdAndSeq() {
     EventLog log = workerScheduled(UUID.randomUUID(), "worker-1");
@@ -185,6 +188,60 @@ class JpaEventLogRepositoryTest {
     assertThat(result).hasSize(1);
     assertThat(result.get(0).getWorkerId()).isEqualTo(workerId);
     assertThat(result.get(0).getEventType()).isEqualTo(CaseHubEventType.WORKER_EXECUTION_FAILED);
+  }
+
+  @Test
+  void findSchedulingEvents_withAfterCutoff_excludesOlderEvents() {
+    UUID caseId = UUID.randomUUID();
+    Instant cutoff = Instant.now().minusSeconds(60);
+
+    EventLog old = new EventLog();
+    old.setCaseId(caseId);
+    old.setWorkerId("w-old");
+    old.setEventType(CaseHubEventType.WORKER_SCHEDULED);
+    old.setStreamType(EventStreamType.CASE);
+    old.setTimestamp(Instant.now().minusSeconds(120));
+    old.setMetadata(OBJECT_MAPPER.createObjectNode().put("inputDataHash", "hash-old"));
+    run(() -> repository.append(old));
+
+    EventLog recent = new EventLog();
+    recent.setCaseId(caseId);
+    recent.setWorkerId("w-old");
+    recent.setEventType(CaseHubEventType.WORKER_SCHEDULED);
+    recent.setStreamType(EventStreamType.CASE);
+    recent.setTimestamp(Instant.now());
+    recent.setMetadata(OBJECT_MAPPER.createObjectNode().put("inputDataHash", "hash-recent"));
+    run(() -> repository.append(recent));
+
+    List<EventLog> result = run(() -> repository.findSchedulingEvents(caseId, "w-old", cutoff));
+    assertThat(result).hasSize(1);
+    assertThat(result.get(0).getTimestamp()).isAfter(cutoff);
+  }
+
+  @Test
+  void findSchedulingEvents_withNullCutoff_returnsAll() {
+    UUID caseId = UUID.randomUUID();
+
+    EventLog e1 = new EventLog();
+    e1.setCaseId(caseId);
+    e1.setWorkerId("w-null");
+    e1.setEventType(CaseHubEventType.WORKER_SCHEDULED);
+    e1.setStreamType(EventStreamType.CASE);
+    e1.setTimestamp(Instant.now().minusSeconds(120));
+    e1.setMetadata(OBJECT_MAPPER.createObjectNode().put("inputDataHash", "h1"));
+    run(() -> repository.append(e1));
+
+    EventLog e2 = new EventLog();
+    e2.setCaseId(caseId);
+    e2.setWorkerId("w-null");
+    e2.setEventType(CaseHubEventType.WORKER_EXECUTION_STARTED);
+    e2.setStreamType(EventStreamType.CASE);
+    e2.setTimestamp(Instant.now());
+    e2.setMetadata(OBJECT_MAPPER.createObjectNode().put("inputDataHash", "h1"));
+    run(() -> repository.append(e2));
+
+    List<EventLog> result = run(() -> repository.findSchedulingEvents(caseId, "w-null", null));
+    assertThat(result).hasSize(2);
   }
 
   private <T> T run(Supplier<Uni<T>> supplier) {
