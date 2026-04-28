@@ -219,7 +219,7 @@ class JpaEventLogRepositoryTest {
   }
 
   @Test
-  void findSchedulingEvents_withNullCutoff_returnsAll() {
+  void findSchedulingEvents_withNullAfter_returnsAll() {
     UUID caseId = UUID.randomUUID();
 
     EventLog e1 = new EventLog();
