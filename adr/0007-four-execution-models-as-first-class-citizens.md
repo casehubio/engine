@@ -2,7 +2,7 @@
 
 **Date:** 2026-04-29
 **Status:** Accepted
-**Refs:** casehubio/engine#200
+**Refs:** casehubio/engine#200 (design), casehubio/engine#201 (implementation epic)
 
 ---
 
