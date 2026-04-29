@@ -168,6 +168,32 @@ class DeadLetterQueueTest {
     assertThat(replayed.inputContext()).containsEntry("documentId", "doc-99");
   }
 
+  // ---- replay attempt tracking -----------------------------------------------
+
+  @Test
+  void newEntry_hasZeroReplayAttempts() {
+    DeadLetterEntry entry = queue.add(UUID.randomUUID(), "worker-1", "hash-1", Map.of());
+    assertThat(entry.replayAttempts()).isZero();
+    assertThat(entry.lastReplayAttemptAt()).isNull();
+  }
+
+  @Test
+  void incrementReplayAttempts_updatesCountAndTimestamp() {
+    DeadLetterEntry entry = queue.add(UUID.randomUUID(), "worker-2", "hash-2", Map.of());
+    Instant before = Instant.now();
+    entry.incrementReplayAttempts();
+    assertThat(entry.replayAttempts()).isEqualTo(1);
+    assertThat(entry.lastReplayAttemptAt()).isAfterOrEqualTo(before);
+  }
+
+  @Test
+  void incrementReplayAttempts_accumulates() {
+    DeadLetterEntry entry = queue.add(UUID.randomUUID(), "worker-3", "hash-3", Map.of());
+    entry.incrementReplayAttempts();
+    entry.incrementReplayAttempts();
+    assertThat(entry.replayAttempts()).isEqualTo(2);
+  }
+
   // ---- size / eviction sanity -----------------------------------------------
 
   @Test
