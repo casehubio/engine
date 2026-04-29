@@ -1,0 +1,105 @@
+/*
+ * Copyright 2026-Present The Case Hub Authors
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ * http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+package io.casehub.engine.internal.work;
+
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.node.ObjectNode;
+import io.casehub.api.model.CaseStatus;
+import io.casehub.api.model.WorkResult;
+import io.casehub.engine.internal.history.CaseHubEventType;
+import io.casehub.engine.internal.history.EventLog;
+import io.casehub.engine.internal.history.EventStreamType;
+import io.casehub.engine.internal.model.CaseInstance;
+import io.casehub.engine.spi.CaseInstanceRepository;
+import io.smallrye.mutiny.Uni;
+import jakarta.enterprise.context.ApplicationScoped;
+import jakarta.inject.Inject;
+import java.time.Instant;
+import java.util.Map;
+import org.jboss.logging.Logger;
+
+/**
+ * Shared logic for transitioning a WAITING case back to RUNNING after the work it was waiting for
+ * has completed. Used by both {@link
+ * io.casehub.engine.internal.engine.handler.WorkflowExecutionCompletedHandler} (Quartz worker path)
+ * and SubCaseCompletionListener (SubCase path). See casehubio/engine#195.
+ */
+@ApplicationScoped
+public class CaseResumptionService {
+
+  private static final Logger LOG = Logger.getLogger(CaseResumptionService.class);
+  private static final ObjectMapper OBJECT_MAPPER = new ObjectMapper();
+
+  @Inject CaseInstanceRepository caseInstanceRepository;
+  @Inject PendingWorkRegistry pendingWorkRegistry;
+
+  /**
+   * Transitions a WAITING case to RUNNING if the given correlationKey matches the case's
+   * waitingForWorkId. Writes the specified EventLog entry type, completes PendingWorkRegistry
+   * futures, and publishes CONTEXT_CHANGED.
+   *
+   * @param caseInstance the parent case (state may be mutated)
+   * @param correlationKey idempotency key or childCaseId.toString()
+   * @param workerId identifier of the completing worker or child case
+   * @param rawOutput output delivered to PendingWorkRegistry futures
+   * @param eventType WORK_COMPLETED for Quartz path, SUBCASE_COMPLETED for SubCase path
+   */
+  public Uni<Void> resumeIfWaiting(
+      CaseInstance caseInstance,
+      String correlationKey,
+      String workerId,
+      Map<String, Object> rawOutput,
+      CaseHubEventType eventType) {
+
+    boolean isWaiting = caseInstance.getState() == CaseStatus.WAITING;
+    boolean isMatchingWork =
+        correlationKey != null && correlationKey.equals(caseInstance.getWaitingForWorkId());
+
+    if (!isWaiting || !isMatchingWork) {
+      completeRegisteredFuture(correlationKey, workerId, rawOutput);
+      return Uni.createFrom().voidItem();
+    }
+
+    caseInstance.setState(CaseStatus.RUNNING);
+    caseInstance.setWaitingForWorkId(null);
+
+    EventLog completedLog = new EventLog();
+    completedLog.setCaseId(caseInstance.getUuid());
+    completedLog.setWorkerId(workerId);
+    completedLog.setStreamType(EventStreamType.CASE);
+    completedLog.setTimestamp(Instant.now());
+    completedLog.setEventType(eventType);
+    ObjectNode meta = OBJECT_MAPPER.createObjectNode();
+    meta.put("correlationKey", correlationKey);
+    completedLog.setMetadata(meta);
+
+    LOG.debugf(
+        "Resuming WAITING case %s → RUNNING (correlationKey=%s eventType=%s)",
+        caseInstance.getUuid(), correlationKey, eventType);
+
+    return caseInstanceRepository
+        .updateStateAndAppendEvent(caseInstance, completedLog)
+        .invoke(() -> completeRegisteredFuture(correlationKey, workerId, rawOutput));
+  }
+
+  private void completeRegisteredFuture(
+      String correlationKey, String workerId, Map<String, Object> output) {
+    if (correlationKey != null && pendingWorkRegistry.hasPending(correlationKey)) {
+      pendingWorkRegistry.complete(
+          correlationKey, WorkResult.completed(correlationKey, output, workerId));
+    }
+  }
+}
