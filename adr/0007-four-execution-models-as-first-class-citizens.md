@@ -92,6 +92,36 @@ The `traceId` on every ledger entry (already populated via `LedgerTraceIdProvide
 
 A sub-workflow that starts a new `CaseInstance` may or may not be treated as a `SubCase` in the CMMN sense — but it must always produce a ledger node that the child case's `CASE_STARTED` can point to. Whether to surface this in the `CasePlanModel` as a `SubCase` element is a separate decision.
 
+## langchain4j-agentic Integration Constraint
+
+**`CaseContext` must be the `AgenticScope`, not a parallel store.**
+
+langchain4j-agentic (`quarkus-langchain4j-agentic`, preview as of 2025) introduces `AgenticScope` — the shared mutable context passed between all agents in an agentic system. Each agent declares an `outputKey` (where it writes its result), and the `Planner` reads the initial scope state, compares it with the desired goal (desired output keys), builds a dependency graph from agent preconditions/postconditions, and determines execution order.
+
+The structural alignment with casehub is direct:
+
+| langchain4j-agentic | casehub-engine |
+|---|---|
+| `AgenticScope` | `CaseContext` |
+| `outputKey` | capability `outputSchema` |
+| Agent preconditions | binding trigger + capability `inputSchema` |
+| Agent postconditions | capability `outputSchema` keys |
+| `Planner` | `LoopControl` / binding evaluator |
+| Goal (desired output keys) | `Goal` expression |
+
+**The correct integration is `CaseContext as AgenticScope`** — a `CaseContextAgenticScope` adapter wraps the case's `CaseContext` and presents it as an `AgenticScope`. Agent writes via `outputKey` flow through the adapter into the case context, producing EventLog entries. The agent invocation sequence that `AgenticScope` tracks automatically is already tracked by casehub's EventLog (WORKER_EXECUTION_STARTED / COMPLETED). One store, one audit trail, zero duplication.
+
+If `AgenticScope` and `CaseContext` are separate stores with a bridge between them, the result is state duplication, synchronisation lag, two audit trails that can diverge, and a leaky abstraction: the developer must understand both models. This must be avoided.
+
+**The Planner and casehub's `LoopControl` are the same computation.** The langchain4j Planner builds a dependency graph from agents' preconditions and postconditions. casehub's binding evaluator builds an execution schedule from capabilities' `inputSchema`/`outputSchema` and trigger conditions. These should be the same thing or explicitly composable — not two separate systems running over the same data.
+
+**Sub-workflow `AgenticScope` must follow the context return-path rule.** When a quarkus-flow workflow creates a sub-workflow `AgenticScope`, that scope must be initialised from the parent `CaseContext` slice (via `inputMapping` JQ) and agent writes within the sub-scope must route to the parent flow's working state (not the root case context), following the return-path tracking described above. Quarkus Flow already does this via its `AgenticScope`-aware Global Context mapping — casehub's integration must not break this invariant.
+
+**References:**
+- [Agentic AI Patterns — Quarkus.io](https://quarkus.io/blog/agentic-ai-patterns/)
+- [Quarkus Flow + LangChain4j concepts](https://docs.quarkiverse.io/quarkus-flow/dev/concepts-agentic-langchain4j.html)
+- [langchain4j Agents tutorial](https://docs.langchain4j.dev/tutorials/agents/)
+
 ## Open Questions
 
 - What is the precise `Plan` data model? (ordered `WorkRequest`s? goal graph? capability list?)
@@ -100,3 +130,6 @@ A sub-workflow that starts a new `CaseInstance` may or may not be treated as a `
 - Rules-based orchestration: should the engine provide a `RulesOrchestrator` wrapper, or is it purely a consumer concern?
 - Should sub-workflow invocations be surfaced as `SubCase` elements in the Blackboard plan model, or tracked only via ledger lineage?
 - Who is responsible for setting `causedByEntryId` on a child case's first ledger entry — the spawning mechanism, the engine, or the ledger capture listener?
+- Should `CaseContextAgenticScope` live in `casehub-engine` (as an integration bridge) or in a separate `casehub-langchain4j` module?
+- Can casehub's `LoopControl` / binding evaluator serve as a langchain4j `Planner` implementation, or do the two models diverge enough to require separate implementations that are composed?
+- When a langchain4j agent tool call dispatches to another casehub worker (via MCP or direct invocation), how does that tool call appear in the casehub EventLog / lineage?
