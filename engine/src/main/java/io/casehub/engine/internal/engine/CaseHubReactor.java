@@ -31,6 +31,7 @@ import io.casehub.engine.internal.model.CaseMetaModel;
 import io.casehub.engine.spi.CaseDefinitionRegistry;
 import io.casehub.engine.spi.CaseInstanceRepository;
 import io.casehub.engine.spi.cache.CaseInstanceCache;
+import io.quarkiverse.ledger.runtime.service.LedgerTraceIdProvider;
 import io.smallrye.mutiny.Uni;
 import io.vertx.mutiny.core.eventbus.EventBus;
 import jakarta.enterprise.context.ApplicationScoped;
@@ -60,6 +61,8 @@ class CaseHubReactor {
 
   @Inject EventBus eventBus;
 
+  @Inject LedgerTraceIdProvider traceIdProvider;
+
   CompletionStage<UUID> startCase(CaseDefinition definition, CaseContext context) {
     return getCaseInstance(definition, context)
         .chain(
@@ -82,10 +85,16 @@ class CaseHubReactor {
   private Uni<CaseInstance> getCaseInstance(CaseDefinition definition, CaseContext context) {
     CaseMetaModel model = caseDefinitionRegistry.getCaseMetaModel(definition);
 
+    String traceId =
+        traceIdProvider
+            .currentTraceId()
+            .filter(id -> !id.isBlank())
+            .orElseGet(() -> UUID.randomUUID().toString());
+
     PropagationContext propagationContext =
         maxDuration
-            .map(budget -> PropagationContext.createRoot(Map.of(), budget))
-            .orElse(PropagationContext.createRoot());
+            .map(budget -> PropagationContext.createRoot(traceId, Map.<String, String>of(), budget))
+            .orElse(PropagationContext.createRoot(traceId));
 
     CaseInstance instance = new CaseInstance();
     instance.setUuid(UUID.randomUUID());

@@ -18,13 +18,22 @@ package io.casehub.engine;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.awaitility.Awaitility.await;
 
+import io.casehub.api.engine.CaseHub;
+import io.casehub.api.model.Binding;
+import io.casehub.api.model.Capability;
 import io.casehub.api.model.CaseChannel;
+import io.casehub.api.model.CaseDefinition;
 import io.casehub.api.model.CaseStatus;
+import io.casehub.api.model.ContextChangeTrigger;
+import io.casehub.api.model.ProvisionContext;
 import io.casehub.api.model.WorkRequest;
 import io.casehub.api.model.WorkResult;
+import io.casehub.api.model.Worker;
 import io.casehub.api.model.WorkerContext;
 import io.casehub.api.spi.CaseChannelProvider;
+import io.casehub.api.spi.ProvisioningException;
 import io.casehub.api.spi.WorkerContextProvider;
+import io.casehub.api.spi.WorkerProvisioner;
 import io.casehub.api.spi.WorkerStatusListener;
 import io.casehub.engine.spi.cache.CaseInstanceCache;
 import io.quarkus.test.junit.QuarkusTest;
@@ -44,14 +53,16 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 /**
- * Verifies that WorkerStatusListener, WorkerContextProvider, and CaseChannelProvider are called at
- * the correct lifecycle points by the engine. Refs casehubio/engine#152.
+ * Verifies that WorkerStatusListener, WorkerContextProvider, CaseChannelProvider, and
+ * WorkerProvisioner are called at the correct lifecycle points by the engine. Refs
+ * casehubio/engine#152, casehubio/engine#191.
  */
 @QuarkusTest
 class SpiWiringIntegrationTest {
 
   @Inject SimpleCaseHubBean simpleCaseHubBean;
   @Inject CaseFaultedStateTest.AlwaysFailingCaseHubBean alwaysFailingBean;
+  @Inject ProvisionerTriggerCaseHubBean provisionerTriggerBean;
   @Inject CaseInstanceCache caseInstanceCache;
   @Inject RecordingWorkerStatusListener statusListener;
   @Inject RecordingCaseChannelProvider channelProvider;
@@ -61,6 +72,7 @@ class SpiWiringIntegrationTest {
     RecordingWorkerStatusListener.reset();
     RecordingWorkerContextProvider.reset();
     RecordingCaseChannelProvider.reset();
+    RecordingWorkerProvisioner.reset();
   }
 
   // ------------------------------------------------------------------ //
@@ -161,6 +173,86 @@ class SpiWiringIntegrationTest {
     assertThat(RecordingCaseChannelProvider.closedCaseIds)
         .as("closeChannel must be called when a case reaches a terminal state")
         .contains(caseId);
+  }
+
+  // ------------------------------------------------------------------ //
+  // WorkerContextProvider                                                 //
+  // ------------------------------------------------------------------ //
+
+  @Test
+  void buildContextCalledBeforeWorkerExecution() {
+    simpleCaseHubBean
+        .startCase(Map.of("documentId", "doc-ctx-1", "status", "processing"))
+        .toCompletableFuture()
+        .join();
+
+    await()
+        .atMost(15, TimeUnit.SECONDS)
+        .untilAsserted(
+            () ->
+                assertThat(RecordingWorkerContextProvider.buildContextCallCount.get())
+                    .as("buildContext must be called at least once before worker execution")
+                    .isPositive());
+  }
+
+  @Test
+  void buildContextReceivesCorrectCapabilityName() {
+    simpleCaseHubBean
+        .startCase(Map.of("documentId", "doc-ctx-2", "status", "processing"))
+        .toCompletableFuture()
+        .join();
+
+    await()
+        .atMost(15, TimeUnit.SECONDS)
+        .untilAsserted(
+            () ->
+                assertThat(RecordingWorkerContextProvider.seenCapabilities)
+                    .as("buildContext must receive the capability name from the binding")
+                    .contains("processDocument"));
+  }
+
+  // ------------------------------------------------------------------ //
+  // WorkerProvisioner                                                    //
+  // ------------------------------------------------------------------ //
+
+  @Test
+  void workerProvisionerCalledWhenNoCandidateWorkerAvailable() {
+    provisionerTriggerBean
+        .startCase(Map.of("taskId", "task-prov-1", "status", "pending"))
+        .toCompletableFuture()
+        .join();
+
+    await()
+        .atMost(10, TimeUnit.SECONDS)
+        .untilAsserted(
+            () ->
+                assertThat(RecordingWorkerProvisioner.lastProvisionContext)
+                    .as(
+                        "provision() must be called when no pre-defined worker matches the capability")
+                    .isNotNull());
+
+    assertThat(RecordingWorkerProvisioner.lastProvisionContext.caseId()).isNotNull();
+    assertThat(RecordingWorkerProvisioner.lastProvisionContext.taskType())
+        .isEqualTo("external-task");
+  }
+
+  @Test
+  void provisioningExceptionCaughtGracefully() {
+    RecordingWorkerProvisioner.shouldThrow.set(true);
+
+    UUID caseId =
+        provisionerTriggerBean
+            .startCase(Map.of("taskId", "task-prov-2", "status", "pending"))
+            .toCompletableFuture()
+            .join();
+
+    await()
+        .atMost(5, TimeUnit.SECONDS)
+        .until(() -> RecordingWorkerProvisioner.lastProvisionContext != null);
+
+    assertThat(caseInstanceCache.get(caseId).getState())
+        .as("case must not fault when WorkerProvisioner throws ProvisioningException")
+        .isNotEqualTo(CaseStatus.FAULTED);
   }
 
   // ------------------------------------------------------------------ //
@@ -265,6 +357,72 @@ class SpiWiringIntegrationTest {
     @Override
     public List<CaseChannel> listChannels(UUID caseId) {
       return openChannels.getOrDefault(caseId, List.of());
+    }
+  }
+
+  @Alternative
+  @Priority(1)
+  @ApplicationScoped
+  public static class RecordingWorkerProvisioner implements WorkerProvisioner {
+
+    static volatile ProvisionContext lastProvisionContext;
+    static final java.util.concurrent.atomic.AtomicBoolean shouldThrow =
+        new java.util.concurrent.atomic.AtomicBoolean(false);
+
+    static void reset() {
+      lastProvisionContext = null;
+      shouldThrow.set(false);
+    }
+
+    @Override
+    public Worker provision(Set<String> capabilities, ProvisionContext context) {
+      lastProvisionContext = context;
+      if (shouldThrow.get()) {
+        throw new ProvisioningException("RecordingWorkerProvisioner: intentional failure for test");
+      }
+      Capability cap =
+          Capability.builder().name("external-task").inputSchema("{}").outputSchema("{}").build();
+      return Worker.builder()
+          .name("provisioned-worker-" + UUID.randomUUID())
+          .capabilities(cap)
+          .function(
+              (java.util.function.Function<Map<String, Object>, Map<String, Object>>) i -> Map.of())
+          .build();
+    }
+
+    @Override
+    public void terminate(String workerId) {}
+
+    @Override
+    public Set<String> getCapabilities() {
+      return Set.of("external-task");
+    }
+  }
+
+  @ApplicationScoped
+  public static class ProvisionerTriggerCaseHubBean extends CaseHub {
+
+    @Override
+    public CaseDefinition getDefinition() {
+      Capability capability =
+          Capability.builder()
+              .name("external-task")
+              .inputSchema("{ taskId: .taskId }")
+              .outputSchema("{ result: . }")
+              .build();
+
+      return CaseDefinition.builder()
+          .namespace("test")
+          .name("Provisioner Trigger Test Case")
+          .version("1.0.0")
+          .capabilities(capability)
+          .bindings(
+              Binding.builder()
+                  .name("trigger-on-pending")
+                  .capability(capability)
+                  .on(new ContextChangeTrigger(".status == \"pending\""))
+                  .build())
+          .build();
     }
   }
 }
