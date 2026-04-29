@@ -58,7 +58,7 @@ public class SubCaseExecutionHandler {
   @Inject EventLogRepository eventLogRepository;
   @Inject PendingWorkRegistry pendingWorkRegistry;
 
-  @ConsumeEvent(value = EventBusAddresses.SUBCASE_SCHEDULE)
+  @ConsumeEvent(value = EventBusAddresses.SUBCASE_SCHEDULE, blocking = true)
   public Uni<Void> onSubCaseSchedule(SubCaseScheduleEvent event) {
     CaseInstance parent = event.parentInstance();
     SubCase subCase = event.subCase();
