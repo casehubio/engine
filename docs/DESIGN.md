@@ -340,6 +340,10 @@ quarkus.hibernate-orm.schema-management.strategy=drop-and-create
 
 # Event bus (Vert.x)
 quarkus.vertx.event-loops=16
+
+# Idempotency window (optional) — limits how far back the EventLog dedup check looks.
+# Absent = permanent dedup (default, safest). Example: 7d
+# casehub.idempotency.window=7d
 ```
 
 See `src/main/resources/application.properties` for all available options.

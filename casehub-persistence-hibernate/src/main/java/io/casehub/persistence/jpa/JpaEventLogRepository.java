@@ -21,6 +21,7 @@ import io.casehub.engine.spi.EventLogRepository;
 import io.quarkus.hibernate.reactive.panache.Panache;
 import io.smallrye.mutiny.Uni;
 import jakarta.enterprise.context.ApplicationScoped;
+import java.time.Instant;
 import java.util.Collection;
 import java.util.List;
 import java.util.Objects;
@@ -66,19 +67,33 @@ public class JpaEventLogRepository extends AbstractJpaRepository implements Even
   }
 
   @Override
-  public Uni<List<EventLog>> findSchedulingEvents(UUID caseId, String workerId) {
+  public Uni<List<EventLog>> findSchedulingEvents(UUID caseId, String workerId, Instant after) {
     return withSafeContext(
         () ->
             Panache.withSession(
-                    () ->
-                        EventLogEntity.<EventLogEntity>find(
+                    () -> {
+                      if (after == null) {
+                        return EventLogEntity.<EventLogEntity>find(
                                 "caseId = ?1 and workerId = ?2 and eventType in (?3, ?4, ?5)",
                                 caseId,
                                 workerId,
                                 CaseHubEventType.WORKER_SCHEDULED,
                                 CaseHubEventType.WORKER_EXECUTION_STARTED,
                                 CaseHubEventType.WORKER_EXECUTION_COMPLETED)
-                            .list())
+                            .list();
+                      } else {
+                        return EventLogEntity.<EventLogEntity>find(
+                                "caseId = ?1 and workerId = ?2 and eventType in (?3, ?4, ?5)"
+                                    + " and timestamp > ?6",
+                                caseId,
+                                workerId,
+                                CaseHubEventType.WORKER_SCHEDULED,
+                                CaseHubEventType.WORKER_EXECUTION_STARTED,
+                                CaseHubEventType.WORKER_EXECUTION_COMPLETED,
+                                after)
+                            .list();
+                      }
+                    })
                 .map(list -> list.stream().map(this::fromEntity).toList()));
   }
 

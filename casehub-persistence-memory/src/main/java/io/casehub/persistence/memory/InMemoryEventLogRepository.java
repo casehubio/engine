@@ -21,6 +21,7 @@ import io.casehub.engine.spi.EventLogRepository;
 import io.smallrye.mutiny.Uni;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.enterprise.inject.Alternative;
+import java.time.Instant;
 import java.util.Collection;
 import java.util.Comparator;
 import java.util.List;
@@ -86,7 +87,7 @@ public class InMemoryEventLogRepository implements EventLogRepository {
   }
 
   @Override
-  public Uni<List<EventLog>> findSchedulingEvents(UUID caseId, String workerId) {
+  public Uni<List<EventLog>> findSchedulingEvents(UUID caseId, String workerId, Instant after) {
     rwLock.readLock().lock();
     try {
       List<EventLog> result =
@@ -97,6 +98,7 @@ public class InMemoryEventLogRepository implements EventLogRepository {
                       e.getEventType() == CaseHubEventType.WORKER_SCHEDULED
                           || e.getEventType() == CaseHubEventType.WORKER_EXECUTION_STARTED
                           || e.getEventType() == CaseHubEventType.WORKER_EXECUTION_COMPLETED)
+              .filter(e -> after == null || e.getTimestamp().isAfter(after))
               .toList();
       return Uni.createFrom().item(result);
     } finally {

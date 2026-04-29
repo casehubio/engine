@@ -17,6 +17,7 @@ package io.casehub.persistence.memory;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import io.casehub.engine.internal.history.CaseHubEventType;
 import io.casehub.engine.internal.history.EventLog;
 import io.casehub.engine.internal.history.EventStreamType;
@@ -208,6 +209,66 @@ class InMemoryEventLogRepositoryTest {
 
     assertThat(a.id).isNotEqualTo(b.id);
     assertThat(a.getSeq()).isNotEqualTo(b.getSeq());
+  }
+
+  @Test
+  void findSchedulingEvents_withAfterCutoff_excludesOlderEvents() {
+    UUID caseId = UUID.randomUUID();
+    Instant cutoff = Instant.now().minusSeconds(60);
+
+    // old event — before cutoff
+    EventLog old = new EventLog();
+    old.setCaseId(caseId);
+    old.setWorkerId("w1");
+    old.setEventType(CaseHubEventType.WORKER_SCHEDULED);
+    old.setStreamType(EventStreamType.CASE);
+    old.setTimestamp(Instant.now().minusSeconds(120));
+    old.setMetadata(new ObjectMapper().createObjectNode().put("inputDataHash", "h-old"));
+    repository.append(old).await().indefinitely();
+
+    // recent event — after cutoff
+    EventLog recent = new EventLog();
+    recent.setCaseId(caseId);
+    recent.setWorkerId("w1");
+    recent.setEventType(CaseHubEventType.WORKER_SCHEDULED);
+    recent.setStreamType(EventStreamType.CASE);
+    recent.setTimestamp(Instant.now());
+    recent.setMetadata(new ObjectMapper().createObjectNode().put("inputDataHash", "h-recent"));
+    repository.append(recent).await().indefinitely();
+
+    List<EventLog> result =
+        repository.findSchedulingEvents(caseId, "w1", cutoff).await().indefinitely();
+
+    assertThat(result).hasSize(1);
+    assertThat(result.get(0).getTimestamp()).isAfter(cutoff);
+  }
+
+  @Test
+  void findSchedulingEvents_withNullAfter_returnsAll() {
+    UUID caseId = UUID.randomUUID();
+
+    EventLog e1 = new EventLog();
+    e1.setCaseId(caseId);
+    e1.setWorkerId("w2");
+    e1.setEventType(CaseHubEventType.WORKER_SCHEDULED);
+    e1.setStreamType(EventStreamType.CASE);
+    e1.setTimestamp(Instant.now().minusSeconds(120));
+    e1.setMetadata(new ObjectMapper().createObjectNode().put("inputDataHash", "h1"));
+    repository.append(e1).await().indefinitely();
+
+    EventLog e2 = new EventLog();
+    e2.setCaseId(caseId);
+    e2.setWorkerId("w2");
+    e2.setEventType(CaseHubEventType.WORKER_EXECUTION_STARTED);
+    e2.setStreamType(EventStreamType.CASE);
+    e2.setTimestamp(Instant.now());
+    e2.setMetadata(new ObjectMapper().createObjectNode().put("inputDataHash", "h1"));
+    repository.append(e2).await().indefinitely();
+
+    List<EventLog> result =
+        repository.findSchedulingEvents(caseId, "w2", null).await().indefinitely();
+
+    assertThat(result).hasSize(2);
   }
 
   // --- Helper ---

@@ -85,4 +85,43 @@ class SubCaseTest {
     plan.addSubCase(sc);
     assertThat(plan.getSubCases()).containsExactly(sc);
   }
+
+  @Test
+  void builder_defaultWaitForCompletion_isTrue() {
+    SubCase sc = SubCase.builder().namespace("ns").name("n").version("1.0").build();
+    assertThat(sc.waitForCompletion()).isTrue();
+  }
+
+  @Test
+  void builder_waitForCompletionFalse_stored() {
+    SubCase sc =
+        SubCase.builder().namespace("ns").name("n").version("1.0").waitForCompletion(false).build();
+    assertThat(sc.waitForCompletion()).isFalse();
+  }
+
+  @Test
+  void builder_inputMapping_defaultIdentity() {
+    SubCase sc = SubCase.builder().namespace("ns").name("n").version("1.0").build();
+    assertThat(sc.inputMapping()).isEqualTo(".");
+  }
+
+  @Test
+  void builder_outputMapping_defaultNull() {
+    SubCase sc = SubCase.builder().namespace("ns").name("n").version("1.0").build();
+    assertThat(sc.outputMapping()).isNull();
+  }
+
+  @Test
+  void builder_customMappings_stored() {
+    SubCase sc =
+        SubCase.builder()
+            .namespace("ns")
+            .name("n")
+            .version("1.0")
+            .inputMapping("{ id: .caseId }")
+            .outputMapping("{ result: .childResult }")
+            .build();
+    assertThat(sc.inputMapping()).isEqualTo("{ id: .caseId }");
+    assertThat(sc.outputMapping()).isEqualTo("{ result: .childResult }");
+  }
 }
