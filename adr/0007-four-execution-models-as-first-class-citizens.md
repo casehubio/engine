@@ -94,33 +94,85 @@ A sub-workflow that starts a new `CaseInstance` may or may not be treated as a `
 
 ## langchain4j-agentic Integration Constraint
 
-**`CaseContext` must be the `AgenticScope`, not a parallel store.**
+**References (read before designing):**
+- [langchain4j Agents — technical reference](https://github.com/langchain4j/langchain4j/blob/main/docs/docs/tutorials/agents.md)
+- [Quarkus Flow ↔ AgenticScope integration](https://github.com/quarkiverse/quarkus-flow/blob/main/docs/modules/ROOT/pages/concepts-agentic-langchain4j.adoc)
 
-langchain4j-agentic (`quarkus-langchain4j-agentic`, preview as of 2025) introduces `AgenticScope` — the shared mutable context passed between all agents in an agentic system. Each agent declares an `outputKey` (where it writes its result), and the `Planner` reads the initial scope state, compares it with the desired goal (desired output keys), builds a dependency graph from agent preconditions/postconditions, and determines execution order.
+### What AgenticScope is
 
-The structural alignment with casehub is direct:
+`langchain4j-agentic` (`quarkus-langchain4j-agentic`) introduces `AgenticScope` — the shared mutable context between all agents in an agentic system. The architecture is two-layered: a `Planner` determines the sequence of agent invocations; the execution layer runs the agents. `AgenticScope` is the shared state between both layers.
+
+Each agent declares:
+- **`outputKey`** — string key (or `TypedKey<T>`) where it writes its result into `AgenticScope`
+- **Preconditions** — input keys it reads (method parameters annotated `@V("key")`)
+- **Postconditions** — the `outputKey` it produces
+
+```java
+CreativeWriter writer = AgenticServices
+    .agentBuilder(CreativeWriter.class)
+    .chatModel(model)
+    .outputKey("story")         // writes to AgenticScope["story"]
+    .build();
+
+// type-safe variant
+public static class StoryOutput implements TypedKey<String> {}
+
+String story = scope.readState(StoryOutput.class);
+```
+
+The `Planner` interface:
+```java
+public interface Planner {
+    default void init(InitPlanningContext context) {}
+    default Action firstAction(PlanningContext context) { return nextAction(context); }
+    Action nextAction(PlanningContext context);
+    // Action is either call(agents) or done()
+}
+```
+
+`PlanningContext` carries current `AgenticScope` state, available agents, and prior execution results. The `GoalOrientedPlanner` builds a dependency graph from agents' preconditions/postconditions automatically — identical in structure to casehub's binding evaluation graph.
+
+`AgentListener` provides non-invasive observation hooks:
+```java
+.listener(new AgentListener() {
+    void beforeAgentInvocation(AgentRequest req) {}
+    void afterAgentInvocation(AgentResponse resp) {}
+    void onAgentInvocationError(AgentInvocationError err) {}
+})
+```
+
+### What Quarkus Flow already does
+
+Quarkus Flow is an AoT compiler: at build time it scans `@RegisterAiService` interfaces and translates agentic annotations (`@SequenceAgent` → linear task sequence, `@ParallelAgent` → fork/join) into CNCF Serverless Workflow definitions. At runtime it executes through the CDI proxy of the annotated method.
+
+Critically: Quarkus Flow treats `AgenticScope` as a first-class citizen by implementing an **AgenticScope-aware workflow data model**. It intercepts the underlying `AgenticScope` created by langchain4j and maps `AgenticScope.state()` directly to its Global Context (the workflow's working data document). Standard workflow tasks and jq expressions can read/write variables directly into the AI's memory scope — zero manual marshaling. The state is one document, not two.
+
+### What this means for casehub
+
+**The structural alignment is exact:**
 
 | langchain4j-agentic | casehub-engine |
 |---|---|
-| `AgenticScope` | `CaseContext` |
-| `outputKey` | capability `outputSchema` |
-| Agent preconditions | binding trigger + capability `inputSchema` |
-| Agent postconditions | capability `outputSchema` keys |
-| `Planner` | `LoopControl` / binding evaluator |
-| Goal (desired output keys) | `Goal` expression |
+| `AgenticScope` (shared mutable state) | `CaseContext` (shared blackboard) |
+| `outputKey` / `TypedKey<T>` | capability `outputSchema` JQ keys |
+| Agent preconditions (`@V("key")` params) | capability `inputSchema` JQ expressions |
+| Agent postconditions (`outputKey`) | capability `outputSchema` keys |
+| `Planner.nextAction(PlanningContext)` | `LoopControl.select(PlanExecutionContext, bindings)` |
+| `GoalOrientedPlanner` dependency graph | binding evaluator execution graph |
+| `Goal` (desired output keys) | `Goal` expression |
+| `AgentListener` hooks | EventLog writer (WORKER_EXECUTION_STARTED/COMPLETED) |
 
-**The correct integration is `CaseContext as AgenticScope`** — a `CaseContextAgenticScope` adapter wraps the case's `CaseContext` and presents it as an `AgenticScope`. Agent writes via `outputKey` flow through the adapter into the case context, producing EventLog entries. The agent invocation sequence that `AgenticScope` tracks automatically is already tracked by casehub's EventLog (WORKER_EXECUTION_STARTED / COMPLETED). One store, one audit trail, zero duplication.
+**The correct relationship is bidirectional mapping with `CaseContext` as the authoritative store** — the same relationship Quarkus Flow has between `AgenticScope` and its Global Context. `AgenticScope.state()` is a live projection of `CaseContext`; all writes flow through `CaseContext` and produce EventLog entries. The casehub integration layer (a `CaseContextAgenticScope` adapter) maintains this projection.
 
-If `AgenticScope` and `CaseContext` are separate stores with a bridge between them, the result is state duplication, synchronisation lag, two audit trails that can diverge, and a leaky abstraction: the developer must understand both models. This must be avoided.
+This is not identity (`CaseContext` does not implement `AgenticScope`) because the two have different internal concerns: `AgenticScope` also tracks agent invocation sequences and error recovery state. The projection is the right abstraction — not the same as two separate stores with a bridge between them.
 
-**The Planner and casehub's `LoopControl` are the same computation.** The langchain4j Planner builds a dependency graph from agents' preconditions and postconditions. casehub's binding evaluator builds an execution schedule from capabilities' `inputSchema`/`outputSchema` and trigger conditions. These should be the same thing or explicitly composable — not two separate systems running over the same data.
+**`AgentListener` is the lineage capture hook.** Every `beforeAgentInvocation` writes `WORKER_EXECUTION_STARTED` to the case EventLog; every `afterAgentInvocation` writes `WORKER_EXECUTION_COMPLETED`. Agent invocations appear in the casehub audit trail. This requires no changes to langchain4j — listeners are standard API.
 
-**Sub-workflow `AgenticScope` must follow the context return-path rule.** When a quarkus-flow workflow creates a sub-workflow `AgenticScope`, that scope must be initialised from the parent `CaseContext` slice (via `inputMapping` JQ) and agent writes within the sub-scope must route to the parent flow's working state (not the root case context), following the return-path tracking described above. Quarkus Flow already does this via its `AgenticScope`-aware Global Context mapping — casehub's integration must not break this invariant.
+**casehub's `LoopControl` can implement `Planner`.** `LoopControl.select(ctx, bindings)` and `Planner.nextAction(PlanningContext)` perform the same computation over the same data. A `CasehubPlanner` implementing the langchain4j `Planner` interface and delegating to `LoopControl` makes casehub's binding evaluator a first-class langchain4j Planner — enabling agentic systems to use casehub's choreography and planning strategies directly.
 
-**References:**
-- [Agentic AI Patterns — Quarkus.io](https://quarkus.io/blog/agentic-ai-patterns/)
-- [Quarkus Flow + LangChain4j concepts](https://docs.quarkiverse.io/quarkus-flow/dev/concepts-agentic-langchain4j.html)
-- [langchain4j Agents tutorial](https://docs.langchain4j.dev/tutorials/agents/)
+**Quarkus Flow's AoT compilation is reusable.** The mapping of `@SequenceAgent` → linear sequence and `@ParallelAgent` → fork/join is already done. casehub's FlowWorker integration should consume these compiled Serverless Workflow definitions, not re-implement the compilation step.
+
+**Sub-workflow `AgenticScope` follows the context return-path rule.** Quarkus Flow's Global Context mapping already enforces this: a sub-workflow's scope is initialised from the parent's working data and writes route back to it. casehub must not break this invariant — the `returnTo` record described above applies to `AgenticScope` boundaries too.
 
 ## Open Questions
 
