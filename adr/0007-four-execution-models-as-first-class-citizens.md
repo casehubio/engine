@@ -51,6 +51,29 @@ A single case may use all four simultaneously. There is no hierarchy: choreograp
 
 **Separate case types per execution model.** Rejected because a single case often needs multiple models for different stages — emergent exploration followed by prescribed execution, or workflow-driven processing with choreographed exception handling.
 
+## Context Propagation Across Execution Model Boundaries
+
+Context propagation across the chain `Case → FlowWorker → Sub-workflow → SubCase` requires distinguishing two orthogonal concerns:
+
+**Data context** flows via explicit mapping expressions at each boundary. The developer controls what data enters and exits each layer:
+```
+CaseContext
+  → inputSchema JQ        → FlowWorker input
+    → flow internal state
+      → sub-workflow inputExpressions  → sub-workflow state
+        → SubCase inputMapping JQ      → child CaseContext
+```
+
+**Propagation context** (`traceId`, `causedByEntryId`, deadline) flows implicitly through every boundary with no developer mapping. Every child unit inherits the parent's `traceId` and sets its own `causedByEntryId` automatically.
+
+**The output (up) path is the hard problem.** When a SubCase completes, its output currently flows back to the **parent case's** `CaseContext` via `outputMapping`. This is correct when the SubCase was spawned from a case-level binding. It is incorrect when the SubCase was spawned from inside a sub-workflow step — in that case the output should flow back into the **sub-workflow's working state** so subsequent steps can use it, not directly into the case context that the sub-workflow has already consumed.
+
+**Consequence: every boundary needs both a down-mapping and an up-mapping**, and the engine must track where completed output should be routed. This is a context return-path problem: each unit of work needs a `returnTo` reference — "when I complete, route my output here." Currently only SubCaseBinding has `outputMapping`; sub-workflow steps have no defined return path for child output.
+
+**Design principle:** the return path must be tracked at spawn time, not inferred at completion time. When a sub-workflow step starts a SubCase, it must record `returnTo: sub-workflow-step-N` alongside `SUBCASE_STARTED`. The completion listener routes output to the correct layer using this record, not by guessing from which case called which.
+
+This principle extends to all four execution models. A plan step that starts a case must record where the output goes. A workflow step that dispatches a worker must record the same. Propagation context wires the lineage automatically; data context routing is always explicit.
+
 ## Lineage Constraint
 
 **All four execution models must produce a complete, traversable causal graph.**
