@@ -67,6 +67,11 @@
             <artifactId>quarkus-ledger</artifactId>
         </dependency>
         <dependency>
+            <groupId>io.quarkiverse.ledger</groupId>
+            <artifactId>quarkus-ledger-api</artifactId>
+        </dependency>
+
+        <dependency>
             <groupId>io.casehub</groupId>
             <artifactId>scheduler-quartz</artifactId>
             <version>${project.version}</version>

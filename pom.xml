@@ -189,6 +189,11 @@
                 <artifactId>quarkus-ledger</artifactId>
                 <version>${version.io.quarkiverse.ledger}</version>
             </dependency>
+            <dependency>
+                <groupId>io.quarkiverse.ledger</groupId>
+                <artifactId>quarkus-ledger-api</artifactId>
+                <version>${version.io.quarkiverse.ledger}</version>
+            </dependency>
         </dependencies>
     </dependencyManagement>
 
