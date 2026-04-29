@@ -51,9 +51,29 @@ A single case may use all four simultaneously. There is no hierarchy: choreograp
 
 **Separate case types per execution model.** Rejected because a single case often needs multiple models for different stages — emergent exploration followed by prescribed execution, or workflow-driven processing with choreographed exception handling.
 
+## Lineage Constraint
+
+**All four execution models must produce a complete, traversable causal graph.**
+
+Every unit of work — case, sub-case, workflow run, sub-workflow invocation, plan step — must produce a `CaseLedgerEntry` node. The `causedByEntryId` field on each node points to the ledger entry that caused it. This creates a directed acyclic graph of causation that is fully traversable regardless of which execution model produced each node.
+
+Current partial state:
+- ✅ Case → SubCase: `SUBCASE_STARTED` ledger entry in parent; child's `CASE_STARTED` ledger entry carries `causedByEntryId` pointing to it
+- ❌ Workflow step → dispatched worker/sub-case: quarkus-flow step emits no ledger entry; lineage breaks at the workflow boundary
+- ❌ Sub-workflow invocation: has no ledger node; cannot serve as `causedByEntryId` anchor
+- ❌ Plan step: no ledger node; cases started by plan steps have no recorded cause
+
+The design implication: the `FlowWorker` ↔ `WorkOrchestrator` bridge (and sub-workflow invocations) must emit ledger entries before dispatching child work. Similarly, `PlanExecutor` must write a ledger entry for each plan step it begins.
+
+The `traceId` on every ledger entry (already populated via `LedgerTraceIdProvider`) provides the distributed tracing connection. The `causedByEntryId` chain provides the causal lineage. Together they answer: *"show me everything that happened, in causal order, across all cases and sub-processes spawned by this workflow run."*
+
+A sub-workflow that starts a new `CaseInstance` may or may not be treated as a `SubCase` in the CMMN sense — but it must always produce a ledger node that the child case's `CASE_STARTED` can point to. Whether to surface this in the `CasePlanModel` as a `SubCase` element is a separate decision.
+
 ## Open Questions
 
 - What is the precise `Plan` data model? (ordered `WorkRequest`s? goal graph? capability list?)
 - Should `PlanExecutor` live in the engine module or in a separate `casehub-planning` module?
 - How does the `FlowWorker` ↔ `WorkOrchestrator` bridge handle case WAITING semantics — does the flow step block, or does the flow suspend and resume?
 - Rules-based orchestration: should the engine provide a `RulesOrchestrator` wrapper, or is it purely a consumer concern?
+- Should sub-workflow invocations be surfaced as `SubCase` elements in the Blackboard plan model, or tracked only via ledger lineage?
+- Who is responsible for setting `causedByEntryId` on a child case's first ledger entry — the spawning mechanism, the engine, or the ledger capture listener?
