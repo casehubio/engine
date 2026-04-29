@@ -43,19 +43,30 @@ If a schema change is needed, update the `@Entity` class. Hibernate recreates th
 
 ## Persistence Architecture
 
-Domain objects and SPI interfaces live in `engine-model` (no Quarkus, no JPA):
+Domain objects and SPI interfaces live in `casehub-engine-common` (no Quarkus, no JPA):
 
-- `engine-model/src/main/java/io/casehub/engine/internal/model/` — `CaseMetaModel`, `CaseInstance`
-- `engine-model/src/main/java/io/casehub/engine/internal/history/` — `EventLog`, `CaseHubEventType`, `EventStreamType`
-- `engine-model/src/main/java/io/casehub/engine/spi/` — `CaseMetaModelRepository`, `CaseInstanceRepository`, `EventLogRepository`
+- `casehub-engine-common/src/main/java/io/casehub/engine/internal/model/` — `CaseMetaModel`, `CaseInstance`
+- `casehub-engine-common/src/main/java/io/casehub/engine/internal/history/` — `EventLog`, `CaseHubEventType`, `EventStreamType`
+- `casehub-engine-common/src/main/java/io/casehub/engine/spi/` — `CaseMetaModelRepository`, `CaseInstanceRepository`, `EventLogRepository`
 
-Both `engine` and both persistence modules depend on `engine-model`. Neither persistence module depends on `engine`.
+Both `engine` and both persistence modules depend on `casehub-engine-common`. Neither persistence module depends on `engine`.
 
 **Production implementation:** `casehub-persistence-hibernate` (JPA/Panache, PostgreSQL)
 **Test implementation:** test-local copies in `engine/src/test/java/io/casehub/persistence/memory/`
 
 Engine tests activate the memory implementations via `quarkus.arc.selected-alternatives`
 in `engine/src/test/resources/application.properties` — no Docker required.
+
+**quarkus-ledger on test classpath:** If `quarkus-ledger` is a transitive dependency (via `engine`), its JPA entities appear in `@QuarkusTest` contexts and require a datasource even in in-memory test suites. Fix: add `quarkus-jdbc-h2` + `quarkus-ledger` as test dependencies, then in the module's test `application.properties`:
+```properties
+quarkus.datasource.db-kind=h2
+quarkus.datasource.jdbc.url=jdbc:h2:mem:testdb;MODE=PostgreSQL;DB_CLOSE_DELAY=-1
+quarkus.datasource.username=sa
+quarkus.datasource.password=
+quarkus.hibernate-orm.schema-management.strategy=drop-and-create
+quarkus.flyway.migrate-at-start=false
+```
+And add a `NoOpLedgerEntryRepository` (`@Alternative @Priority(1) @ApplicationScoped`) to the module's test sources — see `engine/src/test/java/io/casehub/engine/NoOpLedgerEntryRepository.java`. Applied to: `engine`, `casehub-blackboard`, `casehub-resilience`, `casehub-work-adapter`.
 
 Domain objects (`CaseMetaModel`, `CaseInstance`, `EventLog`) are plain POJOs. The `id` field
 is public (`public Long id`) and set by the repository after save.
@@ -73,7 +84,7 @@ Eight interfaces in `api/src/main/java/io/casehub/api/spi/` (four blocking + fou
 - `NoOpWorkerProvisioner`, `NoOpWorkerStatusListener`, `NoOpCaseChannelProvider`, `EmptyWorkerContextProvider`
 - Four `@Alternative` reactive mirrors for optional reactive pipeline use
 
-**SPI placement rule:** Operational SPIs (worker provisioning, lifecycle, channels) go in `api/spi/`; persistence SPIs (`CaseMetaModelRepository`, etc.) go in `engine-model/spi/`. This clarifies intent: operational SPIs are about external system integration; persistence SPIs are about data durability.
+**SPI placement rule:** Operational SPIs (worker provisioning, lifecycle, channels) go in `api/spi/`; persistence SPIs (`CaseMetaModelRepository`, etc.) go in `casehub-engine-common/spi/`. This clarifies intent: operational SPIs are about external system integration; persistence SPIs are about data durability.
 
 To add a new operational SPI: define the interface in `api/spi/`, add a no-op default in `engine/internal/worker/`, add contract tests in `api/src/test/java/io/casehub/api/spi/`, and add engine unit tests in `engine/src/test/java/io/casehub/engine/internal/worker/DefaultWorkerSpiImplementationsTest.java`.
 
