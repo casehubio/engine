@@ -205,6 +205,33 @@ CaseContext (parent case)
 
 At every boundary the bridge is explicit. The return-path rule applies: output from a SubCase spawned inside a FlowWorker step routes to the **WorkflowContext** (the enclosing context), not the root `CaseContext`. Only when the FlowWorker itself completes does its output reach `CaseContext`.
 
+**Context model selection is worker-level, not case-level.** Within a single case, different workers may use different context models:
+
+```
+Case (CaseContext)
+ ├─ Worker A: lambda          → no bridge → CaseContext directly (current behaviour)
+ ├─ Worker B: FlowWorker      → WorkflowContextBridge → WorkflowContext
+ │               └─ (optional) AgenticScopeBridge → AgenticScope
+ ├─ Worker C: lc4j agent      → AgenticScopeBridge → AgenticScope
+ └─ Worker D: rules worker    → WorkingMemoryBridge → working memory
+```
+
+The `ContextBridge` is declared on the `Worker` definition. The engine applies it when that worker is selected — the `CaseDefinition` does not fix the context model. This keeps the design adaptive: a FlowWorker and a plain lambda in the same case each get the context model appropriate to what they do.
+
+A case-level default bridge is also supported as a convenience — useful when a case is entirely composed of one context type (e.g. an agentic pipeline where all workers use `AgenticScope`). Worker-level declaration overrides the case default. A plain lambda worker in an agentic case can opt out and use `CaseContext` directly with no bridge.
+
+The `Worker` model gains an optional `contextBridge` field:
+```java
+Worker.builder()
+    .name("classifier")
+    .capabilities(classifyCapability)
+    .contextBridge(new AgenticScopeBridge())  // null = use CaseContext directly
+    .function(classifyFn)
+    .build();
+```
+
+Null bridge is the default and is backward-compatible with all existing workers. The `WorkerScheduleEventHandler` applies the bridge when scheduling; `WorkerExecutionTask` receives the appropriately prepared context.
+
 **Two improvements casehub should add over Quarkus Flow's current approach:**
 
 1. **Context stack registration.** Quarkus Flow currently has no way to know it's nested inside a casehub SubCase. A `ContextBridge` registration point in casehub allows Quarkus Flow to register itself and the engine to compose the full stack without coupling.
