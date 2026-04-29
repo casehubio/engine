@@ -42,4 +42,6 @@ public final class EventBusAddresses {
   public static final String MILESTONE_SLA_VIOLATED = "casehub.milestone.sla.violated";
 
   public static final String GOAL_REACHED = "casehub.goal.reached";
+
+  public static final String SUBCASE_SCHEDULE = "casehub.subcase.schedule";
 }
