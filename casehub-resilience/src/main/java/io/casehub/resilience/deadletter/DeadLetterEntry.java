@@ -36,6 +36,8 @@ public final class DeadLetterEntry {
   private final Map<String, Object> inputContext;
   private final Instant arrivedAt;
   private volatile DeadLetterStatus status;
+  private volatile int replayAttempts = 0;
+  private volatile Instant lastReplayAttemptAt = null;
 
   DeadLetterEntry(
       String deadLetterId,
@@ -82,5 +84,18 @@ public final class DeadLetterEntry {
 
   void setStatus(DeadLetterStatus status) {
     this.status = status;
+  }
+
+  public int replayAttempts() {
+    return replayAttempts;
+  }
+
+  public Instant lastReplayAttemptAt() {
+    return lastReplayAttemptAt;
+  }
+
+  void incrementReplayAttempts() {
+    replayAttempts++;
+    lastReplayAttemptAt = Instant.now();
   }
 }

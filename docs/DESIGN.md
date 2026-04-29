@@ -365,12 +365,39 @@ TESTCONTAINERS_RYUK_DISABLED=true mvn test -pl engine
 TESTCONTAINERS_RYUK_DISABLED=true mvn test -Dtest=ChoreographySelectionTest
 ```
 
+## Resilience (`casehub-resilience`)
+
+Optional module providing failure handling, conflict resolution, poison-pill detection, and timeout enforcement. Activated on the classpath alongside `engine`.
+
+### Failure and Retry Lifecycle
+
+Worker execution failures are captured as `WORKER_EXECUTION_FAILED` EventLog entries. `PoisonPillWorkerExecutionGuard` detects repeat failures on the same work item and routes them out of the normal execution loop. `BackoffDelayCalculator` computes exponential delays for retry scheduling. `CaseTimeoutEnforcer` monitors running cases and transitions them to `FAULTED` when a configured deadline is exceeded.
+
+When retries are exhausted, `DeadLetterEventHandler` routes the entry to `DeadLetterQueue` with status `PENDING_REVIEW`.
+
+### Dead Letter Queue Replay
+
+When retries are exhausted, `DeadLetterEventHandler` routes the entry to `DeadLetterQueue` (PENDING_REVIEW). Two replay mechanisms are available:
+
+**Explicit replay:** `DeadLetterReplayService.replay(deadLetterId)` recovers the original worker input from the `WORKER_SCHEDULED` EventLog entry and publishes a fresh `WorkerScheduleEvent`. Returns empty if the case is in a terminal state, the EventLog entry is missing, or the case definition cannot be resolved.
+
+**Auto-replay:** `DeadLetterAutoReplayJob` (scheduled, disabled by default). Configuration:
+- `casehub.dlq.auto-replay.enabled` (default: false)
+- `casehub.dlq.auto-replay.interval` (default: PT30M)
+- `casehub.dlq.auto-replay.delays` (default: PT30M,PT2H,PT8H)
+- `casehub.dlq.auto-replay.max-attempts` (default: 3)
+
+Entries that exhaust max-attempts stay PENDING_REVIEW for manual triage.
+
+`DeadLetterEntry` tracks `replayAttempts` and `lastReplayAttemptAt` for eligibility evaluation.
+
 ## Roadmap
 
 **Near term:**
 - ✅ Hybrid choreography+orchestration (Q2 2026)
 - ✅ WAITING state durability (Q2 2026)
 - ✅ Immutable audit ledger (`casehub-ledger`, Q2 2026)
+- ✅ DLQ replay — explicit API and optional auto-replay scheduler (Q2 2026)
 - ✅ Worker Provisioner SPI wiring — all 4 blocking SPIs integrated (Q2 2026)
 - [ ] Human worker integration (Q2/Q3 2026)
 - [ ] Escalation rules and thresholds (Q3 2026)
