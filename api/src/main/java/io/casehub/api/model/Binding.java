@@ -26,6 +26,7 @@ public class Binding {
   private final Trigger on;
   private ExpressionEvaluator when;
   private String conflictResolverStrategy;
+  private SubCase subCase;
 
   public Binding(String name, Capability capability, Trigger on) {
     this.name = name;
@@ -66,6 +67,14 @@ public class Binding {
     return conflictResolverStrategy;
   }
 
+  /**
+   * Returns the SubCase definition for this binding, or null if this binding targets a Capability.
+   * Exactly one of {@code capability} and {@code subCase} is non-null. See casehubio/engine#195.
+   */
+  public SubCase getSubCase() {
+    return subCase;
+  }
+
   public static Builder builder() {
     return new Builder();
   }
@@ -77,6 +86,7 @@ public class Binding {
     private Trigger on;
     private ExpressionEvaluator when;
     private String conflictResolverStrategy;
+    private SubCase subCase;
 
     private Builder() {}
 
@@ -110,15 +120,27 @@ public class Binding {
       return this;
     }
 
+    public Builder subCase(SubCase subCase) {
+      this.subCase = subCase;
+      return this;
+    }
+
     public Binding build() {
-      Binding rule =
-          new Binding(
-              Objects.requireNonNull(name),
-              Objects.requireNonNull(capability),
-              Objects.requireNonNull(on));
-      rule.setWhen(when);
-      rule.setConflictResolverStrategy(conflictResolverStrategy);
-      return rule;
+      Objects.requireNonNull(name);
+      if (capability == null && subCase == null) {
+        throw new IllegalStateException(
+            "Binding '" + name + "' must have either capability or subCase");
+      }
+      if (capability != null && subCase != null) {
+        throw new IllegalStateException(
+            "Binding '" + name + "' cannot have both capability and subCase");
+      }
+      Objects.requireNonNull(on);
+      Binding b = new Binding(name, capability, on);
+      b.setWhen(when);
+      b.setConflictResolverStrategy(conflictResolverStrategy);
+      b.subCase = this.subCase;
+      return b;
     }
   }
 }

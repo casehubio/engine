@@ -15,6 +15,7 @@
  */
 package io.casehub.blackboard.plan;
 
+import io.casehub.api.model.SubCase;
 import io.casehub.blackboard.stage.Stage;
 import java.util.List;
 import java.util.Map;
@@ -101,8 +102,8 @@ public interface CasePlanModel {
 
   <T> Optional<T> get(String key, Class<T> type);
 
-  /** Registers a sub-case to be launched as part of this case's work. See casehubio/engine#76. */
-  void addSubCase(io.casehub.blackboard.stage.SubCase subCase);
+  /** Registers a sub-case to be launched as part of this case's work. See casehubio/engine#195. */
+  void addSubCase(SubCase subCase);
 
-  List<io.casehub.blackboard.stage.SubCase> getSubCases();
+  List<SubCase> getSubCases();
 }

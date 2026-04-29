@@ -13,21 +13,15 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.casehub.blackboard.stage;
+package io.casehub.api.model;
 
-import io.casehub.api.model.CaseStatus;
-
-/**
- * Standard mapping: COMPLETED→COMPLETED, FAULTED→FAULTED, all others→TERMINATED. See
- * casehubio/engine#76.
- */
-public class DefaultSubCaseCompletionStrategy implements SubCaseCompletionStrategy {
-  @Override
-  public ItemStatus mapToStageItemStatus(CaseStatus childCaseStatus) {
-    return switch (childCaseStatus) {
-      case COMPLETED -> ItemStatus.COMPLETED;
-      case FAULTED -> ItemStatus.FAULTED;
-      default -> ItemStatus.TERMINATED;
-    };
+/** Maps a child case terminal state to a stage item completion status. See casehubio/engine#195. */
+public interface SubCaseCompletionStrategy {
+  enum ItemStatus {
+    COMPLETED,
+    FAULTED,
+    TERMINATED
   }
+
+  ItemStatus mapToStageItemStatus(CaseStatus childCaseStatus);
 }
