@@ -39,9 +39,12 @@ import io.vertx.mutiny.core.eventbus.EventBus;
 import io.vertx.mutiny.core.shareddata.Lock;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
+import java.time.Duration;
 import java.time.Instant;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
+import org.eclipse.microprofile.config.inject.ConfigProperty;
 import org.jboss.logging.Logger;
 
 @ApplicationScoped
@@ -61,6 +64,9 @@ public class WorkerScheduleEventHandler {
   @Inject EventBus eventBus;
 
   @Inject EventLogRepository eventLogRepository;
+
+  @ConfigProperty(name = "casehub.idempotency.window")
+  Optional<Duration> idempotencyWindow;
 
   @ConsumeEvent(value = EventBusAddresses.WORKER_SCHEDULE)
   public Uni<Void> onWorkerScheduleEventHandler(WorkerScheduleEvent event) {
@@ -110,8 +116,10 @@ public class WorkerScheduleEventHandler {
       Capability capability,
       Map<String, Object> inputData,
       String inputDataHash) {
+    Instant idempotencyAfter = idempotencyWindow.map(w -> Instant.now().minus(w)).orElse(null);
+
     return eventLogRepository
-        .findSchedulingEvents(instance.getUuid(), worker.getName())
+        .findSchedulingEvents(instance.getUuid(), worker.getName(), idempotencyAfter)
         .map(existing -> decideAction(existing, inputDataHash))
         .chain(action -> executeAction(action, eventLog, instance, worker, capability))
         .chain(eventLogId -> submitIfNeeded(eventLogId, instance, worker, capability, inputData))
