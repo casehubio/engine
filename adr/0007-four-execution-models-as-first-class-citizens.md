@@ -162,9 +162,54 @@ Critically: Quarkus Flow treats `AgenticScope` as a first-class citizen by imple
 | `Goal` (desired output keys) | `Goal` expression |
 | `AgentListener` hooks | EventLog writer (WORKER_EXECUTION_STARTED/COMPLETED) |
 
-**The correct relationship is bidirectional mapping with `CaseContext` as the authoritative store** — the same relationship Quarkus Flow has between `AgenticScope` and its Global Context. `AgenticScope.state()` is a live projection of `CaseContext`; all writes flow through `CaseContext` and produce EventLog entries. The casehub integration layer (a `CaseContextAgenticScope` adapter) maintains this projection.
+**The three contexts are genuinely distinct — none is "the same as" another:**
 
-This is not identity (`CaseContext` does not implement `AgenticScope`) because the two have different internal concerns: `AgenticScope` also tracks agent invocation sequences and error recovery state. The projection is the right abstraction — not the same as two separate stores with a bridge between them.
+- **`CaseContext`** — casehub's append-via-EventLog blackboard. Authoritative, immutable-history record of a case. Always present.
+- **`WorkflowContext`** (Quarkus Flow Global Context) — working data document for a single workflow execution. Live JSON. Scoped to the FlowWorker run. Exists only when a FlowWorker is active.
+- **`AgenticScope`** — langchain4j's internal state for a multi-agent system. Also tracks invocation sequences and error recovery state. Exists only when langchain4j agentic patterns are active.
+
+These have different structure, different lifetimes, different concerns. Conflating any two is a design error.
+
+**Quarkus Flow's mapping approach is correct.** `AgenticScope.state()` ↔ `WorkflowContext` is bidirectional projection — the right relationship between two execution-scoped working state models at the same level of abstraction. `WorkflowContext` → `CaseContext` happens once at FlowWorker completion via outputSchema JQ. This layering must be preserved.
+
+**The required abstraction is a `ContextBridge` protocol** — a composable adapter that each execution model registers. This enables any external context model (AgenticScope, any future AI framework's context, a rules engine's working memory) to integrate with casehub without either model imposing its structure on the other:
+
+```java
+interface ContextBridge<T> {
+    // Down: create this context from the enclosing context's current state
+    T initialise(Object enclosingContext, Map<String, Object> inputMapping);
+    
+    // Optional write-through: when T writes a key, propagate up immediately?
+    void onWrite(String key, Object value, Object enclosingContext);
+    
+    // Up: extract output and merge back into the enclosing context
+    void complete(T context, Object enclosingContext, Map<String, Object> outputMapping);
+}
+```
+
+Implementations: `WorkflowContextBridge` (casehub owns), `AgenticScopeBridge` (Quarkus Flow owns — it already does this internally), `SubCaseBridge` (casehub owns).
+
+**The full three-level chain:**
+
+```
+CaseContext (parent case)
+  ── inputSchema JQ ──▶  WorkflowContext  (FlowWorker)
+                              ◀──▶ AgenticScope  (Quarkus Flow bridge, optional)
+                              ── inputMapping JQ ──▶  SubCase CaseContext
+                                                         ── inputSchema JQ ──▶  WorkflowContext
+                                                                                     ◀──▶ AgenticScope (optional)
+                                                         ◀── outputSchema JQ ──
+                              ◀── outputMapping JQ ── (routes to WorkflowContext, NOT parent CaseContext)
+  ◀── outputSchema JQ ──
+```
+
+At every boundary the bridge is explicit. The return-path rule applies: output from a SubCase spawned inside a FlowWorker step routes to the **WorkflowContext** (the enclosing context), not the root `CaseContext`. Only when the FlowWorker itself completes does its output reach `CaseContext`.
+
+**Two improvements casehub should add over Quarkus Flow's current approach:**
+
+1. **Context stack registration.** Quarkus Flow currently has no way to know it's nested inside a casehub SubCase. A `ContextBridge` registration point in casehub allows Quarkus Flow to register itself and the engine to compose the full stack without coupling.
+
+2. **Selective write-through via `onWrite()`.** Currently WorkflowContext writes reach CaseContext only at FlowWorker completion. For observability, significant intermediate writes (agent outputs, plan steps completing) should optionally produce EventLog entries immediately. The `onWrite()` hook provides this without coupling the write source to casehub.
 
 **`AgentListener` is the lineage capture hook.** Every `beforeAgentInvocation` writes `WORKER_EXECUTION_STARTED` to the case EventLog; every `afterAgentInvocation` writes `WORKER_EXECUTION_COMPLETED`. Agent invocations appear in the casehub audit trail. This requires no changes to langchain4j — listeners are standard API.
 
