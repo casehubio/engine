@@ -23,8 +23,6 @@ import io.casehub.api.model.Milestone;
 import io.casehub.api.model.MilestoneLifecycleStatus;
 import io.casehub.api.model.SlaStartFrom;
 import io.casehub.api.model.SlaStatus;
-import io.casehub.engine.internal.engine.CaseDefinitionRegistry;
-import io.casehub.engine.internal.engine.ExpressionEngineRegistry;
 import io.casehub.engine.internal.event.CaseContextChangedEvent;
 import io.casehub.engine.internal.event.EventBusAddresses;
 import io.casehub.engine.internal.event.MilestoneActivatedEvent;
@@ -33,7 +31,9 @@ import io.casehub.engine.internal.history.CaseHubEventType;
 import io.casehub.engine.internal.history.EventLog;
 import io.casehub.engine.internal.model.CaseInstance;
 import io.casehub.engine.internal.model.CaseMetaModel;
+import io.casehub.engine.spi.CaseDefinitionRegistry;
 import io.casehub.engine.spi.EventLogRepository;
+import io.casehub.engine.spi.ExpressionEngineRegistry;
 import io.quarkus.vertx.ConsumeEvent;
 import io.smallrye.mutiny.Uni;
 import io.vertx.mutiny.core.eventbus.EventBus;
@@ -209,7 +209,10 @@ public class MilestoneLifecycleManager {
               return switch (lastEvent.getEventType()) {
                 case MILESTONE_ACTIVATED -> MilestoneLifecycleStatus.ACTIVE;
                 case MILESTONE_COMPLETED -> MilestoneLifecycleStatus.COMPLETED;
-                case MILESTONE_SLA_VIOLATED -> MilestoneLifecycleStatus.ACTIVE;
+                case MILESTONE_SLA_VIOLATED ->
+                    MilestoneLifecycleStatus
+                        .ACTIVE; // TODO maybe it must be configurable whether SLA violation
+                // deactivates the milestone or not?
                 default -> MilestoneLifecycleStatus.PENDING;
               };
             });

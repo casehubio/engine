@@ -23,8 +23,9 @@ import io.casehub.api.model.CaseDefinition;
 import io.casehub.api.model.Milestone;
 import io.casehub.api.model.MilestoneLifecycleStatus;
 import io.casehub.api.model.SlaStatus;
-import io.casehub.engine.internal.engine.cache.CaseInstanceCache;
 import io.casehub.engine.internal.model.CaseInstance;
+import io.casehub.engine.spi.cache.CaseInstanceCache;
+import io.casehub.engine.spi.recovery.WorkerExecutionRecoveryService;
 import io.quarkus.test.junit.QuarkusTest;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
@@ -43,7 +44,7 @@ class MilestoneLifecycleTest {
   @Inject ConditionalActivationTestBean conditionalActivationBean;
   @Inject SlaIdempotencyTestBean slaIdempotencyBean;
   @Inject CaseInstanceCache caseInstanceCache;
-  @Inject io.casehub.engine.internal.engine.recovery.WorkerExecutionRecoveryService recoveryService;
+  @Inject WorkerExecutionRecoveryService recoveryService;
   @Inject io.casehub.engine.spi.EventLogRepository eventLogRepository;
   @Inject io.vertx.mutiny.core.eventbus.EventBus eventBus;
 

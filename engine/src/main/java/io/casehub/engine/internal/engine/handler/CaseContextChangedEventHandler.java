@@ -42,6 +42,8 @@ import io.casehub.engine.internal.event.MilestoneReachedEvent;
 import io.casehub.engine.internal.event.WorkerScheduleEvent;
 import io.casehub.engine.internal.model.CaseInstance;
 import io.casehub.engine.internal.model.CaseMetaModel;
+import io.casehub.engine.spi.CaseDefinitionRegistry;
+import io.casehub.engine.spi.ExpressionEngineRegistry;
 import io.quarkiverse.work.api.AssignmentDecision;
 import io.quarkiverse.work.api.AssignmentTrigger;
 import io.quarkiverse.work.api.SelectionContext;

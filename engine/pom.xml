@@ -16,7 +16,7 @@
     <dependencies>
         <dependency>
             <groupId>io.casehub</groupId>
-            <artifactId>engine-model</artifactId>
+            <artifactId>casehub-engine-common</artifactId>
             <version>${project.version}</version>
         </dependency>
         <dependency>
@@ -70,6 +70,7 @@
             <groupId>io.casehub</groupId>
             <artifactId>scheduler-quartz</artifactId>
             <version>${project.version}</version>
+            <scope>test</scope>
         </dependency>
         <dependency>
             <groupId>io.quarkus</groupId>

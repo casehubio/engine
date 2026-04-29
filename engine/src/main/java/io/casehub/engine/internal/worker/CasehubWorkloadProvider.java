@@ -15,17 +15,11 @@
  */
 package io.casehub.engine.internal.worker;
 
+import io.casehub.engine.spi.scheduler.WorkerExecutionManager;
 import io.quarkiverse.work.api.WorkloadProvider;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
-import java.util.List;
-import java.util.Set;
 import org.jboss.logging.Logger;
-import org.quartz.JobDetail;
-import org.quartz.JobKey;
-import org.quartz.Scheduler;
-import org.quartz.SchedulerException;
-import org.quartz.impl.matchers.GroupMatcher;
 
 /**
  * Counts active Quartz jobs per worker name by iterating all scheduled job groups and matching the
@@ -39,36 +33,15 @@ public class CasehubWorkloadProvider implements WorkloadProvider {
 
   private static final Logger LOG = Logger.getLogger(CasehubWorkloadProvider.class);
 
-  private final Scheduler scheduler;
+  private final WorkerExecutionManager manager;
 
   @Inject
-  public CasehubWorkloadProvider(Scheduler scheduler) {
-    this.scheduler = scheduler;
+  public CasehubWorkloadProvider(WorkerExecutionManager manager) {
+    this.manager = manager;
   }
 
   @Override
   public int getActiveWorkCount(String workerId) {
-    try {
-      List<String> groups = scheduler.getJobGroupNames();
-      int count = 0;
-      for (String group : groups) {
-        Set<JobKey> keys = scheduler.getJobKeys(GroupMatcher.groupEquals(group));
-        for (JobKey key : keys) {
-          JobDetail detail = scheduler.getJobDetail(key);
-          if (detail != null) {
-            Object workerIdValue = detail.getJobDataMap().get("workerId");
-            if (workerId.equals(workerIdValue)) {
-              count++;
-            }
-          }
-        }
-      }
-      return count;
-    } catch (SchedulerException e) {
-      LOG.warnf(
-          "Failed to count active jobs for worker '%s' — returning 0: %s",
-          workerId, e.getMessage());
-      return 0;
-    }
+    return manager.getActiveWorkCount(workerId);
   }
 }
