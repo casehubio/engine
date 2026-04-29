@@ -108,6 +108,14 @@ public class InMemoryEventLogRepository implements EventLogRepository {
   }
 
   @Override
+  public Uni<List<EventLog>> findByWorkerAndType(String workerId, CaseHubEventType type) {
+    List<EventLog> result =
+        store.values().stream()
+            .filter(e -> workerId.equals(e.getWorkerId()) && e.getEventType() == type)
+            .toList();
+    return Uni.createFrom().item(result);
+  }
+
   public Uni<List<String>> findSubmittedWorkWithoutCompletion() {
     return Uni.createFrom().item(List.of());
   }

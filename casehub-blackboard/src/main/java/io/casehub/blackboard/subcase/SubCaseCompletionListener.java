@@ -15,13 +15,11 @@
  */
 package io.casehub.blackboard.subcase;
 
-import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import io.casehub.api.model.CaseStatus;
 import io.casehub.api.model.DefaultSubCaseCompletionStrategy;
 import io.casehub.api.model.SubCaseCompletionStrategy;
-import io.casehub.engine.internal.engine.cache.CaseInstanceCache;
 import io.casehub.engine.internal.event.CaseLifecycleEvent;
 import io.casehub.engine.internal.history.CaseHubEventType;
 import io.casehub.engine.internal.history.EventLog;
@@ -29,12 +27,12 @@ import io.casehub.engine.internal.history.EventStreamType;
 import io.casehub.engine.internal.model.CaseInstance;
 import io.casehub.engine.internal.work.CaseResumptionService;
 import io.casehub.engine.spi.EventLogRepository;
+import io.casehub.engine.spi.cache.CaseInstanceCache;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.enterprise.event.ObservesAsync;
 import jakarta.inject.Inject;
 import java.time.Duration;
 import java.time.Instant;
-import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 import org.jboss.logging.Logger;
@@ -61,24 +59,13 @@ public class SubCaseCompletionListener {
 
     UUID childCaseId = event.caseId();
 
-    // Find parent SUBCASE_STARTED entry for this child
-    List<EventLog> subcaseStartedList =
-        eventLogRepository
-            .findByTypes(List.of(CaseHubEventType.SUBCASE_STARTED))
-            .await()
-            .atMost(Duration.ofSeconds(10));
-
+    // Find parent case via SUBCASE_STARTED entry (workerId = childCaseId)
     EventLog startedEntry =
-        subcaseStartedList.stream()
-            .filter(
-                e -> {
-                  JsonNode meta = e.getMetadata();
-                  return meta != null
-                      && childCaseId
-                          .toString()
-                          .equals(
-                              meta.has("childCaseId") ? meta.get("childCaseId").asText() : null);
-                })
+        eventLogRepository
+            .findByWorkerAndType(childCaseId.toString(), CaseHubEventType.SUBCASE_STARTED)
+            .await()
+            .atMost(Duration.ofSeconds(10))
+            .stream()
             .findFirst()
             .orElse(null);
 
@@ -144,7 +131,7 @@ public class SubCaseCompletionListener {
             childCaseId.toString(),
             childCaseId.toString(),
             childOutput,
-            CaseHubEventType.SUBCASE_COMPLETED)
+            CaseHubEventType.WORK_COMPLETED)
         .await()
         .atMost(Duration.ofSeconds(10));
   }

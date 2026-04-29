@@ -69,6 +69,13 @@ public interface EventLogRepository {
       UUID caseId, String workerId, CaseHubEventType type);
 
   /**
+   * Find all events matching the given worker and event type across all cases. Used by
+   * SubCaseCompletionListener to locate the parent case from a child case UUID (stored as workerId
+   * in the SUBCASE_STARTED entry).
+   */
+  Uni<List<EventLog>> findByWorkerAndType(String workerId, CaseHubEventType type);
+
+  /**
    * Returns correlation keys (idempotency hashes) for WORK_SUBMITTED events that have no matching
    * WORK_COMPLETED entry. Used by PendingWorkRegistry on startup to re-register futures for
    * in-flight orchestrated work that survived a JVM restart.
