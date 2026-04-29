@@ -40,6 +40,9 @@ import jakarta.inject.Inject;
 import java.time.Duration;
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 import java.util.function.Function;
 import org.jboss.logging.Logger;
 import org.quartz.Job;
@@ -61,6 +64,8 @@ class QuartzWorkerExecutionJob implements Job {
   @Inject WorkerExecutionRecoveryService workerExecutionRecoveryService;
 
   @Inject EventLogRepository eventLogRepository;
+
+  @Inject WorkerExecutionConfig executionConfig;
 
   private static final ObjectMapper OBJECT_MAPPER = new ObjectMapper();
 
@@ -125,17 +130,29 @@ class QuartzWorkerExecutionJob implements Job {
                     new RuntimeException(
                         "Capability not found in case definition: " + capabilityName));
 
+    int timeoutMs = executionConfig.getEffectiveTimeout(worker.getExecutionPolicy().timeoutMs());
+
     Map<String, Object> outputData;
-    if (worker.getFunction().getValue() instanceof Workflow workflow) {
-      outputData = workflow(workflow, inputData);
-    } else if (worker.getFunction().getValue() instanceof Function function) {
-      outputData = function(function, inputData);
-    } else {
-      throw new RuntimeException(
-          "Worker function is not a workflow: "
-              + worker.getName()
-              + " "
-              + worker.getFunction().getValue().getClass().getCanonicalName());
+    try {
+      if (worker.getFunction().getValue() instanceof Workflow workflow) {
+        outputData = workflow(workflow, inputData, timeoutMs);
+      } else if (worker.getFunction().getValue() instanceof Function function) {
+        outputData = function(function, inputData, timeoutMs);
+      } else {
+        throw new RuntimeException(
+            "Worker function is not a workflow: "
+                + worker.getName()
+                + " "
+                + worker.getFunction().getValue().getClass().getCanonicalName());
+      }
+    } catch (TimeoutException e) {
+      throw new JobExecutionException(
+          "Worker execution timed out after " + timeoutMs + "ms: " + worker.getName(), e);
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new JobExecutionException("Worker execution interrupted: " + worker.getName(), e);
+    } catch (ExecutionException e) {
+      throw new JobExecutionException("Worker execution failed: " + worker.getName(), e.getCause());
     }
 
     Map<String, Object> toContextOutputData =
@@ -146,17 +163,34 @@ class QuartzWorkerExecutionJob implements Job {
     eventBus.publish(WORKER_EXECUTION_FINISHED, event);
   }
 
-  private Map<String, Object> workflow(Workflow workflow, Map<String, Object> inputData) {
+  private Map<String, Object> workflow(
+      Workflow workflow, Map<String, Object> inputData, int timeoutMs)
+      throws TimeoutException, InterruptedException, ExecutionException {
     CompletableFuture<WorkflowModel> cf = workflowExecutor.execute(workflow, inputData);
-    WorkflowModel workflowModel = cf.join(); // TODO handle exception + join() in a non-blocking way
+
+    LOG.debugf("Executing workflow with timeout: %d ms", timeoutMs);
+
+    // Use get() with timeout instead of join() to handle timeouts
+    WorkflowModel workflowModel = cf.get(timeoutMs, TimeUnit.MILLISECONDS);
+
     return workflowModel
         .asMap()
         .orElseThrow(() -> new RuntimeException("Failed to convert workflow model to map"));
   }
 
   private Map<String, Object> function(
-      Function<Map<String, Object>, Map<String, Object>> function, Map<String, Object> inputData) {
-    return function.apply(inputData);
+      Function<Map<String, Object>, Map<String, Object>> function,
+      Map<String, Object> inputData,
+      int timeoutMs)
+      throws TimeoutException, InterruptedException, ExecutionException {
+
+    LOG.debugf("Executing function with timeout: %d ms", timeoutMs);
+
+    // Execute function in a separate thread with timeout
+    CompletableFuture<Map<String, Object>> cf =
+        CompletableFuture.supplyAsync(() -> function.apply(inputData));
+
+    return cf.get(timeoutMs, TimeUnit.MILLISECONDS);
   }
 
   private Uni<EventLog> findEventLog(String eventLogId) {
