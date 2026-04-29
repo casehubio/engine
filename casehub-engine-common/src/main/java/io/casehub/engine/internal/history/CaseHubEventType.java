@@ -43,4 +43,7 @@ public enum CaseHubEventType {
   MILESTONE_SLA_VIOLATED,
 
   GOAL_REACHED,
+
+  SUBCASE_STARTED, // child case spawned by a SubCase binding
+  SUBCASE_COMPLETED, // child case reached a terminal state; parent context updated
 }
