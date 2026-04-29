@@ -31,7 +31,7 @@ import io.casehub.engine.internal.model.CaseMetaModel;
 import io.casehub.engine.spi.CaseDefinitionRegistry;
 import io.casehub.engine.spi.CaseInstanceRepository;
 import io.casehub.engine.spi.cache.CaseInstanceCache;
-import io.quarkiverse.ledger.runtime.service.LedgerTraceIdProvider;
+import io.quarkiverse.ledger.api.spi.LedgerTraceIdProvider;
 import io.smallrye.mutiny.Uni;
 import io.vertx.mutiny.core.eventbus.EventBus;
 import jakarta.enterprise.context.ApplicationScoped;
