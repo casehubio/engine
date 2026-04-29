@@ -18,14 +18,17 @@ package io.casehub.blackboard.stage;
 import java.util.Objects;
 
 /**
- * Identifies a child case definition to launch as part of a Stage's work. Data model only — full
- * engine integration in future epic. See casehubio/engine#76.
+ * Identifies a child case definition to launch as part of a Stage's work. SubCase binding wiring:
+ * casehubio/engine#195.
  */
 public class SubCase {
   private final String namespace;
   private final String name;
   private final String version;
   private final SubCaseCompletionStrategy completionStrategy;
+  private final boolean waitForCompletion;
+  private final String inputMapping;
+  private final String outputMapping;
 
   private SubCase(Builder b) {
     this.namespace = Objects.requireNonNull(b.namespace, "namespace");
@@ -35,6 +38,9 @@ public class SubCase {
         b.completionStrategy != null
             ? b.completionStrategy
             : new DefaultSubCaseCompletionStrategy();
+    this.waitForCompletion = b.waitForCompletion;
+    this.inputMapping = b.inputMapping != null ? b.inputMapping : ".";
+    this.outputMapping = b.outputMapping;
   }
 
   public String namespace() {
@@ -53,6 +59,18 @@ public class SubCase {
     return completionStrategy;
   }
 
+  public boolean waitForCompletion() {
+    return waitForCompletion;
+  }
+
+  public String inputMapping() {
+    return inputMapping;
+  }
+
+  public String outputMapping() {
+    return outputMapping;
+  }
+
   public static Builder builder() {
     return new Builder();
   }
@@ -62,6 +80,9 @@ public class SubCase {
     private String name;
     private String version;
     private SubCaseCompletionStrategy completionStrategy;
+    private boolean waitForCompletion = true;
+    private String inputMapping;
+    private String outputMapping;
 
     public Builder namespace(String v) {
       namespace = v;
@@ -80,6 +101,21 @@ public class SubCase {
 
     public Builder completionStrategy(SubCaseCompletionStrategy s) {
       completionStrategy = s;
+      return this;
+    }
+
+    public Builder waitForCompletion(boolean v) {
+      waitForCompletion = v;
+      return this;
+    }
+
+    public Builder inputMapping(String v) {
+      inputMapping = v;
+      return this;
+    }
+
+    public Builder outputMapping(String v) {
+      outputMapping = v;
       return this;
     }
 

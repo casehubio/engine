@@ -88,6 +88,33 @@ public class PropagationContext {
   }
 
   /**
+   * Creates a root context with a caller-supplied trace ID, no inherited attributes, and no budget.
+   * Use when the caller can supply the active OTel trace ID so that case spans are correlatable in
+   * distributed tracing systems.
+   *
+   * @param traceId the trace ID to use (must not be null)
+   */
+  public static PropagationContext createRoot(String traceId) {
+    Objects.requireNonNull(traceId, "traceId must not be null");
+    return new PropagationContext(traceId, Map.of(), null, null);
+  }
+
+  /**
+   * Creates a root context with a caller-supplied trace ID, inherited attributes, and a time
+   * budget. The deadline is computed as {@code now + budget}.
+   *
+   * @param traceId the trace ID to use (must not be null)
+   * @param attributes key-value pairs to carry through the hierarchy
+   * @param budget maximum duration allowed for work under this context
+   */
+  public static PropagationContext createRoot(
+      String traceId, Map<String, String> attributes, Duration budget) {
+    Objects.requireNonNull(traceId, "traceId must not be null");
+    Instant deadline = Instant.now().plus(budget);
+    return new PropagationContext(traceId, attributes, deadline, budget);
+  }
+
+  /**
    * Reconstructs a {@link PropagationContext} from persistence. Used by storage providers to
    * restore context from entity fields.
    *
