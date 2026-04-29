@@ -5,23 +5,23 @@
     <modelVersion>4.0.0</modelVersion>
     <parent>
         <groupId>io.casehub</groupId>
-        <artifactId>parent</artifactId>
+        <artifactId>casehub-engine-parent</artifactId>
         <version>0.2-SNAPSHOT</version>
     </parent>
 
-    <artifactId>casehub-work-adapter</artifactId>
+    <artifactId>casehub-engine-work-adapter</artifactId>
     <name>Case Hub :: Work Adapter</name>
     <description>Bridge between quarkus-work WorkItemLifecycleEvent and CaseHub's blackboard PlanItem lifecycle</description>
 
     <dependencies>
         <dependency>
             <groupId>io.casehub</groupId>
-            <artifactId>casehub-blackboard</artifactId>
+            <artifactId>casehub-engine-blackboard</artifactId>
             <version>${project.version}</version>
         </dependency>
         <dependency>
             <groupId>io.casehub</groupId>
-            <artifactId>engine</artifactId>
+            <artifactId>casehub-engine</artifactId>
             <version>${project.version}</version>
         </dependency>
         <dependency>
@@ -36,7 +36,13 @@
         <!-- Test -->
         <dependency>
             <groupId>io.casehub</groupId>
-            <artifactId>casehub-persistence-memory</artifactId>
+            <artifactId>casehub-engine-persistence-memory</artifactId>
+            <version>${project.version}</version>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>io.casehub</groupId>
+            <artifactId>casehub-engine-scheduler-quartz</artifactId>
             <version>${project.version}</version>
             <scope>test</scope>
         </dependency>

@@ -5,11 +5,11 @@
     <modelVersion>4.0.0</modelVersion>
     <parent>
         <groupId>io.casehub</groupId>
-        <artifactId>parent</artifactId>
+        <artifactId>casehub-engine-parent</artifactId>
         <version>0.2-SNAPSHOT</version>
     </parent>
 
-    <artifactId>scheduler-quartz</artifactId>
+    <artifactId>casehub-engine-scheduler-quartz</artifactId>
     <name>Case Hub :: Scheduler :: Quartz</name>
     <description>Quartz-based implementation of JobScheduler SPI</description>
 

@@ -5,11 +5,11 @@
     <modelVersion>4.0.0</modelVersion>
     <parent>
         <groupId>io.casehub</groupId>
-        <artifactId>parent</artifactId>
+        <artifactId>casehub-engine-parent</artifactId>
         <version>0.2-SNAPSHOT</version>
     </parent>
 
-    <artifactId>casehub-ledger</artifactId>
+    <artifactId>casehub-engine-ledger</artifactId>
     <name>Case Hub :: Ledger</name>
     <description>Optional immutable audit ledger — hash-chained case lifecycle entries via quarkus-ledger</description>
 

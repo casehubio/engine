@@ -5,11 +5,11 @@
     <modelVersion>4.0.0</modelVersion>
     <parent>
         <groupId>io.casehub</groupId>
-        <artifactId>parent</artifactId>
+        <artifactId>casehub-engine-parent</artifactId>
         <version>0.2-SNAPSHOT</version>
     </parent>
 
-    <artifactId>api</artifactId>
+    <artifactId>casehub-engine-api</artifactId>
     <name>Case Hub :: API</name>
     <description>Public API for Case Hub — CaseHub base class, CaseHubDefinition, Workers, Goals, Milestones, and DispatchRules</description>
 
