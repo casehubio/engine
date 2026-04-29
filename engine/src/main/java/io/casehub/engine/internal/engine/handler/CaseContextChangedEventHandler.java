@@ -33,8 +33,6 @@ import io.casehub.api.model.WorkerContext;
 import io.casehub.api.spi.ProvisioningException;
 import io.casehub.api.spi.WorkerContextProvider;
 import io.casehub.api.spi.WorkerProvisioner;
-import io.casehub.engine.internal.engine.CaseDefinitionRegistry;
-import io.casehub.engine.internal.engine.ExpressionEngineRegistry;
 import io.casehub.engine.internal.event.CaseContextChangedEvent;
 import io.casehub.engine.internal.event.EventBusAddresses;
 import io.casehub.engine.internal.event.GoalReachedEvent;

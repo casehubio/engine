@@ -30,8 +30,8 @@ import io.casehub.engine.internal.model.CaseInstance;
 import io.casehub.engine.internal.model.CaseMetaModel;
 import io.casehub.engine.spi.CaseDefinitionRegistry;
 import io.casehub.engine.spi.CaseInstanceRepository;
-import io.quarkiverse.ledger.runtime.service.LedgerTraceIdProvider;
 import io.casehub.engine.spi.cache.CaseInstanceCache;
+import io.quarkiverse.ledger.runtime.service.LedgerTraceIdProvider;
 import io.smallrye.mutiny.Uni;
 import io.vertx.mutiny.core.eventbus.EventBus;
 import jakarta.enterprise.context.ApplicationScoped;
@@ -93,7 +93,7 @@ class CaseHubReactor {
 
     PropagationContext propagationContext =
         maxDuration
-            .map(budget -> PropagationContext.createRoot(traceId, Map.of(), budget))
+            .map(budget -> PropagationContext.createRoot(traceId, Map.<String, String>of(), budget))
             .orElse(PropagationContext.createRoot(traceId));
 
     CaseInstance instance = new CaseInstance();
