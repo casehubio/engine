@@ -15,9 +15,9 @@
  */
 package io.casehub.blackboard.plan;
 
+import io.casehub.api.model.SubCase;
 import io.casehub.blackboard.stage.Stage;
 import io.casehub.blackboard.stage.StageStatus;
-import io.casehub.blackboard.stage.SubCase;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;

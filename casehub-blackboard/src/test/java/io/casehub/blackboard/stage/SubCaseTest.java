@@ -19,6 +19,9 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import io.casehub.api.model.CaseStatus;
+import io.casehub.api.model.DefaultSubCaseCompletionStrategy;
+import io.casehub.api.model.SubCase;
+import io.casehub.api.model.SubCaseCompletionStrategy;
 import io.casehub.blackboard.plan.DefaultCasePlanModel;
 import java.util.UUID;
 import org.junit.jupiter.api.Test;
