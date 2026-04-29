@@ -228,11 +228,10 @@ class ModelBuilderTest {
     }
 
     @Test
-    @DisplayName("null capability throws NullPointerException")
+    @DisplayName("neither capability nor subCase throws IllegalStateException")
     void nullCapability_throws() {
       assertThrows(
-          NullPointerException.class,
-          () -> Binding.builder().name("binding").capability(null).on(trigger).build());
+          IllegalStateException.class, () -> Binding.builder().name("binding").on(trigger).build());
     }
 
     @Test
