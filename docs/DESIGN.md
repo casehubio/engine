@@ -131,6 +131,25 @@ All selection paths converge on `WorkBroker.apply()`:
 - **Input:** `SelectionContext` (workload type, filters), `AssignmentTrigger` (CREATED), `WorkerCandidate` list (capability-filtered workers with load counts), `WorkerSelectionStrategy` (LeastLoadedStrategy)
 - **Output:** `AssignmentDecision` (either `assignTo(workerId)` or `noChange()`)
 
+### SubCaseBinding (casehub-blackboard)
+
+A `Binding` with a `subCase` field (mutually exclusive with `capability`) spawns a child
+`CaseInstance` when its trigger fires.
+
+**Model fields on `SubCase`:**
+- `inputMapping` (JQ object template, e.g. `{ key: .key }`): evaluated against parent context → child initial context
+- `outputMapping` (JQ object template, default null): evaluated against child final context → merged to parent
+- `waitForCompletion` (default true): parent transitions to WAITING; resumes on child terminal
+
+**Engine wiring:**
+- `CaseContextChangedEventHandler` detects `binding.getSubCase() != null` and publishes `SubCaseScheduleEvent` (skips worker selection entirely)
+- `SubCaseExecutionHandler` (casehub-blackboard) consumes the event on a blocking worker thread, spawns child via `CaseHubRuntime`, writes `SUBCASE_STARTED` EventLog
+- `SubCaseCompletionListener` (casehub-blackboard) observes `CaseLifecycleEvent` terminal events, routes child completion back to parent via `CaseResumptionService`
+
+**EventLog entries:** `SUBCASE_STARTED` (on spawn, metadata: childCaseId, waitForCompletion), `SUBCASE_COMPLETED` (on child terminal, metadata: childCaseId, childFinalStatus)
+
+**Circular detection:** child definition matching parent definition is rejected with an error log — parent stays RUNNING.
+
 ### Durability (Orchestration Only)
 
 `PendingWorkRegistry` survives JVM restarts by scanning the EventLog on startup for `WORK_SUBMITTED` events without `WORK_COMPLETED` and re-registering futures. `WorkerExecutionRecoveryService` replays the Quartz jobs; both mechanisms work together to restore in-flight orchestrated work.
