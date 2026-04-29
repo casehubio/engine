@@ -15,9 +15,29 @@
  */
 package io.casehub.api.model;
 
+/**
+ * Execution policy for worker tasks.
+ *
+ * <p>Defines timeout and retry behavior for worker execution.
+ *
+ * <p><b>Timeout:</b> If {@code timeoutMs} is {@code null}, the engine uses the default configured
+ * via {@code casehub.engine.worker.default-timeout-ms} (default: 60000ms). Individual workers can
+ * override this by specifying a non-null {@code timeoutMs} in their ExecutionPolicy.
+ *
+ * <p><b>Retries:</b> Retry policy controls automatic retry behavior on failure. See {@link
+ * RetryPolicy} for details.
+ *
+ * @param timeoutMs worker execution timeout in milliseconds, or {@code null} to use configured
+ *     default
+ * @param retries retry policy for failed executions
+ */
 public record ExecutionPolicy(Integer timeoutMs, RetryPolicy retries) {
 
+  /**
+   * Default execution policy with system default timeout (configured via {@code
+   * casehub.engine.worker.default-timeout-ms}) and default retry policy.
+   */
   public ExecutionPolicy() {
-    this(60000, new RetryPolicy());
+    this(null, new RetryPolicy());
   }
 }
