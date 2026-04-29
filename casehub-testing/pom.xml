@@ -5,23 +5,23 @@
     <modelVersion>4.0.0</modelVersion>
     <parent>
         <groupId>io.casehub</groupId>
-        <artifactId>parent</artifactId>
+        <artifactId>casehub-engine-parent</artifactId>
         <version>0.2-SNAPSHOT</version>
     </parent>
 
-    <artifactId>casehub-testing</artifactId>
+    <artifactId>casehub-engine-testing</artifactId>
     <name>Case Hub :: Testing</name>
     <description>In-memory CaseEngine setup for consumer @QuarkusTest classes — no PostgreSQL, no Docker required</description>
 
     <dependencies>
         <dependency>
             <groupId>io.casehub</groupId>
-            <artifactId>casehub-persistence-memory</artifactId>
+            <artifactId>casehub-engine-persistence-memory</artifactId>
             <version>${project.version}</version>
         </dependency>
         <dependency>
             <groupId>io.casehub</groupId>
-            <artifactId>engine</artifactId>
+            <artifactId>casehub-engine</artifactId>
             <version>${project.version}</version>
         </dependency>
         <dependency>

@@ -5,11 +5,11 @@
     <modelVersion>4.0.0</modelVersion>
     <parent>
         <groupId>io.casehub</groupId>
-        <artifactId>parent</artifactId>
+        <artifactId>casehub-engine-parent</artifactId>
         <version>0.2-SNAPSHOT</version>
     </parent>
 
-    <artifactId>casehub-persistence-memory</artifactId>
+    <artifactId>casehub-engine-persistence-memory</artifactId>
     <name>Case Hub :: Persistence :: Memory</name>
     <description>In-memory SPI implementations for fast unit testing without Docker or PostgreSQL</description>
 

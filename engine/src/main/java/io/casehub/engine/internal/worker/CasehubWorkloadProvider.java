@@ -16,7 +16,7 @@
 package io.casehub.engine.internal.worker;
 
 import io.casehub.engine.spi.scheduler.WorkerExecutionManager;
-import io.quarkiverse.work.api.WorkloadProvider;
+import io.casehub.work.api.WorkloadProvider;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
 import org.jboss.logging.Logger;
@@ -25,8 +25,8 @@ import org.jboss.logging.Logger;
  * Counts active Quartz jobs per worker name by iterating all scheduled job groups and matching the
  * {@code workerId} field in each job's data map.
  *
- * <p>Used by {@link io.quarkiverse.work.core.strategy.LeastLoadedStrategy} to prefer workers with
- * fewer in-flight tasks.
+ * <p>Used by {@link io.casehub.work.core.strategy.LeastLoadedStrategy} to prefer workers with fewer
+ * in-flight tasks.
  */
 @ApplicationScoped
 public class CasehubWorkloadProvider implements WorkloadProvider {

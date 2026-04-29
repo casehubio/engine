@@ -16,7 +16,7 @@
 package io.casehub.ledger.repository;
 
 import io.casehub.ledger.model.CaseLedgerEntry;
-import io.quarkiverse.ledger.runtime.repository.jpa.JpaLedgerEntryRepository;
+import io.casehub.ledger.runtime.repository.jpa.JpaLedgerEntryRepository;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
 import jakarta.persistence.EntityManager;

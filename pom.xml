@@ -3,7 +3,7 @@
          xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
     <modelVersion>4.0.0</modelVersion>
     <groupId>io.casehub</groupId>
-    <artifactId>parent</artifactId>
+    <artifactId>casehub-engine-parent</artifactId>
     <version>0.2-SNAPSHOT</version>
     <packaging>pom</packaging>
 
@@ -66,8 +66,8 @@
         <version.io.serverlessworkflow>7.13.4.Final</version.io.serverlessworkflow>
 
         <!-- casehubio ecosystem dependencies — aligned on same version as this project -->
-        <version.io.quarkiverse.work>0.2-SNAPSHOT</version.io.quarkiverse.work>
-        <version.io.quarkiverse.ledger>0.2-SNAPSHOT</version.io.quarkiverse.ledger>
+        <version.io.casehub>0.2-SNAPSHOT</version.io.casehub>
+        <version.io.casehub.ledger>0.2-SNAPSHOT</version.io.casehub.ledger>
 
         <!-- The root POM is the parent of all published modules and must be deployed
              so downstream resolvers can read the effective POM of api, engine, etc.
@@ -170,29 +170,29 @@
 
             <!-- casehubio ecosystem -->
             <dependency>
-                <groupId>io.quarkiverse.work</groupId>
-                <artifactId>quarkus-work-api</artifactId>
-                <version>${version.io.quarkiverse.work}</version>
+                <groupId>io.casehub</groupId>
+                <artifactId>casehub-work-api</artifactId>
+                <version>${version.io.casehub}</version>
             </dependency>
             <dependency>
-                <groupId>io.quarkiverse.work</groupId>
-                <artifactId>quarkus-work-core</artifactId>
-                <version>${version.io.quarkiverse.work}</version>
+                <groupId>io.casehub</groupId>
+                <artifactId>casehub-work-core</artifactId>
+                <version>${version.io.casehub}</version>
             </dependency>
             <dependency>
-                <groupId>io.quarkiverse.work</groupId>
-                <artifactId>quarkus-work</artifactId>
-                <version>${version.io.quarkiverse.work}</version>
+                <groupId>io.casehub</groupId>
+                <artifactId>casehub-work</artifactId>
+                <version>${version.io.casehub}</version>
             </dependency>
             <dependency>
-                <groupId>io.quarkiverse.ledger</groupId>
-                <artifactId>quarkus-ledger</artifactId>
-                <version>${version.io.quarkiverse.ledger}</version>
+                <groupId>io.casehub</groupId>
+                <artifactId>casehub-ledger</artifactId>
+                <version>${version.io.casehub.ledger}</version>
             </dependency>
             <dependency>
-                <groupId>io.quarkiverse.ledger</groupId>
-                <artifactId>quarkus-ledger-api</artifactId>
-                <version>${version.io.quarkiverse.ledger}</version>
+                <groupId>io.casehub</groupId>
+                <artifactId>casehub-ledger-api</artifactId>
+                <version>${version.io.casehub.ledger}</version>
             </dependency>
         </dependencies>
     </dependencyManagement>

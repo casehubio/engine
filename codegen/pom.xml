@@ -6,11 +6,11 @@
 
     <parent>
         <groupId>io.casehub</groupId>
-        <artifactId>parent</artifactId>
+        <artifactId>casehub-engine-parent</artifactId>
         <version>0.2-SNAPSHOT</version>
     </parent>
 
-    <artifactId>codegen</artifactId>
+    <artifactId>casehub-engine-codegen</artifactId>
     <name>Case Hub :: Code Generator</name>
     <description>Code generation tooling for the Case Hub DSL and schema</description>
 

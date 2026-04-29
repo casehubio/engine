@@ -5,7 +5,7 @@
     <modelVersion>4.0.0</modelVersion>
     <parent>
         <groupId>io.casehub</groupId>
-        <artifactId>parent</artifactId>
+        <artifactId>casehub-engine-parent</artifactId>
         <version>0.2-SNAPSHOT</version>
     </parent>
 
@@ -23,7 +23,7 @@
     <dependencies>
         <dependency>
             <groupId>io.casehub</groupId>
-            <artifactId>api</artifactId>
+            <artifactId>casehub-engine-api</artifactId>
             <version>${project.version}</version>
         </dependency>
         <dependency>

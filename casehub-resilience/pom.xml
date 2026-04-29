@@ -5,23 +5,23 @@
     <modelVersion>4.0.0</modelVersion>
     <parent>
         <groupId>io.casehub</groupId>
-        <artifactId>parent</artifactId>
+        <artifactId>casehub-engine-parent</artifactId>
         <version>0.2-SNAPSHOT</version>
     </parent>
 
-    <artifactId>casehub-resilience</artifactId>
+    <artifactId>casehub-engine-resilience</artifactId>
     <name>Case Hub :: Resilience</name>
     <description>Optional resilience layer — Dead Letter Queue, PoisonPill detection, backoff strategies</description>
 
     <dependencies>
         <dependency>
             <groupId>io.casehub</groupId>
-            <artifactId>api</artifactId>
+            <artifactId>casehub-engine-api</artifactId>
             <version>${project.version}</version>
         </dependency>
         <dependency>
             <groupId>io.casehub</groupId>
-            <artifactId>engine</artifactId>
+            <artifactId>casehub-engine</artifactId>
             <version>${project.version}</version>
         </dependency>
         <dependency>
@@ -42,13 +42,13 @@
         <!-- Test -->
         <dependency>
             <groupId>io.casehub</groupId>
-            <artifactId>scheduler-quartz</artifactId>
+            <artifactId>casehub-engine-scheduler-quartz</artifactId>
             <version>${project.version}</version>
             <scope>test</scope>
         </dependency>
         <dependency>
             <groupId>io.casehub</groupId>
-            <artifactId>casehub-persistence-memory</artifactId>
+            <artifactId>casehub-engine-persistence-memory</artifactId>
             <version>${project.version}</version>
             <scope>test</scope>
         </dependency>
@@ -63,8 +63,8 @@
             <scope>test</scope>
         </dependency>
         <dependency>
-            <groupId>io.quarkiverse.ledger</groupId>
-            <artifactId>quarkus-ledger</artifactId>
+            <groupId>io.casehub</groupId>
+            <artifactId>casehub-ledger</artifactId>
             <scope>test</scope>
         </dependency>
         <dependency>

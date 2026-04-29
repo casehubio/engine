@@ -5,11 +5,11 @@
     <modelVersion>4.0.0</modelVersion>
     <parent>
         <groupId>io.casehub</groupId>
-        <artifactId>parent</artifactId>
+        <artifactId>casehub-engine-parent</artifactId>
         <version>0.2-SNAPSHOT</version>
     </parent>
 
-    <artifactId>engine</artifactId>
+    <artifactId>casehub-engine</artifactId>
     <name>Case Hub :: Engine</name>
     <description>Reactor implementation — event handling, worker scheduling, context management, goal and milestone evaluation</description>
 
@@ -21,12 +21,12 @@
         </dependency>
         <dependency>
             <groupId>io.casehub</groupId>
-            <artifactId>api</artifactId>
+            <artifactId>casehub-engine-api</artifactId>
             <version>${project.version}</version>
         </dependency>
         <dependency>
             <groupId>io.casehub</groupId>
-            <artifactId>schema</artifactId>
+            <artifactId>casehub-engine-schema</artifactId>
             <version>${project.version}</version>
         </dependency>
 
@@ -55,25 +55,25 @@
             <artifactId>zjsonpatch</artifactId>
         </dependency>
         <dependency>
-            <groupId>io.quarkiverse.work</groupId>
-            <artifactId>quarkus-work-api</artifactId>
+            <groupId>io.casehub</groupId>
+            <artifactId>casehub-work-api</artifactId>
         </dependency>
         <dependency>
-            <groupId>io.quarkiverse.work</groupId>
-            <artifactId>quarkus-work-core</artifactId>
+            <groupId>io.casehub</groupId>
+            <artifactId>casehub-work-core</artifactId>
         </dependency>
         <dependency>
-            <groupId>io.quarkiverse.ledger</groupId>
-            <artifactId>quarkus-ledger</artifactId>
+            <groupId>io.casehub</groupId>
+            <artifactId>casehub-ledger</artifactId>
         </dependency>
         <dependency>
-            <groupId>io.quarkiverse.ledger</groupId>
-            <artifactId>quarkus-ledger-api</artifactId>
+            <groupId>io.casehub</groupId>
+            <artifactId>casehub-ledger-api</artifactId>
         </dependency>
 
         <dependency>
             <groupId>io.casehub</groupId>
-            <artifactId>scheduler-quartz</artifactId>
+            <artifactId>casehub-engine-scheduler-quartz</artifactId>
             <version>${project.version}</version>
             <scope>test</scope>
         </dependency>
@@ -182,7 +182,7 @@
             <dependencies>
                 <dependency>
                     <groupId>io.casehub</groupId>
-                    <artifactId>casehub-persistence-hibernate</artifactId>
+                    <artifactId>casehub-engine-persistence-hibernate</artifactId>
                     <version>${project.version}</version>
                     <scope>test</scope>
                 </dependency>
@@ -202,7 +202,7 @@
             <dependencies>
                 <dependency>
                     <groupId>io.casehub</groupId>
-                    <artifactId>casehub-persistence-memory</artifactId>
+                    <artifactId>casehub-engine-persistence-memory</artifactId>
                     <version>${project.version}</version>
                     <scope>test</scope>
                 </dependency>

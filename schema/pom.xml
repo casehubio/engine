@@ -6,11 +6,11 @@
 
     <parent>
         <groupId>io.casehub</groupId>
-        <artifactId>parent</artifactId>
+        <artifactId>casehub-engine-parent</artifactId>
         <version>0.2-SNAPSHOT</version>
     </parent>
 
-    <artifactId>schema</artifactId>
+    <artifactId>casehub-engine-schema</artifactId>
     <name>Case Hub :: Schema</name>
     <description>JSON Schema and generated model classes for declarative YAML case definitions</description>
 
@@ -51,7 +51,7 @@
                 <dependencies>
                     <dependency>
                         <groupId>io.casehub</groupId>
-                        <artifactId>codegen</artifactId>
+                        <artifactId>casehub-engine-codegen</artifactId>
                         <version>${project.version}</version>
                     </dependency>
                 </dependencies>
