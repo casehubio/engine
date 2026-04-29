@@ -138,6 +138,17 @@ public class JpaEventLogRepository extends AbstractJpaRepository implements Even
   }
 
   @Override
+  public Uni<List<EventLog>> findByWorkerAndType(String workerId, CaseHubEventType type) {
+    return withSafeContext(
+        () ->
+            Panache.withSession(
+                    () ->
+                        EventLogEntity.<EventLogEntity>find(
+                                "workerId = ?1 and eventType = ?2", workerId, type)
+                            .list())
+                .map(list -> list.stream().map(this::fromEntity).toList()));
+  }
+
   public Uni<List<String>> findSubmittedWorkWithoutCompletion() {
     return withSafeContext(
         () ->
