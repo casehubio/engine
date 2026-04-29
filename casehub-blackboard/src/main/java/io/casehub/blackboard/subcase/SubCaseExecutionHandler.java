@@ -117,10 +117,9 @@ public class SubCaseExecutionHandler {
       pendingWorkRegistry.register(childCaseId.toString());
       parent.setState(CaseStatus.WAITING);
       parent.setWaitingForWorkId(childCaseId.toString());
-      return eventLogRepository
-          .append(startedLog)
-          .chain(() -> caseInstanceRepository.updateStateAndAppendEvent(parent, startedLog))
-          .replaceWithVoid();
+      // updateStateAndAppendEvent atomically persists state + appends the EventLog — no separate
+      // append needed
+      return caseInstanceRepository.updateStateAndAppendEvent(parent, startedLog).replaceWithVoid();
     } else {
       return eventLogRepository.append(startedLog).replaceWithVoid();
     }

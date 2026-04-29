@@ -100,11 +100,18 @@ public class SubCaseCompletionListener {
     CaseStatus childStatus =
         event.caseStatus() != null ? CaseStatus.valueOf(event.caseStatus()) : CaseStatus.FAULTED;
 
-    // Apply outputMapping to parent context
+    // Apply outputMapping: evaluate against child's final context, merge result into parent
     if (outputMapping != null) {
-      Map<String, Object> mapped = parent.getCaseContext().evalObjectTemplate(outputMapping);
-      if (mapped != null) {
-        mapped.forEach((k, v) -> parent.getCaseContext().set(k, v));
+      CaseInstance child = caseInstanceCache.get(childCaseId);
+      if (child != null) {
+        Map<String, Object> mapped = child.getCaseContext().evalObjectTemplate(outputMapping);
+        if (mapped != null) {
+          mapped.forEach((k, v) -> parent.getCaseContext().set(k, v));
+        }
+      } else {
+        LOG.warnf(
+            "SubCaseCompletionListener: child %s not in cache — outputMapping skipped",
+            childCaseId);
       }
     }
 
