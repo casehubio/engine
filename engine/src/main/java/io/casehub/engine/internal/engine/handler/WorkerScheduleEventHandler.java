@@ -18,7 +18,9 @@ package io.casehub.engine.internal.engine.handler;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.casehub.api.model.Capability;
+import io.casehub.api.model.WorkRequest;
 import io.casehub.api.model.Worker;
+import io.casehub.api.spi.WorkerContextProvider;
 import io.casehub.api.spi.WorkerExecutionGuard;
 import io.casehub.engine.internal.event.EventBusAddresses;
 import io.casehub.engine.internal.event.WorkerRetriesExhaustedEvent;
@@ -54,6 +56,8 @@ public class WorkerScheduleEventHandler {
 
   @Inject WorkerExecutionGuard workerExecutionGuard;
 
+  @Inject WorkerContextProvider workerContextProvider;
+
   @Inject EventBus eventBus;
 
   @Inject EventLogRepository eventLogRepository;
@@ -81,6 +85,9 @@ public class WorkerScheduleEventHandler {
 
     Map<String, Object> inputData =
         instance.getCaseContext().evalObjectTemplate(capability.getInputSchema());
+
+    workerContextProvider.buildContext(
+        worker.getName(), WorkRequest.of(capability.getName(), inputData));
 
     EventLog eventLog = buildEventLog(instance, worker, capability, inputData, inputDataHash);
 

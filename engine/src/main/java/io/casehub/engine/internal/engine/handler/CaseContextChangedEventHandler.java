@@ -16,6 +16,7 @@
 package io.casehub.engine.internal.engine.handler;
 
 import com.fasterxml.jackson.databind.JsonNode;
+import io.casehub.api.context.PropagationContext;
 import io.casehub.api.engine.LoopControl;
 import io.casehub.api.engine.PlanExecutionContext;
 import io.casehub.api.model.Binding;
@@ -25,7 +26,13 @@ import io.casehub.api.model.CaseStatus;
 import io.casehub.api.model.ContextChangeTrigger;
 import io.casehub.api.model.Goal;
 import io.casehub.api.model.Milestone;
+import io.casehub.api.model.ProvisionContext;
+import io.casehub.api.model.WorkRequest;
 import io.casehub.api.model.Worker;
+import io.casehub.api.model.WorkerContext;
+import io.casehub.api.spi.ProvisioningException;
+import io.casehub.api.spi.WorkerContextProvider;
+import io.casehub.api.spi.WorkerProvisioner;
 import io.casehub.engine.internal.event.CaseContextChangedEvent;
 import io.casehub.engine.internal.event.EventBusAddresses;
 import io.casehub.engine.internal.event.GoalReachedEvent;
@@ -49,6 +56,8 @@ import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
+import java.util.Set;
 import org.jboss.logging.Logger;
 
 @ApplicationScoped
@@ -69,6 +78,10 @@ public class CaseContextChangedEventHandler {
   @Inject LeastLoadedStrategy selectionStrategy;
 
   @Inject WorkloadProvider workloadProvider;
+
+  @Inject WorkerProvisioner workerProvisioner;
+
+  @Inject WorkerContextProvider workerContextProvider;
 
   @ConsumeEvent(value = EventBusAddresses.CONTEXT_CHANGED)
   public Uni<Void> onCaseStateContextChangedEventHandler(CaseContextChangedEvent event) {
@@ -193,6 +206,7 @@ public class CaseContextChangedEventHandler {
 
     if (workers == null || workers.isEmpty()) {
       LOG.warnf("No workers defined; cannot schedule capability '%s'", capability.getName());
+      tryProvision(caseInstance, capability);
       return Uni.createFrom().voidItem();
     }
 
@@ -213,6 +227,7 @@ public class CaseContextChangedEventHandler {
       LOG.warnf(
           "No workers match capability '%s' for binding '%s'",
           capability.getName(), binding.getName());
+      tryProvision(caseInstance, capability);
       return Uni.createFrom().voidItem();
     }
 
@@ -267,5 +282,34 @@ public class CaseContextChangedEventHandler {
         new WorkerScheduleEvent(caseInstance, selectedWorker, capability));
 
     return Uni.createFrom().voidItem();
+  }
+
+  private void tryProvision(CaseInstance caseInstance, Capability capability) {
+    Set<String> provisionerCaps = workerProvisioner.getCapabilities();
+    if (!provisionerCaps.contains(capability.getName())) {
+      return;
+    }
+    try {
+      Map<String, Object> inputData =
+          caseInstance.getCaseContext().evalObjectTemplate(capability.getInputSchema());
+      WorkRequest workRequest = WorkRequest.of(capability.getName(), inputData);
+      WorkerContext workerContext = workerContextProvider.buildContext(null, workRequest);
+      ProvisionContext provisionContext =
+          new ProvisionContext(
+              caseInstance.getUuid(),
+              capability.getName(),
+              workerContext,
+              PropagationContext.createRoot());
+      Worker provisioned = workerProvisioner.provision(provisionerCaps, provisionContext);
+      LOG.infof(
+          "WorkerProvisioner provisioned worker '%s' for capability '%s' on case %s",
+          provisioned.getName(), capability.getName(), caseInstance.getUuid());
+    } catch (ProvisioningException e) {
+      LOG.warnf(
+          e,
+          "WorkerProvisioner failed for capability '%s' on case %s — binding remains eligible",
+          capability.getName(),
+          caseInstance.getUuid());
+    }
   }
 }
