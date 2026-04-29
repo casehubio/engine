@@ -37,6 +37,7 @@ import io.casehub.engine.internal.event.CaseContextChangedEvent;
 import io.casehub.engine.internal.event.EventBusAddresses;
 import io.casehub.engine.internal.event.GoalReachedEvent;
 import io.casehub.engine.internal.event.MilestoneReachedEvent;
+import io.casehub.engine.internal.event.SubCaseScheduleEvent;
 import io.casehub.engine.internal.event.WorkerScheduleEvent;
 import io.casehub.engine.internal.model.CaseInstance;
 import io.casehub.engine.internal.model.CaseMetaModel;
@@ -138,8 +139,8 @@ public class CaseContextChangedEventHandler {
         continue;
       }
 
-      if (binding.getCapability() == null) {
-        LOG.warnf("Capability referenced by rule '%s' is null", binding.getName());
+      if (binding.getCapability() == null && binding.getSubCase() == null) {
+        LOG.warnf("Binding '%s' has neither capability nor subCase", binding.getName());
         continue;
       }
 
@@ -203,6 +204,11 @@ public class CaseContextChangedEventHandler {
 
   private Uni<Void> publishWorkerSchedules(
       CaseInstance caseInstance, List<Worker> workers, Binding binding, Capability capability) {
+
+    // SubCase binding — spawn a child case instead of scheduling a worker
+    if (binding.getSubCase() != null) {
+      return publishSubCaseSchedule(caseInstance, binding);
+    }
 
     if (workers == null || workers.isEmpty()) {
       LOG.warnf("No workers defined; cannot schedule capability '%s'", capability.getName());
@@ -311,5 +317,25 @@ public class CaseContextChangedEventHandler {
           capability.getName(),
           caseInstance.getUuid());
     }
+  }
+
+  private Uni<Void> publishSubCaseSchedule(CaseInstance caseInstance, Binding binding) {
+    io.casehub.api.model.SubCase subCase = binding.getSubCase();
+    Map<String, Object> childContext =
+        caseInstance.getCaseContext().evalObjectTemplate(subCase.inputMapping());
+
+    LOG.infof(
+        "Publishing SubCaseScheduleEvent: parentCaseId=%s subCase=%s/%s/%s waitForCompletion=%s",
+        caseInstance.getUuid(),
+        subCase.namespace(),
+        subCase.name(),
+        subCase.version(),
+        subCase.waitForCompletion());
+
+    eventBus.publish(
+        EventBusAddresses.SUBCASE_SCHEDULE,
+        new SubCaseScheduleEvent(caseInstance, subCase, childContext));
+
+    return Uni.createFrom().voidItem();
   }
 }
