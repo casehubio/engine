@@ -39,6 +39,14 @@ nb-configuration.xml
 # Local environment
 .env
 
+# Leaked build artifacts (class files, JAR manifests, properties)
+/io/
+/META-INF/
+/application.properties
+
+# Claude workflow docs
+docs/superpowers/
+
 # Plugin directory
 /.quarkus/cli/plugins/
 # TLS Certificates

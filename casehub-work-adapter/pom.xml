@@ -11,7 +11,7 @@
 
     <artifactId>casehub-engine-work-adapter</artifactId>
     <name>Case Hub :: Work Adapter</name>
-    <description>Bridge between quarkus-work WorkItemLifecycleEvent and CaseHub's blackboard PlanItem lifecycle</description>
+    <description>Bridge between casehub-work WorkItemLifecycleEvent and CaseHub's blackboard PlanItem lifecycle</description>
 
     <dependencies>
         <dependency>
