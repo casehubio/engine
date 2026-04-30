@@ -175,6 +175,29 @@ class SpiWiringIntegrationTest {
         .contains(caseId);
   }
 
+  @Test
+  void commandDispatchedToChannelWhenWorkerScheduled() {
+    simpleCaseHubBean
+        .startCase(Map.of("documentId", "doc-cmd-1", "status", "processing"))
+        .toCompletableFuture()
+        .join();
+
+    await()
+        .atMost(15, TimeUnit.SECONDS)
+        .untilAsserted(
+            () ->
+                assertThat(RecordingCaseChannelProvider.postedContents)
+                    .as("postToChannel must be called with a COMMAND when a worker is scheduled")
+                    .anyMatch(c -> c.contains("\"type\":\"COMMAND\"")));
+
+    assertThat(RecordingCaseChannelProvider.postedContents)
+        .as("COMMAND must include the capability name")
+        .anyMatch(c -> c.contains("processDocument"));
+    assertThat(RecordingCaseChannelProvider.postedFroms)
+        .as("COMMAND sender must identify casehub-engine as the orchestrator")
+        .anyMatch(f -> f.startsWith("casehub-engine:orchestrator"));
+  }
+
   // ------------------------------------------------------------------ //
   // WorkerContextProvider                                                 //
   // ------------------------------------------------------------------ //
@@ -321,12 +344,15 @@ class SpiWiringIntegrationTest {
 
     static final Set<UUID> openedCaseIds = ConcurrentHashMap.newKeySet();
     static final Set<UUID> closedCaseIds = ConcurrentHashMap.newKeySet();
-    // NOT thread-safe — only used within a single case's lifecycle
+    static final List<String> postedContents = new CopyOnWriteArrayList<>();
+    static final List<String> postedFroms = new CopyOnWriteArrayList<>();
     private final Map<UUID, List<CaseChannel>> openChannels = new ConcurrentHashMap<>();
 
     static void reset() {
       openedCaseIds.clear();
       closedCaseIds.clear();
+      postedContents.clear();
+      postedFroms.clear();
     }
 
     @Override
@@ -339,7 +365,10 @@ class SpiWiringIntegrationTest {
     }
 
     @Override
-    public void postToChannel(CaseChannel channel, String from, String content) {}
+    public void postToChannel(CaseChannel channel, String from, String content) {
+      postedFroms.add(from);
+      postedContents.add(content);
+    }
 
     @Override
     public void closeChannel(CaseChannel channel) {
