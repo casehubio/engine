@@ -35,7 +35,7 @@ Lifecycle handlers fire `CaseLifecycleEvent` via `Event.fireAsync()` after their
 
 ### Audit Ledger (`casehub-ledger`, optional)
 
-An optional module that writes an immutable, hash-chained audit record for every significant case lifecycle transition. Depends on `engine-model` (for `CaseLifecycleEvent`) and `quarkus-ledger` — no dependency on the `engine` module itself.
+An optional module that writes an immutable, hash-chained audit record for every significant case lifecycle transition. Depends on `engine-model` (for `CaseLifecycleEvent`) and `casehub-ledger` — no dependency on the `engine` module itself.
 
 | Class | Role |
 |---|---|
@@ -43,7 +43,7 @@ An optional module that writes an immutable, hash-chained audit record for every
 | `CaseLedgerEntryRepository` | Extends `JpaLedgerEntryRepository`; `@ApplicationScoped` activates it as the CDI `LedgerEntryRepository` bean |
 | `CaseLedgerEventCapture` | `@ObservesAsync CaseLifecycleEvent` — writes entry in its own `@Transactional` block on a managed executor thread |
 
-**Flyway migration:** V2000 (`case_ledger_entry` table + FK to `ledger_entry`). V1000–V1004 are reserved by quarkus-ledger.
+**Flyway migration:** V2000 (`case_ledger_entry` table + FK to `ledger_entry`). V1000–V1004 are reserved by casehub-ledger.
 
 **Observed transitions:**
 
@@ -437,6 +437,6 @@ Entries that exhaust max-attempts stay PENDING_REVIEW for manual triage.
 - **ADR-0003** — Work/WorkItem/Task naming hierarchy
 - **casehubio/engine#121** — Original design discussion (closed by ADR-0003)
 - **casehubio/engine#131** — WorkBroker integration epic
-- **casehubio/engine#145** — quarkus-ledger integration epic
+- **casehubio/engine#145** — casehub-ledger integration epic
 - **casehubio/engine#191** — Worker Provisioner SPI wiring
-- **mdproctor/quarkus-ledger#39** — CaseLedgerEntry tracking issue
+- **mdproctor/casehub-ledger#39** — CaseLedgerEntry tracking issue

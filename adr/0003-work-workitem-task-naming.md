@@ -10,15 +10,15 @@ class with a `WorkerSelectionStrategy` SPI and a `TaskScheduler` for routing
 work to workers. As part of the migration to casehub-engine, these concepts
 must be re-implemented. In parallel, casehub-engine and quarkus-workitems
 independently designed the same worker-selection SPI and aligned on a shared
-`quarkus-work-api` library — which uses `WorkBroker`, `WorkerSelectionStrategy`,
+`casehub-work-api` library — which uses `WorkBroker`, `WorkerSelectionStrategy`,
 and `WorkerCandidate` as its canonical names. Issue #121 captured this design
 using `TaskBroker` as a working name. This ADR closes that open naming
 decision: casehub-core's `TaskBroker` is not ported; `WorkBroker` from
-quarkus-work-api is adopted as its replacement.
+casehub-work-api is adopted as its replacement.
 
 ## Decision Drivers
 
-* `quarkus-work-api` already uses `Work`-prefixed names — adopting them
+* `casehub-work-api` already uses `Work`-prefixed names — adopting them
   directly eliminates any translation layer between casehub-engine and the
   shared SPI
 * `WorkItem` has well-understood human-inbox connotations (Jira, Azure DevOps)
@@ -30,23 +30,23 @@ quarkus-work-api is adopted as its replacement.
 ## Considered Options
 
 * **Option A — `Work` + `WorkItem` + `Task`**: three-level hierarchy, aligned
-  with quarkus-work-api
+  with casehub-work-api
 * **Option B — Unified `WorkItem`**: everything is a WorkItem; automated tasks
   are `AutomatedWorkItem`, human tasks are `HumanWorkItem`
 * **Option C — Introduce `TaskBroker`**: use the working name from #121;
-  accept mismatch with quarkus-work-api
+  accept mismatch with casehub-work-api
 
 ## Decision Outcome
 
-Chosen option: **Option A**, because it maps exactly onto the quarkus-work-api
+Chosen option: **Option A**, because it maps exactly onto the casehub-work-api
 naming already agreed with treblereel, and gives each term a precise,
 non-overlapping meaning.
 
 ### Positive Consequences
 
-* `WorkBroker` from `quarkus-work-core` replaces casehub-core's `TaskBroker`
+* `WorkBroker` from `casehub-work-core` replaces casehub-core's `TaskBroker`
   with no port required — the shared SPI is the implementation
-* casehub-core's `WorkerSelectionStrategy` maps directly to quarkus-work-api's
+* casehub-core's `WorkerSelectionStrategy` maps directly to casehub-work-api's
   `WorkerSelectionStrategy` — same interface, aligned name
 * `WorkItem` retains its human-inbox specialisation in the WorkItems module
 * `Task` is reserved for sub-steps within a `Work` unit — unambiguous scope
@@ -63,7 +63,7 @@ non-overlapping meaning.
 
 ### Option A — `Work` + `WorkItem` + `Task`
 
-* ✅ Zero translation layer against quarkus-work-api
+* ✅ Zero translation layer against casehub-work-api
 * ✅ `WorkItem` retains its precise human-inbox meaning
 * ✅ `Task` is unambiguous at sub-step level
 * ❌ `Work` as a top-level noun needs explicit documentation
@@ -72,16 +72,16 @@ non-overlapping meaning.
 
 * ✅ Single concept for everything assignable
 * ❌ Conflicts with established tooling connotations
-* ❌ Mismatches quarkus-work-api — requires a translation layer
+* ❌ Mismatches casehub-work-api — requires a translation layer
 
 ### Option C — Introduce `TaskBroker`
 
 * ✅ Consistent with #121 working name
-* ❌ Permanent mismatch with quarkus-work-api
+* ❌ Permanent mismatch with casehub-work-api
 * ❌ Introduces debt from day one; would require renaming later
 
 ## Links
 
 * casehubio/engine#121 — open design issue whose naming decision this ADR closes
-* `io.quarkiverse.work:quarkus-work-api` — shared SPI whose naming this ADR adopts
+* `io.casehub:casehub-work-api` — shared SPI whose naming this ADR adopts
 * ADR-0001, ADR-0002 — prior casehub-engine decisions (blackboard series)
