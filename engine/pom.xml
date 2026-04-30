@@ -55,12 +55,12 @@
             <artifactId>zjsonpatch</artifactId>
         </dependency>
         <dependency>
-            <groupId>io.quarkiverse.work</groupId>
-            <artifactId>quarkus-work-api</artifactId>
+            <groupId>io.casehub</groupId>
+            <artifactId>casehub-work-api</artifactId>
         </dependency>
         <dependency>
-            <groupId>io.quarkiverse.work</groupId>
-            <artifactId>quarkus-work-core</artifactId>
+            <groupId>io.casehub</groupId>
+            <artifactId>casehub-work-core</artifactId>
         </dependency>
         <dependency>
             <groupId>io.casehub</groupId>

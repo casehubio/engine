@@ -25,8 +25,8 @@
             <version>${project.version}</version>
         </dependency>
         <dependency>
-            <groupId>io.quarkiverse.work</groupId>
-            <artifactId>quarkus-work</artifactId>
+            <groupId>io.casehub</groupId>
+            <artifactId>casehub-work</artifactId>
         </dependency>
         <dependency>
             <groupId>io.quarkus</groupId>
@@ -53,9 +53,9 @@
             <scope>test</scope>
         </dependency>
         <dependency>
-            <groupId>io.quarkiverse.work</groupId>
-            <artifactId>quarkus-work-testing</artifactId>
-            <version>${version.io.quarkiverse.work}</version>
+            <groupId>io.casehub</groupId>
+            <artifactId>casehub-work-testing</artifactId>
+            <version>${version.io.casehub}</version>
             <scope>test</scope>
         </dependency>
         <dependency>

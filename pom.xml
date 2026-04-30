@@ -66,7 +66,7 @@
         <version.io.serverlessworkflow>7.13.4.Final</version.io.serverlessworkflow>
 
         <!-- casehubio ecosystem dependencies — aligned on same version as this project -->
-        <version.io.quarkiverse.work>0.2-SNAPSHOT</version.io.quarkiverse.work>
+        <version.io.casehub>0.2-SNAPSHOT</version.io.casehub>
         <version.io.casehub.ledger>0.2-SNAPSHOT</version.io.casehub.ledger>
 
         <!-- The root POM is the parent of all published modules and must be deployed
@@ -170,19 +170,19 @@
 
             <!-- casehubio ecosystem -->
             <dependency>
-                <groupId>io.quarkiverse.work</groupId>
-                <artifactId>quarkus-work-api</artifactId>
-                <version>${version.io.quarkiverse.work}</version>
+                <groupId>io.casehub</groupId>
+                <artifactId>casehub-work-api</artifactId>
+                <version>${version.io.casehub}</version>
             </dependency>
             <dependency>
-                <groupId>io.quarkiverse.work</groupId>
-                <artifactId>quarkus-work-core</artifactId>
-                <version>${version.io.quarkiverse.work}</version>
+                <groupId>io.casehub</groupId>
+                <artifactId>casehub-work-core</artifactId>
+                <version>${version.io.casehub}</version>
             </dependency>
             <dependency>
-                <groupId>io.quarkiverse.work</groupId>
-                <artifactId>quarkus-work</artifactId>
-                <version>${version.io.quarkiverse.work}</version>
+                <groupId>io.casehub</groupId>
+                <artifactId>casehub-work</artifactId>
+                <version>${version.io.casehub}</version>
             </dependency>
             <dependency>
                 <groupId>io.casehub</groupId>
