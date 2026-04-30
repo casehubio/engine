@@ -17,9 +17,9 @@ https://raw.githubusercontent.com/casehubio/casehub-parent/main/docs/repos/caseh
 ```
 
 **Other repo deep-dives** (fetch the relevant ones when your implementation touches their domain):
-- quarkus-ledger: `https://raw.githubusercontent.com/casehubio/casehub-parent/main/docs/repos/quarkus-ledger.md`
-- quarkus-work: `https://raw.githubusercontent.com/casehubio/casehub-parent/main/docs/repos/quarkus-work.md`
-- quarkus-qhorus: `https://raw.githubusercontent.com/casehubio/casehub-parent/main/docs/repos/quarkus-qhorus.md`
+- casehub-ledger: `https://raw.githubusercontent.com/casehubio/casehub-parent/main/docs/repos/casehub-ledger.md`
+- casehub-work: `https://raw.githubusercontent.com/casehubio/casehub-parent/main/docs/repos/casehub-work.md`
+- casehub-qhorus: `https://raw.githubusercontent.com/casehubio/casehub-parent/main/docs/repos/casehub-qhorus.md`
 - claudony: `https://raw.githubusercontent.com/casehubio/casehub-parent/main/docs/repos/claudony.md`
 - casehub-connectors: `https://raw.githubusercontent.com/casehubio/casehub-parent/main/docs/repos/casehub-connectors.md`
 
@@ -57,7 +57,7 @@ Both `engine` and both persistence modules depend on `casehub-engine-common`. Ne
 Engine tests activate the memory implementations via `quarkus.arc.selected-alternatives`
 in `engine/src/test/resources/application.properties` — no Docker required.
 
-**quarkus-ledger on test classpath:** If `quarkus-ledger` is a transitive dependency (via `engine`), its JPA entities appear in `@QuarkusTest` contexts and require a datasource even in in-memory test suites. Fix: add `quarkus-jdbc-h2` + `quarkus-ledger` as test dependencies, then in the module's test `application.properties`:
+**casehub-ledger on test classpath:** If `casehub-ledger` is a transitive dependency (via `engine`), its JPA entities appear in `@QuarkusTest` contexts and require a datasource even in in-memory test suites. Fix: add `quarkus-jdbc-h2` + `casehub-ledger` as test dependencies, then in the module's test `application.properties`:
 ```properties
 quarkus.datasource.db-kind=h2
 quarkus.datasource.jdbc.url=jdbc:h2:mem:testdb;MODE=PostgreSQL;DB_CLOSE_DELAY=-1
@@ -138,22 +138,22 @@ All casehubio projects align on these conventions:
 **GitHub Packages — dependency resolution:** Root `pom.xml` has `<repositories>` with `id=github` pointing to `https://maven.pkg.github.com/casehubio/*`. CI uses `server-id: github` + `GITHUB_TOKEN` in `actions/setup-java`.
 
 **Cross-project dependency versions** are properties in root `pom.xml`:
-- `version.io.quarkiverse.work` — quarkus-work-api and quarkus-work-core (`0.2-SNAPSHOT`)
-- `version.io.quarkiverse.ledger` — quarkus-ledger (`0.2-SNAPSHOT`)
+- `version.io.casehub.work` — casehub-work-api and casehub-work-core (`0.2-SNAPSHOT`)
+- `version.io.casehub.ledger` — casehub-ledger (`0.2-SNAPSHOT`)
 
-Submodule poms reference `${version.io.quarkiverse.work}` etc. — no hardcoded versions.
+Submodule poms reference `${version.io.casehub.work}` etc. — no hardcoded versions.
 
 **Publishing:** `maven.deploy.skip=false` is the default in root `pom.xml` properties — the root parent POM (`io.casehub:parent`) IS published to GitHub Packages. Downstream consumers need it to resolve the effective POM of child artifacts (`api`, `engine`, etc.). Modules that should not be published override with `<maven.deploy.skip>true</maven.deploy.skip>` in their own `<properties>`.
 
 ## casehub-work-adapter Module
 
-Bridges quarkus-work `WorkItemLifecycleEvent` CDI events to CaseHub `PlanItem` transitions via `BlackboardRegistry`. Choreography path only — fires `CONTEXT_CHANGED` for engine re-evaluation.
+Bridges casehub-work `WorkItemLifecycleEvent` CDI events to CaseHub `PlanItem` transitions via `BlackboardRegistry`. Choreography path only — fires `CONTEXT_CHANGED` for engine re-evaluation.
 
-**Test setup** (when depending on `quarkus-work` full module):
-- Add `quarkus-work-testing` test dep — provides `@Alternative @Priority` in-memory WorkItem stores
-- Add `quarkus-jdbc-h2` test dep — quarkus-work JPA entities require a datasource even in tests
+**Test setup** (when depending on `casehub-work` full module):
+- Add `casehub-work-testing` test dep — provides `@Alternative @Priority` in-memory WorkItem stores
+- Add `quarkus-jdbc-h2` test dep — casehub-work JPA entities require a datasource even in tests
 - Use `quarkus.arc.selected-alternatives` to activate `casehub-persistence-memory` repos
-- Add `@Alternative @Priority(1)` static inner class stub for `WorkloadProvider` — quarkus-work ships `JpaWorkloadProvider` which clashes with `CasehubWorkloadProvider` from the engine
+- Add `@Alternative @Priority(1)` static inner class stub for `WorkloadProvider` — casehub-work ships `JpaWorkloadProvider` which clashes with `CasehubWorkloadProvider` from the engine
 - Set `quarkus.quartz.store-type=ram` and `quarkus.hibernate-orm.schema-management.strategy=drop-and-create`
 
 `callerRef` format: `case:{caseId}/pi:{planItemId}` — use `CallerRef.encode()` / `CallerRef.parse()`.
