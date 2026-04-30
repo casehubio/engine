@@ -18,8 +18,10 @@ package io.casehub.engine.internal.engine.handler;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.casehub.api.model.Capability;
+import io.casehub.api.model.CaseChannel;
 import io.casehub.api.model.WorkRequest;
 import io.casehub.api.model.Worker;
+import io.casehub.api.spi.CaseChannelProvider;
 import io.casehub.api.spi.WorkerContextProvider;
 import io.casehub.api.spi.WorkerExecutionGuard;
 import io.casehub.engine.internal.event.EventBusAddresses;
@@ -60,6 +62,8 @@ public class WorkerScheduleEventHandler {
   @Inject WorkerExecutionGuard workerExecutionGuard;
 
   @Inject WorkerContextProvider workerContextProvider;
+
+  @Inject CaseChannelProvider caseChannelProvider;
 
   @Inject EventBus eventBus;
 
@@ -191,7 +195,34 @@ public class WorkerScheduleEventHandler {
     if (eventLogId == null) {
       return Uni.createFrom().voidItem();
     }
-    return workflowExecutionManager.submit(eventLogId, instance, worker, capability, inputData);
+    return workflowExecutionManager
+        .submit(eventLogId, instance, worker, capability, inputData)
+        .invoke(() -> dispatchCommand(instance, worker, capability, inputData, eventLogId));
+  }
+
+  private void dispatchCommand(
+      CaseInstance instance,
+      Worker worker,
+      Capability capability,
+      Map<String, Object> inputData,
+      Long eventLogId) {
+    CaseChannel channel =
+        caseChannelProvider.openChannel(instance.getUuid(), "worker:" + worker.getName());
+    Map<String, Object> command =
+        Map.of(
+            "type",
+            "COMMAND",
+            "capability",
+            capability.getName(),
+            "correlationId",
+            String.valueOf(eventLogId),
+            "input",
+            inputData);
+    caseChannelProvider.postToChannel(
+        channel, "casehub-engine:orchestrator", OBJECT_MAPPER.valueToTree(command).toString());
+    LOG.debugf(
+        "COMMAND dispatched: caseId=%s worker=%s capability=%s correlationId=%d",
+        instance.getUuid(), worker.getName(), capability.getName(), eventLogId);
   }
 
   private ScheduleAction decideAction(List<EventLog> existingEvents, String executionIdempotency) {
