@@ -30,13 +30,13 @@ jobs:
           server-password: GITHUB_TOKEN
 
       - name: Build and test (PR or fork push)
-        if: github.event_name == 'pull_request' || (github.event_name == 'push' && github.repository != 'casehubio/casehub-engine')
+        if: github.event_name == 'pull_request' || (github.event_name == 'push' && github.repository != 'casehubio/engine')
         run: mvn --batch-mode verify
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Build, test and publish (upstream main)
-        if: github.event_name == 'push' && github.repository == 'casehubio/casehub-engine'
+        if: github.event_name == 'push' && github.repository == 'casehubio/engine'
         run: mvn --batch-mode deploy
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
