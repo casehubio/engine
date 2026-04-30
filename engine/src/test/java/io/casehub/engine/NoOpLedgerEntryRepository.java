@@ -15,9 +15,9 @@
  */
 package io.casehub.engine;
 
-import io.quarkiverse.ledger.runtime.model.LedgerAttestation;
-import io.quarkiverse.ledger.runtime.model.LedgerEntry;
-import io.quarkiverse.ledger.runtime.repository.LedgerEntryRepository;
+import io.casehub.ledger.runtime.model.LedgerAttestation;
+import io.casehub.ledger.runtime.model.LedgerEntry;
+import io.casehub.ledger.runtime.repository.LedgerEntryRepository;
 import jakarta.annotation.Priority;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.enterprise.inject.Alternative;
@@ -29,7 +29,7 @@ import java.util.Set;
 import java.util.UUID;
 
 /**
- * No-op LedgerEntryRepository for engine tests. quarkus-ledger is on the engine classpath (for
+ * No-op LedgerEntryRepository for engine tests. casehub-ledger is on the engine classpath (for
  * LedgerTraceIdProvider) but its JPA-backed beans require a LedgerEntryRepository that doesn't
  * exist in the in-memory test profile. This stub satisfies the dependency.
  */

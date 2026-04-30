@@ -11,7 +11,7 @@
 
     <artifactId>casehub-engine-ledger</artifactId>
     <name>Case Hub :: Ledger</name>
-    <description>Optional immutable audit ledger — hash-chained case lifecycle entries via quarkus-ledger</description>
+    <description>Optional immutable audit ledger — hash-chained case lifecycle entries via casehub-ledger</description>
 
     <properties>
         <maven.deploy.skip>false</maven.deploy.skip>
@@ -26,8 +26,8 @@
         </dependency>
 
         <dependency>
-            <groupId>io.quarkiverse.ledger</groupId>
-            <artifactId>quarkus-ledger</artifactId>
+            <groupId>io.casehub</groupId>
+            <artifactId>casehub-ledger</artifactId>
         </dependency>
 
         <!-- CDI + JPA (blocking) for EntityManager -->

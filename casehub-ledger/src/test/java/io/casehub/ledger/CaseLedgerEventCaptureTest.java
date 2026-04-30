@@ -18,11 +18,11 @@ package io.casehub.ledger;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.casehub.engine.internal.event.CaseLifecycleEvent;
+import io.casehub.ledger.api.model.ActorType;
+import io.casehub.ledger.api.model.LedgerEntryType;
 import io.casehub.ledger.model.CaseLedgerEntry;
 import io.casehub.ledger.repository.CaseLedgerEntryRepository;
-import io.quarkiverse.ledger.api.model.ActorType;
-import io.quarkiverse.ledger.api.model.LedgerEntryType;
-import io.quarkiverse.ledger.runtime.service.LedgerVerificationService;
+import io.casehub.ledger.runtime.service.LedgerVerificationService;
 import io.quarkus.test.junit.QuarkusTest;
 import jakarta.enterprise.event.Event;
 import jakarta.inject.Inject;
@@ -198,7 +198,7 @@ class CaseLedgerEventCaptureTest {
             () -> {
               final List<CaseLedgerEntry> entries = repository.findByCaseId(caseId);
               assertThat(entries).hasSize(1);
-              // digest is set when quarkus.ledger.hash-chain.enabled=true (default)
+              // digest is set when casehub.ledger.hash-chain.enabled=true (default)
               assertThat(entries.get(0).digest).isNotNull().isNotEmpty();
             });
   }
