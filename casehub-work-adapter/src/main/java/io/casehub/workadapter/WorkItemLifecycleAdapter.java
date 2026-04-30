@@ -39,7 +39,7 @@ import org.jboss.logging.Logger;
  *
  * <p>Choreography path: the engine's binding evaluator picks up the next step automatically once
  * the PlanItem status changes and the context-changed signal arrives. Refs
- * casehubio/quarkus-work#136.
+ * casehubio/work#136.
  *
  * <p>Only processes events whose {@code callerRef} matches the CaseHub format {@code
  * case:{caseId}/pi:{planItemId}} — other WorkItems are ignored.

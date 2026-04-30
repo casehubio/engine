@@ -26,7 +26,7 @@ import java.util.regex.Pattern;
  * <p>Format: {@code case:{caseId}/pi:{planItemId}}
  *
  * <p>CaseHub owns the semantics of this opaque string — quarkus-work stores it unchanged on the
- * WorkItem and echoes it back in every WorkItemLifecycleEvent. Refs casehubio/quarkus-work#136.
+ * WorkItem and echoes it back in every WorkItemLifecycleEvent. Refs casehubio/work#136.
  */
 public record CallerRef(UUID caseId, String planItemId) {
 
