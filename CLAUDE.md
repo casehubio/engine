@@ -97,10 +97,13 @@ To add a new operational SPI: define the interface in `api/spi/`, add a no-op de
 | `WorkerStatusListener.onWorkerStalled` | `WorkerRetriesExhaustedEventHandler` | All retries exhausted |
 | `CaseChannelProvider.openChannel` | `CaseStartedEventHandler` | Case starts |
 | `CaseChannelProvider.closeChannel` | `CaseStatusChangedHandler` | Case reaches terminal state |
-| `WorkerContextProvider.buildContext` | `WorkerScheduleEventHandler` | Before Quartz job is submitted |
+| `WorkerContextProvider.buildContext` | `WorkerScheduleEventHandler` | Before Quartz job is submitted (timing contract) |
+| `WorkerContextProvider.buildContext` + `WorkerExecutionContext.set` | `QuartzWorkerExecutionJob` | Immediately before worker function — sets thread-local with channels |
 | `WorkerProvisioner.provision` | `CaseContextChangedEventHandler.tryProvision` | No pre-defined workers match capability |
 
 `WorkerProvisioner.provision()` is called only when `workerProvisioner.getCapabilities()` contains the required capability. `ProvisioningException` is caught and logged; the binding stays eligible for the next context-change tick. The no-op default returns empty capabilities, so it is never called unless a real provisioner is wired in.
+
+`WorkerExecutionContext.current()` returns the active `WorkerContext` (including `channels`) inside a worker's function body. Cleared in a `finally` block after the function returns.
 
 **To test SPI wiring:** use `@Alternative @Priority(1) @ApplicationScoped` static inner classes in `@QuarkusTest` with `static` recording fields reset in `@BeforeEach`. This activates the recording bean globally across the test suite without Mockito. See `SpiWiringIntegrationTest` for the pattern. To test provisioner wiring, define a `CaseHub` subclass with a capability binding and no workers — the engine will fall through to `tryProvision()`.
 
@@ -144,6 +147,14 @@ All casehubio projects align on these conventions:
 Submodule poms reference `${version.io.casehub.work}` etc. — no hardcoded versions.
 
 **Publishing:** `maven.deploy.skip=false` is the default in root `pom.xml` properties — the root parent POM (`io.casehub:parent`) IS published to GitHub Packages. Downstream consumers need it to resolve the effective POM of child artifacts (`api`, `engine`, etc.). Modules that should not be published override with `<maven.deploy.skip>true</maven.deploy.skip>` in their own `<properties>`.
+
+## IntelliJ MCP Tools
+
+Two IntelliJ MCP servers are available (`mcp__intellij__*` and `mcp__intellij-index__*`).
+Before using Bash tools, check whether the operation can be performed via IntelliJ — it is
+often more correct, faster, and less error-prone (symbol lookup, rename refactoring, diagnostics,
+file search). Verify both are responsive at session start; stop and report to the user if either
+is unavailable.
 
 ## casehub-work-adapter Module
 

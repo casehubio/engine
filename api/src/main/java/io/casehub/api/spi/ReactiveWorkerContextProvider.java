@@ -18,12 +18,13 @@ package io.casehub.api.spi;
 import io.casehub.api.model.WorkRequest;
 import io.casehub.api.model.WorkerContext;
 import io.smallrye.mutiny.Uni;
+import java.util.UUID;
 
 /**
  * Reactive mirror of {@link WorkerContextProvider} — returns {@link Uni}.
  *
- * <p>Builds startup context for a new worker without blocking the caller. The empty default returns
- * a minimal context with the task capability as the description and an empty prior-workers list.
+ * <p>Builds startup context for a new worker without blocking the caller. Implementations populate
+ * {@link WorkerContext#channels()} via {@code ReactiveCaseChannelProvider.listChannels(caseId)}.
  */
 public interface ReactiveWorkerContextProvider {
 
@@ -31,8 +32,11 @@ public interface ReactiveWorkerContextProvider {
    * Build context for a worker about to start work on a task.
    *
    * @param workerId the ID of the worker being started
+   * @param caseId the ID of the case the worker is executing for; may be {@code null} for
+   *     provisioning-only flows where no live case exists yet
    * @param task the work request describing what the worker should do
-   * @return a {@code Uni} emitting startup context including task description, channel, and lineage
+   * @return a {@code Uni} emitting startup context including task description, open channels, and
+   *     lineage
    */
-  Uni<WorkerContext> buildContext(String workerId, WorkRequest task);
+  Uni<WorkerContext> buildContext(String workerId, UUID caseId, WorkRequest task);
 }
