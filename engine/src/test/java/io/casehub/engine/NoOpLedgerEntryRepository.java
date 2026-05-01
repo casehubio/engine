@@ -102,4 +102,21 @@ class NoOpLedgerEntryRepository implements LedgerEntryRepository {
   public List<LedgerEntry> findCausedBy(UUID entryId) {
     return List.of();
   }
+
+  @Override
+  public List<LedgerAttestation> findAttestationsByEntryIdAndCapabilityTag(
+      UUID entryId, String capabilityTag) {
+    return List.of();
+  }
+
+  @Override
+  public List<LedgerAttestation> findAttestationsByEntryIdGlobal(UUID entryId) {
+    return List.of();
+  }
+
+  @Override
+  public List<LedgerAttestation> findAttestationsByAttestorIdAndCapabilityTag(
+      String attestorId, String capabilityTag) {
+    return List.of();
+  }
 }
