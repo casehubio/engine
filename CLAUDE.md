@@ -148,6 +148,14 @@ Submodule poms reference `${version.io.casehub.work}` etc. — no hardcoded vers
 
 **Publishing:** `maven.deploy.skip=false` is the default in root `pom.xml` properties — the root parent POM (`io.casehub:parent`) IS published to GitHub Packages. Downstream consumers need it to resolve the effective POM of child artifacts (`api`, `engine`, etc.). Modules that should not be published override with `<maven.deploy.skip>true</maven.deploy.skip>` in their own `<properties>`.
 
+## IntelliJ MCP Tools
+
+Two IntelliJ MCP servers are available (`mcp__intellij__*` and `mcp__intellij-index__*`).
+Before using Bash tools, check whether the operation can be performed via IntelliJ — it is
+often more correct, faster, and less error-prone (symbol lookup, rename refactoring, diagnostics,
+file search). Verify both are responsive at session start; stop and report to the user if either
+is unavailable.
+
 ## casehub-work-adapter Module
 
 Bridges casehub-work `WorkItemLifecycleEvent` CDI events to CaseHub `PlanItem` transitions via `BlackboardRegistry`. Choreography path only — fires `CONTEXT_CHANGED` for engine re-evaluation.
