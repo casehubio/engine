@@ -37,13 +37,13 @@ class WorkerContextTest {
         new WorkerContext(
             "refactor auth",
             caseId,
-            channel,
+            List.of(channel),
             List.of(),
             ctx,
             Map.of("hint", "focus on token refresh"));
     assertThat(wc.taskDescription()).isEqualTo("refactor auth");
     assertThat(wc.caseId()).isEqualTo(caseId);
-    assertThat(wc.channel()).isEqualTo(channel);
+    assertThat(wc.channels()).containsExactly(channel);
     assertThat(wc.priorWorkers()).isEmpty();
     assertThat(wc.propagationContext()).isEqualTo(ctx);
     assertThat(wc.properties()).containsEntry("hint", "focus on token refresh");

@@ -26,21 +26,22 @@ import java.util.UUID;
  * Context handed to a new worker at startup.
  *
  * <p>Built by {@code WorkerContextProvider} from CaseLedgerEntry history. Contains the task
- * description, the case identifier, an optional communication channel, ordered summaries of prior
+ * description, the case identifier, the channels open for the case, ordered summaries of prior
  * workers, the propagation context for tracing, and arbitrary backend-specific properties.
  *
- * <p>Both {@code priorWorkers} and {@code properties} default to empty collections when {@code
- * null} is supplied and are always immutable.
+ * <p>{@code channels}, {@code priorWorkers}, and {@code properties} default to empty collections
+ * when {@code null} is supplied and are always immutable.
  */
 public record WorkerContext(
     String taskDescription,
     UUID caseId,
-    CaseChannel channel,
+    List<CaseChannel> channels,
     List<WorkerSummary> priorWorkers,
     PropagationContext propagationContext,
     Map<String, Object> properties) {
 
   public WorkerContext {
+    channels = channels == null ? List.of() : List.copyOf(channels);
     priorWorkers = priorWorkers == null ? List.of() : List.copyOf(priorWorkers);
     // WorkerContext.properties are arbitrary implementor hints — null values are tolerated
     // (unlike CaseChannel.properties which are validated backend configuration).
