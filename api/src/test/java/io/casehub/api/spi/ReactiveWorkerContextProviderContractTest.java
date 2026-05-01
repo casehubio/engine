@@ -24,6 +24,7 @@ import io.casehub.api.model.WorkerContext;
 import io.smallrye.mutiny.Uni;
 import java.util.List;
 import java.util.Map;
+import java.util.UUID;
 import org.junit.jupiter.api.Test;
 
 class ReactiveWorkerContextProviderContractTest {
@@ -32,7 +33,8 @@ class ReactiveWorkerContextProviderContractTest {
   void noOp_buildContext_returnsNonNullContext() {
     ReactiveWorkerContextProvider provider = new EmptyStub();
     WorkRequest task = WorkRequest.of("researcher", Map.of());
-    WorkerContext ctx = provider.buildContext("worker-1", task).await().indefinitely();
+    WorkerContext ctx =
+        provider.buildContext("worker-1", UUID.randomUUID(), task).await().indefinitely();
     assertThat(ctx).isNotNull();
     assertThat(ctx.priorWorkers()).isEmpty();
     assertThat(ctx.taskDescription()).isEqualTo("researcher");
@@ -42,7 +44,7 @@ class ReactiveWorkerContextProviderContractTest {
   void interface_hasBuildContextMethod() throws Exception {
     assertThat(
             ReactiveWorkerContextProvider.class.getMethod(
-                "buildContext", String.class, WorkRequest.class))
+                "buildContext", String.class, UUID.class, WorkRequest.class))
         .isNotNull();
   }
 
@@ -50,8 +52,23 @@ class ReactiveWorkerContextProviderContractTest {
   void emptyStub_propagationContext_isNotNull() {
     ReactiveWorkerContextProvider provider = new EmptyStub();
     WorkerContext ctx =
-        provider.buildContext("worker-1", WorkRequest.of("task", Map.of())).await().indefinitely();
+        provider
+            .buildContext("worker-1", UUID.randomUUID(), WorkRequest.of("task", Map.of()))
+            .await()
+            .indefinitely();
     assertThat(ctx.propagationContext()).isNotNull();
+  }
+
+  @Test
+  void caseId_isReflectedInContext() {
+    ReactiveWorkerContextProvider provider = new EmptyStub();
+    UUID caseId = UUID.randomUUID();
+    WorkerContext ctx =
+        provider
+            .buildContext("worker-1", caseId, WorkRequest.of("task", Map.of()))
+            .await()
+            .indefinitely();
+    assertThat(ctx.caseId()).isEqualTo(caseId);
   }
 
   @Test
@@ -60,18 +77,21 @@ class ReactiveWorkerContextProviderContractTest {
     assertThatNoException()
         .isThrownBy(
             () ->
-                provider.buildContext("", WorkRequest.of("task", Map.of())).await().indefinitely());
+                provider
+                    .buildContext("", UUID.randomUUID(), WorkRequest.of("task", Map.of()))
+                    .await()
+                    .indefinitely());
   }
 
   static class EmptyStub implements ReactiveWorkerContextProvider {
 
     @Override
-    public Uni<WorkerContext> buildContext(String workerId, WorkRequest task) {
+    public Uni<WorkerContext> buildContext(String workerId, UUID caseId, WorkRequest task) {
       return Uni.createFrom()
           .item(
               new WorkerContext(
                   task.capability(),
-                  null,
+                  caseId,
                   null,
                   List.of(),
                   PropagationContext.createRoot(),

@@ -16,34 +16,45 @@
 package io.casehub.engine.internal.worker;
 
 import io.casehub.api.context.PropagationContext;
+import io.casehub.api.model.CaseChannel;
 import io.casehub.api.model.WorkRequest;
 import io.casehub.api.model.WorkerContext;
+import io.casehub.api.spi.ReactiveCaseChannelProvider;
 import io.casehub.api.spi.ReactiveWorkerContextProvider;
 import io.smallrye.mutiny.Uni;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.enterprise.inject.Alternative;
+import jakarta.inject.Inject;
 import java.util.List;
 import java.util.Map;
+import java.util.UUID;
 
 /**
  * Reactive default WorkerContextProvider. Returns a minimal context with the task capability as the
- * description and an empty prior-workers list.
+ * description, prior-worker history omitted, and open channels populated from {@link
+ * ReactiveCaseChannelProvider#listChannels(UUID)}.
  *
- * <p>Marked {@code @Alternative} — not the primary bean. Replace with a real implementation that
- * queries the ledger for prior worker history when context propagation is needed.
+ * <p>Marked {@code @Alternative} — not the primary bean.
  */
 @Alternative
 @ApplicationScoped
 public class EmptyReactiveWorkerContextProvider implements ReactiveWorkerContextProvider {
 
+  @Inject
+  ReactiveCaseChannelProvider reactiveCaseChannelProvider; // package-private for test injection
+
   @Override
-  public Uni<WorkerContext> buildContext(String workerId, WorkRequest task) {
-    return Uni.createFrom()
-        .item(
+  public Uni<WorkerContext> buildContext(String workerId, UUID caseId, WorkRequest task) {
+    Uni<List<CaseChannel>> channelsUni =
+        caseId != null
+            ? reactiveCaseChannelProvider.listChannels(caseId)
+            : Uni.createFrom().item(List.of());
+    return channelsUni.map(
+        channels ->
             new WorkerContext(
                 task.capability(),
-                null,
-                null,
+                caseId,
+                channels,
                 List.of(),
                 PropagationContext.createRoot(),
                 Map.of()));

@@ -97,7 +97,7 @@ public class WorkerScheduleEventHandler {
         instance.getCaseContext().evalObjectTemplate(capability.getInputSchema());
 
     workerContextProvider.buildContext(
-        worker.getName(), WorkRequest.of(capability.getName(), inputData));
+        worker.getName(), instance.getUuid(), WorkRequest.of(capability.getName(), inputData));
 
     EventLog eventLog = buildEventLog(instance, worker, capability, inputData, inputDataHash);
 
