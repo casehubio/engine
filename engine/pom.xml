@@ -73,6 +73,12 @@
 
         <dependency>
             <groupId>io.casehub</groupId>
+            <artifactId>casehub-engine-ledger</artifactId>
+            <version>${project.version}</version>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>io.casehub</groupId>
             <artifactId>casehub-engine-scheduler-quartz</artifactId>
             <version>${project.version}</version>
             <scope>test</scope>
@@ -196,7 +202,7 @@
         <profile>
             <id>persistence-memory</id>
             <properties>
-        <maven.deploy.skip>false</maven.deploy.skip>
+                <maven.deploy.skip>false</maven.deploy.skip>
                 <engine.test.extra.jvm.args>-Dquarkus.test.profile=memory</engine.test.extra.jvm.args>
             </properties>
             <dependencies>
@@ -204,6 +210,11 @@
                     <groupId>io.casehub</groupId>
                     <artifactId>casehub-engine-persistence-memory</artifactId>
                     <version>${project.version}</version>
+                    <scope>test</scope>
+                </dependency>
+                <dependency>
+                    <groupId>io.quarkus</groupId>
+                    <artifactId>quarkus-jdbc-h2</artifactId>
                     <scope>test</scope>
                 </dependency>
             </dependencies>
