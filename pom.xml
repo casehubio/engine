@@ -479,6 +479,11 @@
                     <artifactId>build-helper-maven-plugin</artifactId>
                     <version>${version.build-helper-maven-plugin}</version>
                 </plugin>
+                <plugin>
+                    <groupId>io.smallrye</groupId>
+                    <artifactId>jandex-maven-plugin</artifactId>
+                    <version>3.1.2</version>
+                </plugin>
             </plugins>
         </pluginManagement>
     </build>
