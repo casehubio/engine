@@ -17,6 +17,7 @@ package io.casehub.api.spi;
 
 import io.casehub.api.model.WorkRequest;
 import io.casehub.api.model.WorkerContext;
+import java.util.UUID;
 
 /**
  * Builds startup context for a new worker.
@@ -25,6 +26,10 @@ import io.casehub.api.model.WorkerContext;
  * history, constructing {@link io.casehub.api.model.WorkerSummary} entries with {@code
  * ledgerEntryId} populated so new workers can set {@code causedByEntryId} on their own ledger
  * entries.
+ *
+ * <p>Implementations also populate {@link WorkerContext#channels()} by calling {@code
+ * CaseChannelProvider.listChannels(caseId)}, giving workers access to the channels open for their
+ * case during execution via {@link io.casehub.api.model.WorkerExecutionContext#current()}.
  */
 public interface WorkerContextProvider {
 
@@ -32,8 +37,10 @@ public interface WorkerContextProvider {
    * Build context for a worker about to start work on a task.
    *
    * @param workerId the ID of the worker being started
+   * @param caseId the ID of the case the worker is executing for; may be {@code null} for
+   *     provisioning-only flows where no live case exists yet
    * @param task the work request describing what the worker should do
-   * @return startup context including task description, channel, and lineage
+   * @return startup context including task description, open channels, and lineage
    */
-  WorkerContext buildContext(String workerId, WorkRequest task);
+  WorkerContext buildContext(String workerId, UUID caseId, WorkRequest task);
 }

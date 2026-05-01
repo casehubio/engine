@@ -23,6 +23,7 @@ import io.casehub.api.model.WorkRequest;
 import io.casehub.api.model.WorkerContext;
 import java.util.List;
 import java.util.Map;
+import java.util.UUID;
 import org.junit.jupiter.api.Test;
 
 class WorkerContextProviderContractTest {
@@ -30,7 +31,8 @@ class WorkerContextProviderContractTest {
   @Test
   void interface_hasBuildContextMethod() throws Exception {
     assertThat(
-            WorkerContextProvider.class.getMethod("buildContext", String.class, WorkRequest.class))
+            WorkerContextProvider.class.getMethod(
+                "buildContext", String.class, UUID.class, WorkRequest.class))
         .isNotNull();
   }
 
@@ -38,7 +40,7 @@ class WorkerContextProviderContractTest {
   void happyPath_returnsNonNullContext() {
     WorkerContextProvider provider = new EmptyStub();
     WorkRequest task = WorkRequest.of("code-reviewer", Map.of("branch", "main"));
-    WorkerContext ctx = provider.buildContext("worker-1", task);
+    WorkerContext ctx = provider.buildContext("worker-1", UUID.randomUUID(), task);
     assertThat(ctx).isNotNull();
   }
 
@@ -46,7 +48,7 @@ class WorkerContextProviderContractTest {
   void emptyStub_priorWorkers_isEmptyNotNull() {
     WorkerContextProvider provider = new EmptyStub();
     WorkRequest task = WorkRequest.of("researcher", Map.of());
-    WorkerContext ctx = provider.buildContext("worker-1", task);
+    WorkerContext ctx = provider.buildContext("worker-1", UUID.randomUUID(), task);
     assertThat(ctx.priorWorkers()).isNotNull().isEmpty();
   }
 
@@ -54,7 +56,7 @@ class WorkerContextProviderContractTest {
   void emptyStub_taskDescription_matchesCapability() {
     WorkerContextProvider provider = new EmptyStub();
     WorkRequest task = WorkRequest.of("security-auditor", Map.of());
-    WorkerContext ctx = provider.buildContext("worker-1", task);
+    WorkerContext ctx = provider.buildContext("worker-1", UUID.randomUUID(), task);
     assertThat(ctx.taskDescription()).isEqualTo("security-auditor");
   }
 
@@ -62,22 +64,38 @@ class WorkerContextProviderContractTest {
   void emptyStub_propagationContext_isNotNull() {
     WorkerContextProvider provider = new EmptyStub();
     WorkRequest task = WorkRequest.of("task", Map.of());
-    WorkerContext ctx = provider.buildContext("worker-1", task);
+    WorkerContext ctx = provider.buildContext("worker-1", UUID.randomUUID(), task);
     assertThat(ctx.propagationContext()).isNotNull();
+  }
+
+  @Test
+  void caseId_isReflectedInContext() {
+    WorkerContextProvider provider = new EmptyStub();
+    UUID caseId = UUID.randomUUID();
+    WorkRequest task = WorkRequest.of("task", Map.of());
+    WorkerContext ctx = provider.buildContext("worker-1", caseId, task);
+    assertThat(ctx.caseId()).isEqualTo(caseId);
+  }
+
+  @Test
+  void nullCaseId_isHandled() {
+    WorkerContextProvider provider = new EmptyStub();
+    WorkRequest task = WorkRequest.of("task", Map.of());
+    assertThatNoException().isThrownBy(() -> provider.buildContext("worker-1", null, task));
   }
 
   @Test
   void robustness_emptyWorkerId_isHandled() {
     WorkerContextProvider provider = new EmptyStub();
     WorkRequest task = WorkRequest.of("task", Map.of());
-    assertThatNoException().isThrownBy(() -> provider.buildContext("", task));
+    assertThatNoException().isThrownBy(() -> provider.buildContext("", UUID.randomUUID(), task));
   }
 
   static class EmptyStub implements WorkerContextProvider {
     @Override
-    public WorkerContext buildContext(String workerId, WorkRequest task) {
+    public WorkerContext buildContext(String workerId, UUID caseId, WorkRequest task) {
       return new WorkerContext(
-          task.capability(), null, null, List.of(), PropagationContext.createRoot(), Map.of());
+          task.capability(), caseId, null, List.of(), PropagationContext.createRoot(), Map.of());
     }
   }
 }

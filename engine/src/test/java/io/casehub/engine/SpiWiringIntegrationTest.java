@@ -30,6 +30,7 @@ import io.casehub.api.model.WorkRequest;
 import io.casehub.api.model.WorkResult;
 import io.casehub.api.model.Worker;
 import io.casehub.api.model.WorkerContext;
+import io.casehub.api.model.WorkerExecutionContext;
 import io.casehub.api.spi.CaseChannelProvider;
 import io.casehub.api.spi.ProvisioningException;
 import io.casehub.api.spi.WorkerContextProvider;
@@ -55,7 +56,7 @@ import org.junit.jupiter.api.Test;
 /**
  * Verifies that WorkerStatusListener, WorkerContextProvider, CaseChannelProvider, and
  * WorkerProvisioner are called at the correct lifecycle points by the engine. Refs
- * casehubio/engine#152, casehubio/engine#191.
+ * casehubio/engine#152, casehubio/engine#191, casehubio/engine#220.
  */
 @QuarkusTest
 class SpiWiringIntegrationTest {
@@ -63,6 +64,7 @@ class SpiWiringIntegrationTest {
   @Inject SimpleCaseHubBean simpleCaseHubBean;
   @Inject CaseFaultedStateTest.AlwaysFailingCaseHubBean alwaysFailingBean;
   @Inject ProvisionerTriggerCaseHubBean provisionerTriggerBean;
+  @Inject RecordingContextCaseHubBean recordingContextBean;
   @Inject CaseInstanceCache caseInstanceCache;
   @Inject RecordingWorkerStatusListener statusListener;
   @Inject RecordingCaseChannelProvider channelProvider;
@@ -199,8 +201,27 @@ class SpiWiringIntegrationTest {
   }
 
   // ------------------------------------------------------------------ //
-  // WorkerContextProvider                                                 //
+  // WorkerContextProvider + WorkerExecutionContext                        //
   // ------------------------------------------------------------------ //
+
+  @Test
+  void workerExecutionContext_channelsAccessibleDuringExecution() {
+    RecordingExecutionContextWorker.capturedChannels.clear();
+    recordingContextBean
+        .startCase(Map.of("documentId", "doc-exec-ctx-1", "status", "processing"))
+        .toCompletableFuture()
+        .join();
+
+    await()
+        .atMost(15, TimeUnit.SECONDS)
+        .untilAsserted(
+            () ->
+                assertThat(RecordingExecutionContextWorker.capturedChannels)
+                    .as(
+                        "WorkerExecutionContext.current() must be non-null with channels during"
+                            + " worker function execution")
+                    .isNotEmpty());
+  }
 
   @Test
   void buildContextCalledBeforeWorkerExecution() {
@@ -330,10 +351,10 @@ class SpiWiringIntegrationTest {
     }
 
     @Override
-    public WorkerContext buildContext(String workerId, WorkRequest task) {
+    public WorkerContext buildContext(String workerId, UUID caseId, WorkRequest task) {
       buildContextCallCount.incrementAndGet();
       seenCapabilities.add(task.capability());
-      return new WorkerContext(task.capability(), null, null, List.of(), null, Map.of());
+      return new WorkerContext(task.capability(), caseId, null, List.of(), null, Map.of());
     }
   }
 
@@ -450,6 +471,58 @@ class SpiWiringIntegrationTest {
                   .name("trigger-on-pending")
                   .capability(capability)
                   .on(new ContextChangeTrigger(".status == \"pending\""))
+                  .build())
+          .build();
+    }
+  }
+
+  // ------------------------------------------------------------------ //
+  // WorkerExecutionContext wiring                                         //
+  // ------------------------------------------------------------------ //
+
+  /** Worker that captures the channels visible via WorkerExecutionContext during execution. */
+  public static class RecordingExecutionContextWorker {
+    static final List<List<CaseChannel>> capturedChannels = new CopyOnWriteArrayList<>();
+  }
+
+  @ApplicationScoped
+  public static class RecordingContextCaseHubBean extends CaseHub {
+
+    @Override
+    public CaseDefinition getDefinition() {
+      Capability capability =
+          Capability.builder()
+              .name("recordContext")
+              .inputSchema("{ documentId: .documentId }")
+              .outputSchema("{ recorded: true }")
+              .build();
+
+      Worker worker =
+          Worker.builder()
+              .name("execution-context-recorder")
+              .capabilities(capability)
+              .function(
+                  (java.util.function.Function<Map<String, Object>, Map<String, Object>>)
+                      input -> {
+                        WorkerContext ctx = WorkerExecutionContext.current();
+                        if (ctx != null) {
+                          RecordingExecutionContextWorker.capturedChannels.add(ctx.channels());
+                        }
+                        return Map.of("recorded", true);
+                      })
+              .build();
+
+      return CaseDefinition.builder()
+          .namespace("test")
+          .name("Execution Context Recording Case")
+          .version("1.0.0")
+          .capabilities(capability)
+          .workers(worker)
+          .bindings(
+              Binding.builder()
+                  .name("trigger-on-processing")
+                  .capability(capability)
+                  .on(new ContextChangeTrigger(".status == \"processing\""))
                   .build())
           .build();
     }

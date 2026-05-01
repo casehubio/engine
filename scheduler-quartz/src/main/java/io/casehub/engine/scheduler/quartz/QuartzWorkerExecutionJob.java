@@ -21,7 +21,11 @@ import static io.casehub.engine.internal.event.EventBusAddresses.WORKER_EXECUTIO
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.casehub.api.model.Capability;
 import io.casehub.api.model.CaseDefinition;
+import io.casehub.api.model.WorkRequest;
 import io.casehub.api.model.Worker;
+import io.casehub.api.model.WorkerContext;
+import io.casehub.api.model.WorkerExecutionContext;
+import io.casehub.api.spi.WorkerContextProvider;
 import io.casehub.engine.internal.event.WorkflowExecutionCompleted;
 import io.casehub.engine.internal.history.EventLog;
 import io.casehub.engine.internal.model.CaseInstance;
@@ -56,6 +60,8 @@ class QuartzWorkerExecutionJob implements Job {
   @Inject WorkflowExecutor workflowExecutor;
 
   @Inject CaseDefinitionRegistry caseDefinitionRegistry;
+
+  @Inject WorkerContextProvider workerContextProvider;
 
   @Inject Vertx vertx;
 
@@ -132,12 +138,16 @@ class QuartzWorkerExecutionJob implements Job {
 
     int timeoutMs = executionConfig.getEffectiveTimeout(worker.getExecutionPolicy().timeoutMs());
 
+    WorkerContext workerContext =
+        workerContextProvider.buildContext(
+            workflowId, eventLog.getCaseId(), WorkRequest.of(capabilityName, inputData));
+
     Map<String, Object> outputData;
     try {
       if (worker.getFunction().getValue() instanceof Workflow workflow) {
-        outputData = workflow(workflow, inputData, timeoutMs);
+        outputData = workflow(workflow, inputData, workerContext, timeoutMs);
       } else if (worker.getFunction().getValue() instanceof Function function) {
-        outputData = function(function, inputData, timeoutMs);
+        outputData = function(function, inputData, workerContext, timeoutMs);
       } else {
         throw new RuntimeException(
             "Worker function is not a workflow: "
@@ -164,15 +174,11 @@ class QuartzWorkerExecutionJob implements Job {
   }
 
   private Map<String, Object> workflow(
-      Workflow workflow, Map<String, Object> inputData, int timeoutMs)
+      Workflow workflow, Map<String, Object> inputData, WorkerContext workerContext, int timeoutMs)
       throws TimeoutException, InterruptedException, ExecutionException {
-    CompletableFuture<WorkflowModel> cf = workflowExecutor.execute(workflow, inputData);
-
     LOG.debugf("Executing workflow with timeout: %d ms", timeoutMs);
-
-    // Use get() with timeout instead of join() to handle timeouts
+    CompletableFuture<WorkflowModel> cf = workflowExecutor.execute(workflow, inputData);
     WorkflowModel workflowModel = cf.get(timeoutMs, TimeUnit.MILLISECONDS);
-
     return workflowModel
         .asMap()
         .orElseThrow(() -> new RuntimeException("Failed to convert workflow model to map"));
@@ -181,14 +187,22 @@ class QuartzWorkerExecutionJob implements Job {
   private Map<String, Object> function(
       Function<Map<String, Object>, Map<String, Object>> function,
       Map<String, Object> inputData,
+      WorkerContext workerContext,
       int timeoutMs)
       throws TimeoutException, InterruptedException, ExecutionException {
 
     LOG.debugf("Executing function with timeout: %d ms", timeoutMs);
 
-    // Execute function in a separate thread with timeout
     CompletableFuture<Map<String, Object>> cf =
-        CompletableFuture.supplyAsync(() -> function.apply(inputData));
+        CompletableFuture.supplyAsync(
+            () -> {
+              WorkerExecutionContext.set(workerContext);
+              try {
+                return function.apply(inputData);
+              } finally {
+                WorkerExecutionContext.clear();
+              }
+            });
 
     return cf.get(timeoutMs, TimeUnit.MILLISECONDS);
   }

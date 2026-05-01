@@ -299,7 +299,8 @@ public class CaseContextChangedEventHandler {
       Map<String, Object> inputData =
           caseInstance.getCaseContext().evalObjectTemplate(capability.getInputSchema());
       WorkRequest workRequest = WorkRequest.of(capability.getName(), inputData);
-      WorkerContext workerContext = workerContextProvider.buildContext(null, workRequest);
+      WorkerContext workerContext =
+          workerContextProvider.buildContext(null, caseInstance.getUuid(), workRequest);
       ProvisionContext provisionContext =
           new ProvisionContext(
               caseInstance.getUuid(),
