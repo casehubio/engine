@@ -316,14 +316,24 @@ Four dual-stack SPI interfaces (blocking + reactive) enable external systems to 
 **Model types** in `api/model/`:
 - `CaseChannel` — backend-agnostic channel reference with extensible `properties` map
 - `WorkerSummary` — prior worker's execution summary, includes `ledgerEntryId` (UUID of the `WORKER_EXECUTION_COMPLETED` ledger entry)
-- `WorkerContext` — startup context for a newly provisioned worker, includes `priorWorkers` list and channel references
+- `WorkerContext` — startup context for a newly provisioned worker, includes `channels` (all open channels for the case), `priorWorkers` list, and causal chain metadata. Real `WorkerContextProvider` implementations populate `channels` via `CaseChannelProvider.listChannels(caseId)` so workers can call `postToChannel` during execution.
 - `ProvisionContext` — input to `WorkerProvisioner.provision()`, contains the work request and case metadata
+
+**Channel layering:** casehub-engine does not own the Channel concept — that belongs to Qhorus. `CaseChannelProvider` is a thin bridge associating channels with case lifecycle: open on case start, close on terminal state, post for worker messages. Backend variety (Qhorus, Slack, WhatsApp, DB) is entirely a Qhorus concern — zero engine changes when a new backend is added. See casehubio/qhorus#131 for the generalised Channel design and casehubio/engine#220 for the SPI contract.
+
+```
+Backend (Qhorus / Slack / WhatsApp / DB)
+    ↓
+CaseChannelProvider SPI   ← engine's only concern
+    ↓
+WorkerContext.channels()  ← workers post to the case's channels
+```
 
 **Default implementations** in `engine/internal/worker/`:
 - `NoOpWorkerProvisioner` — throws `ProvisioningException` (never called unless provisioner advertises capabilities)
 - `NoOpWorkerStatusListener` — silently ignores all lifecycle events
-- `NoOpCaseChannelProvider` — returns sentinel channels with `backendType = "none"`
-- `EmptyWorkerContextProvider` — returns minimal context with empty `priorWorkers` list
+- `NoOpCaseChannelProvider` — returns sentinel channels with `backendType = "none"`; `postToChannel` and `closeChannel` are no-ops; `listChannels` returns empty list
+- `EmptyWorkerContextProvider` — returns minimal context with empty `channels` and `priorWorkers` lists
 - Four `@Alternative` reactive mirrors for optional reactive pipeline use
 
 **Causal chain:** When a worker completes, `CaseLedgerEventCapture` writes a `WORKER_EXECUTION_COMPLETED` ledger entry. The `WorkerSummary` for that worker carries this entry's UUID as `ledgerEntryId`. New workers set `causedByEntryId` on their own ledger entries to this value, completing the causal chain across workers on a case.
@@ -337,6 +347,7 @@ All seven engine SPI call sites, in lifecycle order:
 | SPI method | Called in | When |
 |---|---|---|
 | `CaseChannelProvider.openChannel` | `CaseStartedEventHandler.onCaseStarted` | Case transitions to RUNNING |
+| `CaseChannelProvider.openChannel` + `postToChannel` | `WorkerScheduleEventHandler.dispatchCommand` | Worker scheduled — opens worker-specific channel, posts Qhorus COMMAND |
 | `WorkerContextProvider.buildContext` | `WorkerScheduleEventHandler.onWorkerScheduleEventHandler` | Before Quartz job is submitted |
 | `WorkerProvisioner.provision` | `CaseContextChangedEventHandler.tryProvision` | No pre-defined workers match capability AND provisioner advertises it |
 | `WorkerStatusListener.onWorkerStarted` | `WorkerExecutionJobListener.jobToBeExecuted` | Quartz job begins execution |
