@@ -73,6 +73,12 @@
 
         <dependency>
             <groupId>io.casehub</groupId>
+            <artifactId>casehub-engine-ledger</artifactId>
+            <version>${project.version}</version>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>io.casehub</groupId>
             <artifactId>casehub-engine-scheduler-quartz</artifactId>
             <version>${project.version}</version>
             <scope>test</scope>
