@@ -94,7 +94,8 @@ public class WorkflowExecutionCompletedHandler {
             () ->
                 workerStatusListener.onWorkerCompleted(
                     worker.getName(),
-                    WorkResult.completed(event.idempotency(), rawOutput, worker.getName())))
+                    WorkResult.completed(
+                        event.idempotency(), rawOutput, worker.getName(), caseInstance.getUuid())))
         .invoke(
             () ->
                 lifecycleEvents.fireAsync(
