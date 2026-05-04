@@ -310,7 +310,7 @@ Four dual-stack SPI interfaces (blocking + reactive) enable external systems to 
 |---|---|---|
 | `WorkerProvisioner` | `ReactiveWorkerProvisioner` | Provision/terminate workers when no pre-defined workers match a capability |
 | `WorkerStatusListener` | `ReactiveWorkerStatusListener` | Lifecycle callbacks: `started()`, `completed()`, `stalled()` |
-| `CaseChannelProvider` | `ReactiveCaseChannelProvider` | Open/close/post to backend-agnostic channels (Qhorus, Slack, etc.) |
+| `CaseChannelProvider` | `ReactiveCaseChannelProvider` | Open/close/post to backend-agnostic channels (Qhorus, Slack, etc.). `postToChannel` takes a 4th `MessageType` parameter (from `casehub-qhorus-api`) expressing message intent; a 3-arg default delegates with `null` for backward compatibility |
 | `WorkerContextProvider` | `ReactiveWorkerContextProvider` | Build startup context from `CaseLedgerEntry` lineage — includes prior worker summaries, causal chain metadata |
 
 **Model types** in `api/model/`:
@@ -321,6 +321,8 @@ Four dual-stack SPI interfaces (blocking + reactive) enable external systems to 
 - `ProvisionContext` — input to `WorkerProvisioner.provision()`, contains the work request and case metadata
 
 **Channel layering:** casehub-engine does not own the Channel concept — that belongs to Qhorus. `CaseChannelProvider` is a thin bridge associating channels with case lifecycle: open on case start, close on terminal state, post for worker messages. Backend variety (Qhorus, Slack, WhatsApp, DB) is entirely a Qhorus concern — zero engine changes when a new backend is added. See casehubio/qhorus#131 for the generalised Channel design and casehubio/engine#220 for the SPI contract.
+
+**`casehub-qhorus-api` dependency:** The `api` module depends on `casehub-qhorus-api` (managed in root `pom.xml`) to import `MessageType` for the `postToChannel` signature. `MessageType` encodes the intent of a channel message at the protocol level (e.g. `COMMAND`, `RESPONSE`). See engine#230 for the longer-term plan to extract `MessageType` to a dedicated protocol artifact.
 
 ```
 Backend (Qhorus / Slack / WhatsApp / DB)
@@ -350,7 +352,7 @@ All engine SPI call sites, in lifecycle order:
 | SPI method / action | Called in | When |
 |---|---|---|
 | `CaseChannelProvider.openChannel` | `CaseStartedEventHandler.onCaseStarted` | Case transitions to RUNNING |
-| `CaseChannelProvider.openChannel` + `postToChannel` | `WorkerScheduleEventHandler.dispatchCommand` | Worker scheduled — opens worker-specific channel, posts Qhorus COMMAND |
+| `CaseChannelProvider.openChannel` + `postToChannel(..., MessageType.COMMAND)` | `WorkerScheduleEventHandler.dispatchCommand` | Worker scheduled — opens worker-specific channel, posts Qhorus COMMAND with explicit `MessageType` |
 | `WorkerContextProvider.buildContext` | `WorkerScheduleEventHandler.onWorkerScheduleEventHandler` | Before Quartz job is submitted (timing contract) |
 | `WorkerProvisioner.provision` | `CaseContextChangedEventHandler.tryProvision` | No pre-defined workers match capability AND provisioner advertises it |
 | `WorkerStatusListener.onWorkerStarted` | `WorkerExecutionJobListener.jobToBeExecuted` | Quartz job begins execution |

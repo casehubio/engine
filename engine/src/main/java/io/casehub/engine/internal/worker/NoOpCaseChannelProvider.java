@@ -17,6 +17,7 @@ package io.casehub.engine.internal.worker;
 
 import io.casehub.api.model.CaseChannel;
 import io.casehub.api.spi.CaseChannelProvider;
+import io.casehub.qhorus.api.message.MessageType;
 import jakarta.enterprise.context.ApplicationScoped;
 import java.util.List;
 import java.util.Map;
@@ -35,7 +36,7 @@ public class NoOpCaseChannelProvider implements CaseChannelProvider {
   }
 
   @Override
-  public void postToChannel(CaseChannel channel, String from, String content) {
+  public void postToChannel(CaseChannel channel, String from, String content, MessageType type) {
     // intentional no-op
   }
 

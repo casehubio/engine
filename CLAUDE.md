@@ -77,7 +77,7 @@ Eight interfaces in `api/src/main/java/io/casehub/api/spi/` (four blocking + fou
 
 - `WorkerProvisioner` / `ReactiveWorkerProvisioner` — provision and terminate workers
 - `WorkerStatusListener` / `ReactiveWorkerStatusListener` — lifecycle callbacks (started, completed, stalled)
-- `CaseChannelProvider` / `ReactiveCaseChannelProvider` — open/close/post to backend-agnostic channels
+- `CaseChannelProvider` / `ReactiveCaseChannelProvider` — open/close/post to backend-agnostic channels. **`postToChannel` takes a 4th `MessageType` parameter** (from `casehub-qhorus-api`, managed in root `pom.xml`); the 3-arg overload is a `default` delegating with `null`. Call sites that know the intent pass `MessageType.COMMAND` etc. explicitly — `WorkerScheduleEventHandler.dispatchCommand` does this.
 - `WorkerContextProvider` / `ReactiveWorkerContextProvider` — build startup context from ledger lineage
 
 **Default implementations** in `engine/src/main/java/io/casehub/engine/internal/worker/`:
@@ -96,6 +96,7 @@ To add a new operational SPI: define the interface in `api/spi/`, add a no-op de
 | `WorkerStatusListener.onWorkerCompleted` | `WorkflowExecutionCompletedHandler` | Worker function returns |
 | `WorkerStatusListener.onWorkerStalled` | `WorkerRetriesExhaustedEventHandler` | All retries exhausted |
 | `CaseChannelProvider.openChannel` | `CaseStartedEventHandler` | Case starts |
+| `CaseChannelProvider.openChannel` + `postToChannel(..., MessageType.COMMAND)` | `WorkerScheduleEventHandler.dispatchCommand` | Worker scheduled — opens channel, posts COMMAND |
 | `CaseChannelProvider.closeChannel` | `CaseStatusChangedHandler` | Case reaches terminal state |
 | `WorkerContextProvider.buildContext` | `WorkerScheduleEventHandler` | Before Quartz job is submitted (timing contract) |
 | `WorkerContextProvider.buildContext` + `WorkerExecutionContext.set` | `QuartzWorkerExecutionJob` | Immediately before worker function — sets thread-local with channels |
