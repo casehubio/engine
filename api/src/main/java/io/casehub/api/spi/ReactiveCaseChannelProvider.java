@@ -16,6 +16,7 @@
 package io.casehub.api.spi;
 
 import io.casehub.api.model.CaseChannel;
+import io.casehub.qhorus.api.message.MessageType;
 import io.smallrye.mutiny.Uni;
 import java.util.List;
 import java.util.UUID;
@@ -43,9 +44,24 @@ public interface ReactiveCaseChannelProvider {
    * @param channel the channel reference returned by {@link #openChannel}
    * @param from sender identity (worker ID or "human")
    * @param content message content
+   * @param type the intent type of the message (e.g. {@link MessageType#COMMAND}); {@code null} if
+   *     unspecified
    * @return a {@code Uni} completing with {@code null} on success
    */
-  Uni<Void> postToChannel(CaseChannel channel, String from, String content);
+  Uni<Void> postToChannel(CaseChannel channel, String from, String content, MessageType type);
+
+  /**
+   * Post a message to a channel. Delegates to {@link #postToChannel(CaseChannel, String, String,
+   * MessageType)} with {@code type = null}.
+   *
+   * @param channel the channel reference returned by {@link #openChannel}
+   * @param from sender identity (worker ID or "human")
+   * @param content message content
+   * @return a {@code Uni} completing with {@code null} on success
+   */
+  default Uni<Void> postToChannel(CaseChannel channel, String from, String content) {
+    return postToChannel(channel, from, content, null);
+  }
 
   /**
    * Close a channel. No-op if the channel is unknown or already closed.

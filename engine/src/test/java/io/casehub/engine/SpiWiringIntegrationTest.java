@@ -37,6 +37,7 @@ import io.casehub.api.spi.WorkerContextProvider;
 import io.casehub.api.spi.WorkerProvisioner;
 import io.casehub.api.spi.WorkerStatusListener;
 import io.casehub.engine.spi.cache.CaseInstanceCache;
+import io.casehub.qhorus.api.message.MessageType;
 import io.quarkus.test.junit.QuarkusTest;
 import jakarta.annotation.Priority;
 import jakarta.enterprise.context.ApplicationScoped;
@@ -198,6 +199,7 @@ class SpiWiringIntegrationTest {
     assertThat(RecordingCaseChannelProvider.postedFroms)
         .as("COMMAND sender must identify casehub-engine as the orchestrator")
         .anyMatch(f -> f.startsWith("casehub-engine:orchestrator"));
+    assertThat(RecordingCaseChannelProvider.postedTypes).contains(MessageType.COMMAND);
   }
 
   // ------------------------------------------------------------------ //
@@ -367,6 +369,7 @@ class SpiWiringIntegrationTest {
     static final Set<UUID> closedCaseIds = ConcurrentHashMap.newKeySet();
     static final List<String> postedContents = new CopyOnWriteArrayList<>();
     static final List<String> postedFroms = new CopyOnWriteArrayList<>();
+    static final List<MessageType> postedTypes = new CopyOnWriteArrayList<>();
     private final Map<UUID, List<CaseChannel>> openChannels = new ConcurrentHashMap<>();
 
     static void reset() {
@@ -374,6 +377,7 @@ class SpiWiringIntegrationTest {
       closedCaseIds.clear();
       postedContents.clear();
       postedFroms.clear();
+      postedTypes.clear();
     }
 
     @Override
@@ -386,9 +390,10 @@ class SpiWiringIntegrationTest {
     }
 
     @Override
-    public void postToChannel(CaseChannel channel, String from, String content) {
+    public void postToChannel(CaseChannel channel, String from, String content, MessageType type) {
       postedFroms.add(from);
       postedContents.add(content);
+      postedTypes.add(type);
     }
 
     @Override
