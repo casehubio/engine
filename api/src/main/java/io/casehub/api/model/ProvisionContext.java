@@ -26,9 +26,18 @@ import java.util.UUID;
  * be injected into the worker's startup prompt, and the propagation context for distributed
  * tracing. {@code workerContext} is nullable — callers that have not yet built one may pass {@code
  * null}.
+ *
+ * <p>{@code triggerChannelId} and {@code triggerCorrelationId} carry the Qhorus channel ID and
+ * {@code correlationId} of the COMMAND message that triggered this provisioning, when known. Both
+ * are nullable: engine-internal call sites currently pass {@code null} because the engine does not
+ * yet receive Qhorus trigger context at the point of provisioning (see engine#231 for the follow-on
+ * work to thread this through the CaseFile-update API). Provisioner implementations that received a
+ * Qhorus COMMAND may use these fields to establish causal linkage in the ledger (see claudony#94).
  */
 public record ProvisionContext(
     UUID caseId,
     String taskType,
     WorkerContext workerContext,
-    PropagationContext propagationContext) {}
+    PropagationContext propagationContext,
+    String triggerChannelId,
+    String triggerCorrelationId) {}

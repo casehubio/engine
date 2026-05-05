@@ -59,7 +59,9 @@ class ReactiveWorkerProvisionerContractTest {
             "task",
             new WorkerContext(
                 "t", null, null, List.of(), PropagationContext.createRoot(), Map.of()),
-            PropagationContext.createRoot());
+            PropagationContext.createRoot(),
+            null,
+            null);
     assertThatThrownBy(() -> provisioner.provision(Set.of("cap"), ctx).await().indefinitely())
         .isInstanceOf(ProvisioningException.class);
   }

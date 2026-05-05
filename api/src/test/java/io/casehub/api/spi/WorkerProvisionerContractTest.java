@@ -68,7 +68,9 @@ class WorkerProvisionerContractTest {
             "researcher",
             new WorkerContext(
                 "task", null, null, List.of(), PropagationContext.createRoot(), Map.of()),
-            PropagationContext.createRoot());
+            PropagationContext.createRoot(),
+            null,
+            null);
     assertThatThrownBy(() -> noOp.provision(Set.of("research"), ctx))
         .isInstanceOf(ProvisioningException.class);
   }

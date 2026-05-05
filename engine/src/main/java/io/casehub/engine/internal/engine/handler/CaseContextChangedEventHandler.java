@@ -306,7 +306,9 @@ public class CaseContextChangedEventHandler {
               caseInstance.getUuid(),
               capability.getName(),
               workerContext,
-              PropagationContext.createRoot());
+              PropagationContext.createRoot(),
+              null, // triggerChannelId — see engine#231 to thread Qhorus trigger context through
+              null); // triggerCorrelationId — see engine#231
       Worker provisioned = workerProvisioner.provision(provisionerCaps, provisionContext);
       LOG.infof(
           "WorkerProvisioner provisioned worker '%s' for capability '%s' on case %s",
