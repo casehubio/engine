@@ -16,20 +16,38 @@
 package io.casehub.api.model;
 
 import java.util.Map;
+import java.util.UUID;
 
 /**
  * Result of orchestrated work returned by {@code WorkOrchestrator.submit()}. The {@code
  * correlationKey} is the idempotency hash used to match this result to its submission.
+ *
+ * <p>{@code caseId} is set when the result is produced by the case engine and identifies the case
+ * that owned the worker. Listeners can use it for precise per-case lookups. Null when the result is
+ * produced outside the engine context (e.g. direct WorkOrchestrator calls).
  */
 public record WorkResult(
-    String correlationKey, WorkStatus status, Map<String, Object> output, String workerId) {
+    String correlationKey,
+    WorkStatus status,
+    Map<String, Object> output,
+    String workerId,
+    UUID caseId) {
 
   public static WorkResult completed(
       String correlationKey, Map<String, Object> output, String workerId) {
-    return new WorkResult(correlationKey, WorkStatus.COMPLETED, output, workerId);
+    return new WorkResult(correlationKey, WorkStatus.COMPLETED, output, workerId, null);
+  }
+
+  public static WorkResult completed(
+      String correlationKey, Map<String, Object> output, String workerId, UUID caseId) {
+    return new WorkResult(correlationKey, WorkStatus.COMPLETED, output, workerId, caseId);
   }
 
   public static WorkResult faulted(String correlationKey, String workerId) {
-    return new WorkResult(correlationKey, WorkStatus.FAULTED, Map.of(), workerId);
+    return new WorkResult(correlationKey, WorkStatus.FAULTED, Map.of(), workerId, null);
+  }
+
+  public static WorkResult faulted(String correlationKey, String workerId, UUID caseId) {
+    return new WorkResult(correlationKey, WorkStatus.FAULTED, Map.of(), workerId, caseId);
   }
 }
