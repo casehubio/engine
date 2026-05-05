@@ -318,7 +318,7 @@ Four dual-stack SPI interfaces (blocking + reactive) enable external systems to 
 - `WorkerSummary` — prior worker's execution summary, includes `ledgerEntryId` (UUID of the `WORKER_EXECUTION_COMPLETED` ledger entry)
 - `WorkerContext` — startup context handed to a worker at execution time; includes `channels` (all open channels for the case, from `CaseChannelProvider.listChannels(caseId)`), `priorWorkers` list, `caseId`, and causal chain metadata
 - `WorkerExecutionContext` — thread-local holder set by `QuartzWorkerExecutionJob` immediately before calling the worker function; cleared in a `finally` block after execution. Workers call `WorkerExecutionContext.current()` to access their `WorkerContext` (including channels) at runtime
-- `ProvisionContext` — input to `WorkerProvisioner.provision()`, contains the work request and case metadata
+- `ProvisionContext` — input to `WorkerProvisioner.provision()`, contains the work request and case metadata. Fields: `caseId`, `taskType`, `workerContext` (nullable), `propagationContext`, `triggerChannelId` (nullable String — Qhorus channel ID of the COMMAND that triggered provisioning), `triggerCorrelationId` (nullable String — Qhorus correlation ID). Engine-internal call sites pass `null` for both trigger fields until engine#231 threads Qhorus trigger context through the CaseFile-update API
 
 **Channel layering:** casehub-engine does not own the Channel concept — that belongs to Qhorus. `CaseChannelProvider` is a thin bridge associating channels with case lifecycle: open on case start, close on terminal state, post for worker messages. Backend variety (Qhorus, Slack, WhatsApp, DB) is entirely a Qhorus concern — zero engine changes when a new backend is added. See casehubio/qhorus#131 for the generalised Channel design and casehubio/engine#220 for the SPI contract.
 
@@ -435,6 +435,8 @@ Entries that exhaust max-attempts stay PENDING_REVIEW for manual triage.
 - ✅ Immutable audit ledger (`casehub-ledger`, Q2 2026)
 - ✅ DLQ replay — explicit API and optional auto-replay scheduler (Q2 2026)
 - ✅ Worker Provisioner SPI wiring — all 4 blocking SPIs integrated (Q2 2026)
+- ✅ `triggerChannelId` + `triggerCorrelationId` in `ProvisionContext` — causal linkage from Qhorus COMMAND to provisioning (engine#229, Q2 2026)
+- [ ] Thread Qhorus trigger context through CaseFile-update API into `ProvisionContext` (engine#231)
 - [ ] Human worker integration (Q2/Q3 2026)
 - [ ] Escalation rules and thresholds (Q3 2026)
 
@@ -455,5 +457,7 @@ Entries that exhaust max-attempts stay PENDING_REVIEW for manual triage.
 - **casehubio/engine#121** — Original design discussion (closed by ADR-0003)
 - **casehubio/engine#131** — WorkBroker integration epic
 - **casehubio/engine#145** — casehub-ledger integration epic
+- **casehubio/engine#229** — `triggerChannelId` + `triggerCorrelationId` in `ProvisionContext`
+- **casehubio/engine#231** — Thread Qhorus trigger context through CaseFile-update API (follow-on)
 - **casehubio/engine#191** — Worker Provisioner SPI wiring
 - **mdproctor/casehub-ledger#39** — CaseLedgerEntry tracking issue
