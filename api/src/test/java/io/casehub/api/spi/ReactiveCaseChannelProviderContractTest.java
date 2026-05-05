@@ -19,6 +19,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatNoException;
 
 import io.casehub.api.model.CaseChannel;
+import io.casehub.qhorus.api.message.MessageType;
 import io.smallrye.mutiny.Uni;
 import java.util.List;
 import java.util.Map;
@@ -26,6 +27,22 @@ import java.util.UUID;
 import org.junit.jupiter.api.Test;
 
 class ReactiveCaseChannelProviderContractTest {
+
+  @Test
+  void interface_hasPostToChannelDefaultMethod() throws Exception {
+    assertThat(
+            ReactiveCaseChannelProvider.class.getMethod(
+                "postToChannel", CaseChannel.class, String.class, String.class))
+        .isNotNull();
+  }
+
+  @Test
+  void interface_hasPostToChannelMethodWithType() throws Exception {
+    assertThat(
+            ReactiveCaseChannelProvider.class.getMethod(
+                "postToChannel", CaseChannel.class, String.class, String.class, MessageType.class))
+        .isNotNull();
+  }
 
   @Test
   void noOp_openChannel_returnsSentinelChannel() {
@@ -45,7 +62,28 @@ class ReactiveCaseChannelProviderContractTest {
   }
 
   @Test
-  void noOp_postToChannel_completesSuccessfully() {
+  void noOp_postToChannel_withCommandType_completesSuccessfully() {
+    ReactiveCaseChannelProvider provider = new NoOpStub();
+    CaseChannel ch = provider.openChannel(UUID.randomUUID(), "p").await().indefinitely();
+    assertThatNoException()
+        .isThrownBy(
+            () ->
+                provider
+                    .postToChannel(ch, "casehub-engine:orchestrator", "cmd", MessageType.COMMAND)
+                    .await()
+                    .indefinitely());
+  }
+
+  @Test
+  void noOp_postToChannel_withNullType_completesSuccessfully() {
+    ReactiveCaseChannelProvider provider = new NoOpStub();
+    CaseChannel ch = provider.openChannel(UUID.randomUUID(), "p").await().indefinitely();
+    assertThatNoException()
+        .isThrownBy(() -> provider.postToChannel(ch, "system", "msg", null).await().indefinitely());
+  }
+
+  @Test
+  void noOp_postToChannel_defaultDelegatesToTypedMethod() {
     ReactiveCaseChannelProvider provider = new NoOpStub();
     CaseChannel ch = provider.openChannel(UUID.randomUUID(), "p").await().indefinitely();
     assertThatNoException()
@@ -68,7 +106,8 @@ class ReactiveCaseChannelProviderContractTest {
     }
 
     @Override
-    public Uni<Void> postToChannel(CaseChannel channel, String from, String content) {
+    public Uni<Void> postToChannel(
+        CaseChannel channel, String from, String content, MessageType type) {
       return Uni.createFrom().voidItem();
     }
 

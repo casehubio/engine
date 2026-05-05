@@ -17,6 +17,7 @@ package io.casehub.engine.internal.worker;
 
 import io.casehub.api.model.CaseChannel;
 import io.casehub.api.spi.ReactiveCaseChannelProvider;
+import io.casehub.qhorus.api.message.MessageType;
 import io.smallrye.mutiny.Uni;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.enterprise.inject.Alternative;
@@ -42,7 +43,8 @@ public class NoOpReactiveCaseChannelProvider implements ReactiveCaseChannelProvi
   }
 
   @Override
-  public Uni<Void> postToChannel(CaseChannel channel, String from, String content) {
+  public Uni<Void> postToChannel(
+      CaseChannel channel, String from, String content, MessageType type) {
     return Uni.createFrom().voidItem();
   }
 

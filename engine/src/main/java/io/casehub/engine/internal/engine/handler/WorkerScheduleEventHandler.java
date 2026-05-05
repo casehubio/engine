@@ -34,6 +34,7 @@ import io.casehub.engine.internal.model.CaseInstance;
 import io.casehub.engine.internal.utils.WorkerExecutionKeys;
 import io.casehub.engine.spi.EventLogRepository;
 import io.casehub.engine.spi.scheduler.WorkerExecutionManager;
+import io.casehub.qhorus.api.message.MessageType;
 import io.quarkus.vertx.ConsumeEvent;
 import io.smallrye.mutiny.Uni;
 import io.vertx.mutiny.core.Vertx;
@@ -219,7 +220,10 @@ public class WorkerScheduleEventHandler {
             "input",
             inputData);
     caseChannelProvider.postToChannel(
-        channel, "casehub-engine:orchestrator", OBJECT_MAPPER.valueToTree(command).toString());
+        channel,
+        "casehub-engine:orchestrator",
+        OBJECT_MAPPER.valueToTree(command).toString(),
+        MessageType.COMMAND);
     LOG.debugf(
         "COMMAND dispatched: caseId=%s worker=%s capability=%s correlationId=%d",
         instance.getUuid(), worker.getName(), capability.getName(), eventLogId);
