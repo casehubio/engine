@@ -69,7 +69,7 @@ public class CaseResumptionService {
         correlationKey != null && correlationKey.equals(caseInstance.getWaitingForWorkId());
 
     if (!isWaiting || !isMatchingWork) {
-      completeRegisteredFuture(correlationKey, workerId, rawOutput);
+      completeRegisteredFuture(correlationKey, workerId, rawOutput, caseInstance.getUuid());
       return Uni.createFrom().voidItem();
     }
 
@@ -92,14 +92,17 @@ public class CaseResumptionService {
 
     return caseInstanceRepository
         .updateStateAndAppendEvent(caseInstance, completedLog)
-        .invoke(() -> completeRegisteredFuture(correlationKey, workerId, rawOutput));
+        .invoke(
+            () ->
+                completeRegisteredFuture(
+                    correlationKey, workerId, rawOutput, caseInstance.getUuid()));
   }
 
   private void completeRegisteredFuture(
-      String correlationKey, String workerId, Map<String, Object> output) {
+      String correlationKey, String workerId, Map<String, Object> output, java.util.UUID caseId) {
     if (correlationKey != null && pendingWorkRegistry.hasPending(correlationKey)) {
       pendingWorkRegistry.complete(
-          correlationKey, WorkResult.completed(correlationKey, output, workerId));
+          correlationKey, WorkResult.completed(correlationKey, output, workerId, caseId));
     }
   }
 }
