@@ -32,17 +32,34 @@ class ProvisionContextTest {
         new WorkerContext(
             "task", caseId, null, List.of(), PropagationContext.createRoot(), Map.of());
     var prop = PropagationContext.createRoot();
-    var pc = new ProvisionContext(caseId, "code-reviewer", wc, prop);
+    var pc = new ProvisionContext(caseId, "code-reviewer", wc, prop, null, null);
     assertThat(pc.caseId()).isEqualTo(caseId);
     assertThat(pc.taskType()).isEqualTo("code-reviewer");
     assertThat(pc.workerContext()).isEqualTo(wc);
     assertThat(pc.propagationContext()).isEqualTo(prop);
+    assertThat(pc.triggerChannelId()).isNull();
+    assertThat(pc.triggerCorrelationId()).isNull();
   }
 
   @Test
   void nullWorkerContext_isPermitted() {
     var pc =
-        new ProvisionContext(UUID.randomUUID(), "task-type", null, PropagationContext.createRoot());
+        new ProvisionContext(
+            UUID.randomUUID(), "task-type", null, PropagationContext.createRoot(), null, null);
     assertThat(pc.workerContext()).isNull();
+  }
+
+  @Test
+  void triggerFields_arePopulatedWhenProvided() {
+    var pc =
+        new ProvisionContext(
+            UUID.randomUUID(),
+            "task-type",
+            null,
+            PropagationContext.createRoot(),
+            "ch-abc-123",
+            "corr-xyz-456");
+    assertThat(pc.triggerChannelId()).isEqualTo("ch-abc-123");
+    assertThat(pc.triggerCorrelationId()).isEqualTo("corr-xyz-456");
   }
 }
