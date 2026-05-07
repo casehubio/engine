@@ -16,8 +16,8 @@
 package io.casehub.persistence.jpa;
 
 import com.fasterxml.jackson.databind.JsonNode;
-import io.casehub.engine.internal.history.CaseHubEventType;
-import io.casehub.engine.internal.history.EventStreamType;
+import io.casehub.api.model.event.CaseHubEventType;
+import io.casehub.api.model.event.EventStreamType;
 import io.quarkus.hibernate.reactive.panache.PanacheEntity;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;

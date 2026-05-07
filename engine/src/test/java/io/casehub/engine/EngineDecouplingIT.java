@@ -17,9 +17,9 @@ package io.casehub.engine;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-import io.casehub.engine.internal.history.CaseHubEventType;
+import io.casehub.api.model.event.CaseHubEventType;
+import io.casehub.api.model.event.EventStreamType;
 import io.casehub.engine.internal.history.EventLog;
-import io.casehub.engine.internal.history.EventStreamType;
 import io.casehub.engine.spi.EventLogRepository;
 import io.quarkus.test.junit.QuarkusTest;
 import jakarta.inject.Inject;

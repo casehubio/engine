@@ -16,7 +16,12 @@
 package io.casehub.api.engine;
 
 import io.casehub.api.model.CaseDefinition;
+import io.casehub.api.model.event.CaseEventLogRecord;
+import io.casehub.api.model.event.CaseHubEventType;
+import io.casehub.api.model.event.EventStreamType;
+import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.CompletionStage;
 
@@ -55,4 +60,37 @@ public interface CaseHubRuntime {
   CompletionStage<Object> query(UUID caseId, String path);
 
   <T> CompletionStage<T> query(UUID caseId, String path, Class<T> clazz);
+
+  /**
+   * Retrieves all event log records for a case, ordered by sequence number ascending.
+   *
+   * @param caseId the case identifier
+   * @return a CompletionStage containing the list of all event log records for the case
+   * @throws IllegalArgumentException if the case is not found
+   */
+  CompletionStage<List<CaseEventLogRecord>> eventLog(UUID caseId);
+
+  /**
+   * Retrieves event log records for a case filtered by event types, ordered by sequence number
+   * ascending.
+   *
+   * @param caseId the case identifier
+   * @param eventTypes set of event types to filter by; if null or empty, no filtering is applied
+   * @return a CompletionStage containing the list of filtered event log records
+   * @throws IllegalArgumentException if the case is not found
+   */
+  CompletionStage<List<CaseEventLogRecord>> eventLog(UUID caseId, Set<CaseHubEventType> eventTypes);
+
+  /**
+   * Retrieves event log records for a case filtered by event types and stream types, ordered by
+   * sequence number ascending.
+   *
+   * @param caseId the case identifier
+   * @param eventTypes set of event types to filter by; if null or empty, no filtering is applied
+   * @param streamTypes set of stream types to filter by; if null or empty, no filtering is applied
+   * @return a CompletionStage containing the list of filtered event log records
+   * @throws IllegalArgumentException if the case is not found
+   */
+  CompletionStage<List<CaseEventLogRecord>> eventLog(
+      UUID caseId, Set<CaseHubEventType> eventTypes, Set<EventStreamType> streamTypes);
 }

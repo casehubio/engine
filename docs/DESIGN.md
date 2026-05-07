@@ -15,7 +15,8 @@ Plain POJOs with no Quarkus or JPA dependencies:
 
 - **Domain objects:** `CaseMetaModel`, `CaseInstance`, `EventLog`
 - **SPI interfaces:** `CaseMetaModelRepository`, `CaseInstanceRepository`, `EventLogRepository`
-- **Enums:** `CaseStatus`, `CaseHubEventType`, `EventStreamType`
+- **Enums:** `CaseStatus` (in `engine-model`)  
+- **Event types** (in `api`): `CaseHubEventType`, `EventStreamType` — moved to API module to support public eventLog() methods
 - **CDI events:** `CaseLifecycleEvent` — fired via `Event.fireAsync()` by lifecycle handlers; optional modules observe this to react to transitions without coupling to the engine
 
 ### Persistence (`casehub-persistence-hibernate`, in-memory test variant)
@@ -297,7 +298,7 @@ Only orchestration transitions a case to WAITING. Choreography keeps the case RU
 The engine defines clean extension points via SPIs:
 
 - **`CaseInstanceRepository`** — persist and retrieve case state
-- **`EventLogRepository`** — persist and query the event log
+- **`EventLogRepository`** — persist and query the event log; supports filtering by event types and stream types via `findByCaseWithFilters()`
 - **`CaseMetaModelRepository`** — retrieve case definitions
 
 External systems implement these SPIs to provide storage. The engine depends only on the SPIs, not on specific storage backends.
@@ -356,6 +357,32 @@ All seven engine SPI call sites, in lifecycle order:
 | `CaseChannelProvider.closeChannel` | `CaseStatusChangedHandler` | Case reaches terminal state (COMPLETED / FAULTED / CANCELLED) |
 
 `WorkerProvisioner.provision()` is guarded by `getCapabilities()` — the no-op default returns empty set, so it is never called unless a real provisioner is wired in. `ProvisioningException` is caught and logged; the binding stays eligible for the next tick.
+
+## Public API
+
+### Event Log Query API
+
+`CaseHubRuntime` exposes three overloaded `eventLog()` methods for retrieving case audit history:
+
+```java
+// All events for a case
+CompletionStage<List<CaseEventLogRecord>> eventLog(UUID caseId)
+
+// Filtered by event types
+CompletionStage<List<CaseEventLogRecord>> eventLog(
+    UUID caseId, 
+    Set<CaseHubEventType> eventTypes)
+
+// Filtered by event and stream types
+CompletionStage<List<CaseEventLogRecord>> eventLog(
+    UUID caseId, 
+    Set<CaseHubEventType> eventTypes, 
+    Set<EventStreamType> streamTypes)
+```
+
+All results are ordered by sequence number ascending. Null or empty filter sets return all events.
+
+**DTO:** `CaseEventLogRecord` — public API model exposing the full EventLog structure including id, seq, eventType, streamType, workerId, timestamp, payload, and metadata.
 
 ## Configuration
 

@@ -1,5 +1,29 @@
 # CLAUDE.md
 
+## Project Type
+
+**Type:** java
+
+---
+
+## Work Tracking
+
+**Issue tracking:** enabled
+
+All implementation work must be linked to a GitHub issue:
+- Before starting implementation, create an epic + child issues (or confirm an existing issue)
+- All commits reference an issue: `Refs #N` (work in progress) or `Closes #N` (completes the issue)
+- When staged changes span multiple concerns, split into separate commits with separate issue references
+
+**Automatic behaviors:**
+- Phase 1 (Pre-Implementation): Create epic + child issues before coding begins
+- Phase 2 (Task Intake): Detect cross-cutting concerns and suggest breaking into separate issues
+- Phase 3 (Pre-Commit): Verify issue linkage; suggest commit splits when staged changes span multiple concerns
+
+**Repository:** treblereel/casehub-engine
+
+---
+
 ## Platform Context
 
 This repo is one component of the casehubio multi-repo platform. **Before implementing anything — any feature, SPI, data model, or abstraction — run the Platform Coherence Protocol.**
@@ -52,10 +76,9 @@ Domain objects and SPI interfaces live in `casehub-engine-common` (no Quarkus, n
 Both `engine` and both persistence modules depend on `casehub-engine-common`. Neither persistence module depends on `engine`.
 
 **Production implementation:** `casehub-persistence-hibernate` (JPA/Panache, PostgreSQL)
-**Test implementation:** test-local copies in `engine/src/test/java/io/casehub/persistence/memory/`
+**Test implementation:** `casehub-persistence-memory` (in-memory, thread-safe)
 
-Engine tests activate the memory implementations via `quarkus.arc.selected-alternatives`
-in `engine/src/test/resources/application.properties` — no Docker required.
+Modules needing in-memory tests add `casehub-persistence-memory` as a test dependency and activate the implementations via `quarkus.arc.selected-alternatives` in `src/test/resources/application.properties` — no Docker required.
 
 **casehub-ledger on test classpath:** If `casehub-ledger` is a transitive dependency (via `engine`), its JPA entities appear in `@QuarkusTest` contexts and require a datasource even in in-memory test suites. Fix: add `quarkus-jdbc-h2` + `casehub-ledger` as test dependencies, then in the module's test `application.properties`:
 ```properties
@@ -117,10 +140,10 @@ TESTCONTAINERS_RYUK_DISABLED=true mvn clean test -pl casehub-blackboard
 **Test conventions:**
 - `@QuarkusTest` classes MUST be named `*Test.java` — never `*IT.java`
   (`*IT` is picked up by failsafe instead of surefire; produces `Tests run: 0` with no error)
-- In-memory SPI implementations for `@QuarkusTest` are copied into
-  `casehub-blackboard/src/test/java/io/casehub/persistence/memory/` (same pattern as engine)
-- `src/test/resources/application.properties` sets `quarkus.http.test-port=0` and activates
-  the in-memory alternatives via `quarkus.arc.selected-alternatives`
+- Uses `casehub-persistence-memory` as a test dependency for in-memory SPI implementations
+- `src/test/resources/application.properties` sets `quarkus.http.test-port=0`, indexes the
+  persistence-memory module via `quarkus.index-dependency`, and activates the in-memory
+  alternatives via `quarkus.arc.selected-alternatives`
 
 ## Quartz
 

@@ -23,6 +23,7 @@ import io.casehub.api.model.CaseDefinition;
 import io.casehub.api.model.Milestone;
 import io.casehub.api.model.MilestoneLifecycleStatus;
 import io.casehub.api.model.SlaStatus;
+import io.casehub.api.model.event.CaseHubEventType;
 import io.casehub.engine.internal.model.CaseInstance;
 import io.casehub.engine.spi.cache.CaseInstanceCache;
 import io.casehub.engine.spi.recovery.WorkerExecutionRecoveryService;
@@ -218,9 +219,7 @@ class MilestoneLifecycleTest {
     java.util.List<io.casehub.engine.internal.history.EventLog> slaEvents =
         eventLogRepository
             .findByCaseAndTypes(
-                caseId,
-                java.util.EnumSet.of(
-                    io.casehub.engine.internal.history.CaseHubEventType.MILESTONE_SLA_VIOLATED))
+                caseId, java.util.EnumSet.of(CaseHubEventType.MILESTONE_SLA_VIOLATED))
             .await()
             .indefinitely();
 

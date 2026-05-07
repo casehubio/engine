@@ -16,6 +16,8 @@
 package io.casehub.engine.internal.history;
 
 import com.fasterxml.jackson.databind.JsonNode;
+import io.casehub.api.model.event.CaseHubEventType;
+import io.casehub.api.model.event.EventStreamType;
 import java.time.Instant;
 import java.util.UUID;
 
