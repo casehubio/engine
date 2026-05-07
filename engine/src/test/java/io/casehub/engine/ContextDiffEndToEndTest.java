@@ -28,7 +28,7 @@ import io.casehub.api.model.Goal;
 import io.casehub.api.model.GoalExpression;
 import io.casehub.api.model.GoalKind;
 import io.casehub.api.model.Worker;
-import io.casehub.engine.internal.history.CaseHubEventType;
+import io.casehub.api.model.event.CaseHubEventType;
 import io.casehub.engine.internal.history.EventLog;
 import io.casehub.engine.spi.EventLogRepository;
 import io.casehub.engine.spi.cache.CaseInstanceCache;

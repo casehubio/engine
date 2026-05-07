@@ -15,7 +15,8 @@
  */
 package io.casehub.engine.spi;
 
-import io.casehub.engine.internal.history.CaseHubEventType;
+import io.casehub.api.model.event.CaseHubEventType;
+import io.casehub.api.model.event.EventStreamType;
 import io.casehub.engine.internal.history.EventLog;
 import io.smallrye.mutiny.Uni;
 import java.time.Instant;
@@ -81,4 +82,19 @@ public interface EventLogRepository {
    * in-flight orchestrated work that survived a JVM restart.
    */
   Uni<List<String>> findSubmittedWorkWithoutCompletion();
+
+  /**
+   * Find events for a specific case with optional filtering by event types and stream types,
+   * ordered by seq ascending. If {@code eventTypes} is null or empty, no event type filtering is
+   * applied. If {@code streamTypes} is null or empty, no stream type filtering is applied.
+   *
+   * @param caseId the case identifier (required)
+   * @param eventTypes optional collection of event types to filter by
+   * @param streamTypes optional collection of stream types to filter by
+   * @return list of matching events sorted by seq ascending
+   */
+  Uni<List<EventLog>> findByCaseWithFilters(
+      UUID caseId,
+      Collection<CaseHubEventType> eventTypes,
+      Collection<EventStreamType> streamTypes);
 }

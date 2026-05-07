@@ -18,6 +18,8 @@ package io.casehub.persistence.jpa;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.casehub.api.model.CaseStatus;
+import io.casehub.api.model.event.CaseHubEventType;
+import io.casehub.api.model.event.EventStreamType;
 import io.casehub.engine.internal.model.CaseInstance;
 import io.casehub.engine.internal.model.CaseMetaModel;
 import io.casehub.engine.spi.CaseInstanceRepository;
@@ -92,8 +94,8 @@ class JpaCaseInstanceRepositoryTest {
     io.casehub.engine.internal.history.EventLog eventLog =
         new io.casehub.engine.internal.history.EventLog();
     eventLog.setCaseId(instance.getUuid());
-    eventLog.setEventType(io.casehub.engine.internal.history.CaseHubEventType.CASE_FAULTED);
-    eventLog.setStreamType(io.casehub.engine.internal.history.EventStreamType.CASE);
+    eventLog.setEventType(CaseHubEventType.CASE_FAULTED);
+    eventLog.setStreamType(EventStreamType.CASE);
     eventLog.setTimestamp(
         java.time.Instant.now().truncatedTo(java.time.temporal.ChronoUnit.MICROS));
 
@@ -107,8 +109,7 @@ class JpaCaseInstanceRepositoryTest {
     io.casehub.engine.internal.history.EventLog found =
         run(() -> eventLogRepository.findById(eventLog.id));
     assertThat(found).isNotNull();
-    assertThat(found.getEventType())
-        .isEqualTo(io.casehub.engine.internal.history.CaseHubEventType.CASE_FAULTED);
+    assertThat(found.getEventType()).isEqualTo(CaseHubEventType.CASE_FAULTED);
   }
 
   @Test

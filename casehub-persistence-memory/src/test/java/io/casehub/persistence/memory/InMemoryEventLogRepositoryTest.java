@@ -18,9 +18,9 @@ package io.casehub.persistence.memory;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import io.casehub.engine.internal.history.CaseHubEventType;
+import io.casehub.api.model.event.CaseHubEventType;
+import io.casehub.api.model.event.EventStreamType;
 import io.casehub.engine.internal.history.EventLog;
-import io.casehub.engine.internal.history.EventStreamType;
 import java.time.Instant;
 import java.util.List;
 import java.util.UUID;
@@ -267,6 +267,133 @@ class InMemoryEventLogRepositoryTest {
 
     List<EventLog> result =
         repository.findSchedulingEvents(caseId, "w2", null).await().indefinitely();
+
+    assertThat(result).hasSize(2);
+  }
+
+  @Test
+  void findByCaseWithFilters_noFilters_returnsAllCaseEvents() {
+    UUID targetCase = UUID.randomUUID();
+    UUID otherCase = UUID.randomUUID();
+
+    EventLog e1 = event(targetCase, "w1", CaseHubEventType.CASE_STARTED);
+    e1.setStreamType(EventStreamType.CASE);
+    EventLog e2 = event(targetCase, "w1", CaseHubEventType.WORKER_SCHEDULED);
+    e2.setStreamType(EventStreamType.WORKER);
+    EventLog e3 = event(targetCase, "w1", CaseHubEventType.MILESTONE_REACHED);
+    e3.setStreamType(EventStreamType.SYSTEM);
+    EventLog other = event(otherCase, "w1", CaseHubEventType.CASE_STARTED);
+
+    repository.append(e1).await().indefinitely();
+    repository.append(e2).await().indefinitely();
+    repository.append(e3).await().indefinitely();
+    repository.append(other).await().indefinitely();
+
+    List<EventLog> result =
+        repository.findByCaseWithFilters(targetCase, null, null).await().indefinitely();
+
+    assertThat(result).hasSize(3);
+    assertThat(result).allMatch(e -> targetCase.equals(e.getCaseId()));
+    assertThat(result.stream().map(EventLog::getSeq).toList()).isSorted();
+  }
+
+  @Test
+  void findByCaseWithFilters_eventTypeFilter_returnsMatchingEvents() {
+    UUID caseId = UUID.randomUUID();
+
+    EventLog e1 = event(caseId, "w", CaseHubEventType.WORKER_SCHEDULED);
+    EventLog e2 = event(caseId, "w", CaseHubEventType.WORKER_EXECUTION_STARTED);
+    EventLog e3 = event(caseId, "w", CaseHubEventType.CASE_STARTED);
+
+    repository.append(e1).await().indefinitely();
+    repository.append(e2).await().indefinitely();
+    repository.append(e3).await().indefinitely();
+
+    List<EventLog> result =
+        repository
+            .findByCaseWithFilters(
+                caseId,
+                List.of(
+                    CaseHubEventType.WORKER_SCHEDULED, CaseHubEventType.WORKER_EXECUTION_STARTED),
+                null)
+            .await()
+            .indefinitely();
+
+    assertThat(result).hasSize(2);
+    assertThat(result)
+        .extracting(EventLog::getEventType)
+        .containsExactlyInAnyOrder(
+            CaseHubEventType.WORKER_SCHEDULED, CaseHubEventType.WORKER_EXECUTION_STARTED);
+    assertThat(result.stream().map(EventLog::getSeq).toList()).isSorted();
+  }
+
+  @Test
+  void findByCaseWithFilters_streamTypeFilter_returnsMatchingEvents() {
+    UUID caseId = UUID.randomUUID();
+
+    EventLog e1 = event(caseId, "w", CaseHubEventType.CASE_STARTED);
+    e1.setStreamType(EventStreamType.CASE);
+    EventLog e2 = event(caseId, "w", CaseHubEventType.WORKER_SCHEDULED);
+    e2.setStreamType(EventStreamType.WORKER);
+    EventLog e3 = event(caseId, "w", CaseHubEventType.WORKER_EXECUTION_STARTED);
+    e3.setStreamType(EventStreamType.WORKER);
+
+    repository.append(e1).await().indefinitely();
+    repository.append(e2).await().indefinitely();
+    repository.append(e3).await().indefinitely();
+
+    List<EventLog> result =
+        repository
+            .findByCaseWithFilters(caseId, null, List.of(EventStreamType.WORKER))
+            .await()
+            .indefinitely();
+
+    assertThat(result).hasSize(2);
+    assertThat(result).allMatch(e -> EventStreamType.WORKER.equals(e.getStreamType()));
+    assertThat(result.stream().map(EventLog::getSeq).toList()).isSorted();
+  }
+
+  @Test
+  void findByCaseWithFilters_combinedFilters_returnsMatchingEvents() {
+    UUID caseId = UUID.randomUUID();
+
+    EventLog match = event(caseId, "w", CaseHubEventType.WORKER_SCHEDULED);
+    match.setStreamType(EventStreamType.WORKER);
+
+    EventLog wrongType = event(caseId, "w", CaseHubEventType.CASE_STARTED);
+    wrongType.setStreamType(EventStreamType.WORKER);
+
+    EventLog wrongStream = event(caseId, "w", CaseHubEventType.WORKER_SCHEDULED);
+    wrongStream.setStreamType(EventStreamType.CASE);
+
+    repository.append(match).await().indefinitely();
+    repository.append(wrongType).await().indefinitely();
+    repository.append(wrongStream).await().indefinitely();
+
+    List<EventLog> result =
+        repository
+            .findByCaseWithFilters(
+                caseId, List.of(CaseHubEventType.WORKER_SCHEDULED), List.of(EventStreamType.WORKER))
+            .await()
+            .indefinitely();
+
+    assertThat(result).hasSize(1);
+    assertThat(result.get(0).getEventType()).isEqualTo(CaseHubEventType.WORKER_SCHEDULED);
+    assertThat(result.get(0).getStreamType()).isEqualTo(EventStreamType.WORKER);
+  }
+
+  @Test
+  void findByCaseWithFilters_emptyFilters_behavesLikeNull() {
+    UUID caseId = UUID.randomUUID();
+
+    EventLog e1 = event(caseId, "w", CaseHubEventType.CASE_STARTED);
+    EventLog e2 = event(caseId, "w", CaseHubEventType.WORKER_SCHEDULED);
+
+    repository.append(e1).await().indefinitely();
+    repository.append(e2).await().indefinitely();
+
+    List<EventLog> result =
+        repository.findByCaseWithFilters(caseId, List.of(), List.of()).await().indefinitely();
 
     assertThat(result).hasSize(2);
   }

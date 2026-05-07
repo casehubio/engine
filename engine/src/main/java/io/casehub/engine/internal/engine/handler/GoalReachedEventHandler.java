@@ -15,7 +15,7 @@
  */
 package io.casehub.engine.internal.engine.handler;
 
-import static io.casehub.engine.internal.history.CaseHubEventType.GOAL_REACHED;
+import static io.casehub.api.model.event.CaseHubEventType.GOAL_REACHED;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.casehub.api.model.CaseCompletion;
@@ -24,12 +24,12 @@ import io.casehub.api.model.CaseStatus;
 import io.casehub.api.model.Goal;
 import io.casehub.api.model.GoalBasedCompletion;
 import io.casehub.api.model.GoalExpression;
+import io.casehub.api.model.event.EventStreamType;
 import io.casehub.engine.internal.event.CaseLifecycleEvent;
 import io.casehub.engine.internal.event.CaseStatusChanged;
 import io.casehub.engine.internal.event.EventBusAddresses;
 import io.casehub.engine.internal.event.GoalReachedEvent;
 import io.casehub.engine.internal.history.EventLog;
-import io.casehub.engine.internal.history.EventStreamType;
 import io.casehub.engine.internal.model.CaseInstance;
 import io.casehub.engine.spi.CaseDefinitionRegistry;
 import io.casehub.engine.spi.EventLogRepository;

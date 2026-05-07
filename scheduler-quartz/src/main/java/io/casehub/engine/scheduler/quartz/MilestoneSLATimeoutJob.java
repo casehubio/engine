@@ -17,9 +17,9 @@ package io.casehub.engine.scheduler.quartz;
 
 import io.casehub.api.model.CaseStatus;
 import io.casehub.api.model.MilestoneLifecycleStatus;
+import io.casehub.api.model.event.CaseHubEventType;
 import io.casehub.engine.internal.event.EventBusAddresses;
 import io.casehub.engine.internal.event.MilestoneSLAViolatedEvent;
-import io.casehub.engine.internal.history.CaseHubEventType;
 import io.casehub.engine.internal.history.EventLog;
 import io.casehub.engine.internal.model.CaseInstance;
 import io.casehub.engine.spi.CaseInstanceRepository;

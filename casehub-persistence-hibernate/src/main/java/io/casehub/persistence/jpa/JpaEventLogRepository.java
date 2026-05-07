@@ -15,13 +15,15 @@
  */
 package io.casehub.persistence.jpa;
 
-import io.casehub.engine.internal.history.CaseHubEventType;
+import io.casehub.api.model.event.CaseHubEventType;
+import io.casehub.api.model.event.EventStreamType;
 import io.casehub.engine.internal.history.EventLog;
 import io.casehub.engine.spi.EventLogRepository;
 import io.quarkus.hibernate.reactive.panache.Panache;
 import io.smallrye.mutiny.Uni;
 import jakarta.enterprise.context.ApplicationScoped;
 import java.time.Instant;
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 import java.util.Objects;
@@ -166,6 +168,37 @@ public class JpaEventLogRepository extends AbstractJpaRepository implements Even
                                                 : null)
                                     .filter(Objects::nonNull)
                                     .toList())));
+  }
+
+  @Override
+  public Uni<List<EventLog>> findByCaseWithFilters(
+      UUID caseId,
+      Collection<CaseHubEventType> eventTypes,
+      Collection<EventStreamType> streamTypes) {
+    return withSafeContext(
+        () ->
+            Panache.withSession(
+                    () -> {
+                      StringBuilder query = new StringBuilder("caseId = ?1");
+                      List<Object> params = new ArrayList<>();
+                      params.add(caseId);
+
+                      if (eventTypes != null && !eventTypes.isEmpty()) {
+                        query.append(" and eventType in ?").append(params.size() + 1);
+                        params.add(eventTypes);
+                      }
+
+                      if (streamTypes != null && !streamTypes.isEmpty()) {
+                        query.append(" and streamType in ?").append(params.size() + 1);
+                        params.add(streamTypes);
+                      }
+
+                      query.append(" order by seq asc");
+
+                      return EventLogEntity.<EventLogEntity>find(query.toString(), params.toArray())
+                          .list();
+                    })
+                .map(list -> list.stream().map(this::fromEntity).toList()));
   }
 
   private EventLog fromEntity(EventLogEntity entity) {
