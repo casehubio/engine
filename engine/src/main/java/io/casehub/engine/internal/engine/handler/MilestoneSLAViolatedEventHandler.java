@@ -15,18 +15,18 @@
  */
 package io.casehub.engine.internal.engine.handler;
 
+import static io.casehub.api.model.event.CaseHubEventType.MILESTONE_SLA_VIOLATED;
 import static io.casehub.engine.internal.event.EventBusAddresses.CONTEXT_CHANGED;
-import static io.casehub.engine.internal.history.CaseHubEventType.MILESTONE_SLA_VIOLATED;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.casehub.api.context.CaseContext;
 import io.casehub.api.model.SlaStatus;
+import io.casehub.api.model.event.EventStreamType;
 import io.casehub.engine.internal.event.CaseContextChangedEvent;
 import io.casehub.engine.internal.event.EventBusAddresses;
 import io.casehub.engine.internal.event.MilestoneSLAViolatedEvent;
 import io.casehub.engine.internal.history.EventLog;
-import io.casehub.engine.internal.history.EventStreamType;
 import io.casehub.engine.internal.model.CaseInstance;
 import io.casehub.engine.spi.EventLogRepository;
 import io.quarkus.vertx.ConsumeEvent;

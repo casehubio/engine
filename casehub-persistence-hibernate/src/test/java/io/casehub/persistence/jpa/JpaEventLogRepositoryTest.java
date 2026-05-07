@@ -18,9 +18,9 @@ package io.casehub.persistence.jpa;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import io.casehub.engine.internal.history.CaseHubEventType;
+import io.casehub.api.model.event.CaseHubEventType;
+import io.casehub.api.model.event.EventStreamType;
 import io.casehub.engine.internal.history.EventLog;
-import io.casehub.engine.internal.history.EventStreamType;
 import io.casehub.engine.spi.EventLogRepository;
 import io.quarkus.test.junit.QuarkusTest;
 import io.quarkus.vertx.VertxContextSupport;
@@ -241,6 +241,135 @@ class JpaEventLogRepositoryTest {
     run(() -> repository.append(e2));
 
     List<EventLog> result = run(() -> repository.findSchedulingEvents(caseId, "w-null", null));
+    assertThat(result).hasSize(2);
+  }
+
+  @Test
+  void findByCaseWithFilters_noFilters_returnsAllCaseEvents() {
+    UUID targetCase = UUID.randomUUID();
+    UUID otherCase = UUID.randomUUID();
+    String suffix = UUID.randomUUID().toString().substring(0, 8);
+
+    EventLog e1 = event(targetCase, "w-" + suffix, CaseHubEventType.CASE_STARTED);
+    e1.setStreamType(EventStreamType.CASE);
+    EventLog e2 = event(targetCase, "w-" + suffix, CaseHubEventType.WORKER_SCHEDULED);
+    e2.setStreamType(EventStreamType.WORKER);
+    EventLog e3 = event(targetCase, "w-" + suffix, CaseHubEventType.MILESTONE_REACHED);
+    e3.setStreamType(EventStreamType.SYSTEM);
+    EventLog other = event(otherCase, "w-" + suffix, CaseHubEventType.CASE_STARTED);
+
+    run(() -> repository.append(e1));
+    run(() -> repository.append(e2));
+    run(() -> repository.append(e3));
+    run(() -> repository.append(other));
+
+    List<EventLog> result = run(() -> repository.findByCaseWithFilters(targetCase, null, null));
+
+    assertThat(result).hasSize(3);
+    assertThat(result).allMatch(e -> targetCase.equals(e.getCaseId()));
+    assertThat(result.stream().map(EventLog::getSeq).toList()).isSorted();
+  }
+
+  @Test
+  void findByCaseWithFilters_eventTypeFilter_returnsMatchingEvents() {
+    UUID caseId = UUID.randomUUID();
+    String suffix = UUID.randomUUID().toString().substring(0, 8);
+
+    EventLog e1 = event(caseId, "w-" + suffix, CaseHubEventType.WORKER_SCHEDULED);
+    EventLog e2 = event(caseId, "w-" + suffix, CaseHubEventType.WORKER_EXECUTION_STARTED);
+    EventLog e3 = event(caseId, "w-" + suffix, CaseHubEventType.CASE_STARTED);
+
+    run(() -> repository.append(e1));
+    run(() -> repository.append(e2));
+    run(() -> repository.append(e3));
+
+    List<EventLog> result =
+        run(
+            () ->
+                repository.findByCaseWithFilters(
+                    caseId,
+                    List.of(
+                        CaseHubEventType.WORKER_SCHEDULED,
+                        CaseHubEventType.WORKER_EXECUTION_STARTED),
+                    null));
+
+    assertThat(result).hasSize(2);
+    assertThat(result)
+        .extracting(EventLog::getEventType)
+        .containsExactlyInAnyOrder(
+            CaseHubEventType.WORKER_SCHEDULED, CaseHubEventType.WORKER_EXECUTION_STARTED);
+    assertThat(result.stream().map(EventLog::getSeq).toList()).isSorted();
+  }
+
+  @Test
+  void findByCaseWithFilters_streamTypeFilter_returnsMatchingEvents() {
+    UUID caseId = UUID.randomUUID();
+    String suffix = UUID.randomUUID().toString().substring(0, 8);
+
+    EventLog e1 = event(caseId, "w-" + suffix, CaseHubEventType.CASE_STARTED);
+    e1.setStreamType(EventStreamType.CASE);
+    EventLog e2 = event(caseId, "w-" + suffix, CaseHubEventType.WORKER_SCHEDULED);
+    e2.setStreamType(EventStreamType.WORKER);
+    EventLog e3 = event(caseId, "w-" + suffix, CaseHubEventType.WORKER_EXECUTION_STARTED);
+    e3.setStreamType(EventStreamType.WORKER);
+
+    run(() -> repository.append(e1));
+    run(() -> repository.append(e2));
+    run(() -> repository.append(e3));
+
+    List<EventLog> result =
+        run(() -> repository.findByCaseWithFilters(caseId, null, List.of(EventStreamType.WORKER)));
+
+    assertThat(result).hasSize(2);
+    assertThat(result).allMatch(e -> EventStreamType.WORKER.equals(e.getStreamType()));
+    assertThat(result.stream().map(EventLog::getSeq).toList()).isSorted();
+  }
+
+  @Test
+  void findByCaseWithFilters_combinedFilters_returnsMatchingEvents() {
+    UUID caseId = UUID.randomUUID();
+    String suffix = UUID.randomUUID().toString().substring(0, 8);
+
+    EventLog match = event(caseId, "w-" + suffix, CaseHubEventType.WORKER_SCHEDULED);
+    match.setStreamType(EventStreamType.WORKER);
+
+    EventLog wrongType = event(caseId, "w-" + suffix, CaseHubEventType.CASE_STARTED);
+    wrongType.setStreamType(EventStreamType.WORKER);
+
+    EventLog wrongStream = event(caseId, "w-" + suffix, CaseHubEventType.WORKER_SCHEDULED);
+    wrongStream.setStreamType(EventStreamType.CASE);
+
+    run(() -> repository.append(match));
+    run(() -> repository.append(wrongType));
+    run(() -> repository.append(wrongStream));
+
+    List<EventLog> result =
+        run(
+            () ->
+                repository.findByCaseWithFilters(
+                    caseId,
+                    List.of(CaseHubEventType.WORKER_SCHEDULED),
+                    List.of(EventStreamType.WORKER)));
+
+    assertThat(result).hasSize(1);
+    assertThat(result.get(0).getEventType()).isEqualTo(CaseHubEventType.WORKER_SCHEDULED);
+    assertThat(result.get(0).getStreamType()).isEqualTo(EventStreamType.WORKER);
+  }
+
+  @Test
+  void findByCaseWithFilters_emptyFilters_behavesLikeNull() {
+    UUID caseId = UUID.randomUUID();
+    String suffix = UUID.randomUUID().toString().substring(0, 8);
+
+    EventLog e1 = event(caseId, "w-" + suffix, CaseHubEventType.CASE_STARTED);
+    EventLog e2 = event(caseId, "w-" + suffix, CaseHubEventType.WORKER_SCHEDULED);
+
+    run(() -> repository.append(e1));
+    run(() -> repository.append(e2));
+
+    List<EventLog> result =
+        run(() -> repository.findByCaseWithFilters(caseId, List.of(), List.of()));
+
     assertThat(result).hasSize(2);
   }
 

@@ -13,11 +13,14 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.casehub.engine.internal.history;
+package io.casehub.api.model.event;
 
-public enum EventStreamType {
-  CASE,
-  WORKER,
-  TIMER,
-  SYSTEM
-}
+import com.fasterxml.jackson.databind.JsonNode;
+import java.time.Instant;
+
+public record CaseEventLogRecord(
+    CaseHubEventType eventType,
+    EventStreamType streamType,
+    Instant timestamp,
+    JsonNode payload,
+    JsonNode metadata) {}

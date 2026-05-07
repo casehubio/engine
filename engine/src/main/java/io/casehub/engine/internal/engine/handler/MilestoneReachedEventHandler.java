@@ -15,15 +15,15 @@
  */
 package io.casehub.engine.internal.engine.handler;
 
-import static io.casehub.engine.internal.history.CaseHubEventType.MILESTONE_REACHED;
+import static io.casehub.api.model.event.CaseHubEventType.MILESTONE_REACHED;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.casehub.api.model.Milestone;
+import io.casehub.api.model.event.EventStreamType;
 import io.casehub.engine.internal.event.CaseLifecycleEvent;
 import io.casehub.engine.internal.event.EventBusAddresses;
 import io.casehub.engine.internal.event.MilestoneReachedEvent;
 import io.casehub.engine.internal.history.EventLog;
-import io.casehub.engine.internal.history.EventStreamType;
 import io.casehub.engine.internal.model.CaseInstance;
 import io.casehub.engine.spi.EventLogRepository;
 import io.quarkus.vertx.ConsumeEvent;

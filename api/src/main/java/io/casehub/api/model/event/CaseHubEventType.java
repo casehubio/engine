@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.casehub.engine.internal.history;
+package io.casehub.api.model.event;
 
 public enum CaseHubEventType {
   CASE_STARTED,
@@ -45,5 +45,5 @@ public enum CaseHubEventType {
   GOAL_REACHED,
 
   SUBCASE_STARTED, // child case spawned by a SubCase binding
-  SUBCASE_COMPLETED, // child case reached a terminal state; parent context updated
+  SUBCASE_COMPLETED // child case reached a terminal state; parent context updated
 }

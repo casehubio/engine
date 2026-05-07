@@ -26,7 +26,7 @@ import io.casehub.api.model.CaseDefinition;
 import io.casehub.api.model.CaseStatus;
 import io.casehub.api.model.ContextChangeTrigger;
 import io.casehub.api.model.Worker;
-import io.casehub.engine.internal.history.CaseHubEventType;
+import io.casehub.api.model.event.CaseHubEventType;
 import io.casehub.engine.internal.history.EventLog;
 import io.casehub.engine.spi.EventLogRepository;
 import io.casehub.engine.spi.cache.CaseInstanceCache;

@@ -23,13 +23,17 @@ import io.casehub.api.context.CaseContext;
 import io.casehub.api.context.PropagationContext;
 import io.casehub.api.model.CaseDefinition;
 import io.casehub.api.model.CaseStatus;
+import io.casehub.api.model.event.CaseHubEventType;
+import io.casehub.api.model.event.EventStreamType;
 import io.casehub.engine.internal.event.CaseStartedEvent;
 import io.casehub.engine.internal.event.CaseStatusChanged;
 import io.casehub.engine.internal.event.SignalReceivedEvent;
+import io.casehub.engine.internal.history.EventLog;
 import io.casehub.engine.internal.model.CaseInstance;
 import io.casehub.engine.internal.model.CaseMetaModel;
 import io.casehub.engine.spi.CaseDefinitionRegistry;
 import io.casehub.engine.spi.CaseInstanceRepository;
+import io.casehub.engine.spi.EventLogRepository;
 import io.casehub.engine.spi.cache.CaseInstanceCache;
 import io.casehub.ledger.api.spi.LedgerTraceIdProvider;
 import io.smallrye.mutiny.Uni;
@@ -37,6 +41,8 @@ import io.vertx.mutiny.core.eventbus.EventBus;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
 import java.time.Duration;
+import java.util.Collection;
+import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
@@ -62,6 +68,8 @@ class CaseHubReactor {
   @Inject EventBus eventBus;
 
   @Inject LedgerTraceIdProvider traceIdProvider;
+
+  @Inject EventLogRepository eventLogRepository;
 
   CompletionStage<UUID> startCase(CaseDefinition definition, CaseContext context) {
     return getCaseInstance(definition, context)
@@ -186,5 +194,12 @@ class CaseHubReactor {
               throw new ClassCastException(
                   "Cannot cast " + result.getClass().getName() + " to " + clazz.getName());
             });
+  }
+
+  public Uni<List<EventLog>> eventLog(
+      UUID caseId,
+      Collection<CaseHubEventType> eventTypes,
+      Collection<EventStreamType> streamTypes) {
+    return eventLogRepository.findByCaseWithFilters(caseId, eventTypes, streamTypes);
   }
 }

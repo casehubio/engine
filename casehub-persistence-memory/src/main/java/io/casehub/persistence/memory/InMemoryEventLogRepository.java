@@ -15,7 +15,8 @@
  */
 package io.casehub.persistence.memory;
 
-import io.casehub.engine.internal.history.CaseHubEventType;
+import io.casehub.api.model.event.CaseHubEventType;
+import io.casehub.api.model.event.EventStreamType;
 import io.casehub.engine.internal.history.EventLog;
 import io.casehub.engine.spi.EventLogRepository;
 import io.smallrye.mutiny.Uni;
@@ -197,6 +198,34 @@ public class InMemoryEventLogRepository implements EventLogRepository {
 
       submitted.removeAll(completed);
       return Uni.createFrom().item(List.copyOf(submitted));
+    } finally {
+      rwLock.readLock().unlock();
+    }
+  }
+
+  @Override
+  public Uni<List<EventLog>> findByCaseWithFilters(
+      UUID caseId,
+      Collection<CaseHubEventType> eventTypes,
+      Collection<EventStreamType> streamTypes) {
+    rwLock.readLock().lock();
+    try {
+      List<EventLog> result =
+          store.values().stream()
+              .filter(e -> caseId.equals(e.getCaseId()))
+              .filter(
+                  e ->
+                      eventTypes == null
+                          || eventTypes.isEmpty()
+                          || eventTypes.contains(e.getEventType()))
+              .filter(
+                  e ->
+                      streamTypes == null
+                          || streamTypes.isEmpty()
+                          || streamTypes.contains(e.getStreamType()))
+              .sorted(Comparator.comparingLong(EventLog::getSeq))
+              .toList();
+      return Uni.createFrom().item(result);
     } finally {
       rwLock.readLock().unlock();
     }

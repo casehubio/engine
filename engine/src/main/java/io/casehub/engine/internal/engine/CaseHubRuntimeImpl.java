@@ -17,10 +17,15 @@ package io.casehub.engine.internal.engine;
 
 import io.casehub.api.engine.CaseHubRuntime;
 import io.casehub.api.model.CaseDefinition;
+import io.casehub.api.model.event.CaseEventLogRecord;
+import io.casehub.api.model.event.CaseHubEventType;
+import io.casehub.api.model.event.EventStreamType;
 import io.casehub.engine.internal.context.CaseContextImpl;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
+import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.CompletionStage;
 
@@ -67,5 +72,38 @@ class CaseHubRuntimeImpl implements CaseHubRuntime {
   @Override
   public <T> CompletionStage<T> query(UUID caseId, String path, Class<T> clazz) {
     return reactor.query(caseId, path, clazz);
+  }
+
+  @Override
+  public CompletionStage<List<CaseEventLogRecord>> eventLog(UUID caseId) {
+    return eventLog(caseId, Set.of());
+  }
+
+  @Override
+  public CompletionStage<List<CaseEventLogRecord>> eventLog(
+      UUID caseId, Set<CaseHubEventType> eventTypes) {
+    return eventLog(caseId, eventTypes, Set.of());
+  }
+
+  @Override
+  public CompletionStage<List<CaseEventLogRecord>> eventLog(
+      UUID caseId, Set<CaseHubEventType> eventTypes, Set<EventStreamType> streamTypes) {
+    return reactor
+        .eventLog(caseId, eventTypes, streamTypes)
+        .onItem()
+        .transform(
+            list ->
+                list.stream()
+                    .map(
+                        event ->
+                            new CaseEventLogRecord(
+                                event.getEventType(),
+                                event.getStreamType(),
+                                event.getTimestamp(),
+                                event.getPayload(),
+                                event.getMetadata()))
+                    .toList())
+        .subscribe()
+        .asCompletionStage();
   }
 }
