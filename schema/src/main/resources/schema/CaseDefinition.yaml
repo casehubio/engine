@@ -145,13 +145,26 @@ $defs:
 
   Binding:
     type: object
-    required: [ on, capability ]
+    required: [ on ]
     unevaluatedProperties: false
+    oneOf:
+      - required: [ capability ]
+        not:
+          required: [ subCase ]
+      - required: [ subCase ]
+        not:
+          required: [ capability ]
     properties:
       name: { type: string }
       on: { $ref: "#/$defs/Trigger" }
       when: { type: string, description: "JQ over context and/or event" }
       capability: { type: string }
+      subCase: { $ref: "#/$defs/SubCase" }
+      conflictResolverStrategy:
+        type: string
+        enum: [ LAST_WRITER_WINS, FIRST_WRITER_WINS, FAIL ]
+        default: LAST_WRITER_WINS
+        description: "Strategy for resolving concurrent writes to the same CaseContext key"
 
   Goal:
     type: object
@@ -321,6 +334,51 @@ $defs:
         $ref: "#/$defs/CloudEventTrigger"
       schedule:
         $ref: "#/$defs/ScheduleTrigger"
+
+  SubCase:
+    description: >
+      Identifies a child case definition to launch as part of a Binding's work.
+      When a binding with a subCase is triggered, a child CaseInstance is spawned.
+      The parent case can optionally wait for the child to complete (WAITING state)
+      and merge the child's final context back into the parent context.
+    type: object
+    required: [ namespace, name, version ]
+    unevaluatedProperties: false
+    properties:
+      namespace:
+        type: string
+        pattern: ^[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?$
+        minLength: 1
+        maxLength: 255
+        description: "Child case definition namespace"
+      name:
+        type: string
+        pattern: ^[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?$
+        minLength: 1
+        maxLength: 255
+        description: "Child case definition name"
+      version:
+        type: string
+        pattern: ^(0|[1-9]\d*)\.(0|[1-9]\d*)\.(0|[1-9]\d*)(?:-((?:0|[1-9]\d*|\d*[a-zA-Z-][0-9a-zA-Z-]*)(?:\.(?:0|[1-9]\d*|\d*[a-zA-Z-][0-9a-zA-Z-]*))*))?(?:\+([0-9a-zA-Z-]+(?:\.[0-9a-zA-Z-]+)*))?$
+        minLength: 1
+        maxLength: 50
+        description: "Child case definition semantic version"
+      completionStrategy:
+        type: string
+        enum: [ DEFAULT, CUSTOM ]
+        default: DEFAULT
+        description: "Strategy for determining when the child case is considered complete"
+      waitForCompletion:
+        type: boolean
+        default: true
+        description: "If true, parent transitions to WAITING until child reaches a terminal state"
+      inputMapping:
+        type: string
+        default: "."
+        description: "JQ expression to map parent CaseContext to child initial context"
+      outputMapping:
+        type: string
+        description: "Optional JQ expression to map child final context back to parent (null = no merge)"
 
   Worker:
     description: >
