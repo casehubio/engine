@@ -15,24 +15,33 @@
  */
 package io.casehub.engine;
 
+import static org.awaitility.Awaitility.await;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertInstanceOf;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 
 import io.casehub.api.model.AllOfGoalExpression;
 import io.casehub.api.model.CaseDefinition;
+import io.casehub.api.model.CaseStatus;
 import io.casehub.api.model.ContextChangeTrigger;
 import io.casehub.api.model.GoalBasedCompletion;
 import io.casehub.api.model.evaluator.JQExpressionEvaluator;
+import io.casehub.engine.spi.cache.CaseInstanceCache;
 import io.quarkus.test.junit.QuarkusTest;
 import io.serverlessworkflow.api.types.Workflow;
 import jakarta.inject.Inject;
+import java.util.Map;
+import java.util.UUID;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicReference;
 import org.junit.jupiter.api.Test;
 
 @QuarkusTest
 public class YamlSimpleCaseHubBeanTest {
 
   @Inject YamlSimpleCaseHubBean yamlSimpleCaseHubBean;
+
+  @Inject CaseInstanceCache caseInstanceCache;
 
   @Test
   public void test() {
@@ -95,5 +104,42 @@ public class YamlSimpleCaseHubBeanTest {
     assertEquals(
         "documentProcessingComplete",
         completion.getSuccess().getGoals().iterator().next().getName());
+  }
+
+  @Test
+  public void testExecution() {
+    AtomicReference<UUID> ref = new AtomicReference<>();
+    AtomicReference<Throwable> err = new AtomicReference<>();
+
+    Map<String, Object> initialContext =
+        Map.of(
+            "documentId", "doc-456",
+            "status", "processing");
+
+    yamlSimpleCaseHubBean
+        .startCase(initialContext)
+        .thenAccept(ref::set)
+        .exceptionally(
+            ex -> {
+              err.set(ex);
+              return null;
+            });
+
+    await()
+        .atMost(10, TimeUnit.SECONDS)
+        .untilAsserted(
+            () -> {
+              if (err.get() != null) throw new AssertionError(err.get());
+              assertNotNull(ref.get());
+            });
+
+    await()
+        .atMost(10, TimeUnit.SECONDS)
+        .untilAsserted(
+            () -> {
+              var instance = caseInstanceCache.get(ref.get());
+              assertNotNull(instance);
+              assertEquals(CaseStatus.COMPLETED, instance.getState());
+            });
   }
 }

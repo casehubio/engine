@@ -3,9 +3,8 @@ name: Build and Publish
 on:
   repository_dispatch:
     types: [upstream-published]
-  push:
-    branches: [main]
   pull_request:
+    types: [opened, synchronize, reopened, closed]
     branches: [main]
   workflow_dispatch:
 
@@ -18,8 +17,10 @@ jobs:
 
     steps:
       - uses: actions/checkout@v4
+        if: github.event_name != 'pull_request' || github.event.action != 'closed' || github.event.pull_request.merged == true
 
       - name: Set up Java 21
+        if: github.event_name != 'pull_request' || github.event.action != 'closed' || github.event.pull_request.merged == true
         uses: actions/setup-java@v4
         with:
           java-version: '21'
@@ -29,13 +30,14 @@ jobs:
           server-password: GITHUB_TOKEN
 
       - name: Build and test
+        if: github.event_name != 'pull_request' || github.event.action != 'closed' || github.event.pull_request.merged == true
         run: mvn --batch-mode verify
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Upload Surefire reports
         uses: actions/upload-artifact@v4
-        if: always()
+        if: always() && (github.event_name != 'pull_request' || github.event.action != 'closed' || github.event.pull_request.merged == true)
         with:
           name: surefire-reports
           path: |
@@ -45,15 +47,21 @@ jobs:
           retention-days: 5
 
       - name: Publish to GitHub Packages
-        if: github.event_name != 'pull_request'
+        if: |
+          (github.event_name == 'pull_request' && github.event.pull_request.merged == true) ||
+          github.event_name == 'workflow_dispatch' ||
+          github.event_name == 'repository_dispatch'
         run: mvn --batch-mode deploy -DskipTests
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Trigger downstream CI
-        if: github.event_name != 'pull_request' && success()
+        if: |
+          ((github.event_name == 'pull_request' && github.event.pull_request.merged == true) ||
+          github.event_name == 'workflow_dispatch' ||
+          github.event_name == 'repository_dispatch') && success()
         run: |
-          for repo in claudony; do
+          for repo in flow; do
             gh api repos/casehubio/$repo/dispatches \
               -f event_type=upstream-published \
               -f client_payload[source]="${GITHUB_REPOSITORY}" \
