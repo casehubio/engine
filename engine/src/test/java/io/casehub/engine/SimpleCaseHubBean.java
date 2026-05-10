@@ -19,10 +19,10 @@ import static io.serverlessworkflow.fluent.func.FuncWorkflowBuilder.workflow;
 import static io.serverlessworkflow.fluent.func.dsl.FuncDSL.function;
 
 import io.casehub.api.engine.CaseHub;
+import io.casehub.api.model.Binding;
 import io.casehub.api.model.Capability;
-import io.casehub.api.model.CaseHubDefinition;
+import io.casehub.api.model.CaseDefinition;
 import io.casehub.api.model.ContextChangeTrigger;
-import io.casehub.api.model.DispatchRule;
 import io.casehub.api.model.Goal;
 import io.casehub.api.model.GoalExpression;
 import io.casehub.api.model.GoalKind;
@@ -35,7 +35,7 @@ import java.util.Map;
 public class SimpleCaseHubBean extends CaseHub {
 
   @Override
-  public CaseHubDefinition getDefinition() {
+  public CaseDefinition getDefinition() {
 
     Capability capability =
         Capability.builder()
@@ -53,7 +53,7 @@ public class SimpleCaseHubBean extends CaseHub {
             .description("Goal achieved when document processing is complete")
             .build();
 
-    return CaseHubDefinition.builder()
+    return CaseDefinition.builder()
         .namespace("test")
         .name("Document Processing Test")
         .version("1.0.0")
@@ -90,8 +90,8 @@ public class SimpleCaseHubBean extends CaseHub {
                         .build())
                 .description("Processes documents and updates case context")
                 .build())
-        .rules(
-            DispatchRule.builder()
+        .bindings(
+            Binding.builder()
                 .name("trigger-on-processing-status")
                 .capability(capability)
                 .on(new ContextChangeTrigger(".status == \"processing\""))

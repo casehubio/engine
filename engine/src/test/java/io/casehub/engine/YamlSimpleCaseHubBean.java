@@ -20,10 +20,10 @@ import com.fasterxml.jackson.dataformat.yaml.YAMLFactory;
 import io.casehub.api.engine.CaseHub;
 import io.casehub.api.model.AllOfGoalExpression;
 import io.casehub.api.model.AnyOfGoalExpression;
+import io.casehub.api.model.Binding;
 import io.casehub.api.model.Capability;
-import io.casehub.api.model.CaseHubDefinition;
+import io.casehub.api.model.CaseDefinition;
 import io.casehub.api.model.ContextChangeTrigger;
-import io.casehub.api.model.DispatchRule;
 import io.casehub.api.model.Goal;
 import io.casehub.api.model.GoalBasedCompletion;
 import io.casehub.api.model.GoalExpression;
@@ -45,23 +45,23 @@ public class YamlSimpleCaseHubBean extends CaseHub {
   private static final ObjectMapper YAML_MAPPER = new ObjectMapper(new YAMLFactory());
 
   @Override
-  public CaseHubDefinition getDefinition() {
+  public CaseDefinition getDefinition() {
     try (InputStream is =
         Thread.currentThread().getContextClassLoader().getResourceAsStream("casehub/simple.yaml")) {
       if (is == null) {
         throw new IllegalStateException("Resource casehub/simple.yaml not found on classpath");
       }
-      io.casehub.model.CaseHubDefinition schema =
-          YAML_MAPPER.readValue(is, io.casehub.model.CaseHubDefinition.class);
+      io.casehub.model.CaseDefinition schema =
+          YAML_MAPPER.readValue(is, io.casehub.model.CaseDefinition.class);
       return convertToApiModel(schema);
     } catch (IOException e) {
       throw new RuntimeException("Failed to load CaseHub definition from casehub/simple.yaml", e);
     }
   }
 
-  private CaseHubDefinition convertToApiModel(io.casehub.model.CaseHubDefinition schema) {
-    CaseHubDefinition def =
-        new CaseHubDefinition(schema.getNamespace(), schema.getName(), schema.getVersion());
+  private CaseDefinition convertToApiModel(io.casehub.model.CaseDefinition schema) {
+    CaseDefinition def =
+        new CaseDefinition(schema.getNamespace(), schema.getName(), schema.getVersion());
     def.setDsl(schema.getDsl());
     def.setTitle(schema.getTitle());
 
@@ -89,8 +89,8 @@ public class YamlSimpleCaseHubBean extends CaseHub {
     }
 
     // Convert rules
-    if (schema.getSpec().getRules() != null) {
-      for (io.casehub.model.DispatchRule sr : schema.getSpec().getRules()) {
+    if (schema.getSpec().getBindings() != null) {
+      for (io.casehub.model.Binding sr : schema.getSpec().getBindings()) {
         Capability cap = capabilityMap.get(sr.getCapability());
         Trigger trigger = null;
         if (sr.getOn() != null && sr.getOn().getContextChange() != null) {
@@ -98,8 +98,8 @@ public class YamlSimpleCaseHubBean extends CaseHub {
               new ContextChangeTrigger(
                   new JQExpressionEvaluator(sr.getOn().getContextChange().getFilter()));
         }
-        DispatchRule rule = new DispatchRule(sr.getName(), cap, trigger);
-        def.getRules().add(rule);
+        Binding rule = new Binding(sr.getName(), cap, trigger);
+        def.getBindings().add(rule);
       }
     }
 
