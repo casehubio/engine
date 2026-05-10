@@ -24,7 +24,7 @@ public final class EventBusAddresses {
 
   public static final String CASE_STARTED = "casehub.case.started";
   public static final String CASE_COMPLETED = "casehub.case.completed";
-  public static final String CASE_FAILED = "casehub.case.failed";
+  public static final String CASE_FAULTED = "casehub.case.faulted";
   public static final String CASE_STATUS_CHANGED = "casehub.case.status.changed";
 
   public static final String CONTEXT_CHANGED = "casehub.context.changed";

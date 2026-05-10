@@ -28,14 +28,14 @@ import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 
 /**
- * Pure unit tests for {@link StateContextImpl} — methods not covered by {@link
- * StateContextImplApplyDiffTest}.
+ * Pure unit tests for {@link CaseContextImpl} — methods not covered by {@link
+ * CaseContextImplApplyDiffTest}.
  *
  * <p>Focused on: set/get, typed accessors, compareAndSet, update, merge, getPath/setPath,
  * computeIfAbsent, putIfAbsent, getAll/setAll, clear, evalObjectTemplate, version semantics.
  */
 @DisplayName("StateContextImpl")
-class StateContextImplTest {
+class CaseContextImplTest {
 
   // ================================================================== //
   //  Construction                                                       //
@@ -48,7 +48,7 @@ class StateContextImplTest {
     @Test
     @DisplayName("empty constructor creates empty context at version 0")
     void empty_createsEmptyContext() {
-      final var ctx = new StateContextImpl();
+      final var ctx = new CaseContextImpl();
       assertTrue(ctx.isEmpty());
       assertEquals(0, ctx.getVersion());
     }
@@ -56,7 +56,7 @@ class StateContextImplTest {
     @Test
     @DisplayName("map constructor populates data without incrementing version")
     void mapConstructor_populatesData() {
-      final var ctx = new StateContextImpl(Map.of("a", "1", "b", 2));
+      final var ctx = new CaseContextImpl(Map.of("a", "1", "b", 2));
       assertEquals("1", ctx.getString("a"));
       assertEquals(2, ctx.getInt("b"));
       // version stays 0 because the constructor doesn't call set()
@@ -75,7 +75,7 @@ class StateContextImplTest {
     @Test
     @DisplayName("set increments version on first write")
     void set_incrementsVersion() {
-      final var ctx = new StateContextImpl();
+      final var ctx = new CaseContextImpl();
       ctx.set("k", "v");
       assertEquals(1, ctx.getVersion());
     }
@@ -83,7 +83,7 @@ class StateContextImplTest {
     @Test
     @DisplayName("setting the same value twice does not increment version the second time")
     void set_sameValue_noVersionIncrement() {
-      final var ctx = new StateContextImpl();
+      final var ctx = new CaseContextImpl();
       ctx.set("k", "v");
       final long v1 = ctx.getVersion();
       ctx.set("k", "v");
@@ -93,7 +93,7 @@ class StateContextImplTest {
     @Test
     @DisplayName("setting a different value increments version again")
     void set_differentValue_incrementsAgain() {
-      final var ctx = new StateContextImpl();
+      final var ctx = new CaseContextImpl();
       ctx.set("k", "a");
       final long v1 = ctx.getVersion();
       ctx.set("k", "b");
@@ -103,21 +103,21 @@ class StateContextImplTest {
     @Test
     @DisplayName("get returns null for absent key")
     void get_absentKey_null() {
-      final var ctx = new StateContextImpl();
+      final var ctx = new CaseContextImpl();
       assertNull(ctx.get("missing"));
     }
 
     @Test
     @DisplayName("get returns value for present key")
     void get_presentKey_returnsValue() {
-      final var ctx = new StateContextImpl(Map.of("x", "hello"));
+      final var ctx = new CaseContextImpl(Map.of("x", "hello"));
       assertEquals("hello", ctx.get("x"));
     }
 
     @Test
     @DisplayName("contains returns true for present key, false for absent")
     void contains_presentAndAbsent() {
-      final var ctx = new StateContextImpl(Map.of("x", "y"));
+      final var ctx = new CaseContextImpl(Map.of("x", "y"));
       assertTrue(ctx.contains("x"));
       assertFalse(ctx.contains("z"));
     }
@@ -125,7 +125,7 @@ class StateContextImplTest {
     @Test
     @DisplayName("remove decrements size and increments version")
     void remove_presentKey() {
-      final var ctx = new StateContextImpl(Map.of("a", "1"));
+      final var ctx = new CaseContextImpl(Map.of("a", "1"));
       ctx.remove("a");
       assertFalse(ctx.contains("a"));
       assertEquals(1, ctx.getVersion());
@@ -134,7 +134,7 @@ class StateContextImplTest {
     @Test
     @DisplayName("remove absent key is a no-op (version unchanged)")
     void remove_absentKey_noOp() {
-      final var ctx = new StateContextImpl(Map.of("a", "1"));
+      final var ctx = new CaseContextImpl(Map.of("a", "1"));
       final long before = ctx.getVersion();
       ctx.remove("missing");
       assertEquals(before, ctx.getVersion());
@@ -152,114 +152,114 @@ class StateContextImplTest {
     @Test
     @DisplayName("getString returns null for absent key")
     void getString_absent_null() {
-      assertEquals(null, new StateContextImpl().getString("k"));
+      assertEquals(null, new CaseContextImpl().getString("k"));
     }
 
     @Test
     @DisplayName("getString converts int to string")
     void getString_int_convertsToString() {
-      final var ctx = new StateContextImpl(Map.of("n", 42));
+      final var ctx = new CaseContextImpl(Map.of("n", 42));
       assertEquals("42", ctx.getString("n"));
     }
 
     @Test
     @DisplayName("getInt parses integer from string")
     void getInt_stringValue_parsed() {
-      final var ctx = new StateContextImpl(Map.of("n", "7"));
+      final var ctx = new CaseContextImpl(Map.of("n", "7"));
       assertEquals(7, ctx.getInt("n"));
     }
 
     @Test
     @DisplayName("getInt returns null for absent key")
     void getInt_absent_null() {
-      assertNull(new StateContextImpl().getInt("n"));
+      assertNull(new CaseContextImpl().getInt("n"));
     }
 
     @Test
     @DisplayName("getLong returns long value")
     void getLong_returnsLong() {
-      final var ctx = new StateContextImpl(Map.of("n", 123456789012345L));
+      final var ctx = new CaseContextImpl(Map.of("n", 123456789012345L));
       assertEquals(123456789012345L, ctx.getLong("n"));
     }
 
     @Test
     @DisplayName("getLong parses from string")
     void getLong_stringValue_parsed() {
-      final var ctx = new StateContextImpl(Map.of("n", "9999999999"));
+      final var ctx = new CaseContextImpl(Map.of("n", "9999999999"));
       assertEquals(9999999999L, ctx.getLong("n"));
     }
 
     @Test
     @DisplayName("getLong returns null for absent key")
     void getLong_absent_null() {
-      assertNull(new StateContextImpl().getLong("n"));
+      assertNull(new CaseContextImpl().getLong("n"));
     }
 
     @Test
     @DisplayName("getDouble returns double value")
     void getDouble_returnsDouble() {
-      final var ctx = new StateContextImpl(Map.of("d", 3.14));
+      final var ctx = new CaseContextImpl(Map.of("d", 3.14));
       assertEquals(3.14, ctx.getDouble("d"), 0.001);
     }
 
     @Test
     @DisplayName("getDouble parses from string")
     void getDouble_stringValue_parsed() {
-      final var ctx = new StateContextImpl(Map.of("d", "2.71"));
+      final var ctx = new CaseContextImpl(Map.of("d", "2.71"));
       assertEquals(2.71, ctx.getDouble("d"), 0.001);
     }
 
     @Test
     @DisplayName("getDouble returns null for absent key")
     void getDouble_absent_null() {
-      assertNull(new StateContextImpl().getDouble("d"));
+      assertNull(new CaseContextImpl().getDouble("d"));
     }
 
     @Test
     @DisplayName("getBoolean returns true for Boolean.TRUE")
     void getBoolean_trueValue() {
-      final var ctx = new StateContextImpl(Map.of("b", Boolean.TRUE));
+      final var ctx = new CaseContextImpl(Map.of("b", Boolean.TRUE));
       assertTrue(ctx.getBoolean("b"));
     }
 
     @Test
     @DisplayName("getBoolean returns false for Boolean.FALSE")
     void getBoolean_falseValue() {
-      final var ctx = new StateContextImpl(Map.of("b", Boolean.FALSE));
+      final var ctx = new CaseContextImpl(Map.of("b", Boolean.FALSE));
       assertFalse(ctx.getBoolean("b"));
     }
 
     @Test
     @DisplayName("getBoolean parses 'true' string")
     void getBoolean_stringTrue_parsed() {
-      final var ctx = new StateContextImpl(Map.of("b", "true"));
+      final var ctx = new CaseContextImpl(Map.of("b", "true"));
       assertTrue(ctx.getBoolean("b"));
     }
 
     @Test
     @DisplayName("getBoolean returns null for absent key")
     void getBoolean_absent_null() {
-      assertNull(new StateContextImpl().getBoolean("b"));
+      assertNull(new CaseContextImpl().getBoolean("b"));
     }
 
     @Test
     @DisplayName("getOrDefault returns stored value when present")
     void getOrDefault_present_returnsStored() {
-      final var ctx = new StateContextImpl(Map.of("k", "stored"));
+      final var ctx = new CaseContextImpl(Map.of("k", "stored"));
       assertEquals("stored", ctx.getOrDefault("k", "default"));
     }
 
     @Test
     @DisplayName("getOrDefault returns default when key absent")
     void getOrDefault_absent_returnsDefault() {
-      final var ctx = new StateContextImpl();
+      final var ctx = new CaseContextImpl();
       assertEquals("default", ctx.getOrDefault("k", "default"));
     }
 
     @Test
     @DisplayName("getAs converts numeric to target type via Jackson")
     void getAs_numericConversion() {
-      final var ctx = new StateContextImpl(Map.of("n", 42));
+      final var ctx = new CaseContextImpl(Map.of("n", 42));
       assertEquals(Long.valueOf(42L), ctx.getAs("n", Long.class));
     }
   }
@@ -275,7 +275,7 @@ class StateContextImplTest {
     @Test
     @DisplayName("succeeds when current value matches expected")
     void cas_match_returnsTrue() {
-      final var ctx = new StateContextImpl(Map.of("status", "pending"));
+      final var ctx = new CaseContextImpl(Map.of("status", "pending"));
       final boolean result = ctx.compareAndSet("status", "pending", "active");
       assertTrue(result);
       assertEquals("active", ctx.getString("status"));
@@ -284,7 +284,7 @@ class StateContextImplTest {
     @Test
     @DisplayName("fails when current value does not match expected")
     void cas_mismatch_returnsFalse() {
-      final var ctx = new StateContextImpl(Map.of("status", "running"));
+      final var ctx = new CaseContextImpl(Map.of("status", "running"));
       final boolean result = ctx.compareAndSet("status", "pending", "active");
       assertFalse(result);
       assertEquals("running", ctx.getString("status"), "value must be unchanged after failed CAS");
@@ -293,7 +293,7 @@ class StateContextImplTest {
     @Test
     @DisplayName("succeeds for absent key when expected is null")
     void cas_nullExpected_absentKey_succeeds() {
-      final var ctx = new StateContextImpl();
+      final var ctx = new CaseContextImpl();
       final boolean result = ctx.compareAndSet("k", null, "new-value");
       assertTrue(result);
       assertEquals("new-value", ctx.getString("k"));
@@ -302,7 +302,7 @@ class StateContextImplTest {
     @Test
     @DisplayName("does not increment version when new value equals current value")
     void cas_sameValue_noVersionIncrement() {
-      final var ctx = new StateContextImpl(Map.of("k", "v"));
+      final var ctx = new CaseContextImpl(Map.of("k", "v"));
       final long before = ctx.getVersion();
       ctx.compareAndSet("k", "v", "v"); // same value
       assertEquals(before, ctx.getVersion(), "no-op CAS must not increment version");
@@ -311,7 +311,7 @@ class StateContextImplTest {
     @Test
     @DisplayName("increments version on successful value change")
     void cas_successfulChange_incrementsVersion() {
-      final var ctx = new StateContextImpl(Map.of("k", "old"));
+      final var ctx = new CaseContextImpl(Map.of("k", "old"));
       final long before = ctx.getVersion();
       ctx.compareAndSet("k", "old", "new");
       assertEquals(before + 1, ctx.getVersion());
@@ -329,7 +329,7 @@ class StateContextImplTest {
     @Test
     @DisplayName("update applies function to current value")
     void update_transformsValue() {
-      final var ctx = new StateContextImpl(Map.of("count", 5));
+      final var ctx = new CaseContextImpl(Map.of("count", 5));
       ctx.update("count", v -> ((Number) v).intValue() + 1);
       assertEquals(6, ctx.getInt("count"));
     }
@@ -337,7 +337,7 @@ class StateContextImplTest {
     @Test
     @DisplayName("update with null result removes the key")
     void update_nullResult_removesKey() {
-      final var ctx = new StateContextImpl(Map.of("k", "v"));
+      final var ctx = new CaseContextImpl(Map.of("k", "v"));
       ctx.update("k", v -> null);
       assertFalse(ctx.contains("k"));
     }
@@ -345,7 +345,7 @@ class StateContextImplTest {
     @Test
     @DisplayName("update with no-op (same value) does not increment version")
     void update_noOpSameValue_noVersionIncrement() {
-      final var ctx = new StateContextImpl(Map.of("k", "same"));
+      final var ctx = new CaseContextImpl(Map.of("k", "same"));
       final long before = ctx.getVersion();
       ctx.update("k", v -> "same");
       assertEquals(before, ctx.getVersion());
@@ -354,7 +354,7 @@ class StateContextImplTest {
     @Test
     @DisplayName("update receives null for absent key")
     void update_absentKey_receivesNull() {
-      final var ctx = new StateContextImpl();
+      final var ctx = new CaseContextImpl();
       final Object[] received = {new Object()}; // sentinel
       ctx.update(
           "absent",
@@ -377,7 +377,7 @@ class StateContextImplTest {
     @Test
     @DisplayName("computeIfAbsent computes and stores when key absent")
     void computeIfAbsent_absent_computesAndStores() {
-      final var ctx = new StateContextImpl();
+      final var ctx = new CaseContextImpl();
       final Object result = ctx.computeIfAbsent("k", key -> "computed");
       assertEquals("computed", result);
       assertEquals("computed", ctx.getString("k"));
@@ -386,7 +386,7 @@ class StateContextImplTest {
     @Test
     @DisplayName("computeIfAbsent returns existing value without calling function")
     void computeIfAbsent_present_returnsExisting() {
-      final var ctx = new StateContextImpl(Map.of("k", "existing"));
+      final var ctx = new CaseContextImpl(Map.of("k", "existing"));
       final boolean[] called = {false};
       final Object result =
           ctx.computeIfAbsent(
@@ -402,7 +402,7 @@ class StateContextImplTest {
     @Test
     @DisplayName("computeIfAbsent does not store when function returns null")
     void computeIfAbsent_functionReturnsNull_notStored() {
-      final var ctx = new StateContextImpl();
+      final var ctx = new CaseContextImpl();
       final long before = ctx.getVersion();
       ctx.computeIfAbsent("k", key -> null);
       assertFalse(ctx.contains("k"));
@@ -412,7 +412,7 @@ class StateContextImplTest {
     @Test
     @DisplayName("putIfAbsent stores value when key absent")
     void putIfAbsent_absent_stores() {
-      final var ctx = new StateContextImpl();
+      final var ctx = new CaseContextImpl();
       final Object previous = ctx.putIfAbsent("k", "new");
       assertNull(previous, "previous should be null when key was absent");
       assertEquals("new", ctx.getString("k"));
@@ -421,7 +421,7 @@ class StateContextImplTest {
     @Test
     @DisplayName("putIfAbsent returns existing value without overwriting")
     void putIfAbsent_present_returnsExisting() {
-      final var ctx = new StateContextImpl(Map.of("k", "existing"));
+      final var ctx = new CaseContextImpl(Map.of("k", "existing"));
       final Object previous = ctx.putIfAbsent("k", "new");
       assertEquals("existing", previous);
       assertEquals("existing", ctx.getString("k"), "existing value must not be overwritten");
@@ -439,7 +439,7 @@ class StateContextImplTest {
     @Test
     @DisplayName("setAll stores all provided key-value pairs")
     void setAll_storesAll() {
-      final var ctx = new StateContextImpl();
+      final var ctx = new CaseContextImpl();
       ctx.setAll(Map.of("a", "1", "b", "2"));
       assertEquals("1", ctx.getString("a"));
       assertEquals("2", ctx.getString("b"));
@@ -448,7 +448,7 @@ class StateContextImplTest {
     @Test
     @DisplayName("setAll with null map is a no-op")
     void setAll_nullMap_noOp() {
-      final var ctx = new StateContextImpl(Map.of("k", "v"));
+      final var ctx = new CaseContextImpl(Map.of("k", "v"));
       final long before = ctx.getVersion();
       ctx.setAll(null);
       assertEquals(before, ctx.getVersion());
@@ -457,7 +457,7 @@ class StateContextImplTest {
     @Test
     @DisplayName("setAll with empty map is a no-op")
     void setAll_emptyMap_noOp() {
-      final var ctx = new StateContextImpl(Map.of("k", "v"));
+      final var ctx = new CaseContextImpl(Map.of("k", "v"));
       final long before = ctx.getVersion();
       ctx.setAll(Map.of());
       assertEquals(before, ctx.getVersion());
@@ -466,7 +466,7 @@ class StateContextImplTest {
     @Test
     @DisplayName("setAll only increments version once for multiple changes")
     void setAll_multipleChanges_singleVersionIncrement() {
-      final var ctx = new StateContextImpl();
+      final var ctx = new CaseContextImpl();
       final long before = ctx.getVersion();
       ctx.setAll(Map.of("a", "1", "b", "2", "c", "3"));
       assertEquals(before + 1, ctx.getVersion(), "setAll should increment version exactly once");
@@ -475,7 +475,7 @@ class StateContextImplTest {
     @Test
     @DisplayName("setAll no-op when all values are identical")
     void setAll_allSameValues_noVersionIncrement() {
-      final var ctx = new StateContextImpl(Map.of("a", "1"));
+      final var ctx = new CaseContextImpl(Map.of("a", "1"));
       final long before = ctx.getVersion();
       ctx.setAll(Map.of("a", "1")); // no actual change
       assertEquals(before, ctx.getVersion());
@@ -484,7 +484,7 @@ class StateContextImplTest {
     @Test
     @DisplayName("getAll returns only present keys")
     void getAll_returnsOnlyPresentKeys() {
-      final var ctx = new StateContextImpl(Map.of("a", "1", "b", "2"));
+      final var ctx = new CaseContextImpl(Map.of("a", "1", "b", "2"));
       final var result = ctx.getAll("a", "c"); // 'c' is missing
       assertEquals(1, result.size());
       assertEquals("1", result.get("a"));
@@ -494,7 +494,7 @@ class StateContextImplTest {
     @Test
     @DisplayName("getAll with no matching keys returns empty map")
     void getAll_noMatchingKeys_empty() {
-      final var ctx = new StateContextImpl(Map.of("a", "1"));
+      final var ctx = new CaseContextImpl(Map.of("a", "1"));
       final var result = ctx.getAll("x", "y");
       assertTrue(result.isEmpty());
     }
@@ -511,7 +511,7 @@ class StateContextImplTest {
     @Test
     @DisplayName("clear empties the context and increments version")
     void clear_emptiesContext() {
-      final var ctx = new StateContextImpl(Map.of("a", "1", "b", "2"));
+      final var ctx = new CaseContextImpl(Map.of("a", "1", "b", "2"));
       ctx.clear();
       assertTrue(ctx.isEmpty());
       assertEquals(0, ctx.size());
@@ -521,7 +521,7 @@ class StateContextImplTest {
     @Test
     @DisplayName("clear on already-empty context is a no-op")
     void clear_alreadyEmpty_noOp() {
-      final var ctx = new StateContextImpl();
+      final var ctx = new CaseContextImpl();
       final long before = ctx.getVersion();
       ctx.clear();
       assertEquals(before, ctx.getVersion(), "clearing empty context must not increment version");
@@ -539,7 +539,7 @@ class StateContextImplTest {
     @Test
     @DisplayName("setPath creates nested structure and getPath retrieves it")
     void setPath_createsNested_getPathRetrieve() {
-      final var ctx = new StateContextImpl();
+      final var ctx = new CaseContextImpl();
       ctx.setPath("payment.amount", 500);
       assertEquals(500, ctx.getPath("payment.amount"));
     }
@@ -547,7 +547,7 @@ class StateContextImplTest {
     @Test
     @DisplayName("setPath creates intermediate map nodes")
     void setPath_createsIntermediateNodes() {
-      final var ctx = new StateContextImpl();
+      final var ctx = new CaseContextImpl();
       ctx.setPath("a.b.c", "deep");
       assertEquals("deep", ctx.getPath("a.b.c"));
     }
@@ -555,21 +555,21 @@ class StateContextImplTest {
     @Test
     @DisplayName("getPath returns null for absent top-level key")
     void getPath_absentTopLevel_null() {
-      final var ctx = new StateContextImpl();
+      final var ctx = new CaseContextImpl();
       assertNull(ctx.getPath("missing.path"));
     }
 
     @Test
     @DisplayName("getPath returns null when intermediate key is absent")
     void getPath_absentIntermediate_null() {
-      final var ctx = new StateContextImpl(Map.of("a", Map.of("x", "1")));
+      final var ctx = new CaseContextImpl(Map.of("a", Map.of("x", "1")));
       assertNull(ctx.getPath("a.b.c"));
     }
 
     @Test
     @DisplayName("setPath on non-map node throws IllegalStateException")
     void setPath_nonMapNode_throws() {
-      final var ctx = new StateContextImpl(Map.of("a", "scalar"));
+      final var ctx = new CaseContextImpl(Map.of("a", "scalar"));
       assertThrows(
           IllegalStateException.class,
           () -> ctx.setPath("a.b", "value"),
@@ -579,7 +579,7 @@ class StateContextImplTest {
     @Test
     @DisplayName("getPathAsString returns string representation")
     void getPathAsString_returnsString() {
-      final var ctx = new StateContextImpl();
+      final var ctx = new CaseContextImpl();
       ctx.setPath("x.y", 42);
       assertEquals("42", ctx.getPathAsString("x.y"));
     }
@@ -587,13 +587,13 @@ class StateContextImplTest {
     @Test
     @DisplayName("getPathAsString returns null for absent path")
     void getPathAsString_absent_null() {
-      assertNull(new StateContextImpl().getPathAsString("missing"));
+      assertNull(new CaseContextImpl().getPathAsString("missing"));
     }
 
     @Test
     @DisplayName("setPath with same value does not increment version")
     void setPath_sameValue_noVersionIncrement() {
-      final var ctx = new StateContextImpl();
+      final var ctx = new CaseContextImpl();
       ctx.setPath("a.b", "v");
       final long before = ctx.getVersion();
       ctx.setPath("a.b", "v");
@@ -612,8 +612,8 @@ class StateContextImplTest {
     @Test
     @DisplayName("merge adds new keys from other context")
     void merge_addsNewKeys() {
-      final var ctx = new StateContextImpl(Map.of("a", "1"));
-      final var other = new StateContextImpl(Map.of("b", "2"));
+      final var ctx = new CaseContextImpl(Map.of("a", "1"));
+      final var other = new CaseContextImpl(Map.of("b", "2"));
       ctx.merge(other);
       assertEquals("1", ctx.getString("a"));
       assertEquals("2", ctx.getString("b"));
@@ -622,8 +622,8 @@ class StateContextImplTest {
     @Test
     @DisplayName("merge overwrites existing keys with values from other")
     void merge_overwritesExisting() {
-      final var ctx = new StateContextImpl(Map.of("k", "old"));
-      final var other = new StateContextImpl(Map.of("k", "new"));
+      final var ctx = new CaseContextImpl(Map.of("k", "old"));
+      final var other = new CaseContextImpl(Map.of("k", "new"));
       ctx.merge(other);
       assertEquals("new", ctx.getString("k"));
     }
@@ -631,7 +631,7 @@ class StateContextImplTest {
     @Test
     @DisplayName("merge with null is a no-op")
     void merge_null_noOp() {
-      final var ctx = new StateContextImpl(Map.of("k", "v"));
+      final var ctx = new CaseContextImpl(Map.of("k", "v"));
       final long before = ctx.getVersion();
       ctx.merge(null);
       assertEquals(before, ctx.getVersion());
@@ -641,17 +641,17 @@ class StateContextImplTest {
     @Test
     @DisplayName("merge with empty context is a no-op")
     void merge_emptyOther_noOp() {
-      final var ctx = new StateContextImpl(Map.of("k", "v"));
+      final var ctx = new CaseContextImpl(Map.of("k", "v"));
       final long before = ctx.getVersion();
-      ctx.merge(new StateContextImpl());
+      ctx.merge(new CaseContextImpl());
       assertEquals(before, ctx.getVersion());
     }
 
     @Test
     @DisplayName("merge with identical values does not increment version")
     void merge_sameValues_noVersionIncrement() {
-      final var ctx = new StateContextImpl(Map.of("k", "v"));
-      final var other = new StateContextImpl(Map.of("k", "v"));
+      final var ctx = new CaseContextImpl(Map.of("k", "v"));
+      final var other = new CaseContextImpl(Map.of("k", "v"));
       final long before = ctx.getVersion();
       ctx.merge(other);
       assertEquals(before, ctx.getVersion());
@@ -669,8 +669,8 @@ class StateContextImplTest {
     @Test
     @DisplayName("snapshot captures current data at current version")
     void snapshot_capturesState() {
-      final var ctx = new StateContextImpl(Map.of("k", "v"));
-      final var snap = (StateContextImpl) ctx.snapshot();
+      final var ctx = new CaseContextImpl(Map.of("k", "v"));
+      final var snap = (CaseContextImpl) ctx.snapshot();
       assertEquals("v", snap.getString("k"));
       assertEquals(ctx.getVersion(), snap.getVersion());
     }
@@ -678,8 +678,8 @@ class StateContextImplTest {
     @Test
     @DisplayName("modifying original after snapshot does not affect snapshot")
     void snapshot_isIndependent() {
-      final var ctx = new StateContextImpl(Map.of("k", "original"));
-      final var snap = (StateContextImpl) ctx.snapshot();
+      final var ctx = new CaseContextImpl(Map.of("k", "original"));
+      final var snap = (CaseContextImpl) ctx.snapshot();
       ctx.set("k", "modified");
       assertEquals("original", snap.getString("k"), "snapshot must be independent of original");
     }
@@ -687,8 +687,8 @@ class StateContextImplTest {
     @Test
     @DisplayName("modifying snapshot does not affect original")
     void snapshot_modifySnap_doesNotAffectOriginal() {
-      final var ctx = new StateContextImpl(Map.of("k", "v"));
-      final var snap = (StateContextImpl) ctx.snapshot();
+      final var ctx = new CaseContextImpl(Map.of("k", "v"));
+      final var snap = (CaseContextImpl) ctx.snapshot();
       snap.set("k", "changed");
       assertEquals("v", ctx.getString("k"), "original must be unaffected by snapshot changes");
     }
@@ -705,7 +705,7 @@ class StateContextImplTest {
     @Test
     @DisplayName("getKeys returns all stored keys")
     void getKeys_returnsAllKeys() {
-      final var ctx = new StateContextImpl(Map.of("a", "1", "b", "2"));
+      final var ctx = new CaseContextImpl(Map.of("a", "1", "b", "2"));
       final var keys = ctx.getKeys();
       assertEquals(2, keys.size());
       assertTrue(keys.contains("a"));
@@ -715,20 +715,20 @@ class StateContextImplTest {
     @Test
     @DisplayName("size returns count of stored entries")
     void size_returnsCount() {
-      final var ctx = new StateContextImpl(Map.of("a", "1", "b", "2", "c", "3"));
+      final var ctx = new CaseContextImpl(Map.of("a", "1", "b", "2", "c", "3"));
       assertEquals(3, ctx.size());
     }
 
     @Test
     @DisplayName("isEmpty returns true for empty context")
     void isEmpty_empty_true() {
-      assertTrue(new StateContextImpl().isEmpty());
+      assertTrue(new CaseContextImpl().isEmpty());
     }
 
     @Test
     @DisplayName("isEmpty returns false after adding entry")
     void isEmpty_afterAdd_false() {
-      final var ctx = new StateContextImpl();
+      final var ctx = new CaseContextImpl();
       ctx.set("k", "v");
       assertFalse(ctx.isEmpty());
     }
@@ -745,7 +745,7 @@ class StateContextImplTest {
     @Test
     @DisplayName("asJsonNode returns an object node with all entries")
     void asJsonNode_returnsObjectNode() {
-      final var ctx = new StateContextImpl(Map.of("status", "active", "count", 3));
+      final var ctx = new CaseContextImpl(Map.of("status", "active", "count", 3));
       final var node = ctx.asJsonNode();
       assertNotNull(node);
       assertEquals("active", node.get("status").asText());
@@ -755,7 +755,7 @@ class StateContextImplTest {
     @Test
     @DisplayName("getData returns a copy — modifying it does not affect context")
     void getData_returnsCopy() {
-      final var ctx = new StateContextImpl(Map.of("k", "v"));
+      final var ctx = new CaseContextImpl(Map.of("k", "v"));
       final var data = ctx.getData();
       data.put("k", "modified");
       assertEquals("v", ctx.getString("k"), "getData must return a defensive copy");
@@ -773,7 +773,7 @@ class StateContextImplTest {
     @Test
     @DisplayName("extracts single field via path expression")
     void singleField_extracted() {
-      final var ctx = new StateContextImpl(Map.of("documentId", "doc-123", "status", "active"));
+      final var ctx = new CaseContextImpl(Map.of("documentId", "doc-123", "status", "active"));
       final var result = ctx.evalObjectTemplate("{ documentId: .documentId }");
       assertEquals("doc-123", result.get("documentId"));
       assertFalse(result.containsKey("status"), "only requested field should be present");
@@ -782,7 +782,7 @@ class StateContextImplTest {
     @Test
     @DisplayName("extracts multiple fields")
     void multipleFields_extracted() {
-      final var ctx = new StateContextImpl(Map.of("id", "x1", "status", "ok", "extra", "ignored"));
+      final var ctx = new CaseContextImpl(Map.of("id", "x1", "status", "ok", "extra", "ignored"));
       final var result = ctx.evalObjectTemplate("{ id: .id, status: .status }");
       assertEquals("x1", result.get("id"));
       assertEquals("ok", result.get("status"));
@@ -792,7 +792,7 @@ class StateContextImplTest {
     @Test
     @DisplayName("dot expression maps to whole context snapshot")
     void dotExpression_wholeContext() {
-      final var ctx = new StateContextImpl(Map.of("a", "1"));
+      final var ctx = new CaseContextImpl(Map.of("a", "1"));
       final var result = ctx.evalObjectTemplate("{ all: . }");
       assertNotNull(result.get("all"));
     }
@@ -800,7 +800,7 @@ class StateContextImplTest {
     @Test
     @DisplayName("absent path produces null value for the key")
     void absentPath_nullValue() {
-      final var ctx = new StateContextImpl(Map.of("a", "1"));
+      final var ctx = new CaseContextImpl(Map.of("a", "1"));
       final var result = ctx.evalObjectTemplate("{ missing: .nonExistent }");
       assertTrue(result.containsKey("missing"), "key must still be present");
       assertNull(result.get("missing"), "value for absent path must be null");
@@ -809,7 +809,7 @@ class StateContextImplTest {
     @Test
     @DisplayName("JSON literal value is included directly")
     void jsonLiteralValue_included() {
-      final var ctx = new StateContextImpl(Map.of("a", "1"));
+      final var ctx = new CaseContextImpl(Map.of("a", "1"));
       final var result = ctx.evalObjectTemplate("{ fixed: \"hello\" }");
       assertEquals("hello", result.get("fixed"));
     }
@@ -817,28 +817,28 @@ class StateContextImplTest {
     @Test
     @DisplayName("null template returns empty map")
     void nullTemplate_returnsEmpty() {
-      final var ctx = new StateContextImpl(Map.of("a", "1"));
+      final var ctx = new CaseContextImpl(Map.of("a", "1"));
       assertTrue(ctx.evalObjectTemplate(null).isEmpty());
     }
 
     @Test
     @DisplayName("blank template returns empty map")
     void blankTemplate_returnsEmpty() {
-      final var ctx = new StateContextImpl(Map.of("a", "1"));
+      final var ctx = new CaseContextImpl(Map.of("a", "1"));
       assertTrue(ctx.evalObjectTemplate("   ").isEmpty());
     }
 
     @Test
     @DisplayName("empty braces {} returns empty map")
     void emptyBraces_returnsEmpty() {
-      final var ctx = new StateContextImpl(Map.of("a", "1"));
+      final var ctx = new CaseContextImpl(Map.of("a", "1"));
       assertTrue(ctx.evalObjectTemplate("{}").isEmpty());
     }
 
     @Test
     @DisplayName("template not wrapped with braces throws IllegalArgumentException")
     void unwrappedTemplate_throws() {
-      final var ctx = new StateContextImpl(Map.of("a", "1"));
+      final var ctx = new CaseContextImpl(Map.of("a", "1"));
       assertThrows(
           IllegalArgumentException.class,
           () -> ctx.evalObjectTemplate("id: .id"),
@@ -848,7 +848,7 @@ class StateContextImplTest {
     @Test
     @DisplayName("nested path extracts from nested structure")
     void nestedPath_extracted() {
-      final var ctx = new StateContextImpl();
+      final var ctx = new CaseContextImpl();
       ctx.setPath("doc.id", "doc-42");
       final var result = ctx.evalObjectTemplate("{ docId: .doc }");
       assertNotNull(result.get("docId"), "nested extraction should work via . path to top key");
@@ -857,7 +857,7 @@ class StateContextImplTest {
     @Test
     @DisplayName("boolean literal value in template")
     void booleanLiteral_included() {
-      final var ctx = new StateContextImpl();
+      final var ctx = new CaseContextImpl();
       final var result = ctx.evalObjectTemplate("{ flag: true }");
       assertEquals(true, result.get("flag"));
     }
@@ -865,7 +865,7 @@ class StateContextImplTest {
     @Test
     @DisplayName("numeric literal value in template")
     void numericLiteral_included() {
-      final var ctx = new StateContextImpl();
+      final var ctx = new CaseContextImpl();
       final var result = ctx.evalObjectTemplate("{ count: 42 }");
       assertEquals(42, result.get("count"));
     }
@@ -882,31 +882,31 @@ class StateContextImplTest {
     @Test
     @DisplayName("two contexts with same data are equal regardless of version")
     void equalData_equalContexts() {
-      final var a = new StateContextImpl(Map.of("k", "v"), 1L);
-      final var b = new StateContextImpl(Map.of("k", "v"), 99L);
+      final var a = new CaseContextImpl(Map.of("k", "v"), 1L);
+      final var b = new CaseContextImpl(Map.of("k", "v"), 99L);
       assertEquals(a, b, "equality is based on data, not version");
     }
 
     @Test
     @DisplayName("contexts with different data are not equal")
     void differentData_notEqual() {
-      final var a = new StateContextImpl(Map.of("k", "v1"));
-      final var b = new StateContextImpl(Map.of("k", "v2"));
+      final var a = new CaseContextImpl(Map.of("k", "v1"));
+      final var b = new CaseContextImpl(Map.of("k", "v2"));
       assertFalse(a.equals(b));
     }
 
     @Test
     @DisplayName("same instance equals itself")
     void sameInstance_equal() {
-      final var ctx = new StateContextImpl(Map.of("k", "v"));
+      final var ctx = new CaseContextImpl(Map.of("k", "v"));
       assertTrue(ctx.equals(ctx));
     }
 
     @Test
     @DisplayName("hashCode consistent with equals")
     void hashCode_consistentWithEquals() {
-      final var a = new StateContextImpl(Map.of("k", "v"));
-      final var b = new StateContextImpl(Map.of("k", "v"));
+      final var a = new CaseContextImpl(Map.of("k", "v"));
+      final var b = new CaseContextImpl(Map.of("k", "v"));
       assertEquals(a.hashCode(), b.hashCode());
     }
   }
@@ -922,7 +922,7 @@ class StateContextImplTest {
     @Test
     @DisplayName("toString returns valid JSON representation")
     void toString_returnsJson() {
-      final var ctx = new StateContextImpl(Map.of("status", "ok"));
+      final var ctx = new CaseContextImpl(Map.of("status", "ok"));
       final var json = ctx.toString();
       assertNotNull(json);
       assertTrue(json.contains("status"), "toString should contain the key");

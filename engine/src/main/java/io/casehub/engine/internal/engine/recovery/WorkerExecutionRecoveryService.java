@@ -17,8 +17,8 @@ package io.casehub.engine.internal.engine.recovery;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import io.casehub.api.context.StateContext;
-import io.casehub.engine.internal.context.StateContextImpl;
+import io.casehub.api.context.CaseContext;
+import io.casehub.engine.internal.context.CaseContextImpl;
 import io.casehub.engine.internal.engine.cache.CaseInstanceCache;
 import io.casehub.engine.internal.history.CaseHubEventType;
 import io.casehub.engine.internal.history.EventLog;
@@ -85,7 +85,7 @@ public class WorkerExecutionRecoveryService {
                 rebuildStateContext(caseId)
                     .map(
                         stateContext -> {
-                          instance.setStateContext(stateContext);
+                          instance.setCaseContext(stateContext);
                           caseInstanceCache.put(instance);
                           return instance;
                         }));
@@ -134,7 +134,7 @@ public class WorkerExecutionRecoveryService {
   }
 
   @SuppressWarnings("unchecked")
-  private Uni<StateContext> rebuildStateContext(UUID caseId) {
+  private Uni<CaseContext> rebuildStateContext(UUID caseId) {
     return runOnSafeContext(
             () ->
                 sessionFactory.withSession(
@@ -153,7 +153,7 @@ public class WorkerExecutionRecoveryService {
                             .getResultList()))
         .map(
             eventLogs -> {
-              StateContext stateContext = new StateContextImpl();
+              CaseContext caseContext = new CaseContextImpl();
               EventLog caseStartedEvent =
                   eventLogs.stream()
                       .filter(eventLog -> eventLog.getEventType() == CaseHubEventType.CASE_STARTED)
@@ -161,7 +161,7 @@ public class WorkerExecutionRecoveryService {
                       .orElse(null);
 
               if (caseStartedEvent != null) {
-                stateContext = new StateContextImpl(payloadAsMap(caseStartedEvent.getPayload()));
+                caseContext = new CaseContextImpl(payloadAsMap(caseStartedEvent.getPayload()));
               }
 
               for (EventLog eventLog : eventLogs) {
@@ -172,16 +172,16 @@ public class WorkerExecutionRecoveryService {
                 if (eventLog.getEventType() == CaseHubEventType.SIGNAL_RECEIVED) {
                   JsonNode patch = payloadAsPatch(eventLog.getPayload());
                   if (patch != null) {
-                    stateContext.applyDiff(patch);
+                    caseContext.applyDiff(patch);
                   }
                 } else if (eventLog.getEventType() == CaseHubEventType.WORKER_EXECUTION_COMPLETED) {
-                  stateContext.setAll(payloadAsMap(eventLog.getPayload()));
+                  caseContext.setAll(payloadAsMap(eventLog.getPayload()));
                 } else {
                   LOG.warnf(
                       "Unexpected event type in rebuildStateContext: %s", eventLog.getEventType());
                 }
               }
-              return stateContext;
+              return caseContext;
             });
   }
 
