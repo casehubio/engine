@@ -15,14 +15,14 @@
  */
 package io.casehub.api.engine;
 
-import io.casehub.api.context.StateContext;
+import io.casehub.api.context.CaseContext;
 import io.casehub.api.model.evaluator.ExpressionEvaluator;
 
 /**
  * SPI for pluggable expression evaluation engines.
  *
  * <p>Each engine declares the {@link ExpressionEvaluator#type()} it handles and evaluates
- * expressions of that type against a {@link StateContext}. Register additional engines as CDI beans
+ * expressions of that type against a {@link CaseContext}. Register additional engines as CDI beans
  * to support new expression languages (e.g. Drools, SpEL) without modifying the runtime.
  *
  * @see io.casehub.api.model.evaluator.JQExpressionEvaluator
@@ -42,7 +42,7 @@ public interface ExpressionEngine {
    * @param context the current case state
    * @return {@code true} if the expression matches, {@code false} otherwise
    */
-  boolean evaluate(ExpressionEvaluator evaluator, StateContext context);
+  boolean evaluate(ExpressionEvaluator evaluator, CaseContext context);
 
   /**
    * Validates the expression syntax without evaluating it against any context.
