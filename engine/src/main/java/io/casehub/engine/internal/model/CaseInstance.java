@@ -15,7 +15,8 @@
  */
 package io.casehub.engine.internal.model;
 
-import io.casehub.api.context.StateContext;
+import io.casehub.api.context.CaseContext;
+import io.casehub.api.model.CaseStatus;
 import io.quarkus.hibernate.reactive.panache.PanacheEntity;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
@@ -37,13 +38,16 @@ public class CaseInstance extends PanacheEntity {
   @Column(name = "uuid", nullable = false, unique = true, updatable = false)
   private UUID uuid;
 
-  // TODO sync version with stateContext version
+  // TODO sync version with caseContext version
   @Transient private long version = 0L;
 
-  @Transient private StateContext stateContext;
+  @Transient private CaseContext caseContext;
+
+  @Column(name = "parent_plan_item_id", nullable = true)
+  private UUID parentPlanItemId;
 
   @Enumerated(EnumType.STRING)
-  private CaseState state;
+  private CaseStatus state;
 
   public CaseMetaModel getCaseMetaModel() {
     return caseMetaModel;
@@ -69,19 +73,27 @@ public class CaseInstance extends PanacheEntity {
     this.version = version;
   }
 
-  public StateContext getStateContext() {
-    return stateContext;
+  public CaseContext getCaseContext() {
+    return caseContext;
   }
 
-  public void setStateContext(StateContext stateContext) {
-    this.stateContext = stateContext;
+  public void setCaseContext(CaseContext caseContext) {
+    this.caseContext = caseContext;
   }
 
-  public CaseState getState() {
+  public UUID getParentPlanItemId() {
+    return parentPlanItemId;
+  }
+
+  public void setParentPlanItemId(UUID parentPlanItemId) {
+    this.parentPlanItemId = parentPlanItemId;
+  }
+
+  public CaseStatus getState() {
     return state;
   }
 
-  public void setState(CaseState state) {
+  public void setState(CaseStatus state) {
     this.state = state;
   }
 }
