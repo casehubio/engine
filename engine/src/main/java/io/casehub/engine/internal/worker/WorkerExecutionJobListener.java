@@ -163,12 +163,12 @@ public class WorkerExecutionJobListener implements JobListener {
                       failureCount -> {
                         if (failureCount < retryPolicy.maxAttempts()) {
                           LOG.infof(
-                              "Rescheduling worker %s: attempt %d/%d, delayMs=%d",
+                              "Rescheduling worker %s: attempt %d/%d, strategy=%s",
                               workerId,
                               failureCount + 1,
                               retryPolicy.maxAttempts(),
-                              retryPolicy.delayMs());
-                          rescheduleJob(context, retryPolicy);
+                              retryPolicy.backoffStrategy());
+                          rescheduleJob(context, retryPolicy, failureCount + 1);
                         } else {
                           LOG.warnf(
                               "Worker %s exhausted all %d retry attempts for case %s",
@@ -216,7 +216,8 @@ public class WorkerExecutionJobListener implements JobListener {
     return executionPolicy.retries();
   }
 
-  private void rescheduleJob(JobExecutionContext context, RetryPolicy retryPolicy) {
+  private void rescheduleJob(
+      JobExecutionContext context, RetryPolicy retryPolicy, long attemptNumber) {
     String idempotency = context.getMergedJobDataMap().getString("inputDataHash");
     String group = context.getMergedJobDataMap().getString("caseHubInstanceUuid");
     JobKey jobKey = new JobKey(idempotency, group);
@@ -228,7 +229,7 @@ public class WorkerExecutionJobListener implements JobListener {
             .usingJobData(context.getMergedJobDataMap())
             .build();
 
-    int delayMs = retryPolicy.delayMs() > 0 ? retryPolicy.delayMs() : 0;
+    long delayMs = computeBackoffDelayMs(retryPolicy, attemptNumber);
 
     Trigger trigger =
         newTrigger()
@@ -294,5 +295,30 @@ public class WorkerExecutionJobListener implements JobListener {
 
   private <T> Uni<T> runOnSafeVertxContext(Supplier<Uni<? extends T>> action) {
     return ReactiveUtils.runOnSafeVertxContext(vertx, action);
+  }
+
+  /**
+   * Computes the retry delay using the policy's {@link io.casehub.api.model.BackoffStrategy}.
+   * FIXED: constant delayMs. EXPONENTIAL: delayMs * 2^(attempt-1), capped at 30s.
+   * EXPONENTIAL_WITH_JITTER: random in [0, exponential cap].
+   */
+  private static long computeBackoffDelayMs(RetryPolicy policy, long attemptNumber) {
+    long baseDelayMs = policy.delayMs() != null ? policy.delayMs() : 0L;
+    io.casehub.api.model.BackoffStrategy strategy =
+        policy.backoffStrategy() != null
+            ? policy.backoffStrategy()
+            : io.casehub.api.model.BackoffStrategy.FIXED;
+    return switch (strategy) {
+      case FIXED -> baseDelayMs;
+      case EXPONENTIAL -> {
+        long shift = Math.min(attemptNumber - 1, 30);
+        yield Math.min(baseDelayMs * (1L << shift), 30_000L);
+      }
+      case EXPONENTIAL_WITH_JITTER -> {
+        long shift = Math.min(attemptNumber - 1, 30);
+        long cap = Math.min(baseDelayMs * (1L << shift), 30_000L);
+        yield cap == 0 ? 0 : java.util.concurrent.ThreadLocalRandom.current().nextLong(cap + 1);
+      }
+    };
   }
 }
