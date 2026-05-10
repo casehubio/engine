@@ -15,7 +15,7 @@
  */
 package io.casehub.api.engine;
 
-import io.casehub.api.model.CaseHubDefinition;
+import io.casehub.api.model.CaseDefinition;
 import jakarta.inject.Inject;
 import java.util.Map;
 import java.util.UUID;
@@ -25,7 +25,7 @@ public abstract class CaseHub {
 
   @Inject CaseHubRuntime runtime;
 
-  public abstract CaseHubDefinition getDefinition();
+  public abstract CaseDefinition getDefinition();
 
   public CompletionStage<UUID> startCase() {
     return runtime.startCase(getDefinition());

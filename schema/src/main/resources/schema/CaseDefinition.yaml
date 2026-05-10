@@ -106,14 +106,13 @@ $defs:
           (success) or terminally failed based on Goal satisfaction and/or a
           direct JQ predicate. The Reactor evaluates completion on every
           CaseContext change and may emit CaseCompleted/CaseFailed events.
-      rules:
+      bindings:
         type: array
         description: >
-          Rules define when and how to invoke capabilities based on context
-          changes and events. They are the "glue" that connects Workers to
-          Cases and orchestrates interactions.
+          Bindings connect trigger conditions to worker capabilities. When a binding's
+          trigger condition is met, the associated capability is invoked.
         items:
-          $ref: "#/$defs/DispatchRule"
+          $ref: "#/$defs/Binding"
       workers:
         type: array
         description: >
@@ -144,7 +143,7 @@ $defs:
       outputSchema:
         { type: string, description: "JQ producing capability output" }
 
-  DispatchRule:
+  Binding:
     type: object
     required: [ on, capability ]
     unevaluatedProperties: false

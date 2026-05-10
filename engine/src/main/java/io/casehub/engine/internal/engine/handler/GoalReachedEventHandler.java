@@ -19,7 +19,7 @@ import static io.casehub.engine.internal.history.CaseHubEventType.GOAL_REACHED;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.casehub.api.model.CaseCompletion;
-import io.casehub.api.model.CaseHubDefinition;
+import io.casehub.api.model.CaseDefinition;
 import io.casehub.api.model.Goal;
 import io.casehub.api.model.GoalBasedCompletion;
 import io.casehub.api.model.GoalExpression;
@@ -56,7 +56,7 @@ public class GoalReachedEventHandler {
   @ConsumeEvent(value = EventBusAddresses.GOAL_REACHED)
   public Uni<Void> onGoalReachedEventHandler(GoalReachedEvent event) {
     CaseInstance caseInstance = event.caseInstance();
-    CaseHubDefinition definition =
+    CaseDefinition definition =
         caseDefinitionRegistry.getCaseDefinition(caseInstance.getCaseMetaModel());
     Goal goal = event.goal();
 

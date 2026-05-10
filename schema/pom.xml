@@ -41,7 +41,7 @@
                             <mainClass>io.casehub.codegen.CasehubCodegen</mainClass>
                             <includePluginDependencies>true</includePluginDependencies>
                             <arguments>
-                                <argument>${project.basedir}/src/main/resources/schema/CaseHubDefinition.yaml</argument>
+                                <argument>${project.basedir}/src/main/resources/schema/CaseDefinition.yaml</argument>
                                 <argument>${project.build.directory}/generated-sources/jsonschema2pojo</argument>
                                 <argument>io.casehub.model</argument>
                             </arguments>
