@@ -84,6 +84,11 @@ class NoOpLedgerEntryRepository implements LedgerEntryRepository {
   }
 
   @Override
+  public List<LedgerEntry> findBySubjectIdAndTimeRange(UUID subjectId, Instant from, Instant to) {
+    return List.of();
+  }
+
+  @Override
   public List<LedgerEntry> findByActorId(String actorId, Instant from, Instant to) {
     return List.of();
   }
