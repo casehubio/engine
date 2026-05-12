@@ -91,16 +91,16 @@
         <module>api</module>
         <module>codegen</module>
         <module>schema</module>
-        <module>casehub-engine-common</module>
+        <module>common</module>
         <module>scheduler-quartz</module>
-        <module>casehub-persistence-memory</module>
-        <module>casehub-persistence-hibernate</module>
-        <module>engine</module>
-        <module>casehub-blackboard</module>
-        <module>casehub-resilience</module>
-        <module>casehub-ledger</module>
-        <module>casehub-testing</module>
-        <module>casehub-work-adapter</module>
+        <module>persistence-memory</module>
+        <module>persistence-hibernate</module>
+        <module>runtime</module>
+        <module>blackboard</module>
+        <module>resilience</module>
+        <module>ledger</module>
+        <module>testing</module>
+        <module>work-adapter</module>
     </modules>
 
     <repositories>
