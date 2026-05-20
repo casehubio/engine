@@ -158,28 +158,6 @@ class HumanTaskScheduleHandlerTest {
   }
 
   @Test
-  void templateMode_byName_createsWorkItem_andMarksPlanItemRunning() {
-    WorkItemTemplate tmpl = persistTemplate("AML Suspicious Activity Review");
-
-    handler.onHumanTaskSchedule(
-        new HumanTaskScheduleEvent(
-            caseId,
-            "irb-binding",
-            HumanTaskTarget.template(tmpl.id.toString()).build(),
-            Map.of(), null));
-
-    WorkItem created = workItemStore.scanAll().stream().findFirst().orElse(null);
-    assertThat(created).isNotNull();
-    assertThat(created.title).isEqualTo("AML Suspicious Activity Review");
-    assertThat(planItem.getStatus()).isEqualTo(PlanItemStatus.RUNNING);
-    assertThat(planItemStore.findByCaseId(caseId))
-        .anyMatch(
-            r ->
-                r.planItemId().equals(planItem.getPlanItemId())
-                    && r.status() == PlanItemStatus.RUNNING);
-  }
-
-  @Test
   void templateMode_withInputData_inputDataOverridesTemplateDefaultPayload() {
     // defaultPayload persisted in DB — required to prove override semantics (engine#291)
     WorkItemTemplate tmpl = persistTemplate("Clinical Trial Consent", "{\"type\":\"default\"}");
@@ -236,13 +214,10 @@ class HumanTaskScheduleHandlerTest {
   }
 
   @Test
-  void templateMode_ambiguousName_planItemStaysPending() {
-    persistTemplate("Duplicate Name");
-    persistTemplate("Duplicate Name");
-
+  void templateMode_invalidUuidRef_planItemStaysPending() {
     handler.onHumanTaskSchedule(
         new HumanTaskScheduleEvent(
-            caseId, "irb-binding", HumanTaskTarget.template("Duplicate Name").build(), Map.of(), null));
+            caseId, "irb-binding", HumanTaskTarget.template("not-a-uuid").build(), Map.of(), null));
 
     assertThat(planItem.getStatus()).isEqualTo(PlanItemStatus.PENDING);
     assertThat(workItemStore.scanAll()).isEmpty();
