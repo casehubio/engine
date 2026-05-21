@@ -24,12 +24,10 @@ import io.casehub.blackboard.registry.BlackboardRegistry;
 import io.casehub.engine.internal.event.EventBusAddresses;
 import io.casehub.engine.internal.event.HumanTaskScheduleEvent;
 import io.casehub.engine.internal.model.PlanItemStatus;
-import io.casehub.engine.spi.PlanItemStore;
 import io.casehub.persistence.memory.MemoryPlanItemStore;
 import io.casehub.work.runtime.model.WorkItem;
 import io.casehub.work.runtime.model.WorkItemStatus;
 import io.casehub.work.runtime.model.WorkItemTemplate;
-import io.casehub.work.runtime.repository.WorkItemStore;
 import io.casehub.work.testing.InMemoryWorkItemStore;
 import io.quarkus.test.junit.QuarkusTest;
 import io.vertx.mutiny.core.eventbus.EventBus;
@@ -59,8 +57,8 @@ class HumanTaskScheduleHandlerTest {
   @Inject HumanTaskScheduleHandler handler;
   @Inject BlackboardRegistry registry;
   @Inject EventBus eventBus;
-  @Inject WorkItemStore workItemStore;
-  @Inject PlanItemStore planItemStore;
+  @Inject InMemoryWorkItemStore workItemStore;
+  @Inject MemoryPlanItemStore planItemStore;
 
   private UUID caseId;
   private PlanItem planItem;
@@ -68,12 +66,9 @@ class HumanTaskScheduleHandlerTest {
   @BeforeEach
   @Transactional
   void setUp() {
-    if (workItemStore instanceof InMemoryWorkItemStore mem) {
-      mem.clear();
-    }
-    if (planItemStore instanceof MemoryPlanItemStore mem) {
-      mem.clear();
-    }
+    workItemStore.clear();
+    WorkItemTemplate.deleteAll();
+    planItemStore.clear();
     WorkItemTemplate.deleteAll();
     caseId = UUID.randomUUID();
     planItem = PlanItem.create("irb-binding", "unused-worker", 5);
@@ -138,7 +133,11 @@ class HumanTaskScheduleHandlerTest {
 
     handler.onHumanTaskSchedule(
         new HumanTaskScheduleEvent(
-            caseId, "irb-binding", HumanTaskTarget.template(tmpl.id.toString()).build(), Map.of(), null));
+            caseId,
+            "irb-binding",
+            HumanTaskTarget.template(tmpl.id.toString()).build(),
+            Map.of(),
+            null));
 
     String expectedCallerRef = CallerRef.encode(caseId, planItem.getPlanItemId());
     WorkItem created =
@@ -167,7 +166,8 @@ class HumanTaskScheduleHandlerTest {
             caseId,
             "irb-binding",
             HumanTaskTarget.template(tmpl.id.toString()).build(),
-            Map.of("trialId", "T-99", "phase", "III"), null));
+            Map.of("trialId", "T-99", "phase", "III"),
+            null));
 
     WorkItem created = workItemStore.scanAll().stream().findFirst().orElse(null);
     assertThat(created).isNotNull();
@@ -187,7 +187,11 @@ class HumanTaskScheduleHandlerTest {
 
     handler.onHumanTaskSchedule(
         new HumanTaskScheduleEvent(
-            caseId, "irb-binding", HumanTaskTarget.template(tmpl.id.toString()).build(), Map.of(), null));
+            caseId,
+            "irb-binding",
+            HumanTaskTarget.template(tmpl.id.toString()).build(),
+            Map.of(),
+            null));
 
     WorkItem created = workItemStore.scanAll().stream().findFirst().orElse(null);
     assertThat(created).isNotNull();
@@ -207,7 +211,8 @@ class HumanTaskScheduleHandlerTest {
             caseId,
             "irb-binding",
             HumanTaskTarget.template(UUID.randomUUID().toString()).build(),
-            Map.of(), null));
+            Map.of(),
+            null));
 
     assertThat(planItem.getStatus()).isEqualTo(PlanItemStatus.PENDING);
     assertThat(workItemStore.scanAll()).isEmpty();
@@ -232,7 +237,8 @@ class HumanTaskScheduleHandlerTest {
             unknownCaseId,
             "irb-binding",
             HumanTaskTarget.inline().title("Review").build(),
-            Map.of(), null));
+            Map.of(),
+            null));
 
     assertThat(planItem.getStatus()).isEqualTo(PlanItemStatus.PENDING);
     assertThat(workItemStore.scanAll()).isEmpty();
@@ -242,7 +248,11 @@ class HumanTaskScheduleHandlerTest {
   void noPlanItemForBindingName_eventIgnored() {
     handler.onHumanTaskSchedule(
         new HumanTaskScheduleEvent(
-            caseId, "unknown-binding", HumanTaskTarget.inline().title("Review").build(), Map.of(), null));
+            caseId,
+            "unknown-binding",
+            HumanTaskTarget.inline().title("Review").build(),
+            Map.of(),
+            null));
 
     assertThat(planItem.getStatus()).isEqualTo(PlanItemStatus.PENDING);
     assertThat(workItemStore.scanAll()).isEmpty();
@@ -293,10 +303,7 @@ class HumanTaskScheduleHandlerTest {
     // Verifies earliestOf(taskDeadline, null) = taskDeadline — i.e., null budget is ignored.
     // The other two budget-bounding tests prove the min() logic; this test proves null is identity.
     HumanTaskTarget target =
-        HumanTaskTarget.inline()
-            .title("Unbounded Review")
-            .expiresIn(Duration.ofHours(48))
-            .build();
+        HumanTaskTarget.inline().title("Unbounded Review").expiresIn(Duration.ofHours(48)).build();
 
     handler.onHumanTaskSchedule(
         new HumanTaskScheduleEvent(caseId, "irb-binding", target, Map.of(), null));
