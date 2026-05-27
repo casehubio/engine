@@ -70,16 +70,16 @@ An optional module that writes an immutable, hash-chained audit record for every
 
 ## Execution Models
 
-casehub-engine is a **hybrid choreography+orchestration engine**. Both models share the same worker selection infrastructure (`WorkBroker`, `WorkerSelectionStrategy`, `WorkloadProvider`) and the same Quartz execution layer.
+casehub-engine is a **hybrid choreography+orchestration engine**. Both models share the same worker selection infrastructure (`AgentRoutingStrategy`) and the same Quartz execution layer.
 
 ### Choreography (Binding-Driven)
 
-Context changes trigger binding evaluations. When a binding's condition is met, `CaseContextChangedEventHandler` builds a `WorkerCandidate` list from capable workers, calls `WorkBroker.apply()` with `LeastLoadedStrategy`, and publishes a `WorkerScheduleEvent` for the selected worker. If no pre-defined workers match a capability, the engine calls `tryProvision()` to attempt dynamic provisioning via the registered `WorkerProvisioner` SPI. The case remains `RUNNING` throughout.
+Context changes trigger binding evaluations. When a binding's condition is met, `CaseContextChangedEventHandler` builds an `AgentCandidate` list from health-probed capable workers, calls `AgentRoutingStrategy.select()`, and publishes a `WorkerScheduleEvent` for the selected worker. If no pre-defined workers match a capability, the engine calls `tryProvision()` to attempt dynamic provisioning via the registered `WorkerProvisioner` SPI. The case remains `RUNNING` throughout.
 
 ```
 CaseContext change
   → CaseContextChangedEventHandler.publishByTarget()
-      CapabilityTarget → WorkBroker.apply(LeastLoadedStrategy) → WorkerScheduleEvent
+      CapabilityTarget → AgentRoutingStrategy.select(AgentRoutingContext, List<AgentCandidate>) → WorkerScheduleEvent
       SubCaseTarget    → SubCaseScheduleEvent
       HumanTaskTarget  → inputMapping evaluated → HumanTaskScheduleEvent
       ExtensionTarget  → warning log, no dispatch
@@ -99,16 +99,16 @@ CaseContext change
 - No case suspension. Work flows continuously.
 - Bindings are passive (triggered by context change), not imperative.
 - Worker order emerges from dependency, not direction.
-- All capable workers compete for selection; LeastLoadedStrategy picks the least-loaded.
+- All capable workers compete for selection; `LeastLoadedAgentStrategy` (`@DefaultBean`) picks the least-loaded by Quartz job count; `TrustWeightedAgentStrategy` (`@Alternative @Priority(1)`, in `casehub-engine-ledger`) applies the trust maturity model when deployed.
 - WAITING cases (blackboard active) also receive CONTEXT_CHANGED — PlanItem dedup in `PlanningStrategyLoopControl` prevents re-dispatch of in-flight bindings; external signals (Qhorus human messages, `CaseHubRuntime.signal()`) can unblock a WAITING case.
 
 ### Orchestration (Explicit Work Submission)
 
-`WorkOrchestrator.submit(CaseInstance, WorkRequest)` selects a worker via `WorkBroker`, publishes a `WorkerScheduleEvent`, and returns a `CompletionStage<WorkResult>`. `WorkOrchestrator.submitAndWait()` additionally suspends the case to `WAITING`; `WorkflowExecutionCompletedHandler` resumes it when the matching worker completes.
+`WorkOrchestrator.submit(CaseInstance, WorkRequest)` selects a worker via `AgentRoutingStrategy`, publishes a `WorkerScheduleEvent`, and returns a `CompletionStage<WorkResult>`. `WorkOrchestrator.submitAndWait()` additionally suspends the case to `WAITING`; `WorkflowExecutionCompletedHandler` resumes it when the matching worker completes.
 
 ```
 WorkOrchestrator.submitAndWait(instance, request)
-  → WorkBroker selects worker
+  → AgentRoutingStrategy.select() → worker chosen
   → WORK_SUBMITTED written to EventLog (durable)
   → case transitions to WAITING, waitingForWorkId persisted
   → WorkerScheduleEvent → Quartz executes worker
@@ -126,16 +126,18 @@ WorkOrchestrator.submitAndWait(instance, request)
 
 ### Worker Selection (Shared Infrastructure)
 
-| Component | Role |
-|---|---|
-| `WorkBroker` (quarkus-work-core) | Trigger gate + capability filter + strategy dispatch |
-| `LeastLoadedStrategy` (quarkus-work-core) | Selects worker with fewest active Quartz jobs |
-| `CasehubWorkloadProvider` | Counts active Quartz jobs per worker name |
-| `NoOpWorkerRegistry` (quarkus-work-core) | Group resolution (no-op; workers come from CaseDefinition) |
+The engine owns its routing abstraction via `AgentRoutingStrategy` (in `casehub-engine-api`). Both choreography and orchestration paths converge on `AgentRoutingStrategy.select()`.
 
-All selection paths converge on `WorkBroker.apply()`:
-- **Input:** `SelectionContext` (workload type, filters), `AssignmentTrigger` (CREATED), `WorkerCandidate` list (capability-filtered workers with load counts), `WorkerSelectionStrategy` (LeastLoadedStrategy)
-- **Output:** `AssignmentDecision` (either `assignTo(workerId)` or `noChange()`)
+| Component | Location | Role |
+|---|---|---|
+| `AgentRoutingStrategy` | `api/spi/routing/` | Engine-owned SPI: selects from pre-filtered `AgentCandidate` list |
+| `AgentRoutingContext` | `api/spi/routing/` | `caseId` + `capabilityName` — per spi-case-id-parameter.md |
+| `AgentCandidate` | `api/spi/routing/` | `workerId`, capabilities, `runningJobs` (Quartz), `AgentHealth` |
+| `AgentAssignment` | `api/spi/routing/` | Selected worker or `noOp()` |
+| `LeastLoadedAgentStrategy` | `runtime/internal/routing/` | `@DefaultBean` — fewest Quartz jobs |
+| `TrustWeightedAgentStrategy` | `casehub-engine-ledger` | `@Alternative @Priority(1)` — trust maturity model phases 0–3 |
+
+`casehub-work-api` and `casehub-work-core` are no longer in the engine runtime dependencies. The `work-adapter` module retains its casehub-work dependency for the human-task bridge.
 
 ### SubCaseBinding (casehub-blackboard)
 
@@ -458,7 +460,11 @@ WorkerExecutionContext.current() ← accessed by the worker function at runtime
 
 **Causal chain:** When a worker completes, `CaseLedgerEventCapture` writes a `WORKER_EXECUTION_COMPLETED` ledger entry. The `WorkerSummary` for that worker carries this entry's UUID as `ledgerEntryId`. New workers set `causedByEntryId` on their own ledger entries to this value, completing the causal chain across workers on a case.
 
-**SPI placement rule:** Operational SPIs (worker provisioning, lifecycle, channels) go in `api/spi/`; persistence SPIs (`CaseMetaModelRepository`, etc.) go in `engine-model/spi/`.
+**Routing SPIs** in `api/spi/routing/`: `AgentRoutingStrategy`, `AgentRoutingContext`, `AgentCandidate`, `AgentHealth`, `AgentAssignment`. Engine-owned — replaces the former borrow of `WorkerSelectionStrategy`/`WorkBroker` from casehub-work. Default: `LeastLoadedAgentStrategy` (`@DefaultBean`). Override: `TrustWeightedAgentStrategy` (`@Alternative @Priority(1)`) in `casehub-engine-ledger`.
+
+**`CaseLifecycleEvent`** promoted to `io.casehub.engine.common.spi.event` (common module). Downstream consumers (e.g. `casehub-clinical`) can import from a stable package without coupling to an internal path.
+
+**SPI placement rule:** Operational SPIs (worker provisioning, lifecycle, channels) go in `api/spi/`; routing SPIs in `api/spi/routing/`; persistence SPIs (`CaseMetaModelRepository`, etc.) go in `common/spi/`.
 
 ### AI Agent Dependencies
 
