@@ -1,0 +1,97 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <modelVersion>4.0.0</modelVersion>
+    <parent>
+        <groupId>io.casehub</groupId>
+        <artifactId>casehub-engine-parent</artifactId>
+        <version>0.2-SNAPSHOT</version>
+    </parent>
+
+    <artifactId>casehub-engine-ai</artifactId>
+    <name>Case Hub :: Engine AI</name>
+    <description>Optional semantic agent routing — embedding-based candidate selection using trust + semantic similarity.
+        Requires an AgentEmbeddingProvider implementation. Without one, CDI fails at startup with an
+        unsatisfied dependency error.</description>
+
+    <properties>
+        <!-- Not published — no stable AgentEmbeddingProvider ships with this module.
+             engine#381 tracks a LangChain4j-backed implementation in a downstream module. -->
+        <maven.deploy.skip>true</maven.deploy.skip>
+    </properties>
+
+    <dependencies>
+        <!-- AgentRoutingStrategy SPI and AgentRoutingContext/AgentCandidate -->
+        <dependency>
+            <groupId>io.casehub</groupId>
+            <artifactId>casehub-engine-api</artifactId>
+            <version>${project.version}</version>
+        </dependency>
+        <!-- TrustCandidateClassifier + TrustScoreCache + TrustRoutingPolicyProvider -->
+        <dependency>
+            <groupId>io.casehub</groupId>
+            <artifactId>casehub-engine-ledger</artifactId>
+            <version>${project.version}</version>
+        </dependency>
+        <!-- JQEvaluator for caseContext summarization -->
+        <dependency>
+            <groupId>io.casehub</groupId>
+            <artifactId>casehub-engine-common</artifactId>
+            <version>${project.version}</version>
+        </dependency>
+        <!-- AgentDescriptor and AgentCapability for vocabulary extraction -->
+        <dependency>
+            <groupId>io.casehub</groupId>
+            <artifactId>casehub-eidos-api</artifactId>
+        </dependency>
+
+        <dependency>
+            <groupId>io.quarkus</groupId>
+            <artifactId>quarkus-arc</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.eclipse.microprofile.config</groupId>
+            <artifactId>microprofile-config-api</artifactId>
+        </dependency>
+
+        <!-- Test -->
+        <dependency>
+            <groupId>org.junit.jupiter</groupId>
+            <artifactId>junit-jupiter-api</artifactId>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.junit.jupiter</groupId>
+            <artifactId>junit-jupiter-engine</artifactId>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.assertj</groupId>
+            <artifactId>assertj-core</artifactId>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.mockito</groupId>
+            <artifactId>mockito-core</artifactId>
+            <scope>test</scope>
+        </dependency>
+    </dependencies>
+
+    <build>
+        <plugins>
+            <plugin>
+                <groupId>io.smallrye</groupId>
+                <artifactId>jandex-maven-plugin</artifactId>
+                <executions>
+                    <execution>
+                        <id>make-index</id>
+                        <goals>
+                            <goal>jandex</goal>
+                        </goals>
+                    </execution>
+                </executions>
+            </plugin>
+        </plugins>
+    </build>
+</project>
