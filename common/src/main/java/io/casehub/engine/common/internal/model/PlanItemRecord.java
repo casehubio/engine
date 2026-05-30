@@ -15,10 +15,18 @@
  */
 package io.casehub.engine.common.internal.model;
 
-import io.casehub.engine.common.spi.PlanItemStore;
 import java.time.Instant;
 import java.util.UUID;
 
-/** Lightweight read model returned by {@link PlanItemStore#findByCaseId}. */
+/**
+ * Lightweight read model returned by {@link
+ * io.casehub.engine.common.spi.PlanItemStore#findByCaseId}.
+ */
 public record PlanItemRecord(
-    UUID caseId, String planItemId, String bindingName, PlanItemStatus status, Instant createdAt) {}
+    UUID caseId,
+    String planItemId,
+    String bindingName,
+    PlanItemStatus status,
+    Instant createdAt,
+    TargetType targetType,
+    String outputMappingExpression) {}
