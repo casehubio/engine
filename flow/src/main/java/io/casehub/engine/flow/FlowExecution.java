@@ -15,11 +15,11 @@
  */
 package io.casehub.engine.flow;
 
-import io.casehub.engine.common.internal.model.CaseInstance;
+import java.util.UUID;
 
 /**
  * Holds the engine-side context for an in-flight workflow execution. Keyed by the workflow instance
  * ID in {@link FlowExecutionRegistry} so {@link CasehubDispatch} can emit correct lineage events
  * when a workflow step dispatches a capability.
  */
-public record FlowExecution(CaseInstance caseInstance, String workerName, String inputDataHash) {}
+public record FlowExecution(UUID caseId, String workerName, String inputDataHash) {}
