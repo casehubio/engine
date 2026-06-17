@@ -126,7 +126,8 @@ class QuartzRetryService {
             ctx.workerId(), retryPolicy.maxAttempts(), ctx.caseId(), exhaust.reason());
         eventBus.publish(
             EventBusAddresses.WORKER_RETRIES_EXHAUSTED,
-            new WorkerRetriesExhaustedEvent(ctx.caseId(), ctx.workerId(), ctx.inputDataHash()));
+            new WorkerRetriesExhaustedEvent(
+                ctx.caseId(), ctx.workerId(), ctx.inputDataHash(), ctx.tenancyId()));
         yield Uni.createFrom().voidItem();
       }
     };
