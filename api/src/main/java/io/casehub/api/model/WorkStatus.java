@@ -20,6 +20,8 @@ public enum WorkStatus {
   PENDING,
   RUNNING,
   COMPLETED,
+  DECLINED,
+  FAILED,
   FAULTED,
   CANCELLED
 }
