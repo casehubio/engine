@@ -19,12 +19,13 @@ import java.util.UUID;
 
 /**
  * CDI event fired after a PlanItem is marked {@code FAULTED}. Fired via {@code Event.fireAsync()}
- * from blackboard handlers when worker retries are exhausted or an action gate is rejected/expired.
+ * from blackboard handlers when worker retries are exhausted, an action gate is rejected/expired, a
+ * worker outcome is non-success, or a WorkItem reaches FAULTED/EXPIRED.
  *
  * @param caseId the case the PlanItem belongs to
  * @param planItemId the exact PlanItem id that faulted
- * @param workerId the worker associated with the fault
+ * @param bindingName the binding associated with the fault
  * @param tenancyId the tenant that owns the case
  */
 public record PlanItemFaultedEvent(
-    UUID caseId, String planItemId, String workerId, String tenancyId) {}
+    UUID caseId, String planItemId, String bindingName, String tenancyId) {}
