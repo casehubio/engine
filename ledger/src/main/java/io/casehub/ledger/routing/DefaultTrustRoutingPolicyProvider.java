@@ -29,6 +29,11 @@ public class DefaultTrustRoutingPolicyProvider
     implements io.casehub.api.spi.routing.TrustRoutingPolicyProvider {
 
   @Override
+  public String id() {
+    return "default";
+  }
+
+  @Override
   public io.casehub.api.spi.routing.TrustRoutingPolicy forCapability(final String capabilityName) {
     return io.casehub.api.spi.routing.TrustRoutingPolicy.DEFAULT;
   }
