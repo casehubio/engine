@@ -16,10 +16,9 @@
 package io.casehub.api.spi.routing;
 
 import io.casehub.platform.api.routing.NamedStrategy;
-import io.casehub.worker.api.Worker;
 import io.smallrye.mutiny.Uni;
 import java.util.List;
 
 public interface CandidateMatchingStrategy extends NamedStrategy {
-  Uni<List<Worker>> match(CandidateMatchingContext context);
+  Uni<List<MatchedWorker>> match(CandidateMatchingContext context);
 }
