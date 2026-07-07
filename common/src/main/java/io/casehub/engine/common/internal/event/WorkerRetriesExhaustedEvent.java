@@ -15,6 +15,7 @@
  */
 package io.casehub.engine.common.internal.event;
 
+import io.casehub.api.model.RetryState;
 import java.util.UUID;
 
 public record WorkerRetriesExhaustedEvent(
@@ -23,4 +24,5 @@ public record WorkerRetriesExhaustedEvent(
     String workerId,
     String idempotency,
     String bindingName,
-    UUID signalId) {}
+    UUID signalId,
+    RetryState retryState) {}
