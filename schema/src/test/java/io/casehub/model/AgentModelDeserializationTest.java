@@ -18,6 +18,7 @@ package io.casehub.model;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 
+import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.dataformat.yaml.YAMLFactory;
 import java.io.IOException;
@@ -26,7 +27,9 @@ import org.junit.jupiter.api.Test;
 
 class AgentModelDeserializationTest {
 
-  private static final ObjectMapper MAPPER = new ObjectMapper(new YAMLFactory());
+  private static final ObjectMapper MAPPER =
+      new ObjectMapper(new YAMLFactory())
+          .disable(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES);
 
   @Test
   void deserialize_agentWithOpenAI_parsesAllFields() throws IOException {

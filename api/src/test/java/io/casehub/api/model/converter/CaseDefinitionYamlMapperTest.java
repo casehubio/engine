@@ -1745,6 +1745,210 @@ class CaseDefinitionYamlMapperTest {
     assertThat(gbc.getGoals()).hasSize(2);
   }
 
+  // ── titleExpression / scopeExpression / expiresInExpression tests ──────────
+
+  @Test
+  void humanTask_titleExpression_parsedAsJQExpressionEvaluator() throws IOException {
+    String yaml =
+        """
+        namespace: test
+        name: Dynamic Title Case
+        version: 1.0.0
+        spec:
+          bindings:
+            - name: review
+              on: { contextChange: {} }
+              humanTask:
+                titleExpression: ".protocol.name"
+        """;
+
+    CaseDefinition def =
+        CaseDefinitionYamlMapper.load(
+            new ByteArrayInputStream(yaml.getBytes(StandardCharsets.UTF_8)));
+    HumanTaskTarget ht = (HumanTaskTarget) def.getBindings().get(0).target();
+
+    assertThat(ht.title()).isNull();
+    assertThat(ht.titleExpression()).isInstanceOf(JQExpressionEvaluator.class);
+    assertThat(((JQExpressionEvaluator) ht.titleExpression()).expression())
+        .isEqualTo(".protocol.name");
+  }
+
+  @Test
+  void humanTask_titleAndTitleExpression_throwsIllegalArgument() {
+    String yaml =
+        """
+        namespace: test
+        name: Conflict Case
+        version: 1.0.0
+        spec:
+          bindings:
+            - name: review
+              on: { contextChange: {} }
+              humanTask:
+                title: "Static Title"
+                titleExpression: ".protocol.name"
+        """;
+
+    assertThatThrownBy(
+            () ->
+                CaseDefinitionYamlMapper.load(
+                    new ByteArrayInputStream(yaml.getBytes(StandardCharsets.UTF_8))))
+        .isInstanceOf(IllegalArgumentException.class)
+        .hasMessageContaining("title")
+        .hasMessageContaining("titleExpression");
+  }
+
+  @Test
+  void humanTask_titleExpression_withTemplateRef_throwsIllegalArgument() {
+    String yaml =
+        """
+        namespace: test
+        name: Template Conflict
+        version: 1.0.0
+        spec:
+          bindings:
+            - name: review
+              on: { contextChange: {} }
+              humanTask:
+                templateRef: "some-template"
+                titleExpression: ".protocol.name"
+        """;
+
+    assertThatThrownBy(
+            () ->
+                CaseDefinitionYamlMapper.load(
+                    new ByteArrayInputStream(yaml.getBytes(StandardCharsets.UTF_8))))
+        .isInstanceOf(IllegalArgumentException.class);
+  }
+
+  @Test
+  void humanTask_scopeExpression_parsedCorrectly() throws IOException {
+    String yaml =
+        """
+        namespace: test
+        name: Dynamic Scope Case
+        version: 1.0.0
+        spec:
+          bindings:
+            - name: review
+              on: { contextChange: {} }
+              humanTask:
+                title: "Review"
+                scopeExpression: ".trial.site.code"
+        """;
+
+    CaseDefinition def =
+        CaseDefinitionYamlMapper.load(
+            new ByteArrayInputStream(yaml.getBytes(StandardCharsets.UTF_8)));
+    HumanTaskTarget ht = (HumanTaskTarget) def.getBindings().get(0).target();
+
+    assertThat(ht.scope()).isNull();
+    assertThat(ht.scopeExpression()).isInstanceOf(JQExpressionEvaluator.class);
+    assertThat(((JQExpressionEvaluator) ht.scopeExpression()).expression())
+        .isEqualTo(".trial.site.code");
+  }
+
+  @Test
+  void humanTask_scopeAndScopeExpression_throwsIllegalArgument() {
+    String yaml =
+        """
+        namespace: test
+        name: Scope Conflict
+        version: 1.0.0
+        spec:
+          bindings:
+            - name: review
+              on: { contextChange: {} }
+              humanTask:
+                title: "Review"
+                scope: "casehubio/clinical"
+                scopeExpression: ".trial.site.code"
+        """;
+
+    assertThatThrownBy(
+            () ->
+                CaseDefinitionYamlMapper.load(
+                    new ByteArrayInputStream(yaml.getBytes(StandardCharsets.UTF_8))))
+        .isInstanceOf(IllegalArgumentException.class)
+        .hasMessageContaining("scope")
+        .hasMessageContaining("scopeExpression");
+  }
+
+  @Test
+  void humanTask_expiresInExpression_parsedCorrectly() throws IOException {
+    String yaml =
+        """
+        namespace: test
+        name: Dynamic ExpiresIn Case
+        version: 1.0.0
+        spec:
+          bindings:
+            - name: review
+              on: { contextChange: {} }
+              humanTask:
+                title: "Review"
+                expiresInExpression: ".regulatoryDeadline"
+        """;
+
+    CaseDefinition def =
+        CaseDefinitionYamlMapper.load(
+            new ByteArrayInputStream(yaml.getBytes(StandardCharsets.UTF_8)));
+    HumanTaskTarget ht = (HumanTaskTarget) def.getBindings().get(0).target();
+
+    assertThat(ht.expiresIn()).isNull();
+    assertThat(ht.expiresInExpression()).isInstanceOf(JQExpressionEvaluator.class);
+    assertThat(((JQExpressionEvaluator) ht.expiresInExpression()).expression())
+        .isEqualTo(".regulatoryDeadline");
+  }
+
+  @Test
+  void humanTask_expiresInAndExpiresInExpression_throwsIllegalArgument() {
+    String yaml =
+        """
+        namespace: test
+        name: ExpiresIn Conflict
+        version: 1.0.0
+        spec:
+          bindings:
+            - name: review
+              on: { contextChange: {} }
+              humanTask:
+                title: "Review"
+                expiresIn: "PT24H"
+                expiresInExpression: ".regulatoryDeadline"
+        """;
+
+    assertThatThrownBy(
+            () ->
+                CaseDefinitionYamlMapper.load(
+                    new ByteArrayInputStream(yaml.getBytes(StandardCharsets.UTF_8))))
+        .isInstanceOf(IllegalArgumentException.class)
+        .hasMessageContaining("expiresIn")
+        .hasMessageContaining("expiresInExpression");
+  }
+
+  @Test
+  void humanTask_invalidTitleExpression_throwsIllegalArgumentAtLoadTime() {
+    String yaml =
+        """
+        namespace: test
+        name: Bad Expression
+        version: 1.0.0
+        spec:
+          bindings:
+            - name: review
+              on: { contextChange: {} }
+              humanTask:
+                titleExpression: ".foo bar("
+        """;
+
+    assertThatThrownBy(
+            () ->
+                CaseDefinitionYamlMapper.load(
+                    new ByteArrayInputStream(yaml.getBytes(StandardCharsets.UTF_8))))
+        .isInstanceOf(IllegalArgumentException.class);
+  }
+
   @Test
   void goal_kindAsString_parsedFromYaml() throws IOException {
     String yaml =
