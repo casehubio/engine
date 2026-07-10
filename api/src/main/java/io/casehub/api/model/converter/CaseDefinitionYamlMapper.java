@@ -777,11 +777,29 @@ public final class CaseDefinitionYamlMapper {
           "humanTask cannot specify both title and templateRef"
               + " - use inline mode (title) or template mode (templateRef), not both");
     }
-    final HumanTaskTarget.Builder builder =
-        schema.getTemplateRef() != null
-            ? HumanTaskTarget.template(schema.getTemplateRef())
-            : HumanTaskTarget.inline().title(schema.getTitle());
+    if (schema.getTitleExpression() != null && schema.getTemplateRef() != null) {
+      throw new IllegalArgumentException(
+          "humanTask cannot specify both titleExpression and templateRef"
+              + " - use inline mode (titleExpression) or template mode (templateRef), not both");
+    }
+    if (schema.getTitle() != null && schema.getTitleExpression() != null) {
+      throw new IllegalArgumentException(
+          "humanTask cannot specify both title and titleExpression — they are mutually exclusive");
+    }
+    final HumanTaskTarget.Builder builder;
+    if (schema.getTemplateRef() != null) {
+      builder = HumanTaskTarget.template(schema.getTemplateRef());
+    } else {
+      builder = HumanTaskTarget.inline();
+      if (schema.getTitle() != null) {
+        builder.title(schema.getTitle());
+      }
+    }
 
+    if (schema.getTitleExpression() != null && !schema.getTitleExpression().isBlank()) {
+      validateJqSyntax(schema.getTitleExpression(), "titleExpression");
+      builder.titleExpression(schema.getTitleExpression());
+    }
     if (schema.getInputMapping() != null) {
       builder.inputMapping(schema.getInputMapping());
     }
@@ -799,11 +817,24 @@ public final class CaseDefinitionYamlMapper {
     if (usersSpec != null) {
       builder.candidateUsers(usersSpec);
     }
+    if (schema.getScope() != null && schema.getScopeExpression() != null) {
+      throw new IllegalArgumentException(
+          "humanTask cannot specify both scope and scopeExpression — they are mutually exclusive");
+    }
     if (schema.getScope() != null) {
       builder.scope(schema.getScope());
     }
+    if (schema.getScopeExpression() != null && !schema.getScopeExpression().isBlank()) {
+      validateJqSyntax(schema.getScopeExpression(), "scopeExpression");
+      builder.scopeExpression(schema.getScopeExpression());
+    }
     if (schema.getClaimDeadlineHours() != null) {
       builder.claimDeadlineHours(schema.getClaimDeadlineHours());
+    }
+    if (schema.getExpiresIn() != null && schema.getExpiresInExpression() != null) {
+      throw new IllegalArgumentException(
+          "humanTask cannot specify both expiresIn and expiresInExpression"
+              + " — they are mutually exclusive");
     }
     if (schema.getExpiresIn() != null) {
       final Duration duration;
@@ -822,25 +853,27 @@ public final class CaseDefinitionYamlMapper {
       }
       builder.expiresIn(duration);
     }
+    if (schema.getExpiresInExpression() != null && !schema.getExpiresInExpression().isBlank()) {
+      validateJqSyntax(schema.getExpiresInExpression(), "expiresInExpression");
+      builder.expiresInExpression(schema.getExpiresInExpression());
+    }
     if (schema.getExpiresAtExpression() != null && !schema.getExpiresAtExpression().isBlank()) {
-      // Validate JQ syntax at load time — a silent runtime null is a regulatory SLA failure
-      try {
-        net.thisptr.jackson.jq.JsonQuery.compile(
-            schema.getExpiresAtExpression(), net.thisptr.jackson.jq.Versions.JQ_1_6);
-      } catch (Exception e) {
-        throw new IllegalArgumentException(
-            "invalid expiresAtExpression '"
-                + schema.getExpiresAtExpression()
-                + "' — "
-                + e.getMessage(),
-            e);
-      }
+      validateJqSyntax(schema.getExpiresAtExpression(), "expiresAtExpression");
       builder.expiresAtExpression(schema.getExpiresAtExpression());
     }
     if (schema.getOutcomes() != null && !schema.getOutcomes().isEmpty()) {
       builder.outcomes(new LinkedHashSet<>(schema.getOutcomes()));
     }
     return builder.build();
+  }
+
+  private static void validateJqSyntax(String expression, String fieldName) {
+    try {
+      net.thisptr.jackson.jq.JsonQuery.compile(expression, net.thisptr.jackson.jq.Versions.JQ_1_6);
+    } catch (Exception e) {
+      throw new IllegalArgumentException(
+          "invalid " + fieldName + " '" + expression + "' — " + e.getMessage(), e);
+    }
   }
 
   @SuppressWarnings("unchecked")

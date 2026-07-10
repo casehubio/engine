@@ -29,6 +29,7 @@ import io.quarkus.test.junit.QuarkusTest;
 import io.quarkus.vertx.ConsumeEvent;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
+import java.time.Duration;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
@@ -49,6 +50,9 @@ class HumanTaskTargetDispatchTest {
   @Inject DynamicGroupsCaseBean dynamicGroupsCaseBean;
   @Inject BadGroupsCaseBean badGroupsCaseBean;
   @Inject ConjunctionFailCaseBean conjunctionFailCaseBean;
+  @Inject DynamicTitleCaseBean dynamicTitleCaseBean;
+  @Inject DynamicScopeCaseBean dynamicScopeCaseBean;
+  @Inject DynamicExpiresInCaseBean dynamicExpiresInCaseBean;
 
   @BeforeEach
   void reset() {
@@ -128,6 +132,59 @@ class HumanTaskTargetDispatchTest {
     HumanTaskScheduleEvent event = HumanTaskEventRecorder.events.get(0);
     assertThat(event.resolvedCandidateGroups()).containsExactly("wrong");
     assertThat(event.resolvedCandidateUsers()).containsExactly("user-1");
+  }
+
+  // ── Dynamic title / scope / expiresIn (engine#439) ─────────────────────────
+
+  @Test
+  void humanTaskBinding_dynamicTitle_resolvesFromContext() {
+    CompletionStage<UUID> future =
+        dynamicTitleCaseBean.startCase(
+            Map.of("stage", "review", "protocol", Map.of("name", "IRB-001")));
+    future.toCompletableFuture().join();
+
+    await()
+        .atMost(5, TimeUnit.SECONDS)
+        .untilAsserted(() -> assertThat(HumanTaskEventRecorder.events).isNotEmpty());
+
+    HumanTaskScheduleEvent event = HumanTaskEventRecorder.events.get(0);
+    assertThat(event.resolvedTitle()).isEqualTo("IRB-001");
+    assertThat(event.target().title()).isNull();
+    assertThat(event.target().titleExpression()).isNotNull();
+  }
+
+  @Test
+  void humanTaskBinding_dynamicScope_resolvesFromContext() {
+    CompletionStage<UUID> future =
+        dynamicScopeCaseBean.startCase(
+            Map.of("stage", "review", "trial", Map.of("site", Map.of("code", "SITE-42"))));
+    future.toCompletableFuture().join();
+
+    await()
+        .atMost(5, TimeUnit.SECONDS)
+        .untilAsserted(() -> assertThat(HumanTaskEventRecorder.events).isNotEmpty());
+
+    HumanTaskScheduleEvent event = HumanTaskEventRecorder.events.get(0);
+    assertThat(event.resolvedScope()).isEqualTo("SITE-42");
+    assertThat(event.target().scope()).isNull();
+    assertThat(event.target().scopeExpression()).isNotNull();
+  }
+
+  @Test
+  void humanTaskBinding_dynamicExpiresIn_resolvesFromContext() {
+    CompletionStage<UUID> future =
+        dynamicExpiresInCaseBean.startCase(
+            Map.of("stage", "review", "regulatoryDeadline", "PT48H"));
+    future.toCompletableFuture().join();
+
+    await()
+        .atMost(5, TimeUnit.SECONDS)
+        .untilAsserted(() -> assertThat(HumanTaskEventRecorder.events).isNotEmpty());
+
+    HumanTaskScheduleEvent event = HumanTaskEventRecorder.events.get(0);
+    assertThat(event.resolvedExpiresIn()).isEqualTo(Duration.ofHours(48));
+    assertThat(event.target().expiresIn()).isNull();
+    assertThat(event.target().expiresInExpression()).isNotNull();
   }
 
   /** Records HumanTaskScheduleEvent arrivals for test assertions. */
@@ -235,6 +292,83 @@ class HumanTaskTargetDispatchTest {
           .bindings(
               Binding.builder()
                   .name("conjunction-binding")
+                  .humanTask(target)
+                  .on(new ContextChangeTrigger(".stage == \"review\""))
+                  .build())
+          .build();
+    }
+  }
+
+  /** Case with titleExpression — title resolved dynamically from context. */
+  @ApplicationScoped
+  static class DynamicTitleCaseBean extends CaseHub {
+    @Override
+    public CaseDefinition getDefinition() {
+      HumanTaskTarget target =
+          HumanTaskTarget.inline()
+              .titleExpression(".protocol.name")
+              .candidateGroups(java.util.Set.of("reviewers"))
+              .build();
+
+      return CaseDefinition.builder()
+          .namespace("test")
+          .name("DynamicTitleCase")
+          .version("1.0.0")
+          .bindings(
+              Binding.builder()
+                  .name("title-binding")
+                  .humanTask(target)
+                  .on(new ContextChangeTrigger(".stage == \"review\""))
+                  .build())
+          .build();
+    }
+  }
+
+  /** Case with scopeExpression — scope resolved dynamically from context. */
+  @ApplicationScoped
+  static class DynamicScopeCaseBean extends CaseHub {
+    @Override
+    public CaseDefinition getDefinition() {
+      HumanTaskTarget target =
+          HumanTaskTarget.inline()
+              .title("Scoped Review")
+              .scopeExpression(".trial.site.code")
+              .candidateGroups(java.util.Set.of("reviewers"))
+              .build();
+
+      return CaseDefinition.builder()
+          .namespace("test")
+          .name("DynamicScopeCase")
+          .version("1.0.0")
+          .bindings(
+              Binding.builder()
+                  .name("scope-binding")
+                  .humanTask(target)
+                  .on(new ContextChangeTrigger(".stage == \"review\""))
+                  .build())
+          .build();
+    }
+  }
+
+  /** Case with expiresInExpression — expiresIn resolved dynamically from context. */
+  @ApplicationScoped
+  static class DynamicExpiresInCaseBean extends CaseHub {
+    @Override
+    public CaseDefinition getDefinition() {
+      HumanTaskTarget target =
+          HumanTaskTarget.inline()
+              .title("Deadline Review")
+              .expiresInExpression(".regulatoryDeadline")
+              .candidateGroups(java.util.Set.of("reviewers"))
+              .build();
+
+      return CaseDefinition.builder()
+          .namespace("test")
+          .name("DynamicExpiresInCase")
+          .version("1.0.0")
+          .bindings(
+              Binding.builder()
+                  .name("expiry-binding")
                   .humanTask(target)
                   .on(new ContextChangeTrigger(".stage == \"review\""))
                   .build())

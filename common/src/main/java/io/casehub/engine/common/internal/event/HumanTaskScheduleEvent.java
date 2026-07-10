@@ -16,6 +16,7 @@
 package io.casehub.engine.common.internal.event;
 
 import io.casehub.api.model.HumanTaskTarget;
+import java.time.Duration;
 import java.time.Instant;
 import java.util.Map;
 import java.util.Set;
@@ -50,4 +51,7 @@ public record HumanTaskScheduleEvent(
     Set<String> resolvedCandidateUsers,
     Instant caseBudgetDeadline,
     Instant expiresAtDeadline,
+    String resolvedTitle,
+    String resolvedScope,
+    Duration resolvedExpiresIn,
     String tenancyId) {}

@@ -373,13 +373,18 @@ $defs:
     unevaluatedProperties: false
     oneOf:
       - required: [ title ]
-        not: { required: [ templateRef ] }
+        not: { required: [ templateRef, titleExpression ] }
+      - required: [ titleExpression ]
+        not: { required: [ templateRef, title ] }
       - required: [ templateRef ]
-        not: { required: [ title ] }
+        not: { required: [ title, titleExpression ] }
     properties:
       title:
         type: string
-        description: "WorkItem title — inline mode"
+        description: "WorkItem title — inline mode (static value)"
+      titleExpression:
+        type: string
+        description: "JQ expression resolving to the WorkItem title at publish time"
       templateRef:
         type: string
         description: "WorkItemTemplate reference (UUID or name) — template mode"
@@ -395,6 +400,9 @@ $defs:
           Hierarchical scope path for SLA preference resolution
           (e.g. "casehubio/devtown/pr-review"). Null resolves preferences at root scope.
           Follow the platform convention: org / app / case-type.
+      scopeExpression:
+        type: string
+        description: "JQ expression resolving to the SLA scope path at publish time"
       candidateGroups:
         oneOf:
           - type: array
@@ -412,6 +420,9 @@ $defs:
       expiresIn:
         type: string
         description: "ISO 8601 duration after which the WorkItem expires (e.g. PT24H)"
+      expiresInExpression:
+        type: string
+        description: "JQ expression resolving to an ISO 8601 duration string at publish time"
       claimDeadlineHours:
         type: integer
         minimum: 1
