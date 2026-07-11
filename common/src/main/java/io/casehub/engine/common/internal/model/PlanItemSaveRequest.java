@@ -15,6 +15,7 @@
  */
 package io.casehub.engine.common.internal.model;
 
+import io.casehub.api.model.TaskStatus;
 import java.time.Instant;
 import java.util.UUID;
 
@@ -22,8 +23,11 @@ public record PlanItemSaveRequest(
     UUID caseId,
     String planItemId,
     String bindingName,
-    PlanItemStatus status,
+    TaskStatus status,
     Instant createdAt,
     TargetType targetType,
     String outputMappingExpression,
-    String tenancyId) {}
+    String tenancyId,
+    String description,
+    String executorName,
+    String executorDescription) {}
