@@ -15,34 +15,37 @@
  */
 package io.casehub.api.model;
 
-import java.util.Collection;
+import java.util.List;
+import java.util.Set;
+import java.util.stream.Collectors;
 
-public class AnyOfGoalExpression implements GoalExpression {
+public record AnyOfGoalExpression(List<GoalExpression> children) implements GoalExpression {
 
-  private final Collection<Goal> anyOf;
-
-  public AnyOfGoalExpression(Collection<Goal> anyOf) {
-    this.anyOf = anyOf;
+  public AnyOfGoalExpression {
+    if (children.isEmpty()) {
+      throw new IllegalArgumentException("AnyOfGoalExpression requires at least one child");
+    }
+    children = List.copyOf(children);
   }
 
   @Override
-  public Collection<Goal> getGoals() {
-    return anyOf;
+  public boolean isSatisfiedBy(Set<String> reachedGoalNames) {
+    return children.stream().anyMatch(c -> c.isSatisfiedBy(reachedGoalNames));
   }
 
   @Override
-  public boolean test(Collection<Goal> currentGoals) {
-    if (anyOf == null || anyOf.isEmpty()) {
-      return true;
+  public Set<String> goalNames() {
+    return children.stream()
+        .flatMap(c -> c.goalNames().stream())
+        .collect(Collectors.toUnmodifiableSet());
+  }
+
+  @Override
+  public String satisfiedGoalName(Set<String> reachedGoalNames) {
+    for (GoalExpression child : children) {
+      String name = child.satisfiedGoalName(reachedGoalNames);
+      if (name != null) return name;
     }
-    if (currentGoals == null || currentGoals.isEmpty()) {
-      return false;
-    }
-    for (Goal goal : anyOf) {
-      if (currentGoals.contains(goal)) {
-        return true;
-      }
-    }
-    return false;
+    return null;
   }
 }
