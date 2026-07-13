@@ -20,6 +20,7 @@ import java.util.UUID;
 
 public record SubCaseGroupLifecycleEvent(
     UUID parentCaseId,
+    String tenancyId,
     String groupId,
     int instanceCount,
     int requiredCount,
