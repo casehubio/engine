@@ -568,7 +568,10 @@ public class CaseContextChangedEventHandler {
                       resolvedGroups,
                       resolvedUsers,
                       caseBudgetDeadline,
-                      expiresAtDeadline));
+                      expiresAtDeadline,
+                      resolvedTitle,
+                      resolvedScope,
+                      resolvedExpiresIn));
 
               return Uni.createFrom().voidItem();
             })

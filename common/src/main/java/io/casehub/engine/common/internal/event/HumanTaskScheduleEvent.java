@@ -51,6 +51,9 @@ import java.util.UUID;
  * @param resolvedCandidateUsers resolved candidate users for assignment
  * @param caseBudgetDeadline the case-level deadline, or null
  * @param expiresAtDeadline the resolved expiration deadline, or null
+ * @param resolvedTitle the resolved title from titleExpression, or null
+ * @param resolvedScope the resolved scope from scopeExpression, or null
+ * @param resolvedExpiresIn the resolved duration from expiresInExpression, or null
  */
 public record HumanTaskScheduleEvent(
     UUID caseId,
@@ -61,4 +64,7 @@ public record HumanTaskScheduleEvent(
     Set<String> resolvedCandidateGroups,
     Set<String> resolvedCandidateUsers,
     Instant caseBudgetDeadline,
-    Instant expiresAtDeadline) {}
+    Instant expiresAtDeadline,
+    String resolvedTitle,
+    String resolvedScope,
+    Duration resolvedExpiresIn) {}
