@@ -19,23 +19,6 @@ import io.casehub.worker.api.PlannedAction;
 import java.util.Map;
 import org.jspecify.annotations.Nullable;
 
-/**
- * Operational state for an in-flight action gate stored on {@link CaseInstance}.
- *
- * <p>Set when a worker declares a {@link PlannedAction} and the engine's {@link
- * io.casehub.api.spi.ActionRiskClassifier} returns {@link
- * io.casehub.api.spi.RiskDecision.GateRequired}. Cleared by the gate resolution handlers ({@code
- * ActionGateApprovedHandler}, {@code ActionGateRejectedHandler}, {@code ActionGateExpiredHandler})
- * after they finish processing.
- *
- * <p>{@code gateId} is the EventLog entry id of the {@code ACTION_GATE_PENDING} entry. It is
- * embedded in the WorkItem callerRef as {@code "case:{caseId}/gate:{gateId}"} and used to correlate
- * the gate back to its deferred output on resolution.
- *
- * <p>{@link io.casehub.api.model.Worker} is intentionally absent — lambdas are not
- * Jackson-serializable. The approved handler retrieves the {@code Worker} at resolution time via
- * {@code CaseDefinitionRegistry}.
- */
 public record PendingActionGate(
     long gateId,
     String workerId,
@@ -43,4 +26,5 @@ public record PendingActionGate(
     Map<String, Object> deferredOutput,
     PlannedAction plannedAction,
     @Nullable String bindingName,
-    @Nullable String capabilityName) {}
+    @Nullable String capabilityName,
+    @Nullable Class<?> resolutionType) {}
