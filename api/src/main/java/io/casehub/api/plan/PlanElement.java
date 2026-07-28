@@ -20,7 +20,7 @@ package io.casehub.api.plan;
  * CMMN lifecycle.
  *
  * <p>Permitted implementations: {@link io.casehub.api.model.Worker}, {@code
- * io.casehub.blackboard.stage.Stage}, {@code io.casehub.blackboard.stage.SubCase}.
+ * io.casehub.engine.planning.stage.Stage}, {@code io.casehub.engine.planning.stage.SubCase}.
  *
  * <p>Not sealed — implementations span Maven module boundaries.
  */
