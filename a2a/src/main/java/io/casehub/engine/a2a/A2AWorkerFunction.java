@@ -15,12 +15,12 @@
  */
 package io.casehub.engine.a2a;
 
+import io.casehub.engine.common.internal.auth.AuthConfig;
 import io.casehub.worker.api.WorkerFunction;
 import java.util.Map;
 
 @SuppressWarnings("unchecked")
-public record A2AWorkerFunction(
-    String endpoint, String skill, boolean streaming, A2AAuthConfig auth)
+public record A2AWorkerFunction(String endpoint, String skill, boolean streaming, AuthConfig auth)
     implements WorkerFunction<Map<String, Object>, Map<String, Object>> {
 
   @Override
