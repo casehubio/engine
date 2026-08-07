@@ -23,8 +23,10 @@ public sealed interface TaskNode<T> permits TaskNode.LeafTask, TaskNode.Compound
 
   non-sealed interface LeafTask<T> extends TaskNode<T>, TaskDescriptor {}
 
-  record CompoundTask<T>(String name, List<DecompositionMethod<T>> methods) implements TaskNode<T> {
+  record CompoundTask<T>(String id, String name, List<DecompositionMethod<T>> methods)
+      implements TaskNode<T> {
     public CompoundTask {
+      Objects.requireNonNull(id, "id");
       Objects.requireNonNull(name, "name");
       methods = List.copyOf(methods);
     }
