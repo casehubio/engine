@@ -111,6 +111,7 @@
         <module>queue</module>
         <module>rest</module>
         <module>examples/typed-context</module>
+        <module>annotations</module>
     </modules>
 
     <repositories>
