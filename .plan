@@ -1,0 +1,15 @@
+# Work Plan — issue-921-sse-execution-state-endpoint
+
+## State
+branch: issue-921-sse-execution-state-endpoint
+state: scaffolded
+project-sha: 2f406b2741f5837d70499d50db830ad08ae4163d
+date: 2026-08-17
+issue-repo: casehubio/engine
+covers: 921,922
+design-repo: project
+design-section-hashes: 
+flyway-next-v: none
+
+## Queue
+- [ ] #921 — Issue #921 ← active
