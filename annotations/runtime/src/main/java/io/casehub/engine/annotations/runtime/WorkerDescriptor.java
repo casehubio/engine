@@ -15,4 +15,14 @@
  */
 package io.casehub.engine.annotations.runtime;
 
-public record WorkerDescriptor(String name, String capabilityName, String description) {}
+import java.util.List;
+
+public record WorkerDescriptor(
+    String name,
+    String capabilityName,
+    String description,
+    String methodName,
+    List<WorkerParamDescriptor> params,
+    String returnTypeName,
+    String effectKey,
+    String systemPrompt) {}
