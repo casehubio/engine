@@ -15,9 +15,13 @@
  */
 package io.casehub.api.spi.routing;
 
+import com.fasterxml.jackson.annotation.JsonSubTypes;
+import com.fasterxml.jackson.annotation.JsonTypeInfo;
 import io.casehub.platform.api.routing.NamedStrategy;
 import java.util.Set;
 
+@JsonTypeInfo(use = JsonTypeInfo.Id.NAME, property = "@type")
+@JsonSubTypes({@JsonSubTypes.Type(value = StaticSetStrategy.class, name = "static")})
 public interface CandidateSetStrategy extends NamedStrategy {
   Set<String> evaluate(CandidateSetContext context);
 }
