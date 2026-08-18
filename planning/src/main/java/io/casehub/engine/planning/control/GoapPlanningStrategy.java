@@ -88,7 +88,12 @@ public class GoapPlanningStrategy implements PlanningStrategy {
         }
       }
     }
-    return new GoapWorldState(conditions);
+    for (GoapAction action : context.definition().getGoapActions()) {
+      for (String key : action.preconditions().keySet()) {
+        conditions.putIfAbsent(key, false);
+      }
+    }
+    return GoapWorldState.closedWorld(conditions);
   }
 
   protected Set<String> resolveGoalConditions(CaseDefinition definition) {

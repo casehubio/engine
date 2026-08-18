@@ -23,69 +23,149 @@ import java.util.Map;
 import java.util.PriorityQueue;
 import java.util.Set;
 
-/**
- * Classic GOAP planner using A* search over boolean world state.
- *
- * <p>Given an initial world state, a goal condition, and a set of available actions, finds the
- * cheapest action sequence that reaches the goal. Returns an empty list if the goal is already
- * satisfied or unreachable.
- */
 public class GoapPlanner {
 
-  /**
-   * A* search over world state nodes.
-   *
-   * @param initial starting world state
-   * @param goalCondition boolean key that must be true in the goal state
-   * @param actions all available actions (planner picks applicable ones)
-   * @return cheapest action sequence, or empty list if goal already satisfied or unreachable
-   */
   public List<GoapAction> plan(
       GoapWorldState initial, String goalCondition, List<GoapAction> actions) {
-    return plan(initial, Set.of(goalCondition), actions);
+    return plan(initial, Set.of(goalCondition), actions, PlannerConfig.defaults());
   }
 
   public List<GoapAction> plan(
       GoapWorldState initial, Set<String> goalConditions, List<GoapAction> actions) {
-    if (goalConditions.isEmpty() || initial.satisfiesAll(goalConditions)) return List.of();
+    return plan(initial, goalConditions, actions, PlannerConfig.defaults());
+  }
+
+  public List<GoapAction> plan(
+      GoapWorldState initial,
+      Set<String> goalConditions,
+      List<GoapAction> actions,
+      PlannerConfig config) {
+
+    if (goalConditions.isEmpty() || initial.satisfiesAll(goalConditions)) {
+      return List.of();
+    }
+
+    List<GoapAction> filtered =
+        actions.stream().filter(a -> !config.blacklistedActions().contains(a.name())).toList();
+
+    if (config.backwardPruning()) {
+      filtered = backwardPrune(filtered, goalConditions);
+    }
+
+    if (filtered.isEmpty()) {
+      return List.of();
+    }
+
+    double minCost =
+        filtered.stream()
+            .mapToDouble(GoapAction::effectiveCost)
+            .filter(c -> c > 0)
+            .min()
+            .orElse(1.0);
 
     record Node(GoapWorldState state, List<GoapAction> plan, double cost) {}
 
     PriorityQueue<Node> open =
         new PriorityQueue<>(
-            Comparator.comparingDouble(n -> n.cost() + heuristic(n.state(), goalConditions)));
+            Comparator.comparingDouble(
+                n -> n.cost() + heuristic(n.state(), goalConditions, minCost)));
     open.add(new Node(initial, List.of(), 0.0));
 
-    Set<Map<String, Boolean>> visited = new HashSet<>();
+    Set<Map<String, Condition>> visited = new HashSet<>();
+    int iterations = 0;
 
     while (!open.isEmpty()) {
-      Node current = open.poll();
-      if (current.state().satisfiesAll(goalConditions)) return current.plan();
-      if (!visited.add(current.state().conditions())) continue;
+      if (iterations++ >= config.maxIterations()) {
+        return List.of();
+      }
 
-      for (GoapAction action : actions) {
+      Node current = open.poll();
+      if (current.state().satisfiesAll(goalConditions)) {
+        List<GoapAction> plan = current.plan();
+        if (config.forwardSimulation()) {
+          plan = forwardSimulate(plan, initial);
+        }
+        return plan;
+      }
+      if (!visited.add(current.state().conditions())) {
+        continue;
+      }
+
+      for (GoapAction action : filtered) {
         if (action.isApplicable(current.state())) {
           GoapWorldState next = action.applyTo(current.state());
           List<GoapAction> newPlan = new ArrayList<>(current.plan());
           newPlan.add(action);
           double softPenalty = softPenalty(action, current.state());
-          open.add(new Node(next, newPlan, current.cost() + action.effectiveCost() + softPenalty));
+          double actionCost = action.effectiveCost(current.state());
+          open.add(new Node(next, newPlan, current.cost() + actionCost + softPenalty));
         }
       }
     }
     return List.of();
   }
 
+  private List<GoapAction> backwardPrune(List<GoapAction> actions, Set<String> goalConditions) {
+    Set<String> relevant = new HashSet<>(goalConditions);
+    boolean changed = true;
+    while (changed) {
+      changed = false;
+      for (GoapAction action : actions) {
+        boolean contributes = action.effects().keySet().stream().anyMatch(relevant::contains);
+        if (contributes) {
+          for (String pre : action.preconditions().keySet()) {
+            if (relevant.add(pre)) {
+              changed = true;
+            }
+          }
+          for (String soft : action.softPreconditions().keySet()) {
+            if (relevant.add(soft)) {
+              changed = true;
+            }
+          }
+        }
+      }
+    }
+    return actions.stream()
+        .filter(a -> a.effects().keySet().stream().anyMatch(relevant::contains))
+        .toList();
+  }
+
+  private List<GoapAction> forwardSimulate(List<GoapAction> plan, GoapWorldState initial) {
+    List<GoapAction> result = new ArrayList<>();
+    GoapWorldState current = initial;
+    for (GoapAction action : plan) {
+      GoapWorldState s = current;
+      boolean allEffectsSatisfied =
+          action.effects().entrySet().stream()
+              .allMatch(e -> s.get(e.getKey()) == Condition.fromBoolean(e.getValue()));
+      if (!allEffectsSatisfied) {
+        result.add(action);
+        current = action.applyTo(current);
+      }
+    }
+    return result;
+  }
+
   private double softPenalty(GoapAction action, GoapWorldState state) {
     long unsatisfied =
         action.softPreconditions().entrySet().stream()
-            .filter(e -> state.get(e.getKey()) != e.getValue())
+            .filter(
+                e -> {
+                  Condition c = state.get(e.getKey());
+                  if (c == Condition.UNKNOWN) {
+                    return true;
+                  }
+                  return (c == Condition.TRUE) != e.getValue();
+                })
             .count();
-    if (unsatisfied == 0) return 0.0;
-    return Math.max(0.5 * action.cost(), 0.1);
+    if (unsatisfied == 0) {
+      return 0.0;
+    }
+    return Math.max(0.5 * action.effectiveCost(), 0.1);
   }
 
-  private double heuristic(GoapWorldState state, Set<String> goalConditions) {
-    return goalConditions.stream().filter(c -> !state.satisfies(c)).count();
+  private double heuristic(GoapWorldState state, Set<String> goalConditions, double minCost) {
+    return goalConditions.stream().filter(c -> !state.satisfies(c)).count() * minCost;
   }
 }
