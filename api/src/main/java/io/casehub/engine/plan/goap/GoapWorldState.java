@@ -19,33 +19,55 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Set;
 
-/**
- * Immutable boolean world state for GOAP planning.
- *
- * <p>Each condition is a named boolean flag. {@link #with} returns a new state with one flag
- * changed. {@link #satisfies} checks whether a named goal condition is true.
- */
-public record GoapWorldState(Map<String, Boolean> conditions) {
+public record GoapWorldState(Map<String, Condition> conditions) {
 
   public GoapWorldState {
     conditions = Map.copyOf(conditions);
   }
 
-  public GoapWorldState with(String key, boolean value) {
-    Map<String, Boolean> copy = new HashMap<>(conditions);
+  public GoapWorldState with(String key, Condition value) {
+    Map<String, Condition> copy = new HashMap<>(conditions);
     copy.put(key, value);
     return new GoapWorldState(copy);
   }
 
-  public boolean get(String key) {
-    return Boolean.TRUE.equals(conditions.get(key));
+  public GoapWorldState with(String key, boolean value) {
+    return with(key, Condition.fromBoolean(value));
+  }
+
+  public Condition get(String key) {
+    return conditions.getOrDefault(key, Condition.UNKNOWN);
   }
 
   public boolean satisfies(String goalCondition) {
-    return get(goalCondition);
+    return get(goalCondition) == Condition.TRUE;
   }
 
   public boolean satisfiesAll(Set<String> goalConditions) {
     return goalConditions.stream().allMatch(this::satisfies);
+  }
+
+  public static GoapWorldState closedWorld(Map<String, Boolean> known) {
+    Map<String, Condition> conditions = new HashMap<>();
+    known.forEach((k, v) -> conditions.put(k, Condition.fromBoolean(v)));
+    return new GoapWorldState(conditions);
+  }
+
+  public static GoapWorldState openWorld(com.fasterxml.jackson.databind.JsonNode workingLayer) {
+    Map<String, Condition> conditions = new HashMap<>();
+    workingLayer
+        .fieldNames()
+        .forEachRemaining(
+            key -> {
+              com.fasterxml.jackson.databind.JsonNode value = workingLayer.get(key);
+              if (value.isNull()) {
+                return;
+              } else if (value.isBoolean()) {
+                conditions.put(key, Condition.fromBoolean(value.booleanValue()));
+              } else {
+                conditions.put(key, Condition.TRUE);
+              }
+            });
+    return new GoapWorldState(conditions);
   }
 }

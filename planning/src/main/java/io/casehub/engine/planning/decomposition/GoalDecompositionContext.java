@@ -26,12 +26,21 @@ public record GoalDecompositionContext(
     JsonNode state,
     int depth,
     List<Capability> availableCapabilities,
-    PlanningConstraints planningConstraints)
+    PlanningConstraints planningConstraints,
+    io.casehub.api.model.CaseDefinition definition)
     implements DecompositionContext<JsonNode> {
 
   public GoalDecompositionContext(
       JsonNode state, int depth, List<Capability> availableCapabilities) {
-    this(state, depth, availableCapabilities, null);
+    this(state, depth, availableCapabilities, null, null);
+  }
+
+  public GoalDecompositionContext(
+      JsonNode state,
+      int depth,
+      List<Capability> availableCapabilities,
+      PlanningConstraints planningConstraints) {
+    this(state, depth, availableCapabilities, planningConstraints, null);
   }
 
   public GoalDecompositionContext {

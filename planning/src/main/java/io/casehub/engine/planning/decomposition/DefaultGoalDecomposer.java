@@ -132,7 +132,8 @@ public class DefaultGoalDecomposer implements io.casehub.engine.common.spi.GoalD
             contextSnapshot,
             0,
             List.copyOf(definition.getCapabilities()),
-            definition.getPlanningConstraints());
+            definition.getPlanningConstraints(),
+            definition);
 
     var compoundTask = new TaskNode.CompoundTask<JsonNode>(goal.name(), goal.name(), List.of());
 
