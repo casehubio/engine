@@ -17,24 +17,20 @@ package io.casehub.engine.common.internal.event;
 
 import io.casehub.engine.common.internal.model.CaseInstance;
 
-/**
- * Published by {@code WorkflowExecutionCompletedHandler} when a worker returns a non-success {@link
- * io.casehub.api.model.WorkerOutcome}. Consumed by {@code WorkerOutcomeResolvedHandler} in the
- * blackboard module for PlanItem lifecycle management.
- *
- * <p>{@code caseInstance} is included so the handler can construct {@link CaseContextChangedEvent}
- * for CONTEXT_CHANGED publishing — the handler is the only safe site for this publish because the
- * PlanItem must be FAULTED before binding re-evaluation.
- *
- * @param caseInstance the case instance (carries context for CONTEXT_CHANGED construction)
- * @param workerId the worker that produced the non-success outcome
- * @param bindingName the binding that dispatched the worker (PlanItem lookup key)
- * @param capabilityName the capability that was routed
- * @param disposition pre-resolved action from OutcomePolicy (REROUTE, EXHAUSTED, or FAULT)
- */
 public record WorkerOutcomeResolvedEvent(
     CaseInstance caseInstance,
     String workerId,
     String bindingName,
     String capabilityName,
-    OutcomeDisposition disposition) {}
+    OutcomeDisposition disposition,
+    io.casehub.api.model.FailureCategory category) {
+
+  public WorkerOutcomeResolvedEvent(
+      CaseInstance caseInstance,
+      String workerId,
+      String bindingName,
+      String capabilityName,
+      OutcomeDisposition disposition) {
+    this(caseInstance, workerId, bindingName, capabilityName, disposition, null);
+  }
+}

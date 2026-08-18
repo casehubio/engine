@@ -102,7 +102,11 @@ public class WorkflowExecutionCompletedHandler {
   @Inject WorkerGrantOrchestrator workerGrantOrchestrator;
   @Inject ContextOutputApplier contextOutputApplier;
   @Inject io.casehub.platform.api.routing.StrategyResolver strategyResolver;
+<<<<<<< HEAD
   @Inject io.casehub.engine.common.spi.recovery.RecoveryCoordinator recoveryCoordinator;
+=======
+  @Inject io.casehub.api.spi.FailureClassifier failureClassifier;
+>>>>>>> 84039f06 (feat(#930): category-aware failure handling in handleSemanticFailure)
 
   @Inject
   jakarta.enterprise.inject.Instance<io.casehub.api.spi.routing.RoutingOutcomeRecorder>
@@ -430,6 +434,18 @@ public class WorkflowExecutionCompletedHandler {
     final boolean exhausted =
         action == OutcomeAction.REROUTE && attempts >= policy.maxRerouteAttempts();
 
+    final io.casehub.api.spi.FailureClassificationContext classificationCtx =
+        new io.casehub.api.spi.FailureClassificationContext(
+            worker.name(),
+            caseInstance.getUuid(),
+            caseInstance.tenancyId,
+            bindingName,
+            null,
+            attempts,
+            policy.maxRerouteAttempts());
+    final io.casehub.api.model.FailureCategory category =
+        failureClassifier.classify(event.outcome(), classificationCtx);
+
     bindingOutcome.put("status", exhausted ? "REROUTES_EXHAUSTED" : outcomeStatus);
     bindingOutcome.put("attempts", attempts);
 
@@ -443,19 +459,47 @@ public class WorkflowExecutionCompletedHandler {
             .put("agent", worker.name())
             .put("status", outcomeStatus)
             .put("reason", reason)
-            .put("timestamp", now.toString());
+            .put("timestamp", now.toString())
+            .put("category", category.categoryName());
+    if (category instanceof io.casehub.api.model.FailureCategory.Knowledge k
+        && k.missingContext() != null) {
+      historyEntry.put("missingContext", k.missingContext());
+    }
     if (event.output() != null && !event.output().isEmpty()) {
       historyEntry.set("partialOutput", OBJECT_MAPPER.valueToTree(event.output()));
     }
     history.add(historyEntry);
     bindingOutcome.set("history", history);
 
+    ObjectNode latestDiag = OBJECT_MAPPER.createObjectNode();
+    latestDiag.put("category", category.categoryName());
+    latestDiag.put("reason", category.reason());
+    latestDiag.put("workerId", worker.name());
+    latestDiag.put("outcomeStatus", outcomeStatus);
+    latestDiag.put("timestamp", now.toString());
+    if (category instanceof io.casehub.api.model.FailureCategory.Knowledge k2
+        && k2.missingContext() != null) {
+      latestDiag.put("missingContext", k2.missingContext());
+    }
+    bindingOutcome.set("latestDiagnosis", latestDiag);
+
     ArrayNode excluded =
         bindingOutcome.has("excludedAgents")
             ? (ArrayNode) bindingOutcome.get("excludedAgents")
             : OBJECT_MAPPER.createArrayNode();
-    excluded.add(worker.name());
-    bindingOutcome.set("excludedAgents", excluded);
+    if (category instanceof io.casehub.api.model.FailureCategory.Transient) {
+      excluded.add(worker.name());
+      bindingOutcome.set("excludedAgents", excluded);
+      ArrayNode transientExcluded =
+          bindingOutcome.has("transientExcluded")
+              ? (ArrayNode) bindingOutcome.get("transientExcluded")
+              : OBJECT_MAPPER.createArrayNode();
+      transientExcluded.add(worker.name());
+      bindingOutcome.set("transientExcluded", transientExcluded);
+    } else {
+      excluded.add(worker.name());
+      bindingOutcome.set("excludedAgents", excluded);
+    }
 
     @SuppressWarnings("unchecked")
     final java.util.Map<String, Object> outcomesMap =
@@ -480,7 +524,8 @@ public class WorkflowExecutionCompletedHandler {
             .put("attempts", attempts)
             .put(
                 "disposition",
-                action == OutcomeAction.FAULT ? "FAULT" : exhausted ? "EXHAUSTED" : "REROUTE"));
+                action == OutcomeAction.FAULT ? "FAULT" : exhausted ? "EXHAUSTED" : "REROUTE")
+            .put("failureCategory", category.categoryName()));
 
     final OutcomeDisposition disposition =
         action == OutcomeAction.FAULT
@@ -557,7 +602,7 @@ public class WorkflowExecutionCompletedHandler {
     eventBus.publish(
         EventBusAddresses.WORKER_OUTCOME_RESOLVED,
         new WorkerOutcomeResolvedEvent(
-            caseInstance, worker.name(), bindingName, capabilityName, disposition));
+            caseInstance, worker.name(), bindingName, capabilityName, disposition, category));
   }
 
   private void handleGate(
