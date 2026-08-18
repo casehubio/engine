@@ -434,6 +434,35 @@ public class CaseContextChangedEventHandler {
             .asJsonNode()
             .path("_diagnostics")
             .path(binding.getName());
+    if (outcomeNode.has("transientExcluded") && outcomeNode.has("excludedAgents")) {
+      java.util.Set<String> transientSet =
+          java.util.stream.StreamSupport.stream(
+                  outcomeNode.get("transientExcluded").spliterator(), false)
+              .map(JsonNode::asText)
+              .collect(java.util.stream.Collectors.toSet());
+      if (!transientSet.isEmpty()) {
+        java.util.Set<String> permanentOnly =
+            java.util.stream.StreamSupport.stream(
+                    outcomeNode.get("excludedAgents").spliterator(), false)
+                .map(JsonNode::asText)
+                .filter(a -> !transientSet.contains(a))
+                .collect(java.util.stream.Collectors.toSet());
+        @SuppressWarnings("unchecked")
+        java.util.Map<String, Object> diagnostics =
+            (java.util.Map<String, Object>) caseInstance.getCaseContext().get("_diagnostics");
+        if (diagnostics != null) {
+          @SuppressWarnings("unchecked")
+          java.util.Map<String, Object> bindingDiag =
+              (java.util.Map<String, Object>) diagnostics.get(binding.getName());
+          if (bindingDiag != null) {
+            bindingDiag.put("excludedAgents", new java.util.ArrayList<>(permanentOnly));
+            bindingDiag.remove("transientExcluded");
+          }
+        }
+        LOG.debugf("Cleared %d transient exclusions for binding '%s': %s",
+            transientSet.size(), binding.getName(), transientSet);
+      }
+    }
     if (outcomeNode.has("excludedAgents")) {
       final java.util.Set<String> excluded =
           java.util.stream.StreamSupport.stream(

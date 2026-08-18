@@ -23,17 +23,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 
-/**
- * Context handed to a new worker at startup.
- *
- * <p>Built by {@code WorkerContextProvider} from CaseLedgerEntry history. Contains the task
- * description, the case identifier, the channels open for the case, ordered summaries of prior
- * workers, the propagation context for tracing, arbitrary backend-specific properties, and
- * retrieved CBR experiences from similar past cases.
- *
- * <p>{@code channels}, {@code priorWorkers}, {@code properties}, and {@code experiences} default to
- * empty collections when {@code null} is supplied and are always immutable.
- */
 public record WorkerContext(
     String taskDescription,
     UUID caseId,
@@ -42,7 +31,8 @@ public record WorkerContext(
     PropagationContext propagationContext,
     Map<String, Object> properties,
     List<RetrievedExperience> experiences,
-    List<RetrievedMemory> memories) {
+    List<RetrievedMemory> memories,
+    List<FailureDiagnosis> failureDiagnoses) {
 
   public WorkerContext {
     channels = channels == null ? List.of() : List.copyOf(channels);
@@ -53,6 +43,28 @@ public record WorkerContext(
             : Collections.unmodifiableMap(new LinkedHashMap<>(properties));
     experiences = experiences == null ? List.of() : List.copyOf(experiences);
     memories = memories == null ? List.of() : List.copyOf(memories);
+    failureDiagnoses = failureDiagnoses == null ? List.of() : List.copyOf(failureDiagnoses);
+  }
+
+  public WorkerContext(
+      String taskDescription,
+      UUID caseId,
+      List<CaseChannel> channels,
+      List<WorkerSummary> priorWorkers,
+      PropagationContext propagationContext,
+      Map<String, Object> properties,
+      List<RetrievedExperience> experiences,
+      List<RetrievedMemory> memories) {
+    this(
+        taskDescription,
+        caseId,
+        channels,
+        priorWorkers,
+        propagationContext,
+        properties,
+        experiences,
+        memories,
+        List.of());
   }
 
   public WorkerContext(
@@ -71,6 +83,7 @@ public record WorkerContext(
         propagationContext,
         properties,
         experiences,
+        List.of(),
         List.of());
   }
 
@@ -88,6 +101,7 @@ public record WorkerContext(
         priorWorkers,
         propagationContext,
         properties,
+        List.of(),
         List.of(),
         List.of());
   }

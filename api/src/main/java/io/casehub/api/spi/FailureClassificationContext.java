@@ -13,24 +13,15 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.casehub.engine.common.internal.event;
+package io.casehub.api.spi;
 
-import io.casehub.engine.common.internal.model.CaseInstance;
+import java.util.UUID;
 
-public record WorkerOutcomeResolvedEvent(
-    CaseInstance caseInstance,
+public record FailureClassificationContext(
     String workerId,
+    UUID caseId,
+    String tenancyId,
     String bindingName,
     String capabilityName,
-    OutcomeDisposition disposition,
-    io.casehub.api.model.FailureCategory category) {
-
-  public WorkerOutcomeResolvedEvent(
-      CaseInstance caseInstance,
-      String workerId,
-      String bindingName,
-      String capabilityName,
-      OutcomeDisposition disposition) {
-    this(caseInstance, workerId, bindingName, capabilityName, disposition, null);
-  }
-}
+    int attemptCount,
+    int maxRerouteAttempts) {}
