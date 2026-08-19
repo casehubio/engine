@@ -102,11 +102,9 @@ public class WorkflowExecutionCompletedHandler {
   @Inject WorkerGrantOrchestrator workerGrantOrchestrator;
   @Inject ContextOutputApplier contextOutputApplier;
   @Inject io.casehub.platform.api.routing.StrategyResolver strategyResolver;
-<<<<<<< HEAD
   @Inject io.casehub.engine.common.spi.recovery.RecoveryCoordinator recoveryCoordinator;
-=======
   @Inject io.casehub.api.spi.FailureClassifier failureClassifier;
->>>>>>> 84039f06 (feat(#930): category-aware failure handling in handleSemanticFailure)
+  @Inject ExpectationValidator expectationValidator;
 
   @Inject
   jakarta.enterprise.inject.Instance<io.casehub.api.spi.routing.RoutingOutcomeRecorder>
@@ -233,6 +231,18 @@ public class WorkflowExecutionCompletedHandler {
               diff,
               event.protocolMetadata());
 
+      // Expectation validation — synchronous, before CONTEXT_CHANGED
+      final CaseDefinition definition =
+          caseDefinitionRegistry.getCaseDefinition(caseInstance.getCaseMetaModel());
+      ExpectationValidationResult validationResult = null;
+      if (definition != null) {
+        validationResult =
+            expectationValidator.validate(caseInstance, definition, bindingName, null);
+      }
+      if (validationResult != null) {
+        enrichMetadataWithValidation(eventLog, validationResult);
+      }
+
       eventLogRepository.append(eventLog, caseInstance.tenancyId);
 
       caseResumptionService.resumeIfWaiting(
@@ -284,6 +294,24 @@ public class WorkflowExecutionCompletedHandler {
                       worker.name());
                 }
               });
+
+      // Fire violation event asynchronously if threshold exceeded
+      if (validationResult != null
+          && definition != null
+          && definition.getMonitoringConfig() != null
+          && validationResult.divergenceRatio()
+              > definition.getMonitoringConfig().perCompletionThreshold()) {
+        eventBus.publish(
+            EventBusAddresses.EXPECTATION_VIOLATED,
+            new io.casehub.engine.common.internal.event.ExpectationViolationEvent(
+                caseInstance.getUuid(),
+                caseInstance.tenancyId,
+                validationResult.compoundId(),
+                bindingName,
+                worker.name(),
+                validationResult.divergenceRatio(),
+                validationResult.violations()));
+      }
 
       eventBus.publish(
           EventBusAddresses.CONTEXT_CHANGED,
@@ -534,6 +562,17 @@ public class WorkflowExecutionCompletedHandler {
 
     final String capabilityName = extractCapabilityTag(caseInstance, worker, bindingName);
 
+    // Expectation validation on failure path — failed workers produce no effects (ratio 1.0)
+    final CaseDefinition failureDefinition =
+        caseDefinitionRegistry.getCaseDefinition(caseInstance.getCaseMetaModel());
+    if (failureDefinition != null) {
+      ExpectationValidationResult failureValidation =
+          expectationValidator.validate(caseInstance, failureDefinition, bindingName, null);
+      if (failureValidation != null) {
+        enrichMetadataWithValidation(eventLog, failureValidation);
+      }
+    }
+
     eventLogRepository.append(eventLog, caseInstance.tenancyId);
 
     if (disposition == OutcomeDisposition.EXHAUSTED) {
@@ -747,6 +786,31 @@ public class WorkflowExecutionCompletedHandler {
       protocolMetadata.forEach((key, value) -> metadata.set(key, OBJECT_MAPPER.valueToTree(value)));
     }
     return metadata;
+  }
+
+  private void enrichMetadataWithValidation(EventLog eventLog, ExpectationValidationResult result) {
+    if (eventLog.getMetadata() instanceof com.fasterxml.jackson.databind.node.ObjectNode metadata) {
+      com.fasterxml.jackson.databind.node.ObjectNode validation = OBJECT_MAPPER.createObjectNode();
+      if (result.compoundId() != null) {
+        validation.put("compoundId", result.compoundId());
+      }
+      validation.put("totalExpectedEffects", result.expected().effects().size());
+      validation.put("violatedEffectCount", result.violations().size());
+      validation.put("divergenceRatio", result.divergenceRatio());
+      validation.put("effectSource", result.expected().source().name());
+      validation.put("adaptationGeneration", 0);
+      com.fasterxml.jackson.databind.node.ArrayNode violationsArray =
+          OBJECT_MAPPER.createArrayNode();
+      for (io.casehub.engine.plan.monitoring.ViolationRecord v : result.violations()) {
+        com.fasterxml.jackson.databind.node.ObjectNode vNode = OBJECT_MAPPER.createObjectNode();
+        vNode.put("key", v.effectKey());
+        vNode.put("expected", v.expectedValue());
+        vNode.put("actual", v.actualCondition().name());
+        violationsArray.add(vNode);
+      }
+      validation.set("violations", violationsArray);
+      metadata.set("expectationValidation", validation);
+    }
   }
 
   @SuppressWarnings("unchecked")

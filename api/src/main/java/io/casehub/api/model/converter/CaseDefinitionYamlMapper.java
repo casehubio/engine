@@ -1033,6 +1033,23 @@ public final class CaseDefinitionYamlMapper {
               !rp.has("enabled") || rp.get("enabled").asBoolean()));
     }
 
+    // monitoring — per-case expectation tracking configuration
+    final JsonNode monitoringNode = specNode != null ? specNode.get("monitoring") : null;
+    if (monitoringNode != null && monitoringNode.isObject()) {
+      boolean enabled =
+          monitoringNode.has("enabled") ? monitoringNode.get("enabled").asBoolean() : true;
+      double threshold =
+          monitoringNode.has("perCompletionThreshold")
+              ? monitoringNode.get("perCompletionThreshold").asDouble()
+              : io.casehub.engine.plan.monitoring.MonitoringConfig.DEFAULT_THRESHOLD;
+      int windowSize =
+          monitoringNode.has("windowSize")
+              ? monitoringNode.get("windowSize").asInt()
+              : io.casehub.engine.plan.monitoring.MonitoringConfig.DEFAULT_WINDOW_SIZE;
+      def.setMonitoringConfig(
+          new io.casehub.engine.plan.monitoring.MonitoringConfig(enabled, threshold, windowSize));
+    }
+
     return def;
   }
 
