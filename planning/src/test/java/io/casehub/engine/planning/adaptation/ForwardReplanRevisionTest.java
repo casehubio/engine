@@ -117,6 +117,178 @@ class ForwardReplanRevisionTest {
         .contains("speed");
   }
 
+  @Test
+  void includesCritiqueInPromptOnStepFailed() {
+    var capturedPrompt = new java.util.concurrent.atomic.AtomicReference<String>();
+
+    dev.langchain4j.model.chat.ChatModel capturingModel =
+        new dev.langchain4j.model.chat.ChatModel() {
+          @Override
+          public dev.langchain4j.model.chat.response.ChatResponse doChat(
+              dev.langchain4j.model.chat.request.ChatRequest request) {
+            for (var msg : request.messages()) {
+              if (msg instanceof dev.langchain4j.data.message.UserMessage um) {
+                capturedPrompt.set(um.singleText());
+              }
+            }
+            return dev.langchain4j.model.chat.response.ChatResponse.builder()
+                .aiMessage(
+                    dev.langchain4j.data.message.AiMessage.from(
+                        "{\"steps\": [{\"id\": \"s1\", \"description\": \"retry\", \"capabilityName\": \"analysis\"}]}"))
+                .build();
+          }
+        };
+
+    io.casehub.api.model.ai.ChatModelProvider provider =
+        new io.casehub.api.model.ai.ChatModelProvider() {
+          @Override
+          public io.casehub.api.model.ai.ModelType type() {
+            return io.casehub.api.model.ai.ModelType.ANTHROPIC;
+          }
+
+          @Override
+          public dev.langchain4j.model.chat.ChatModel get() {
+            return capturingModel;
+          }
+        };
+
+    var revision = new ForwardReplanRevision();
+    try {
+      var field = ForwardReplanRevision.class.getDeclaredField("chatModelProviders");
+      field.setAccessible(true);
+      field.set(revision, satisfiedInstance(provider));
+    } catch (Exception e) {
+      throw new RuntimeException(e);
+    }
+
+    var contextNode = new com.fasterxml.jackson.databind.ObjectMapper().createObjectNode();
+    var diagnostics = contextNode.putObject("_diagnostics");
+    var bindingDiag = diagnostics.putObject("binding-1");
+    bindingDiag.put(
+        "critique", "Entity resolution failed because input lacked account identifier format");
+
+    var definition =
+        io.casehub.api.model.CaseDefinition.builder()
+            .namespace("io.test")
+            .name("test")
+            .version("1.0")
+            .build();
+
+    var adaptCtx =
+        new io.casehub.engine.plan.adaptation.AdaptationContext(
+            java.util.UUID.randomUUID(),
+            "tenant-1",
+            "compound-1",
+            "analyse",
+            java.util.List.of(),
+            java.util.List.of(),
+            java.util.List.of(),
+            contextNode,
+            definition,
+            io.casehub.api.model.TaskStatus.FAULTED,
+            "binding-1",
+            0);
+
+    var cause =
+        new io.casehub.engine.plan.adaptation.AdaptationCause.StepFailed("binding-1", "FAULTED");
+
+    var context =
+        new io.casehub.engine.plan.adaptation.RevisionContext(
+            adaptCtx,
+            cause,
+            java.util.List.of(new io.casehub.worker.api.Capability("analysis", "", "", null)),
+            java.util.List.of());
+
+    revision.revise(context);
+
+    org.assertj.core.api.Assertions.assertThat(capturedPrompt.get())
+        .contains("Failure analysis for step 'binding-1':")
+        .contains("Entity resolution failed because input lacked account identifier format");
+  }
+
+  @Test
+  void noCritiqueBlockWhenStepCompleted() {
+    var capturedPrompt = new java.util.concurrent.atomic.AtomicReference<String>();
+
+    dev.langchain4j.model.chat.ChatModel capturingModel =
+        new dev.langchain4j.model.chat.ChatModel() {
+          @Override
+          public dev.langchain4j.model.chat.response.ChatResponse doChat(
+              dev.langchain4j.model.chat.request.ChatRequest request) {
+            for (var msg : request.messages()) {
+              if (msg instanceof dev.langchain4j.data.message.UserMessage um) {
+                capturedPrompt.set(um.singleText());
+              }
+            }
+            return dev.langchain4j.model.chat.response.ChatResponse.builder()
+                .aiMessage(
+                    dev.langchain4j.data.message.AiMessage.from(
+                        "{\"steps\": [{\"id\": \"s1\", \"description\": \"next\", \"capabilityName\": \"analysis\"}]}"))
+                .build();
+          }
+        };
+
+    io.casehub.api.model.ai.ChatModelProvider provider =
+        new io.casehub.api.model.ai.ChatModelProvider() {
+          @Override
+          public io.casehub.api.model.ai.ModelType type() {
+            return io.casehub.api.model.ai.ModelType.ANTHROPIC;
+          }
+
+          @Override
+          public dev.langchain4j.model.chat.ChatModel get() {
+            return capturingModel;
+          }
+        };
+
+    var revision = new ForwardReplanRevision();
+    try {
+      var field = ForwardReplanRevision.class.getDeclaredField("chatModelProviders");
+      field.setAccessible(true);
+      field.set(revision, satisfiedInstance(provider));
+    } catch (Exception e) {
+      throw new RuntimeException(e);
+    }
+
+    var definition =
+        io.casehub.api.model.CaseDefinition.builder()
+            .namespace("io.test")
+            .name("test")
+            .version("1.0")
+            .build();
+
+    var adaptCtx =
+        new io.casehub.engine.plan.adaptation.AdaptationContext(
+            java.util.UUID.randomUUID(),
+            "tenant-1",
+            "compound-1",
+            "analyse",
+            java.util.List.of(),
+            java.util.List.of(),
+            java.util.List.of(),
+            new com.fasterxml.jackson.databind.ObjectMapper().createObjectNode(),
+            definition,
+            io.casehub.api.model.TaskStatus.COMPLETED,
+            "binding-1",
+            0);
+
+    var cause =
+        new io.casehub.engine.plan.adaptation.AdaptationCause.StepCompleted(
+            "step-1", "analysis", java.util.Map.of());
+
+    var context =
+        new io.casehub.engine.plan.adaptation.RevisionContext(
+            adaptCtx,
+            cause,
+            java.util.List.of(new io.casehub.worker.api.Capability("analysis", "", "", null)),
+            java.util.List.of());
+
+    revision.revise(context);
+
+    org.assertj.core.api.Assertions.assertThat(capturedPrompt.get())
+        .doesNotContain("Failure analysis");
+  }
+
   @SuppressWarnings("unchecked")
   private static jakarta.enterprise.inject.Instance<io.casehub.api.model.ai.ChatModelProvider>
       satisfiedInstance(io.casehub.api.model.ai.ChatModelProvider provider) {

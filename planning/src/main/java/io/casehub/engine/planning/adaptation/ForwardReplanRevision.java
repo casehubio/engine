@@ -87,6 +87,15 @@ public class ForwardReplanRevision implements PlanRevisionStrategy {
         }
       }
 
+      if (context.cause()
+          instanceof io.casehub.engine.plan.adaptation.AdaptationCause.StepFailed failed) {
+        String critique = extractCritique(adaptCtx.currentContext(), failed.stepId());
+        if (critique != null) {
+          userPrompt =
+              userPrompt + "\n\nFailure analysis for step '" + failed.stepId() + "':\n" + critique;
+        }
+      }
+
       var agent =
           Agent.builder().systemPrompt(SYSTEM_PROMPT).model(chatModelProviders.get().get()).build();
 
@@ -185,5 +194,17 @@ public class ForwardReplanRevision implements PlanRevisionStrategy {
       sb.append("If constraints force trade-offs, keep steps serving high-weight priorities.\n");
     }
     return sb.toString();
+  }
+
+  private String extractCritique(JsonNode context, String bindingName) {
+    if (context == null || !context.has("_diagnostics")) {
+      return null;
+    }
+    JsonNode diagnostics = context.get("_diagnostics");
+    if (!diagnostics.has(bindingName)) {
+      return null;
+    }
+    JsonNode bindingDiag = diagnostics.get(bindingName);
+    return bindingDiag.has("critique") ? bindingDiag.get("critique").asText() : null;
   }
 }
