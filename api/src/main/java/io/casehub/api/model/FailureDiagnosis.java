@@ -18,4 +18,14 @@ package io.casehub.api.model;
 import java.time.Instant;
 
 public record FailureDiagnosis(
-    FailureCategory category, String workerId, String outcomeStatus, Instant timestamp) {}
+    FailureCategory category,
+    String workerId,
+    String outcomeStatus,
+    Instant timestamp,
+    String critique) {
+
+  public static FailureDiagnosis of(
+      FailureCategory category, String workerId, String outcomeStatus, Instant timestamp) {
+    return new FailureDiagnosis(category, workerId, outcomeStatus, timestamp, null);
+  }
+}

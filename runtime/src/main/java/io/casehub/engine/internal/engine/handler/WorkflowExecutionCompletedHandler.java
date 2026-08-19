@@ -105,6 +105,7 @@ public class WorkflowExecutionCompletedHandler {
   @Inject io.casehub.engine.common.spi.recovery.RecoveryCoordinator recoveryCoordinator;
   @Inject io.casehub.api.spi.FailureClassifier failureClassifier;
   @Inject ExpectationValidator expectationValidator;
+  @Inject io.casehub.engine.internal.worker.FailureCritiqueService failureCritiqueService;
 
   @Inject
   jakarta.enterprise.inject.Instance<io.casehub.api.spi.routing.RoutingOutcomeRecorder>
@@ -474,6 +475,21 @@ public class WorkflowExecutionCompletedHandler {
     final io.casehub.api.model.FailureCategory category =
         failureClassifier.classify(event.outcome(), classificationCtx);
 
+    final CaseDefinition failureDef =
+        caseDefinitionRegistry.getCaseDefinition(caseInstance.getCaseMetaModel());
+    JsonNode workingLayer =
+        caseInstance.getCaseContext() != null
+            ? caseInstance
+                .getCaseContext()
+                .layer(io.casehub.api.context.ContextLayer.WORKING)
+                .asJsonNode()
+            : null;
+    String critique =
+        failureCritiqueService.generateCritique(
+            io.casehub.api.model.FailureDiagnosis.of(category, worker.name(), outcomeStatus, now),
+            workingLayer,
+            failureDef);
+
     bindingOutcome.put("status", exhausted ? "REROUTES_EXHAUSTED" : outcomeStatus);
     bindingOutcome.put("attempts", attempts);
 
@@ -493,6 +509,9 @@ public class WorkflowExecutionCompletedHandler {
         && k.missingContext() != null) {
       historyEntry.put("missingContext", k.missingContext());
     }
+    if (critique != null) {
+      historyEntry.put("critique", critique);
+    }
     if (event.output() != null && !event.output().isEmpty()) {
       historyEntry.set("partialOutput", OBJECT_MAPPER.valueToTree(event.output()));
     }
@@ -509,7 +528,13 @@ public class WorkflowExecutionCompletedHandler {
         && k2.missingContext() != null) {
       latestDiag.put("missingContext", k2.missingContext());
     }
+    if (critique != null) {
+      latestDiag.put("critique", critique);
+    }
     bindingOutcome.set("latestDiagnosis", latestDiag);
+    if (critique != null) {
+      bindingOutcome.put("critique", critique);
+    }
 
     ArrayNode excluded =
         bindingOutcome.has("excludedAgents")
