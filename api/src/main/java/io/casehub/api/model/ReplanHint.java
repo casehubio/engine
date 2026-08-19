@@ -15,21 +15,8 @@
  */
 package io.casehub.api.model;
 
-import java.util.Objects;
-
-public record AdaptationConfig(String trigger, String revision, Double threshold) {
-
-  public static final double DEFAULT_PROGRESS_THRESHOLD = 0.3;
-
-  public AdaptationConfig {
-    Objects.requireNonNull(trigger, "trigger");
-    Objects.requireNonNull(revision, "revision");
-    if (threshold != null && (threshold < 0.0 || threshold > 1.0)) {
-      throw new IllegalArgumentException("threshold must be in [0.0, 1.0]");
-    }
-  }
-
-  public static AdaptationConfig of(String trigger, String revision) {
-    return new AdaptationConfig(trigger, revision, null);
-  }
+public enum ReplanHint {
+  ALWAYS,
+  CONDITIONAL,
+  NEVER
 }

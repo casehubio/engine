@@ -49,6 +49,7 @@ public class Binding {
   private String consumes;
   private RecoveryOverride recoveryOverride;
   private SideEffectClassification sideEffectClassification;
+  private ReplanHint replanHint;
 
   private Binding(String name, BindingTarget target, Trigger on) {
     this.name = name;
@@ -211,6 +212,14 @@ public class Binding {
     this.sideEffectClassification = sideEffectClassification;
   }
 
+  public void setReplanHint(ReplanHint replanHint) {
+    this.replanHint = replanHint;
+  }
+
+  public ReplanHint getReplanHint() {
+    return replanHint != null ? replanHint : ReplanHint.CONDITIONAL;
+  }
+
   public static Builder builder() {
     return new Builder();
   }
@@ -236,6 +245,7 @@ public class Binding {
     private String consumes;
     private RecoveryOverride recoveryOverride;
     private SideEffectClassification sideEffectClassification;
+    private ReplanHint replanHint;
 
     private Builder() {}
 
@@ -375,6 +385,11 @@ public class Binding {
       return this;
     }
 
+    public Builder replanHint(ReplanHint replanHint) {
+      this.replanHint = replanHint;
+      return this;
+    }
+
     public Binding build() {
       Objects.requireNonNull(name);
       Objects.requireNonNull(on);
@@ -434,6 +449,7 @@ public class Binding {
       b.setConsumes(this.consumes);
       b.setRecoveryOverride(this.recoveryOverride);
       b.setSideEffectClassification(this.sideEffectClassification);
+      b.setReplanHint(this.replanHint);
       return b;
     }
   }

@@ -995,10 +995,16 @@ public final class CaseDefinitionYamlMapper {
         switch (preset) {
           case "adaptive" ->
               def.setAdaptationConfig(
-                  new io.casehub.api.model.AdaptationConfig("every-step", "forward-replan"));
+                  io.casehub.api.model.AdaptationConfig.of("every-step", "forward-replan"));
           case "conservative" ->
               def.setAdaptationConfig(
-                  new io.casehub.api.model.AdaptationConfig("on-failure", "forward-replan"));
+                  io.casehub.api.model.AdaptationConfig.of("on-failure", "forward-replan"));
+          case "progress" ->
+              def.setAdaptationConfig(
+                  new io.casehub.api.model.AdaptationConfig(
+                      "progress",
+                      "forward-replan",
+                      io.casehub.api.model.AdaptationConfig.DEFAULT_PROGRESS_THRESHOLD));
           case "off" -> {} // null = disabled
           default -> throw new IllegalArgumentException("Unknown adaptation preset: " + preset);
         }
@@ -1009,7 +1015,10 @@ public final class CaseDefinitionYamlMapper {
             adaptationNode.has("revision")
                 ? adaptationNode.get("revision").asText()
                 : "forward-replan";
-        def.setAdaptationConfig(new io.casehub.api.model.AdaptationConfig(trigger, revision));
+        Double threshold =
+            adaptationNode.has("threshold") ? adaptationNode.get("threshold").asDouble() : null;
+        def.setAdaptationConfig(
+            new io.casehub.api.model.AdaptationConfig(trigger, revision, threshold));
       }
       if (def.getAdaptationConfig() != null && def.getDecompositionStrategy() == null) {
         LOG.warnf(
@@ -1159,6 +1168,12 @@ public final class CaseDefinitionYamlMapper {
 
     if (schemaBinding.getProducedKeys() != null && !schemaBinding.getProducedKeys().isEmpty()) {
       builder.producedKeys(new java.util.LinkedHashSet<>(schemaBinding.getProducedKeys()));
+    }
+
+    if (schemaBinding.getReplanAfter() != null) {
+      builder.replanHint(
+          io.casehub.api.model.ReplanHint.valueOf(
+              schemaBinding.getReplanAfter().value().toUpperCase()));
     }
 
     if (schemaBinding.getOutcomePolicy() != null) {

@@ -712,6 +712,11 @@ $defs:
         items:
           type: string
         description: "Context keys this binding is expected to produce. Used for static cycle detection and dependency reasoning."
+      replanAfter:
+        type: string
+        enum: [ always, conditional, never ]
+        default: conditional
+        description: "Per-binding hint for progress-gated adaptation trigger. ALWAYS = always replan after this binding. CONDITIONAL = use divergence score (default). NEVER = never replan after this binding."
       permissionIntent:
         type: array
         description: >
