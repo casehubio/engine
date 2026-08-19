@@ -81,6 +81,7 @@ public class CaseDefinition {
   private AdaptationConfig adaptationConfig;
   private io.casehub.engine.plan.PlanningConstraints planningConstraints;
   private io.casehub.engine.plan.monitoring.MonitoringConfig monitoringConfig;
+  private io.casehub.engine.plan.PortfolioConfig portfolioConfig;
 
   private List<ChannelDeclaration> channels = List.of();
   private List<io.casehub.engine.plan.goap.GoapAction> goapActions;
@@ -427,6 +428,14 @@ public class CaseDefinition {
     this.monitoringConfig = monitoringConfig;
   }
 
+  public io.casehub.engine.plan.PortfolioConfig getPortfolioConfig() {
+    return portfolioConfig;
+  }
+
+  public void setPortfolioConfig(io.casehub.engine.plan.PortfolioConfig portfolioConfig) {
+    this.portfolioConfig = portfolioConfig;
+  }
+
   public List<ChannelDeclaration> getChannels() {
     return channels;
   }
@@ -509,6 +518,7 @@ public class CaseDefinition {
     private AdaptationConfig adaptationConfig;
     private io.casehub.engine.plan.PlanningConstraints planningConstraints;
     private io.casehub.engine.plan.monitoring.MonitoringConfig monitoringConfig;
+    private io.casehub.engine.plan.PortfolioConfig portfolioConfig;
 
     private List<ChannelDeclaration> channels = new java.util.ArrayList<>();
     private List<io.casehub.engine.plan.goap.GoapAction> goapActions;
@@ -820,6 +830,11 @@ public class CaseDefinition {
       return this;
     }
 
+    public Builder portfolioConfig(io.casehub.engine.plan.PortfolioConfig portfolioConfig) {
+      this.portfolioConfig = portfolioConfig;
+      return this;
+    }
+
     public Builder channel(String name, Class<?> recordType) {
       this.channels.add(new ChannelDeclaration(name, recordType, null, null));
       return this;
@@ -951,6 +966,7 @@ public class CaseDefinition {
       caseHubDefinition.setPlanningConstraints(planningConstraints);
       caseHubDefinition.setRecoveryPolicy(recoveryPolicy);
       caseHubDefinition.setMonitoringConfig(monitoringConfig);
+      caseHubDefinition.setPortfolioConfig(portfolioConfig);
 
       return caseHubDefinition;
     }

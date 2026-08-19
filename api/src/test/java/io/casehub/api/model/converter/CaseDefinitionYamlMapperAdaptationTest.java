@@ -281,4 +281,58 @@ class CaseDefinitionYamlMapperAdaptationTest {
     var binding = def.getBindings().get(0);
     assertThat(binding.getReplanHint()).isEqualTo(io.casehub.api.model.ReplanHint.NEVER);
   }
+
+  @Test
+  void parsesPortfolioConfig() throws IOException {
+    String yaml =
+        """
+                namespace: test
+                name: test-case
+                version: "1.0.0"
+                spec:
+                  decompositionStrategy: portfolio
+                  portfolioConfig:
+                    delegates: [goap, llm]
+                    timeouts:
+                      goap: 1000
+                      llm: 30000
+                """;
+    CaseDefinition def = load(yaml);
+    assertThat(def.getDecompositionStrategy()).isEqualTo("portfolio");
+    assertThat(def.getPortfolioConfig()).isNotNull();
+    assertThat(def.getPortfolioConfig().delegates()).containsExactly("goap", "llm");
+    assertThat(def.getPortfolioConfig().timeoutFor("goap")).isEqualTo(1000L);
+  }
+
+  @Test
+  void portfolioWithoutConfigHasNullPortfolioConfig() throws IOException {
+    String yaml =
+        """
+                namespace: test
+                name: test-case
+                version: "1.0.0"
+                spec:
+                  decompositionStrategy: portfolio
+                """;
+    CaseDefinition def = load(yaml);
+    assertThat(def.getDecompositionStrategy()).isEqualTo("portfolio");
+    assertThat(def.getPortfolioConfig()).isNull();
+  }
+
+  @Test
+  void portfolioConfigWithOnlyDelegates() throws IOException {
+    String yaml =
+        """
+                namespace: test
+                name: test-case
+                version: "1.0.0"
+                spec:
+                  decompositionStrategy: portfolio
+                  portfolioConfig:
+                    delegates: [llm]
+                """;
+    CaseDefinition def = load(yaml);
+    assertThat(def.getPortfolioConfig()).isNotNull();
+    assertThat(def.getPortfolioConfig().delegates()).containsExactly("llm");
+  }
 }
