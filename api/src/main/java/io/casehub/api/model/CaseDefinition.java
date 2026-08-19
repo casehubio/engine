@@ -80,6 +80,8 @@ public class CaseDefinition {
   private MemoryRetrievalConfig memoryRetrieval;
   private AdaptationConfig adaptationConfig;
   private io.casehub.engine.plan.PlanningConstraints planningConstraints;
+  private io.casehub.engine.plan.monitoring.MonitoringConfig monitoringConfig;
+
   private List<ChannelDeclaration> channels = List.of();
   private List<io.casehub.engine.plan.goap.GoapAction> goapActions;
   private Map<String, Set<String>> goalToEffectKeys;
@@ -416,6 +418,15 @@ public class CaseDefinition {
     this.planningConstraints = planningConstraints;
   }
 
+  public io.casehub.engine.plan.monitoring.MonitoringConfig getMonitoringConfig() {
+    return monitoringConfig;
+  }
+
+  public void setMonitoringConfig(
+      io.casehub.engine.plan.monitoring.MonitoringConfig monitoringConfig) {
+    this.monitoringConfig = monitoringConfig;
+  }
+
   public List<ChannelDeclaration> getChannels() {
     return channels;
   }
@@ -497,6 +508,8 @@ public class CaseDefinition {
     private MemoryRetrievalConfig memoryRetrieval;
     private AdaptationConfig adaptationConfig;
     private io.casehub.engine.plan.PlanningConstraints planningConstraints;
+    private io.casehub.engine.plan.monitoring.MonitoringConfig monitoringConfig;
+
     private List<ChannelDeclaration> channels = new java.util.ArrayList<>();
     private List<io.casehub.engine.plan.goap.GoapAction> goapActions;
     private Map<String, Set<String>> goalToEffectKeys = new java.util.HashMap<>();
@@ -802,6 +815,11 @@ public class CaseDefinition {
       return this;
     }
 
+    public Builder monitoring(io.casehub.engine.plan.monitoring.MonitoringConfig monitoringConfig) {
+      this.monitoringConfig = monitoringConfig;
+      return this;
+    }
+
     public Builder channel(String name, Class<?> recordType) {
       this.channels.add(new ChannelDeclaration(name, recordType, null, null));
       return this;
@@ -932,6 +950,7 @@ public class CaseDefinition {
       caseHubDefinition.setMemoryRetrieval(memoryRetrieval);
       caseHubDefinition.setPlanningConstraints(planningConstraints);
       caseHubDefinition.setRecoveryPolicy(recoveryPolicy);
+      caseHubDefinition.setMonitoringConfig(monitoringConfig);
 
       return caseHubDefinition;
     }

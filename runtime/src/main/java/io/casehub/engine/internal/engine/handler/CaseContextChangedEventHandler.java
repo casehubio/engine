@@ -459,7 +459,8 @@ public class CaseContextChangedEventHandler {
             bindingDiag.remove("transientExcluded");
           }
         }
-        LOG.debugf("Cleared %d transient exclusions for binding '%s': %s",
+        LOG.debugf(
+            "Cleared %d transient exclusions for binding '%s': %s",
             transientSet.size(), binding.getName(), transientSet);
       }
     }
