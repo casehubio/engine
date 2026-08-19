@@ -148,4 +148,137 @@ class CaseDefinitionYamlMapperAdaptationTest {
     CaseDefinition def = load(yaml);
     assertThat(def.getAdaptationConfig()).isNull();
   }
+
+  @Test
+  void parsesProgressPreset() throws IOException {
+    String yaml =
+        """
+                dsl: "0.1.0"
+                namespace: test
+                name: test-case
+                version: "1.0.0"
+                spec:
+                  adaptation: progress
+                """;
+    CaseDefinition def = load(yaml);
+    var config = def.getAdaptationConfig();
+    assertThat(config).isNotNull();
+    assertThat(config.trigger()).isEqualTo("progress");
+    assertThat(config.revision()).isEqualTo("forward-replan");
+    assertThat(config.threshold()).isEqualTo(0.3);
+  }
+
+  @Test
+  void parsesProgressWithCustomThreshold() throws IOException {
+    String yaml =
+        """
+                dsl: "0.1.0"
+                namespace: test
+                name: test-case
+                version: "1.0.0"
+                spec:
+                  adaptation:
+                    trigger: progress
+                    threshold: 0.4
+                """;
+    CaseDefinition def = load(yaml);
+    var config = def.getAdaptationConfig();
+    assertThat(config).isNotNull();
+    assertThat(config.trigger()).isEqualTo("progress");
+    assertThat(config.threshold()).isEqualTo(0.4);
+  }
+
+  @Test
+  void explicitConfigWithoutThresholdHasNullThreshold() throws IOException {
+    String yaml =
+        """
+                dsl: "0.1.0"
+                namespace: test
+                name: test-case
+                version: "1.0.0"
+                spec:
+                  adaptation:
+                    trigger: every-step
+                    revision: forward-replan
+                """;
+    CaseDefinition def = load(yaml);
+    assertThat(def.getAdaptationConfig().threshold()).isNull();
+  }
+
+  @Test
+  void parsesReplanAfterOnBinding() throws IOException {
+    String yaml =
+        """
+                namespace: test
+                name: test-case
+                version: "1.0.0"
+                spec:
+                  capabilities:
+                    - name: analyse
+                  workers:
+                    - name: analyst
+                      capabilities: [analyse]
+                  bindings:
+                    - name: analyse-binding
+                      capability: analyse
+                      on:
+                        contextChange:
+                          filter: ".ready"
+                      replanAfter: always
+                """;
+    CaseDefinition def = load(yaml);
+    var binding = def.getBindings().get(0);
+    assertThat(binding.getReplanHint()).isEqualTo(io.casehub.api.model.ReplanHint.ALWAYS);
+  }
+
+  @Test
+  void replanAfterDefaultsToConditional() throws IOException {
+    String yaml =
+        """
+                namespace: test
+                name: test-case
+                version: "1.0.0"
+                spec:
+                  capabilities:
+                    - name: analyse
+                  workers:
+                    - name: analyst
+                      capabilities: [analyse]
+                  bindings:
+                    - name: analyse-binding
+                      capability: analyse
+                      on:
+                        contextChange:
+                          filter: ".ready"
+                """;
+    CaseDefinition def = load(yaml);
+    var binding = def.getBindings().get(0);
+    assertThat(binding.getReplanHint()).isEqualTo(io.casehub.api.model.ReplanHint.CONDITIONAL);
+  }
+
+  @Test
+  void parsesReplanAfterNever() throws IOException {
+    String yaml =
+        """
+                namespace: test
+                name: test-case
+                version: "1.0.0"
+                spec:
+                  capabilities:
+                    - name: analyse
+                  workers:
+                    - name: analyst
+                      capabilities: [analyse]
+                  bindings:
+                    - name: analyse-binding
+                      capability: analyse
+                      on:
+                        contextChange:
+                          filter: ".ready"
+                      replanAfter: never
+                """;
+    CaseDefinition def = load(yaml);
+    var binding = def.getBindings().get(0);
+    assertThat(binding.getReplanHint()).isEqualTo(io.casehub.api.model.ReplanHint.NEVER);
+  }
 }

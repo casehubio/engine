@@ -109,7 +109,7 @@ class DefaultPlanAdaptationEvaluatorTest {
             .namespace("test")
             .name("test-case")
             .version("1.0")
-            .adaptationConfig(new AdaptationConfig("every-step", "forward-replan"))
+            .adaptationConfig(AdaptationConfig.of("every-step", "forward-replan"))
             .build();
 
     when(caseInstanceRepository.findByUuid(caseId, TENANT)).thenReturn(caseInstance);

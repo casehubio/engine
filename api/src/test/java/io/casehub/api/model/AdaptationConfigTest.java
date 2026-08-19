@@ -16,6 +16,7 @@
 package io.casehub.api.model;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
 import org.junit.jupiter.api.Test;
@@ -24,19 +25,21 @@ class AdaptationConfigTest {
 
   @Test
   void rejectsNullTrigger() {
-    assertThrows(NullPointerException.class, () -> new AdaptationConfig(null, "forward-replan"));
+    assertThrows(
+        NullPointerException.class, () -> new AdaptationConfig(null, "forward-replan", null));
   }
 
   @Test
   void rejectsNullRevision() {
-    assertThrows(NullPointerException.class, () -> new AdaptationConfig("every-step", null));
+    assertThrows(NullPointerException.class, () -> new AdaptationConfig("every-step", null, null));
   }
 
   @Test
   void storesFields() {
-    var config = new AdaptationConfig("every-step", "forward-replan");
+    var config = AdaptationConfig.of("every-step", "forward-replan");
     assertEquals("every-step", config.trigger());
     assertEquals("forward-replan", config.revision());
+    assertNull(config.threshold());
   }
 
   @Test
@@ -46,7 +49,7 @@ class AdaptationConfigTest {
             .namespace("test")
             .name("test-case")
             .version("1.0")
-            .adaptationConfig(new AdaptationConfig("every-step", "forward-replan"))
+            .adaptationConfig(AdaptationConfig.of("every-step", "forward-replan"))
             .build();
     assertEquals("every-step", def.getAdaptationConfig().trigger());
     assertEquals("forward-replan", def.getAdaptationConfig().revision());
@@ -56,5 +59,37 @@ class AdaptationConfigTest {
   void caseDefinitionAdaptationConfigDefaultsToNull() {
     var def = CaseDefinition.builder().namespace("test").name("test-case").version("1.0").build();
     assertEquals(null, def.getAdaptationConfig());
+  }
+
+  @Test
+  void storesThreshold() {
+    var config = new AdaptationConfig("progress", "forward-replan", 0.3);
+    assertEquals(0.3, config.threshold());
+  }
+
+  @Test
+  void ofFactoryDefaultsThresholdToNull() {
+    var config = AdaptationConfig.of("every-step", "forward-replan");
+    assertNull(config.threshold());
+  }
+
+  @Test
+  void rejectsNegativeThreshold() {
+    assertThrows(
+        IllegalArgumentException.class,
+        () -> new AdaptationConfig("progress", "forward-replan", -0.1));
+  }
+
+  @Test
+  void rejectsThresholdAboveOne() {
+    assertThrows(
+        IllegalArgumentException.class,
+        () -> new AdaptationConfig("progress", "forward-replan", 1.1));
+  }
+
+  @Test
+  void acceptsNullThreshold() {
+    var config = new AdaptationConfig("every-step", "forward-replan", null);
+    assertNull(config.threshold());
   }
 }
