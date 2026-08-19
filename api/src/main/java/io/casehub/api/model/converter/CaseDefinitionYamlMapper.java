@@ -1059,6 +1059,25 @@ public final class CaseDefinitionYamlMapper {
           new io.casehub.engine.plan.monitoring.MonitoringConfig(enabled, threshold, windowSize));
     }
 
+    // portfolioConfig — per-case portfolio decomposition configuration
+    final JsonNode portfolioNode = specNode != null ? specNode.get("portfolioConfig") : null;
+    if (portfolioNode != null && portfolioNode.isObject()) {
+      java.util.List<String> delegates = new java.util.ArrayList<>();
+      if (portfolioNode.has("delegates") && portfolioNode.get("delegates").isArray()) {
+        portfolioNode.get("delegates").forEach(n -> delegates.add(n.asText()));
+      }
+      java.util.Map<String, Long> timeouts = new java.util.HashMap<>();
+      if (portfolioNode.has("timeouts") && portfolioNode.get("timeouts").isObject()) {
+        portfolioNode
+            .get("timeouts")
+            .fields()
+            .forEachRemaining(e -> timeouts.put(e.getKey(), e.getValue().asLong()));
+      }
+      def.setPortfolioConfig(
+          new io.casehub.engine.plan.PortfolioConfig(
+              delegates.isEmpty() ? null : delegates, timeouts.isEmpty() ? null : timeouts));
+    }
+
     return def;
   }
 
