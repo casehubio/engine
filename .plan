@@ -1,23 +1,15 @@
-# Work Plan — issue-696-multi-level-recovery
+# Work Plan — issue-946-quartzworkerjob-visibility
 
 ## State
-branch: issue-696-multi-level-recovery
-state: closing:promoted
-project-sha: b98f1c3bfd3e9be9e6af4970a59bad1202c014bc
+branch: issue-946-quartzworkerjob-visibility
+state: closing:verified
+project-sha: aa5e422e76ea7aca2db4e7940ce0c0b3ae143c30
 date: 2026-08-20
 issue-repo: casehubio/engine
-covers: 696,947,948,949
+covers: 946
 design-repo: project
 design-section-hashes: 
-flyway-next-v: unknown
+flyway-next-v: none
 
 ## Queue
-- [ ] #696 — Issue #696 ← active
-  - [x] Batch 1: Batch 1 - Core spec fixes
-    - [x] Task 1: Gate rejection → Level 2 recovery
-    - [x] Task 2: Clear PENDING PlanItems before replan
-  - [x] Batch 2: Batch 2 - Side-effect classification
-    - [x] Task 3: SideEffectClassification for retry safety
-  - [x] Batch 3: Batch 3 - Production readiness
-    - [x] Task 4: JPA PlanVersionStore
-    - [x] Task 5: Integration test for recovery pipeline
+- [ ] #946 — Issue #946 ← active
