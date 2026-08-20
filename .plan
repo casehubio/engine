@@ -1,15 +1,29 @@
 # Work Plan — issue-946-quartzworkerjob-visibility
 
 ## State
-branch: issue-946-quartzworkerjob-visibility
-state: closing:verified
-project-sha: aa5e422e76ea7aca2db4e7940ce0c0b3ae143c30
+branch: issue-945-enrich-annotation-examples
+state: active
+project-sha: 8f5184e152a3c44bb8f2029b70491dc1b12f2fb0
 date: 2026-08-20
 issue-repo: casehubio/engine
-covers: 946
+covers: 945
 design-repo: project
 design-section-hashes: 
 flyway-next-v: none
 
 ## Queue
-- [ ] #946 — Issue #946 ← active
+- [x] #946 — Issue #946
+- [ ] #945 — Enrich annotation examples ← active
+  - [ ] Batch 1: Foundation
+    - [ ] Task 1: Add cross-repo deps to root pom
+  - [ ] Batch 2: Enrich existing
+    - [ ] Task 2: Banking - Worker(value) repeatable Bind cron
+    - [ ] Task 3: Legal - Identity Disposition standalone Capability
+  - [ ] Batch 3: New examples
+    - [ ] Task 4: Incident response (cybersecurity)
+    - [ ] Task 5: Search and rescue (emergency)
+    - [ ] Task 6: Aircraft maintenance (aviation)
+    - [ ] Task 7: Warehouse (logistics)
+    - [ ] Task 8: Wildfire response (disaster)
+  - [ ] Batch 4: Finalize
+    - [ ] Task 9: Update CAPABILITY-MATRIX.md

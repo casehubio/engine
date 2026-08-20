@@ -70,6 +70,25 @@ class SimpleAnnotatedCaseTest {
   }
 
   @Test
+  void worker_value_sets_capability_name() {
+    var complianceWorker =
+        definition.getWorkers().stream()
+            .filter(w -> w.name().equals("checkCompliance"))
+            .findFirst();
+    assertThat(complianceWorker).isPresent();
+    assertThat(complianceWorker.get().capabilityNames()).contains("kycScreening");
+  }
+
+  @Test
+  void repeatable_bind_with_cron_trigger() {
+    long complianceBindings =
+        definition.getBindings().stream()
+            .filter(b -> b.getName().equals("checkCompliance"))
+            .count();
+    assertThat(complianceBindings).isEqualTo(2);
+  }
+
+  @Test
   void bindings_with_when_guards() {
     var complianceBinding =
         definition.getBindings().stream()
@@ -96,6 +115,6 @@ class SimpleAnnotatedCaseTest {
   void three_capabilities() {
     assertThat(definition.getCapabilities()).hasSize(3);
     assertThat(definition.getCapabilities().stream().map(c -> c.name()).toList())
-        .containsExactlyInAnyOrder("verifyIdentity", "complianceCheck", "provisionAccount");
+        .containsExactlyInAnyOrder("verifyIdentity", "kycScreening", "provisionAccount");
   }
 }
