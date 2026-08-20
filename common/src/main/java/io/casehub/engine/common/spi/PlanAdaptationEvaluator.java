@@ -22,4 +22,8 @@ public interface PlanAdaptationEvaluator {
 
   void evaluateAdaptation(
       UUID caseId, String tenancyId, String completedBindingName, TaskStatus completedStatus);
+
+  default String findCompoundForBinding(java.util.UUID caseId, String bindingName) {
+    return null;
+  }
 }
