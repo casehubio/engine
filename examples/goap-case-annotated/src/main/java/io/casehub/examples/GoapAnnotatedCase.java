@@ -16,6 +16,9 @@
 package io.casehub.examples;
 
 import io.casehub.api.model.GoalExpression;
+import io.casehub.eidos.annotations.Disposition;
+import io.casehub.eidos.annotations.Identity;
+import io.casehub.engine.annotations.Capability;
 import io.casehub.engine.annotations.Case;
 import io.casehub.engine.annotations.Completion;
 import io.casehub.engine.annotations.Effect;
@@ -26,6 +29,12 @@ import io.casehub.engine.annotations.SoftDependency;
 import io.casehub.engine.annotations.Worker;
 import java.util.List;
 
+@Identity(
+    slot = "contract-reviewer",
+    provider = "casehub",
+    modelFamily = "claude",
+    jurisdiction = "EU")
+@Disposition(socialOrient = "collaborative", ruleFollowing = "strict", riskAppetite = "cautious")
 @Case(
     namespace = "legal",
     name = "ContractReview",
@@ -48,15 +57,22 @@ public interface GoapAnnotatedCase {
     return new ClauseList(List.of("Limitation of liability", "Indemnification", "Termination"));
   }
 
+  @Capability(
+      name = "externalLegalOpinion",
+      description = "External legal expert opinion — satisfied by MCP, A2A, or builder")
+  LegalOpinion externalOpinion(AnalysisResult analysisResult);
+
   @Worker(capability = "assessRisk", cost = 0.5)
   @Effect("riskAssessment")
   default RiskReport assessRisk(
       AnalysisResult analysisResult,
       ClauseList clauseList,
+      @SoftDependency LegalOpinion legalOpinion,
       @SoftDependency PriorReview priorReview,
       @Param("jurisdiction") String jurisdiction) {
     String prior = priorReview != null ? priorReview.notes() : "none";
-    return new RiskReport("LOW", jurisdiction, prior);
+    String opinion = legalOpinion != null ? legalOpinion.opinion() : "none";
+    return new RiskReport("LOW", jurisdiction, prior + "; opinion=" + opinion);
   }
 
   @Goal(value = "Risk assessment completed", condition = ".riskAssessment != null")
@@ -72,4 +88,6 @@ public interface GoapAnnotatedCase {
   record RiskReport(String level, String jurisdiction, String priorContext) {}
 
   record PriorReview(String notes) {}
+
+  record LegalOpinion(String opinion, String source) {}
 }

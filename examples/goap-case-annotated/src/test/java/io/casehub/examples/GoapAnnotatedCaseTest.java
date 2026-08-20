@@ -35,7 +35,8 @@ class GoapAnnotatedCaseTest {
                       GoapAnnotatedCase.AnalysisResult.class,
                       GoapAnnotatedCase.ClauseList.class,
                       GoapAnnotatedCase.RiskReport.class,
-                      GoapAnnotatedCase.PriorReview.class));
+                      GoapAnnotatedCase.PriorReview.class,
+                      GoapAnnotatedCase.LegalOpinion.class));
 
   @Inject CaseDefinition definition;
 
@@ -50,6 +51,17 @@ class GoapAnnotatedCaseTest {
     assertThat(definition.getWorkers())
         .extracting(w -> w.name())
         .containsExactlyInAnyOrder("analyse", "extractClauses", "assessRisk");
+  }
+
+  @Test
+  void standalone_capability_declared() {
+    assertThat(definition.getCapabilities().stream().map(c -> c.name()).toList())
+        .contains("externalLegalOpinion");
+  }
+
+  @Test
+  void four_capabilities_including_standalone() {
+    assertThat(definition.getCapabilities()).hasSize(4);
   }
 
   @Test
@@ -89,7 +101,8 @@ class GoapAnnotatedCaseTest {
     assertThat(assessAction).isPresent();
     assertThat(assessAction.get().preconditions()).containsKeys("analysisResult", "clauseList");
     assertThat(assessAction.get().preconditions()).doesNotContainKey("priorReview");
-    assertThat(assessAction.get().softPreconditions()).containsKey("priorReview");
+    assertThat(assessAction.get().preconditions()).doesNotContainKey("legalOpinion");
+    assertThat(assessAction.get().softPreconditions()).containsKeys("priorReview", "legalOpinion");
   }
 
   @Test
