@@ -38,8 +38,9 @@ public interface SimpleAnnotatedCase {
     return new IdentityResult(true, "ID-" + application.hashCode());
   }
 
-  @Worker(capability = "complianceCheck", description = "Runs KYC/AML compliance screening")
+  @Worker(value = "kycScreening", description = "Runs KYC/AML compliance screening")
   @Bind(contextChange = ".identityResult != null", when = ".identityResult.verified == true")
+  @Bind(cron = "0 0 * * * ?")
   default ComplianceResult checkCompliance(IdentityResult identityResult) {
     return new ComplianceResult("PASS", identityResult.referenceId());
   }

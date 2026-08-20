@@ -114,6 +114,11 @@
         <module>examples/typed-context</module>
         <module>examples/simple-case-annotated</module>
         <module>examples/goap-case-annotated</module>
+        <module>examples/incident-response-annotated</module>
+        <module>examples/search-rescue-annotated</module>
+        <module>examples/aircraft-maintenance-annotated</module>
+        <module>examples/warehouse-annotated</module>
+        <module>examples/wildfire-response-annotated</module>
         <module>annotations</module>
     </modules>
 
@@ -331,6 +336,36 @@
                 <groupId>io.casehub</groupId>
                 <artifactId>casehub-eidos-api</artifactId>
                 <version>${version.io.casehub}</version>
+            </dependency>
+            <dependency>
+                <groupId>io.casehub</groupId>
+                <artifactId>casehub-eidos-annotations</artifactId>
+                <version>${version.io.casehub}</version>
+            </dependency>
+            <dependency>
+                <groupId>io.casehub</groupId>
+                <artifactId>casehub-eidos-annotations-deployment</artifactId>
+                <version>${version.io.casehub}</version>
+            </dependency>
+            <dependency>
+                <groupId>io.casehub</groupId>
+                <artifactId>casehub-work-annotations</artifactId>
+                <version>${version.io.casehub}</version>
+            </dependency>
+            <dependency>
+                <groupId>io.casehub</groupId>
+                <artifactId>casehub-work-annotations-deployment</artifactId>
+                <version>${version.io.casehub}</version>
+            </dependency>
+            <dependency>
+                <groupId>io.casehub</groupId>
+                <artifactId>casehub-ledger-annotations</artifactId>
+                <version>${version.io.casehub.ledger}</version>
+            </dependency>
+            <dependency>
+                <groupId>io.casehub</groupId>
+                <artifactId>casehub-ledger-annotations-deployment</artifactId>
+                <version>${version.io.casehub.ledger}</version>
             </dependency>
             <dependency>
                 <groupId>io.casehub</groupId>
