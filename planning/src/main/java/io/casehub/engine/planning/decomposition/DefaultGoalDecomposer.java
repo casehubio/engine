@@ -63,6 +63,10 @@ public class DefaultGoalDecomposer implements io.casehub.engine.common.spi.GoalD
   @Inject PlanItemStore planItemStore;
   @Inject EventLogRepository eventLogRepository;
 
+  @Inject
+  jakarta.enterprise.inject.Instance<io.casehub.engine.internal.routing.CbrRetrievalService>
+      cbrRetrievalServiceInstance;
+
   @ConfigProperty(name = "casehub.engine.decomposition.timeout-ms", defaultValue = "30000")
   long timeoutMs;
 
@@ -127,13 +131,25 @@ public class DefaultGoalDecomposer implements io.casehub.engine.common.spi.GoalD
       ConcurrentHashMap<String, String> scopedBindings) {
 
     var contextSnapshot = context.layer(ContextLayer.WORKING).asJsonNode();
+
+    java.util.List<io.casehub.api.spi.routing.RetrievedExperience> experiences =
+        java.util.List.of();
+    if (cbrRetrievalServiceInstance.isResolvable() && definition.getCbrConfig() != null) {
+      try {
+        experiences = cbrRetrievalServiceInstance.get().retrieve(definition, instance);
+      } catch (Exception e) {
+        LOG.debugf("CBR retrieval for decomposition failed — proceeding without learned costs");
+      }
+    }
+
     var decompositionContext =
         new GoalDecompositionContext(
             contextSnapshot,
             0,
             List.copyOf(definition.getCapabilities()),
             definition.getPlanningConstraints(),
-            definition);
+            definition,
+            experiences);
 
     var compoundTask = new TaskNode.CompoundTask<JsonNode>(goal.name(), goal.name(), List.of());
 

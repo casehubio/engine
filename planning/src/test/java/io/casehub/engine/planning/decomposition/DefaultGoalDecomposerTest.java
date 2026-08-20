@@ -76,6 +76,12 @@ class DefaultGoalDecomposerTest {
     setField(decomposer, "planItemStore", planItemStore);
     setField(decomposer, "eventLogRepository", eventLogRepository);
     setField(decomposer, "timeoutMs", 30000L);
+
+    @SuppressWarnings("unchecked")
+    jakarta.enterprise.inject.Instance<io.casehub.engine.internal.routing.CbrRetrievalService>
+        cbrInstance = mock(jakarta.enterprise.inject.Instance.class);
+    when(cbrInstance.isResolvable()).thenReturn(false);
+    setField(decomposer, "cbrRetrievalServiceInstance", cbrInstance);
   }
 
   @Test

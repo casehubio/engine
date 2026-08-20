@@ -67,6 +67,8 @@ public class GoapDecompositionStrategy implements DecompositionStrategy<JsonNode
     if (actions.isEmpty())
       throw new io.casehub.api.model.ai.AgentException("GOAP decomposition produced no plan");
 
+    actions = enrichActions(actions, context, definition);
+
     GoapWorldState worldState = buildOpenWorldState(context.state(), actions);
     Set<String> goalConditions = resolveGoalConditions(definition);
     if (goalConditions.isEmpty())
@@ -104,6 +106,8 @@ public class GoapDecompositionStrategy implements DecompositionStrategy<JsonNode
             .filter(a -> availableCapabilities.contains(a.name()))
             .filter(a -> !completedActions.contains(a.name()))
             .toList();
+
+    actions = enrichActions(actions, context, definition);
 
     Set<String> blacklist = failedActionName != null ? Set.of(failedActionName) : Set.of();
     GoapWorldState worldState = buildOpenWorldState(context.state(), actions);
@@ -187,5 +191,23 @@ public class GoapDecompositionStrategy implements DecompositionStrategy<JsonNode
       return goalStep.capabilityName();
     }
     return null;
+  }
+
+  private List<GoapAction> enrichActions(
+      List<GoapAction> actions, DecompositionContext<JsonNode> context, CaseDefinition definition) {
+    List<io.casehub.api.spi.routing.RetrievedExperience> experiences = extractExperiences(context);
+    int minSamples =
+        io.casehub.engine.planning.control.GoapCostEnricher.resolveMinCostSamples(
+            definition != null ? definition.getCbrConfig() : null);
+    return io.casehub.engine.planning.control.GoapCostEnricher.enrichWithLearnedCosts(
+        actions, experiences, minSamples);
+  }
+
+  private List<io.casehub.api.spi.routing.RetrievedExperience> extractExperiences(
+      DecompositionContext<JsonNode> context) {
+    if (context instanceof GoalDecompositionContext gdc) {
+      return gdc.experiences();
+    }
+    return List.of();
   }
 }

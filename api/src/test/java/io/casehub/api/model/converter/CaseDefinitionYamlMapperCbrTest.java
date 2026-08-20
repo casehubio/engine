@@ -171,4 +171,43 @@ class CaseDefinitionYamlMapperCbrTest {
     assertThat(def.getCbrConfig()).isNotNull();
     assertThat(def.getCbrConfig().cbrType()).isEqualTo("feature-vector");
   }
+
+  @Test
+  void cbr_minCostSamples_parsed() throws IOException {
+    String yaml =
+        """
+                dsl: "0.1.0"
+                namespace: test
+                name: test-case
+                version: "1.0.0"
+                spec:
+                  cbr:
+                    features:
+                      f1: ".x"
+                    minCostSamples: 10
+                """;
+    InputStream is = new ByteArrayInputStream(yaml.getBytes(StandardCharsets.UTF_8));
+    CaseDefinition def = CaseDefinitionYamlMapper.load(is);
+    assertThat(def.getCbrConfig()).isNotNull();
+    assertThat(def.getCbrConfig().minCostSamples()).isEqualTo(10);
+  }
+
+  @Test
+  void cbr_minCostSamples_defaults_to_null() throws IOException {
+    String yaml =
+        """
+                dsl: "0.1.0"
+                namespace: test
+                name: test-case
+                version: "1.0.0"
+                spec:
+                  cbr:
+                    features:
+                      f1: ".x"
+                """;
+    InputStream is = new ByteArrayInputStream(yaml.getBytes(StandardCharsets.UTF_8));
+    CaseDefinition def = CaseDefinitionYamlMapper.load(is);
+    assertThat(def.getCbrConfig()).isNotNull();
+    assertThat(def.getCbrConfig().minCostSamples()).isNull();
+  }
 }

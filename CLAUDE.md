@@ -345,6 +345,12 @@ Three-level escalation for task failures, inspired by Graph Harness (arXiv:2604.
 
 **Test infrastructure:** `casehub-neocortex-memory-cbr-inmem` (test scope in `runtime/pom.xml`) provides `InMemoryCbrCaseMemoryStore`. Requires `quarkus.index-dependency.cbr-inmem` and inclusion in `quarkus.arc.selected-alternatives` (see `application-memory.properties`). `RecordingCbrAgentRoutingStrategy` (`@Alternative @Priority(100)`, id `"cbr-recording"`) captures `AgentRoutingContext` for test assertions.
 
+## Learned Action Costs from CBR Traces
+
+`CbrConfig` on `CaseDefinition` gains `minCostSamples` (Integer, nullable — default 5 via `GoapCostEnricher.resolveMinCostSamples()`). Minimum discrete sample count before learned costs override declared costs. YAML: `cbr: { minCostSamples: 5 }`. Refs engine#937.
+
+**Three-layer action cost model (engine#937):** `GoapAction` costs compose three layers: static `cost` (declared) → dynamic `CostFunction` (context-evaluated, nullable) → learned (CBR-derived reliability multiplier). `GoapCostEnricher.enrichWithLearnedCosts()` (`planning/control/`) wraps action cost functions with learned factors from `ExperienceAnalyser.actionCostFactors()`. Factor formula: `1.0 / max(successRate, 1/maxCostFactor)` — capped at `maxCostFactor` (default 10.0). Below `minCostSamples` threshold → factor 1.0 (cold start). All three GOAP strategies (`GoapDecompositionStrategy`, `GoapPlanningStrategy`, `AdaptivePlanningStrategy`) call enrichment before `GoapPlanner.plan()`. `GoalDecompositionContext` carries `List<RetrievedExperience> experiences` (6th field) — populated by `DefaultGoalDecomposer` via `Instance<CbrRetrievalService>`. `PlanExecutionContext` already carries experiences at dispatch time. Known limitation: A* heuristic uses `effectiveCost()` (no-arg, static cost), not `effectiveCost(state)` (learned cost) — heuristic underestimates, preserving admissibility. Refs engine#937.
+
 ## JQ Expression Evaluation Surface
 
 All JQ expressions (binding filters, `when` conditions, goals, milestones, `inputProjection`, `outputProjection`) evaluate against the **working layer** (`context.layer(ContextLayer.WORKING).asJsonNode()`), NOT the full layer document (`context.asJsonNode()`). YAML definitions use unqualified field paths (`.transaction`, `.entityResolution`) — the layer structure is an engine implementation detail.

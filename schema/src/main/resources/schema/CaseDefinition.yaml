@@ -558,6 +558,13 @@ $defs:
           Half-life in days for temporal decay during retrieval. Older cases
           lose relevance via similarity *= 0.5^(age / halfLife). Null means
           no decay (backward compatible).
+      minCostSamples:
+        type: integer
+        minimum: 1
+        description: >
+          Minimum number of plan trace samples required before learned costs
+          override declared costs. Below this threshold, actions use their
+          static/dynamic cost (cold start). Default: 5.
 
   Capability:
     description: >
