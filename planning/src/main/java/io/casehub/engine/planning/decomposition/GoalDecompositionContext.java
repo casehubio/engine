@@ -27,12 +27,13 @@ public record GoalDecompositionContext(
     int depth,
     List<Capability> availableCapabilities,
     PlanningConstraints planningConstraints,
-    io.casehub.api.model.CaseDefinition definition)
+    io.casehub.api.model.CaseDefinition definition,
+    List<io.casehub.api.spi.routing.RetrievedExperience> experiences)
     implements DecompositionContext<JsonNode> {
 
   public GoalDecompositionContext(
       JsonNode state, int depth, List<Capability> availableCapabilities) {
-    this(state, depth, availableCapabilities, null, null);
+    this(state, depth, availableCapabilities, null, null, List.of());
   }
 
   public GoalDecompositionContext(
@@ -40,7 +41,16 @@ public record GoalDecompositionContext(
       int depth,
       List<Capability> availableCapabilities,
       PlanningConstraints planningConstraints) {
-    this(state, depth, availableCapabilities, planningConstraints, null);
+    this(state, depth, availableCapabilities, planningConstraints, null, List.of());
+  }
+
+  public GoalDecompositionContext(
+      JsonNode state,
+      int depth,
+      List<Capability> availableCapabilities,
+      PlanningConstraints planningConstraints,
+      io.casehub.api.model.CaseDefinition definition) {
+    this(state, depth, availableCapabilities, planningConstraints, definition, List.of());
   }
 
   public GoalDecompositionContext {
@@ -48,6 +58,9 @@ public record GoalDecompositionContext(
     availableCapabilities = List.copyOf(availableCapabilities);
     if (planningConstraints == null) {
       planningConstraints = PlanningConstraints.unconstrained();
+    }
+    if (experiences == null) {
+      experiences = List.of();
     }
   }
 

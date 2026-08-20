@@ -76,6 +76,10 @@ public class AdaptivePlanningStrategy extends GoapPlanningStrategy {
 
     if (filteredActions.isEmpty()) return List.of();
 
+    int minSamples = GoapCostEnricher.resolveMinCostSamples(definition.getCbrConfig());
+    filteredActions =
+        GoapCostEnricher.enrichWithLearnedCosts(filteredActions, context.experiences(), minSamples);
+
     replanCounts.merge(caseId, 1, Integer::sum);
 
     GoapWorldState worldState = buildWorldState(context);

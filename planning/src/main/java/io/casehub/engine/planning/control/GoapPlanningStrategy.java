@@ -65,6 +65,10 @@ public class GoapPlanningStrategy implements PlanningStrategy {
 
     if (filteredActions.isEmpty()) return List.of();
 
+    int minSamples = GoapCostEnricher.resolveMinCostSamples(definition.getCbrConfig());
+    filteredActions =
+        GoapCostEnricher.enrichWithLearnedCosts(filteredActions, context.experiences(), minSamples);
+
     GoapWorldState worldState = buildWorldState(context);
     Set<String> goalConditions = resolveGoalConditions(definition);
 

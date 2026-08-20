@@ -31,7 +31,8 @@ public record CbrConfig(
     double vectorWeight,
     CbrRetrievalTiming timing,
     String cbrType,
-    Integer temporalDecayHalfLifeDays) {
+    Integer temporalDecayHalfLifeDays,
+    Integer minCostSamples) {
 
   public enum CbrRetrievalTiming {
     PER_EVALUATION,
@@ -64,6 +65,9 @@ public record CbrConfig(
       throw new IllegalArgumentException(
           "temporalDecayHalfLifeDays must be >= 1, got: " + temporalDecayHalfLifeDays);
     }
+    if (minCostSamples != null && minCostSamples < 1) {
+      throw new IllegalArgumentException("minCostSamples must be >= 1, got: " + minCostSamples);
+    }
     weights = Map.copyOf(weights);
     for (var entry : weights.entrySet()) {
       if (entry.getValue() < 0.0) {
@@ -95,6 +99,7 @@ public record CbrConfig(
     private CbrRetrievalTiming timing = CbrRetrievalTiming.PER_EVALUATION;
     private String cbrType;
     private Integer temporalDecayHalfLifeDays;
+    private Integer minCostSamples;
 
     public Builder feature(final String name, final String jqExpression) {
       if (lambdaExtractor != null) {
@@ -157,6 +162,11 @@ public record CbrConfig(
       return this;
     }
 
+    public Builder minCostSamples(final Integer minCostSamples) {
+      this.minCostSamples = minCostSamples;
+      return this;
+    }
+
     public CbrConfig build() {
       final FeatureExtractor extractor;
       if (!jqFeatures.isEmpty()) {
@@ -176,7 +186,8 @@ public record CbrConfig(
           vectorWeight,
           timing,
           cbrType,
-          temporalDecayHalfLifeDays);
+          temporalDecayHalfLifeDays,
+          minCostSamples);
     }
   }
 }

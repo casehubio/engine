@@ -116,4 +116,79 @@ public final class ExperienceAnalyser {
         step -> capabilityName.equals(step.capabilityName()),
         outcomeWeights);
   }
+
+  public static final double DEFAULT_MAX_COST_FACTOR = 10.0;
+
+  /**
+   * Computes per-action cost multipliers from CBR plan traces. Actions with low historical success
+   * rates get higher cost factors, steering the planner toward more reliable paths.
+   *
+   * @param experiences retrieved similar cases from the CBR store
+   * @param actionNames action names (capability names) to compute cost factors for
+   * @param minSamples minimum discrete sample count before learned costs override declared costs
+   * @param maxCostFactor upper bound on the cost multiplier (prevents infinity on zero success)
+   * @param outcomeWeights per-outcome scoring weights
+   * @return per-action cost multipliers (1.0 = no adjustment); empty map on cold start
+   */
+  public static Map<String, Double> actionCostFactors(
+      final List<RetrievedExperience> experiences,
+      final Set<String> actionNames,
+      final int minSamples,
+      final double maxCostFactor,
+      final Map<RoutingOutcome, Double> outcomeWeights) {
+
+    final Map<String, double[]> actionStats = new HashMap<>();
+    final Map<String, Integer> actionCounts = new HashMap<>();
+
+    for (final RetrievedExperience exp : experiences) {
+      final double relevance = exp.similarityScore();
+      if (relevance <= 0.0) {
+        continue;
+      }
+
+      for (final ExperiencePlanStep step : exp.planTrace()) {
+        if (step.capabilityName() == null || !actionNames.contains(step.capabilityName())) {
+          continue;
+        }
+        if ("ADDED".equals(step.adaptationAction())
+            || "SUBSTITUTED".equals(step.adaptationAction())) {
+          continue;
+        }
+
+        final String actionName = step.capabilityName();
+        actionCounts.merge(actionName, 1, Integer::sum);
+
+        final double outcomeWeight = outcomeWeights.getOrDefault(step.stepOutcome(), 0.0);
+        final double[] stats = actionStats.computeIfAbsent(actionName, k -> new double[2]);
+        stats[0] += outcomeWeight * relevance;
+        stats[1] += relevance;
+      }
+    }
+
+    final double minRate = 1.0 / maxCostFactor;
+    final Map<String, Double> factors = new HashMap<>();
+    for (final Map.Entry<String, double[]> entry : actionStats.entrySet()) {
+      final String actionName = entry.getKey();
+      final int sampleCount = actionCounts.getOrDefault(actionName, 0);
+      if (sampleCount < minSamples) {
+        continue;
+      }
+      final double evidenceMass = entry.getValue()[1];
+      if (evidenceMass <= 0.0) {
+        continue;
+      }
+      final double successRate = entry.getValue()[0] / evidenceMass;
+      final double clampedRate = Math.max(successRate, minRate);
+      factors.put(actionName, 1.0 / clampedRate);
+    }
+    return factors;
+  }
+
+  public static Map<String, Double> actionCostFactors(
+      final List<RetrievedExperience> experiences,
+      final Set<String> actionNames,
+      final int minSamples) {
+    return actionCostFactors(
+        experiences, actionNames, minSamples, DEFAULT_MAX_COST_FACTOR, DEFAULT_OUTCOME_WEIGHTS);
+  }
 }

@@ -814,6 +814,9 @@ public final class CaseDefinitionYamlMapper {
       if (cbr.getTemporalDecayHalfLifeDays() != null) {
         cbrBuilder.temporalDecayHalfLifeDays(cbr.getTemporalDecayHalfLifeDays());
       }
+      if (cbr.getMinCostSamples() != null) {
+        cbrBuilder.minCostSamples(cbr.getMinCostSamples());
+      }
       def.setCbrConfig(cbrBuilder.build());
     }
 
