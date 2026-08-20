@@ -993,6 +993,11 @@ public final class CaseDefinitionYamlMapper {
               domains));
     }
 
+    // maxAdaptations — per-case adaptation ceiling
+    if (specNode != null && specNode.has("maxAdaptations")) {
+      def.setMaxAdaptations(specNode.get("maxAdaptations").asInt());
+    }
+
     // adaptation — per-case plan adaptation configuration
     final JsonNode adaptationNode = specNode != null ? specNode.get("adaptation") : null;
     if (adaptationNode != null) {
@@ -1010,7 +1015,8 @@ public final class CaseDefinitionYamlMapper {
                   new io.casehub.api.model.AdaptationConfig(
                       "progress",
                       "forward-replan",
-                      io.casehub.api.model.AdaptationConfig.DEFAULT_PROGRESS_THRESHOLD));
+                      io.casehub.api.model.AdaptationConfig.DEFAULT_PROGRESS_THRESHOLD,
+                      null));
           case "off" -> {} // null = disabled
           default -> throw new IllegalArgumentException("Unknown adaptation preset: " + preset);
         }
@@ -1023,8 +1029,10 @@ public final class CaseDefinitionYamlMapper {
                 : "forward-replan";
         Double threshold =
             adaptationNode.has("threshold") ? adaptationNode.get("threshold").asDouble() : null;
+        String metaReasoner =
+            adaptationNode.has("metaReasoner") ? adaptationNode.get("metaReasoner").asText() : null;
         def.setAdaptationConfig(
-            new io.casehub.api.model.AdaptationConfig(trigger, revision, threshold));
+            new io.casehub.api.model.AdaptationConfig(trigger, revision, threshold, metaReasoner));
       }
       if (def.getAdaptationConfig() != null && def.getDecompositionStrategy() == null) {
         LOG.warnf(

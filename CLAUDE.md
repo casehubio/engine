@@ -361,6 +361,26 @@ Three-level escalation for task failures, inspired by Graph Harness (arXiv:2604.
 
 `CaseHubEventType.PLAN_DEEPENED` — audit event fired after successful deeper decomposition. Metadata: `bindingName`, `strategyId`, `subStepCount`, `currentDepth`, `maxDepth`, `failureReason`, `failureMissingContext`. Refs engine#936.
 
+## Persist / Refine / Concede Meta-Reasoning
+
+`AdaptationMetaReasoner` (`engine-api`, `io.casehub.engine.plan.adaptation`, extends `NamedStrategy`) — SPI evaluating whether adaptation is worth performing and what scope is appropriate. Sits between `AdaptationTrigger` (binary PROCEED/SKIP gate) and `PlanRevisionStrategy` (execution). Returns `AdaptationDecision` sealed type: `Persist(reason)` (plan valid, skip adaptation), `Refine(RefineScope scope, reason)` (adapt with scope), `Concede(reason, compoundId)` (abandon compound). Pipeline: trigger → (SKIP: stop) → meta-reasoner → (Persist: stop, Refine: revise, Concede: abandon). Integrated in `DefaultPlanAdaptationEvaluator.performAdaptation()`. Refs engine#934.
+
+`RefineScope` — enum: `LOCAL` (repair one step), `COMPOUND` (re-decompose entire compound). v1: LOCAL falls back to ForwardReplanRevision (same as COMPOUND) until #935 adds dedicated RepairStrategy.
+
+`MetaReasoningContext` (`engine-api`) — record carrying: `AdaptationContext`, `adaptationCount` (from `CasePlanModel.getAdaptationGeneration()`), `completedStepCount`, `pendingStepCount`, `totalStepCount`, `latestFailureCategory` (nullable `FailureCategory`, resolved from `_diagnostics.<bindingName>.latestDiagnosis`). `remainingRatio()` convenience method.
+
+`CostCeilingMetaReasoner` (`planning/adaptation/`, `@ApplicationScoped`, id=`"cost-ceiling"`) — default classical heuristic. Decision logic: (1) Concede when adaptation count >= `maxAdaptations` ceiling, (2) Concede on `FailureCategory.Infeasible`, (3) Persist on `FailureCategory.Transient` (let retry/reroute handle), (4) Refine(LOCAL) on first Knowledge failure (adaptationCount == 0), Refine(COMPOUND) on repeated, (5) Refine(COMPOUND) on success-triggered adaptation (null failure category). No ChatModelProvider dependency. Refs engine#934.
+
+`CaseDefinition.maxAdaptations` (Integer, nullable — default 5 via `CostCeilingMetaReasoner.DEFAULT_MAX_ADAPTATIONS`). Maximum adaptation count per compound before Concede. YAML: `spec: { maxAdaptations: 5 }`. `AdaptationConfig` gains `metaReasoner` (String, nullable — strategy ID, default `"cost-ceiling"` via `effectiveMetaReasoner()`). YAML: `adaptation: { metaReasoner: cost-ceiling }`. Refs engine#934.
+
+`CasePlanModel.faultCompound(String compoundId)` — cancels PENDING PlanItems, faults the compound definition status. RUNNING PlanItems preserved (complete naturally). `hasAnyFaultedParticipant(String compoundId)` — checks for FAULTED/CANCELLED participants (excludes COMPANION). Both default methods on `CasePlanModel` interface. `DefaultCasePlanModel` implementation. Refs engine#934.
+
+`CompoundCompletionEvaluator` — fault-aware propagation: under `All` completion semantics, when all required children are terminal but any participant is FAULTED/CANCELLED, the parent compound transitions to FAULTED (not COMPLETED). MOfN and FirstWins semantics unchanged. Refs engine#934.
+
+`CaseHubEventType.PLAN_CONCEDED` — audit event fired when meta-reasoner decides Concede. Metadata: `compoundId`, `reason`, `adaptationCount`, `triggerStrategy`, `metaReasoner`. Refs engine#934.
+
+`AdaptationCostComputer` (`engine-common`, `io.casehub.engine.common.internal.monitoring`, static utility) — computes `AdaptationCostSummary` from PLAN_ADAPTED EventLog entries per compound. Same on-demand pattern as `DivergenceScoreComputer`. Not used by `CostCeilingMetaReasoner` (which uses `adaptationGeneration` directly), available for future LLM-backed meta-reasoners. Refs engine#934.
+
 ## JQ Expression Evaluation Surface
 
 All JQ expressions (binding filters, `when` conditions, goals, milestones, `inputProjection`, `outputProjection`) evaluate against the **working layer** (`context.layer(ContextLayer.WORKING).asJsonNode()`), NOT the full layer document (`context.asJsonNode()`). YAML definitions use unqualified field paths (`.transaction`, `.entityResolution`) — the layer structure is an engine implementation detail.

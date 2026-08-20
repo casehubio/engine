@@ -47,21 +47,32 @@ public class CompoundCompletionEvaluator {
       if (!plan.evaluateCompletion(parentId)) {
         return;
       }
-      plan.tryDefinitionTransition(
-          parentId, plan.getDefinitionStatus(parentId), io.casehub.api.model.TaskStatus.COMPLETED);
 
       io.casehub.engine.planning.plan.PlanItemDefinition def = plan.getDefinition(parentId);
+      io.casehub.api.model.TaskStatus targetStatus = io.casehub.api.model.TaskStatus.COMPLETED;
+      if (def instanceof io.casehub.engine.planning.plan.PlanItemDefinition.Compound c
+          && c.completion() instanceof io.casehub.engine.planning.plan.CompletionSemantics.All
+          && plan.hasAnyFaultedParticipant(parentId)) {
+        targetStatus = io.casehub.api.model.TaskStatus.FAULTED;
+      }
+
+      plan.tryDefinitionTransition(parentId, plan.getDefinitionStatus(parentId), targetStatus);
+
       String name = def != null ? def.name() : parentId;
       java.util.Set<String> scopedBindings =
-          (def instanceof io.casehub.engine.planning.plan.PlanItemDefinition.Compound c)
-              ? c.scopedBindings().keySet()
+          (def instanceof io.casehub.engine.planning.plan.PlanItemDefinition.Compound c2)
+              ? c2.scopedBindings().keySet()
               : java.util.Set.of();
 
       eventBus.publish(
           BlackboardEventBusAddresses.COMPOUND_COMPLETED,
           new CompoundCompletedEvent(caseId, tenancyId, parentId, name, scopedBindings));
 
-      LOG.debugf("Compound '%s' completed for case %s", parentId, caseId);
+      LOG.debugf(
+          "Compound '%s' %s for case %s",
+          parentId,
+          targetStatus == io.casehub.api.model.TaskStatus.FAULTED ? "faulted" : "completed",
+          caseId);
       parentOpt = plan.getParentOf(parentId);
     }
   }

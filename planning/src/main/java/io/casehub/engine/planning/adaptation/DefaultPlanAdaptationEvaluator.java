@@ -80,6 +80,8 @@ public class DefaultPlanAdaptationEvaluator implements PlanAdaptationEvaluator {
   private final CaseDefinitionRegistry caseDefinitionRegistry;
   private final StrategyResolver strategyResolver;
   private final Instance<Object> agentMemoryRetriever;
+  private final io.casehub.engine.planning.handler.CompoundCompletionEvaluator
+      compoundCompletionEvaluator;
   private final Semaphore semaphore;
   private final long timeoutMs;
   private final ConcurrentHashMap<String, ReentrantLock> compoundLocks = new ConcurrentHashMap<>();
@@ -93,6 +95,7 @@ public class DefaultPlanAdaptationEvaluator implements PlanAdaptationEvaluator {
       CaseDefinitionRegistry caseDefinitionRegistry,
       StrategyResolver strategyResolver,
       Instance<Object> agentMemoryRetriever,
+      io.casehub.engine.planning.handler.CompoundCompletionEvaluator compoundCompletionEvaluator,
       @ConfigProperty(name = "casehub.engine.adaptation.max-concurrent", defaultValue = "3")
           int maxConcurrent,
       @ConfigProperty(name = "casehub.engine.decomposition.timeout-ms", defaultValue = "30000")
@@ -104,6 +107,7 @@ public class DefaultPlanAdaptationEvaluator implements PlanAdaptationEvaluator {
     this.caseDefinitionRegistry = caseDefinitionRegistry;
     this.strategyResolver = strategyResolver;
     this.agentMemoryRetriever = agentMemoryRetriever;
+    this.compoundCompletionEvaluator = compoundCompletionEvaluator;
     this.semaphore = new Semaphore(maxConcurrent);
     this.timeoutMs = timeoutMs;
   }
@@ -241,6 +245,40 @@ public class DefaultPlanAdaptationEvaluator implements PlanAdaptationEvaluator {
       return;
     }
 
+    io.casehub.api.model.FailureCategory latestCategory =
+        resolveLatestFailureCategory(instance, completedBindingName);
+
+    int completed = completedSteps.size();
+    int pending = pendingSteps.size();
+    int total = completed + pending + runningSteps.size();
+
+    var metaContext =
+        new io.casehub.engine.plan.adaptation.MetaReasoningContext(
+            adaptationContext, currentGeneration, completed, pending, total, latestCategory);
+
+    io.casehub.engine.plan.adaptation.AdaptationMetaReasoner metaReasoner =
+        strategyResolver.resolve(
+            io.casehub.engine.plan.adaptation.AdaptationMetaReasoner.class,
+            config.effectiveMetaReasoner());
+    io.casehub.engine.plan.adaptation.AdaptationDecision decision =
+        metaReasoner.evaluate(metaContext);
+
+    switch (decision) {
+      case io.casehub.engine.plan.adaptation.AdaptationDecision.Persist p -> {
+        LOG.debugf("Meta-reasoner: Persist for compound %s — %s", compoundId, p.reason());
+        return;
+      }
+      case io.casehub.engine.plan.adaptation.AdaptationDecision.Concede c -> {
+        LOG.infof("Meta-reasoner: Concede for compound %s — %s", compoundId, c.reason());
+        applyConcession(caseId, tenancyId, compoundId, plan, c, config);
+        return;
+      }
+      case io.casehub.engine.plan.adaptation.AdaptationDecision.Refine r -> {
+        LOG.infof(
+            "Meta-reasoner: Refine(%s) for compound %s — %s", r.scope(), compoundId, r.reason());
+      }
+    }
+
     AdaptationCause cause = buildCause(completedBindingName, completedStatus);
 
     var revisionContext =
@@ -372,6 +410,69 @@ public class DefaultPlanAdaptationEvaluator implements PlanAdaptationEvaluator {
       return new AdaptationCause.StepCompleted(bindingName, bindingName, Map.of());
     } else {
       return new AdaptationCause.StepFailed(bindingName, status.name());
+    }
+  }
+
+  private io.casehub.api.model.FailureCategory resolveLatestFailureCategory(
+      CaseInstance instance, String bindingName) {
+    com.fasterxml.jackson.databind.JsonNode working =
+        instance.getCaseContext() != null
+            ? instance.getCaseContext().layer(ContextLayer.WORKING).asJsonNode()
+            : null;
+    if (working == null || !working.has("_diagnostics")) {
+      return null;
+    }
+    com.fasterxml.jackson.databind.JsonNode diag = working.get("_diagnostics");
+    if (!diag.has(bindingName)) {
+      return null;
+    }
+    com.fasterxml.jackson.databind.JsonNode binding = diag.get(bindingName);
+    if (!binding.has("latestDiagnosis")) {
+      return null;
+    }
+    com.fasterxml.jackson.databind.JsonNode latest = binding.get("latestDiagnosis");
+    if (!latest.has("category")) {
+      return null;
+    }
+    String category = latest.get("category").asText();
+    String reason = latest.has("reason") ? latest.get("reason").asText() : "";
+    return switch (category) {
+      case "transient" -> new io.casehub.api.model.FailureCategory.Transient(reason);
+      case "knowledge" -> {
+        String missing =
+            latest.has("missingContext") ? latest.get("missingContext").asText() : null;
+        yield new io.casehub.api.model.FailureCategory.Knowledge(reason, missing);
+      }
+      case "infeasible" -> new io.casehub.api.model.FailureCategory.Infeasible(reason);
+      default -> null;
+    };
+  }
+
+  private void applyConcession(
+      UUID caseId,
+      String tenancyId,
+      String compoundId,
+      CasePlanModel plan,
+      io.casehub.engine.plan.adaptation.AdaptationDecision.Concede decision,
+      AdaptationConfig config) {
+    plan.faultCompound(compoundId);
+
+    var eventLog = new EventLog();
+    eventLog.setCaseId(caseId);
+    eventLog.setEventType(CaseHubEventType.PLAN_CONCEDED);
+    eventLog.setStreamType(io.casehub.api.model.event.EventStreamType.CASE);
+    eventLog.setTimestamp(Instant.now());
+    var meta = OBJECT_MAPPER.createObjectNode();
+    meta.put("compoundId", compoundId);
+    meta.put("reason", decision.reason());
+    meta.put("adaptationCount", plan.getAdaptationGeneration(compoundId));
+    meta.put("triggerStrategy", config.trigger());
+    meta.put("metaReasoner", config.effectiveMetaReasoner());
+    eventLog.setMetadata(meta);
+    eventLogRepository.append(eventLog, tenancyId);
+
+    if (compoundCompletionEvaluator != null) {
+      compoundCompletionEvaluator.evaluate(caseId, tenancyId, plan, compoundId);
     }
   }
 

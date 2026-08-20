@@ -17,7 +17,8 @@ package io.casehub.api.model;
 
 import java.util.Objects;
 
-public record AdaptationConfig(String trigger, String revision, Double threshold) {
+public record AdaptationConfig(
+    String trigger, String revision, Double threshold, String metaReasoner) {
 
   public static final double DEFAULT_PROGRESS_THRESHOLD = 0.3;
 
@@ -30,6 +31,10 @@ public record AdaptationConfig(String trigger, String revision, Double threshold
   }
 
   public static AdaptationConfig of(String trigger, String revision) {
-    return new AdaptationConfig(trigger, revision, null);
+    return new AdaptationConfig(trigger, revision, null, null);
+  }
+
+  public String effectiveMetaReasoner() {
+    return metaReasoner != null ? metaReasoner : "cost-ceiling";
   }
 }

@@ -69,7 +69,7 @@ class ProgressGatedTriggerTest {
         buildDefinition(
             ReplanHint.ALWAYS,
             MonitoringConfig.defaults(),
-            new AdaptationConfig("progress", "forward-replan", 0.3));
+            new AdaptationConfig("progress", "forward-replan", 0.3, null));
     var ctx = buildContext(def, TaskStatus.COMPLETED);
     assertEquals(AdaptationSignal.PROCEED, trigger.evaluate(ctx));
   }
@@ -80,7 +80,7 @@ class ProgressGatedTriggerTest {
         buildDefinition(
             ReplanHint.NEVER,
             MonitoringConfig.defaults(),
-            new AdaptationConfig("progress", "forward-replan", 0.3));
+            new AdaptationConfig("progress", "forward-replan", 0.3, null));
     var ctx = buildContext(def, TaskStatus.FAULTED);
     assertEquals(AdaptationSignal.SKIP, trigger.evaluate(ctx));
   }
@@ -91,7 +91,7 @@ class ProgressGatedTriggerTest {
         buildDefinition(
             ReplanHint.CONDITIONAL,
             MonitoringConfig.defaults(),
-            new AdaptationConfig("progress", "forward-replan", 0.3));
+            new AdaptationConfig("progress", "forward-replan", 0.3, null));
     var ctx = buildContext(def, TaskStatus.FAULTED);
     assertEquals(AdaptationSignal.PROCEED, trigger.evaluate(ctx));
   }
@@ -102,7 +102,7 @@ class ProgressGatedTriggerTest {
         buildDefinition(
             ReplanHint.CONDITIONAL,
             MonitoringConfig.defaults(),
-            new AdaptationConfig("progress", "forward-replan", 0.3));
+            new AdaptationConfig("progress", "forward-replan", 0.3, null));
     var ctx = buildContext(def, TaskStatus.REJECTED);
     assertEquals(AdaptationSignal.PROCEED, trigger.evaluate(ctx));
   }
@@ -113,7 +113,7 @@ class ProgressGatedTriggerTest {
         buildDefinition(
             ReplanHint.CONDITIONAL,
             MonitoringConfig.defaults(),
-            new AdaptationConfig("progress", "forward-replan", 0.3));
+            new AdaptationConfig("progress", "forward-replan", 0.3, null));
     var ctx = buildContext(def, TaskStatus.CANCELLED);
     assertEquals(AdaptationSignal.PROCEED, trigger.evaluate(ctx));
   }
@@ -122,7 +122,9 @@ class ProgressGatedTriggerTest {
   void noMonitoringConfigSkipsOnSuccess() {
     var def =
         buildDefinition(
-            ReplanHint.CONDITIONAL, null, new AdaptationConfig("progress", "forward-replan", 0.3));
+            ReplanHint.CONDITIONAL,
+            null,
+            new AdaptationConfig("progress", "forward-replan", 0.3, null));
     var ctx = buildContext(def, TaskStatus.COMPLETED);
     assertEquals(AdaptationSignal.SKIP, trigger.evaluate(ctx));
   }
@@ -133,7 +135,7 @@ class ProgressGatedTriggerTest {
         buildDefinition(
             ReplanHint.CONDITIONAL,
             MonitoringConfig.disabled(),
-            new AdaptationConfig("progress", "forward-replan", 0.3));
+            new AdaptationConfig("progress", "forward-replan", 0.3, null));
     var ctx = buildContext(def, TaskStatus.COMPLETED);
     assertEquals(AdaptationSignal.SKIP, trigger.evaluate(ctx));
   }
@@ -142,7 +144,9 @@ class ProgressGatedTriggerTest {
   void noMonitoringConfigStillProceedsOnFailure() {
     var def =
         buildDefinition(
-            ReplanHint.CONDITIONAL, null, new AdaptationConfig("progress", "forward-replan", 0.3));
+            ReplanHint.CONDITIONAL,
+            null,
+            new AdaptationConfig("progress", "forward-replan", 0.3, null));
     var ctx = buildContext(def, TaskStatus.FAULTED);
     assertEquals(AdaptationSignal.PROCEED, trigger.evaluate(ctx));
   }
@@ -153,7 +157,7 @@ class ProgressGatedTriggerTest {
         buildDefinition(
             ReplanHint.CONDITIONAL,
             MonitoringConfig.defaults(),
-            new AdaptationConfig("progress", "forward-replan", 0.5));
+            new AdaptationConfig("progress", "forward-replan", 0.5, null));
     eventLogRepository.setCompletions(List.of(completionEntry(COMPOUND_ID, 0.2, 0)));
     var ctx = buildContext(def, TaskStatus.COMPLETED);
     assertEquals(AdaptationSignal.SKIP, trigger.evaluate(ctx));
@@ -165,7 +169,7 @@ class ProgressGatedTriggerTest {
         buildDefinition(
             ReplanHint.CONDITIONAL,
             MonitoringConfig.defaults(),
-            new AdaptationConfig("progress", "forward-replan", 0.3));
+            new AdaptationConfig("progress", "forward-replan", 0.3, null));
     eventLogRepository.setCompletions(List.of(completionEntry(COMPOUND_ID, 0.5, 0)));
     var ctx = buildContext(def, TaskStatus.COMPLETED);
     assertEquals(AdaptationSignal.PROCEED, trigger.evaluate(ctx));
@@ -177,7 +181,7 @@ class ProgressGatedTriggerTest {
         buildDefinition(
             ReplanHint.CONDITIONAL,
             MonitoringConfig.defaults(),
-            new AdaptationConfig("progress", "forward-replan", 0.5));
+            new AdaptationConfig("progress", "forward-replan", 0.5, null));
     eventLogRepository.setCompletions(List.of(completionEntry(COMPOUND_ID, 0.5, 0)));
     var ctx = buildContext(def, TaskStatus.COMPLETED);
     assertEquals(AdaptationSignal.SKIP, trigger.evaluate(ctx));
@@ -189,7 +193,7 @@ class ProgressGatedTriggerTest {
         buildDefinition(
             ReplanHint.CONDITIONAL,
             MonitoringConfig.defaults(),
-            new AdaptationConfig("progress", "forward-replan", 0.3));
+            new AdaptationConfig("progress", "forward-replan", 0.3, null));
     eventLogRepository.setCompletions(List.of());
     var ctx = buildContext(def, TaskStatus.COMPLETED);
     assertEquals(AdaptationSignal.SKIP, trigger.evaluate(ctx));
@@ -201,7 +205,7 @@ class ProgressGatedTriggerTest {
         buildDefinition(
             ReplanHint.CONDITIONAL,
             new MonitoringConfig(true, 0.5, 3),
-            new AdaptationConfig("progress", "forward-replan", 0.3));
+            new AdaptationConfig("progress", "forward-replan", 0.3, null));
     eventLogRepository.setCompletions(
         List.of(
             completionEntry(COMPOUND_ID, 0.2, 0),
@@ -217,7 +221,7 @@ class ProgressGatedTriggerTest {
         buildDefinition(
             ReplanHint.CONDITIONAL,
             MonitoringConfig.defaults(),
-            new AdaptationConfig("progress", "forward-replan", 0.3));
+            new AdaptationConfig("progress", "forward-replan", 0.3, null));
     eventLogRepository.setCompletions(
         List.of(completionEntry("other-compound", 0.9, 0), completionEntry(COMPOUND_ID, 0.1, 0)));
     var ctx = buildContext(def, TaskStatus.COMPLETED);
@@ -230,7 +234,7 @@ class ProgressGatedTriggerTest {
         buildDefinition(
             ReplanHint.CONDITIONAL,
             MonitoringConfig.defaults(),
-            new AdaptationConfig("progress", "forward-replan", 0.3));
+            new AdaptationConfig("progress", "forward-replan", 0.3, null));
     eventLogRepository.setCompletions(
         List.of(completionEntry(COMPOUND_ID, 0.9, 0), completionEntry(COMPOUND_ID, 0.1, 1)));
     var ctx = buildContextWithGeneration(def, TaskStatus.COMPLETED, 1);
