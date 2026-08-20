@@ -385,4 +385,47 @@ public class DefaultCasePlanModel implements CasePlanModel {
     java.util.concurrent.atomic.AtomicInteger gen = adaptationGenerations.get(compoundId);
     return gen != null ? gen.get() : 0;
   }
+
+  @Override
+  public void promoteToCompound(String bindingName, PlanItemDefinition.Compound newCompound) {
+    PlanItemDefinition existing = definitions.get(bindingName);
+    if (existing == null) {
+      throw new IllegalArgumentException("No definition found for: " + bindingName);
+    }
+    if (existing instanceof PlanItemDefinition.Compound) {
+      throw new IllegalArgumentException("Definition is already a Compound: " + bindingName);
+    }
+
+    String parentId = parentIndex.get(bindingName);
+    if (parentId == null) {
+      throw new IllegalArgumentException("No parent compound for: " + bindingName);
+    }
+
+    // Remove old Primitive from all indices
+    definitions.remove(bindingName);
+    definitionStates.remove(bindingName);
+    var parentChildren = childrenIndex.get(parentId);
+    if (parentChildren != null) {
+      parentChildren.remove(bindingName);
+    }
+    parentIndex.remove(bindingName);
+
+    // Register new Compound — populates definitions, definitionStates, childrenIndex, parentIndex
+    registerDefinition(newCompound);
+
+    // Re-establish parent link
+    childrenIndex
+        .computeIfAbsent(parentId, k -> ConcurrentHashMap.newKeySet())
+        .add(newCompound.id());
+    parentIndex.put(newCompound.id(), parentId);
+
+    // Mark old PlanItem OBSOLETE if present and not already terminal
+    getPlanItemByBindingName(bindingName)
+        .ifPresent(
+            item -> {
+              if (!item.getStatus().isTerminal()) {
+                item.markObsolete();
+              }
+            });
+  }
 }

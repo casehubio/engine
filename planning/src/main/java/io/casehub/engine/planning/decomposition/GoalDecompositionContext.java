@@ -28,12 +28,14 @@ public record GoalDecompositionContext(
     List<Capability> availableCapabilities,
     PlanningConstraints planningConstraints,
     io.casehub.api.model.CaseDefinition definition,
-    List<io.casehub.api.spi.routing.RetrievedExperience> experiences)
+    List<io.casehub.api.spi.routing.RetrievedExperience> experiences,
+    String failureReason,
+    String failureMissingContext)
     implements DecompositionContext<JsonNode> {
 
   public GoalDecompositionContext(
       JsonNode state, int depth, List<Capability> availableCapabilities) {
-    this(state, depth, availableCapabilities, null, null, List.of());
+    this(state, depth, availableCapabilities, null, null, List.of(), null, null);
   }
 
   public GoalDecompositionContext(
@@ -41,7 +43,7 @@ public record GoalDecompositionContext(
       int depth,
       List<Capability> availableCapabilities,
       PlanningConstraints planningConstraints) {
-    this(state, depth, availableCapabilities, planningConstraints, null, List.of());
+    this(state, depth, availableCapabilities, planningConstraints, null, List.of(), null, null);
   }
 
   public GoalDecompositionContext(
@@ -50,7 +52,33 @@ public record GoalDecompositionContext(
       List<Capability> availableCapabilities,
       PlanningConstraints planningConstraints,
       io.casehub.api.model.CaseDefinition definition) {
-    this(state, depth, availableCapabilities, planningConstraints, definition, List.of());
+    this(
+        state,
+        depth,
+        availableCapabilities,
+        planningConstraints,
+        definition,
+        List.of(),
+        null,
+        null);
+  }
+
+  public GoalDecompositionContext(
+      JsonNode state,
+      int depth,
+      List<Capability> availableCapabilities,
+      PlanningConstraints planningConstraints,
+      io.casehub.api.model.CaseDefinition definition,
+      List<io.casehub.api.spi.routing.RetrievedExperience> experiences) {
+    this(
+        state,
+        depth,
+        availableCapabilities,
+        planningConstraints,
+        definition,
+        experiences,
+        null,
+        null);
   }
 
   public GoalDecompositionContext {

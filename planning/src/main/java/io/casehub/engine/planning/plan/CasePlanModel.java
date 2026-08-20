@@ -164,4 +164,9 @@ public interface CasePlanModel {
   default int getAdaptationGeneration(String compoundId) {
     return 0;
   }
+
+  default void promoteToCompound(String bindingName, PlanItemDefinition.Compound newCompound) {
+    throw new UnsupportedOperationException(
+        "promoteToCompound not supported by this implementation");
+  }
 }

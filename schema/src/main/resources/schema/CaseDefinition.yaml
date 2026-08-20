@@ -293,6 +293,14 @@ $defs:
         description: >
           HTN decomposition strategy ID. Resolved via StrategyResolver.
           Default: "identity". Plugin strategies register via CDI.
+      maxDecompositionDepth:
+        type: integer
+        minimum: 1
+        maximum: 10
+        description: >
+          Maximum nesting depth for dynamic decomposition. When a leaf task
+          fails with a Knowledge failure, the engine decomposes it finer
+          up to this depth. Default: 3.
       agentRouting:
         type: string
         description: >
