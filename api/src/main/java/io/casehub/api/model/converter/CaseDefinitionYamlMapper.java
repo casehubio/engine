@@ -690,6 +690,9 @@ public final class CaseDefinitionYamlMapper {
     if (schema.getSpec() != null && schema.getSpec().getDecompositionStrategy() != null) {
       def.setDecompositionStrategy(schema.getSpec().getDecompositionStrategy());
     }
+    if (schema.getSpec() != null && schema.getSpec().getMaxDecompositionDepth() != null) {
+      def.setMaxDecompositionDepth(schema.getSpec().getMaxDecompositionDepth());
+    }
 
     // Convert planningConstraints — read from raw spec node (Duration + Integer)
     if (specNode != null && specNode.has("planningConstraints")) {

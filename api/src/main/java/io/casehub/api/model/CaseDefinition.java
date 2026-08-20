@@ -62,6 +62,7 @@ public class CaseDefinition {
 
   private String candidateMatching;
   private String decompositionStrategy;
+  private Integer maxDecompositionDepth;
 
   private Set<Path> types = Set.of();
   private Set<Path> labels = Set.of();
@@ -276,6 +277,14 @@ public class CaseDefinition {
 
   public void setDecompositionStrategy(String decompositionStrategy) {
     this.decompositionStrategy = decompositionStrategy;
+  }
+
+  public Integer getMaxDecompositionDepth() {
+    return maxDecompositionDepth;
+  }
+
+  public void setMaxDecompositionDepth(Integer maxDecompositionDepth) {
+    this.maxDecompositionDepth = maxDecompositionDepth;
   }
 
   public Set<Path> getTypes() {
@@ -499,6 +508,7 @@ public class CaseDefinition {
 
     private String candidateMatching;
     private String decompositionStrategy;
+    private Integer maxDecompositionDepth;
 
     private Set<Path> types = new LinkedHashSet<>();
     private Set<Path> labels = new LinkedHashSet<>();
@@ -707,6 +717,11 @@ public class CaseDefinition {
       return this;
     }
 
+    public Builder maxDecompositionDepth(Integer maxDecompositionDepth) {
+      this.maxDecompositionDepth = maxDecompositionDepth;
+      return this;
+    }
+
     public Builder type(Path type) {
       this.types.add(type);
       return this;
@@ -901,6 +916,7 @@ public class CaseDefinition {
       caseHubDefinition.setHumanTaskWorkloadConstraint(humanTaskWorkloadConstraint);
       caseHubDefinition.setCandidateMatching(candidateMatching);
       caseHubDefinition.setDecompositionStrategy(decompositionStrategy);
+      caseHubDefinition.setMaxDecompositionDepth(maxDecompositionDepth);
       caseHubDefinition.setTypes(types);
       caseHubDefinition.setLabels(labels);
       caseHubDefinition.setCbrConfig(cbrConfig);
