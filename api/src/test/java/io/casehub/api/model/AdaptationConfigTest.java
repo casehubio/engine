@@ -26,12 +26,13 @@ class AdaptationConfigTest {
   @Test
   void rejectsNullTrigger() {
     assertThrows(
-        NullPointerException.class, () -> new AdaptationConfig(null, "forward-replan", null));
+        NullPointerException.class, () -> new AdaptationConfig(null, "forward-replan", null, null));
   }
 
   @Test
   void rejectsNullRevision() {
-    assertThrows(NullPointerException.class, () -> new AdaptationConfig("every-step", null, null));
+    assertThrows(
+        NullPointerException.class, () -> new AdaptationConfig("every-step", null, null, null));
   }
 
   @Test
@@ -63,7 +64,7 @@ class AdaptationConfigTest {
 
   @Test
   void storesThreshold() {
-    var config = new AdaptationConfig("progress", "forward-replan", 0.3);
+    var config = new AdaptationConfig("progress", "forward-replan", 0.3, null);
     assertEquals(0.3, config.threshold());
   }
 
@@ -77,19 +78,37 @@ class AdaptationConfigTest {
   void rejectsNegativeThreshold() {
     assertThrows(
         IllegalArgumentException.class,
-        () -> new AdaptationConfig("progress", "forward-replan", -0.1));
+        () -> new AdaptationConfig("progress", "forward-replan", -0.1, null));
   }
 
   @Test
   void rejectsThresholdAboveOne() {
     assertThrows(
         IllegalArgumentException.class,
-        () -> new AdaptationConfig("progress", "forward-replan", 1.1));
+        () -> new AdaptationConfig("progress", "forward-replan", 1.1, null));
   }
 
   @Test
   void acceptsNullThreshold() {
-    var config = new AdaptationConfig("every-step", "forward-replan", null);
+    var config = new AdaptationConfig("every-step", "forward-replan", null, null);
     assertNull(config.threshold());
+  }
+
+  @Test
+  void effectiveMetaReasoner_defaults_to_cost_ceiling() {
+    var config = AdaptationConfig.of("progress", "forward-replan");
+    assertEquals("cost-ceiling", config.effectiveMetaReasoner());
+  }
+
+  @Test
+  void effectiveMetaReasoner_returns_explicit_value() {
+    var config = new AdaptationConfig("progress", "forward-replan", null, "custom-reasoner");
+    assertEquals("custom-reasoner", config.effectiveMetaReasoner());
+  }
+
+  @Test
+  void metaReasoner_null_by_default() {
+    var config = AdaptationConfig.of("every-step", "forward-replan");
+    assertNull(config.metaReasoner());
   }
 }

@@ -428,4 +428,48 @@ public class DefaultCasePlanModel implements CasePlanModel {
               }
             });
   }
+
+  @Override
+  public void faultCompound(String compoundId) {
+    PlanItemDefinition def = definitions.get(compoundId);
+    if (!(def instanceof PlanItemDefinition.Compound compound)) {
+      throw new IllegalArgumentException("Not a compound: " + compoundId);
+    }
+
+    for (String bindingName : compound.scopedBindings().keySet()) {
+      PlanItem item = latestByBinding.get(bindingName);
+      if (item != null && item.getStatus() == TaskStatus.PENDING) {
+        item.markCancelled();
+      }
+    }
+
+    tryDefinitionTransition(compoundId, getDefinitionStatus(compoundId), TaskStatus.FAULTED);
+  }
+
+  @Override
+  public boolean hasAnyFaultedParticipant(String compoundId) {
+    PlanItemDefinition def = definitions.get(compoundId);
+    if (!(def instanceof PlanItemDefinition.Compound compound)) {
+      return false;
+    }
+
+    for (var entry : compound.scopedBindings().entrySet()) {
+      if (entry.getValue() != io.casehub.api.model.Participation.PARTICIPANT) {
+        continue;
+      }
+      PlanItem pi = latestByBinding.get(entry.getKey());
+      if (pi != null
+          && (pi.getStatus() == TaskStatus.FAULTED || pi.getStatus() == TaskStatus.CANCELLED)) {
+        return true;
+      }
+    }
+
+    for (String childId : getChildrenOf(compoundId)) {
+      TaskStatus childStatus = getDefinitionStatus(childId);
+      if (childStatus == TaskStatus.FAULTED || childStatus == TaskStatus.CANCELLED) {
+        return true;
+      }
+    }
+    return false;
+  }
 }

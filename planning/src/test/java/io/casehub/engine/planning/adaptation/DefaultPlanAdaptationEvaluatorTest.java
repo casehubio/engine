@@ -73,6 +73,9 @@ class DefaultPlanAdaptationEvaluatorTest {
   @SuppressWarnings("unchecked")
   private Instance<Object> memoryRetriever = mock(Instance.class);
 
+  private io.casehub.engine.planning.handler.CompoundCompletionEvaluator
+      compoundCompletionEvaluator;
+
   private DefaultPlanAdaptationEvaluator evaluator;
 
   private UUID caseId;
@@ -89,7 +92,11 @@ class DefaultPlanAdaptationEvaluatorTest {
     caseInstanceRepository = mock(CaseInstanceRepository.class);
     caseDefinitionRegistry = mock(CaseDefinitionRegistry.class);
     strategyResolver = mock(StrategyResolver.class);
+    compoundCompletionEvaluator =
+        mock(io.casehub.engine.planning.handler.CompoundCompletionEvaluator.class);
     when(memoryRetriever.isResolvable()).thenReturn(false);
+
+    setupDefaultMetaReasoner();
 
     caseId = UUID.randomUUID();
     casePlanModel = new DefaultCasePlanModel(caseId);
@@ -126,6 +133,7 @@ class DefaultPlanAdaptationEvaluatorTest {
             caseDefinitionRegistry,
             strategyResolver,
             memoryRetriever,
+            compoundCompletionEvaluator,
             3,
             30000L);
   }
@@ -172,6 +180,8 @@ class DefaultPlanAdaptationEvaluatorTest {
     var trigger = mock(AdaptationTrigger.class);
     when(trigger.evaluate(any())).thenReturn(AdaptationSignal.PROCEED);
     when(strategyResolver.resolve(AdaptationTrigger.class, "every-step")).thenReturn(trigger);
+
+    setupDefaultMetaReasoner();
 
     var revision = mock(PlanRevisionStrategy.class);
     var revisedPlan =
@@ -461,9 +471,18 @@ class DefaultPlanAdaptationEvaluatorTest {
     when(trigger.evaluate(any())).thenReturn(AdaptationSignal.PROCEED);
     when(strategyResolver.resolve(AdaptationTrigger.class, "every-step")).thenReturn(trigger);
 
+    setupDefaultMetaReasoner();
+
     var revision = mock(PlanRevisionStrategy.class);
     when(revision.revise(any())).thenReturn(new RevisedPlan(newSteps, "revised"));
     when(strategyResolver.resolve(PlanRevisionStrategy.class, "forward-replan"))
         .thenReturn(revision);
+  }
+
+  private void setupDefaultMetaReasoner() {
+    var metaReasoner = new CostCeilingMetaReasoner();
+    when(strategyResolver.resolve(
+            io.casehub.engine.plan.adaptation.AdaptationMetaReasoner.class, "cost-ceiling"))
+        .thenReturn(metaReasoner);
   }
 }

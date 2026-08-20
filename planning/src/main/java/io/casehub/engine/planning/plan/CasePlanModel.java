@@ -169,4 +169,12 @@ public interface CasePlanModel {
     throw new UnsupportedOperationException(
         "promoteToCompound not supported by this implementation");
   }
+
+  default void faultCompound(String compoundId) {
+    throw new UnsupportedOperationException("faultCompound not supported");
+  }
+
+  default boolean hasAnyFaultedParticipant(String compoundId) {
+    return false;
+  }
 }

@@ -75,6 +75,7 @@ public class EngineStrategyResolver implements StrategyResolver {
       @Any Instance<io.casehub.api.spi.ExchangeProjectionStrategy> projectionStrategies,
       @Any Instance<io.casehub.api.spi.DataChannelFactory> channelFactories,
       @Any Instance<io.casehub.api.spi.recovery.ErrorClassifier> errorClassifiers,
+      @Any Instance<io.casehub.engine.plan.adaptation.AdaptationMetaReasoner> metaReasoners,
       @Any Instance<NamedStrategy> allStrategies) {
     this();
     registerStrategies(agentStrategies);
@@ -92,6 +93,7 @@ public class EngineStrategyResolver implements StrategyResolver {
     registerStrategies(projectionStrategies);
     registerStrategies(channelFactories);
     registerStrategies(errorClassifiers);
+    registerStrategies(metaReasoners);
     registerRemainingStrategies(allStrategies);
 
     org.jboss.logging.Logger.getLogger(EngineStrategyResolver.class)
