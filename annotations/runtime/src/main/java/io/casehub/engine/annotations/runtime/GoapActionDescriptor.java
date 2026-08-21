@@ -23,4 +23,5 @@ public record GoapActionDescriptor(
     Map<String, Boolean> effects,
     double cost,
     double benefit,
-    Map<String, Boolean> softPreconditions) {}
+    Map<String, Boolean> softPreconditions,
+    String costMethodName) {}

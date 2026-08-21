@@ -124,4 +124,48 @@ class GoapAnnotatedCaseTest {
   void completion_wired_from_default_method() {
     assertThat(definition.getCompletion()).isNotNull();
   }
+
+  @Test
+  void assess_risk_has_dynamic_cost_function() {
+    var assessAction =
+        definition.getGoapActions().stream()
+            .filter(a -> a.name().equals("assessRisk"))
+            .findFirst()
+            .orElseThrow();
+
+    assertThat(assessAction.costFunction()).isNotNull();
+
+    var withPrior =
+        new io.casehub.engine.plan.goap.GoapWorldState(
+            java.util.Map.of("priorReview", io.casehub.engine.plan.goap.Condition.TRUE));
+    assertThat(assessAction.costFunction().compute(withPrior)).isEqualTo(0.2);
+
+    var withoutPrior = new io.casehub.engine.plan.goap.GoapWorldState(java.util.Map.of());
+    assertThat(assessAction.costFunction().compute(withoutPrior)).isEqualTo(0.8);
+  }
+
+  @Test
+  void soft_dependency_produces_soft_preconditions_not_hard() {
+    var assessAction =
+        definition.getGoapActions().stream()
+            .filter(a -> a.name().equals("assessRisk"))
+            .findFirst()
+            .orElseThrow();
+
+    assertThat(assessAction.softPreconditions()).containsKey("priorReview");
+    assertThat(assessAction.preconditions()).doesNotContainKey("priorReview");
+  }
+
+  @Test
+  void goap_action_names_match_capabilities_for_blacklisting() {
+    for (var action : definition.getGoapActions()) {
+      var matchingCapability =
+          definition.getCapabilities().stream()
+              .filter(c -> c.name().equals(action.name()))
+              .findFirst();
+      assertThat(matchingCapability)
+          .as("GOAP action '%s' should match a capability name", action.name())
+          .isPresent();
+    }
+  }
 }

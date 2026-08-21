@@ -61,6 +61,11 @@ class AnnotationFeaturesTest {
       return new OutputData("transformed");
     }
 
+    @io.casehub.engine.annotations.Cost("transform")
+    default double transformCost(io.casehub.engine.plan.goap.GoapWorldState state) {
+      return state.get("inputData") == io.casehub.engine.plan.goap.Condition.TRUE ? 0.2 : 0.8;
+    }
+
     @Goal(value = "Work complete", condition = ".outputData != null")
     default void done() {}
 
@@ -102,7 +107,7 @@ class AnnotationFeaturesTest {
   @Test
   void soft_dependency_in_goap() {
     var doWorkAction =
-        definition.getGoapActions().stream().filter(a -> a.name().equals("doWork")).findFirst();
+        definition.getGoapActions().stream().filter(a -> a.name().equals("customName")).findFirst();
     assertThat(doWorkAction).isPresent();
     assertThat(doWorkAction.get().softPreconditions()).containsKey("inputData");
     assertThat(doWorkAction.get().preconditions()).doesNotContainKey("inputData");
@@ -134,5 +139,56 @@ class AnnotationFeaturesTest {
             .filter(b -> b.getOn() instanceof ScheduleTrigger)
             .toList();
     assertThat(cronBindings).hasSize(1);
+  }
+
+  @Test
+  void goap_action_name_uses_capability_name_not_method_name() {
+    // @Worker(value = "customName") on method "doWork" — action name should be "customName"
+    var customAction =
+        definition.getGoapActions().stream().filter(a -> a.name().equals("customName")).findFirst();
+    assertThat(customAction).as("GOAP action should use capability name 'customName'").isPresent();
+
+    // No action should use the raw method name "doWork"
+    var methodNameAction =
+        definition.getGoapActions().stream().filter(a -> a.name().equals("doWork")).findFirst();
+    assertThat(methodNameAction).as("No GOAP action should use method name 'doWork'").isEmpty();
+  }
+
+  @Test
+  void cost_annotation_produces_cost_function() {
+    var action =
+        definition.getGoapActions().stream()
+            .filter(a -> a.name().equals("transform"))
+            .findFirst()
+            .orElseThrow();
+
+    assertThat(action.costFunction()).isNotNull();
+
+    var withInput =
+        new io.casehub.engine.plan.goap.GoapWorldState(
+            java.util.Map.of("inputData", io.casehub.engine.plan.goap.Condition.TRUE));
+    assertThat(action.costFunction().compute(withInput)).isEqualTo(0.2);
+
+    var withoutInput = new io.casehub.engine.plan.goap.GoapWorldState(java.util.Map.of());
+    assertThat(action.costFunction().compute(withoutInput)).isEqualTo(0.8);
+  }
+
+  @Test
+  void cost_annotation_coexists_with_static_cost() {
+    var action =
+        definition.getGoapActions().stream()
+            .filter(a -> a.name().equals("transform"))
+            .findFirst()
+            .orElseThrow();
+
+    assertThat(action.cost()).isEqualTo(0.5);
+    assertThat(action.costFunction()).isNotNull();
+
+    assertThat(action.effectiveCost()).isGreaterThan(0.0);
+
+    var state =
+        new io.casehub.engine.plan.goap.GoapWorldState(
+            java.util.Map.of("inputData", io.casehub.engine.plan.goap.Condition.TRUE));
+    assertThat(action.effectiveCost(state)).isNotEqualTo(action.effectiveCost());
   }
 }

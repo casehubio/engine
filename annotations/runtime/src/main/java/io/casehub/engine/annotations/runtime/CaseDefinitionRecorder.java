@@ -180,8 +180,53 @@ public class CaseDefinitionRecorder {
     builder.milestones(milestones);
 
     if (descriptor.goapActions() != null && !descriptor.goapActions().isEmpty()) {
+      Object costInstance = null;
+      Class<?> implClass = null;
+      for (GoapActionDescriptor gad : descriptor.goapActions()) {
+        if (gad.costMethodName() != null) {
+          try {
+            implClass =
+                Thread.currentThread()
+                    .getContextClassLoader()
+                    .loadClass(descriptor.implClassName());
+            costInstance = implClass.getDeclaredConstructor().newInstance();
+          } catch (Exception e) {
+            LOG.warn("Failed to create impl instance for @Cost: " + e.getMessage());
+          }
+          break;
+        }
+      }
+
       List<GoapAction> goapActions = new ArrayList<>();
       for (GoapActionDescriptor gad : descriptor.goapActions()) {
+        io.casehub.engine.plan.goap.CostFunction costFn = null;
+        if (gad.costMethodName() != null && costInstance != null) {
+          try {
+            java.lang.reflect.Method costMethod =
+                implClass.getMethod(
+                    gad.costMethodName(), io.casehub.engine.plan.goap.GoapWorldState.class);
+            final Object instance = costInstance;
+            costFn =
+                state -> {
+                  try {
+                    return (double) costMethod.invoke(instance, state);
+                  } catch (Exception e) {
+                    LOG.warn(
+                        "@Cost method '"
+                            + gad.costMethodName()
+                            + "' failed, using static cost: "
+                            + e.getMessage());
+                    return gad.cost();
+                  }
+                };
+          } catch (NoSuchMethodException e) {
+            LOG.warn(
+                "@Cost method '"
+                    + gad.costMethodName()
+                    + "' not found on impl class: "
+                    + e.getMessage());
+          }
+        }
         goapActions.add(
             new GoapAction(
                 gad.name(),
@@ -189,7 +234,8 @@ public class CaseDefinitionRecorder {
                 gad.effects(),
                 gad.cost(),
                 gad.benefit(),
-                gad.softPreconditions()));
+                gad.softPreconditions(),
+                costFn));
       }
       builder.goapActions(goapActions);
     }
