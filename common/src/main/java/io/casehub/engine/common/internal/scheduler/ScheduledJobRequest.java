@@ -19,25 +19,19 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Objects;
 
-/**
- * Request to schedule a job for execution.
- *
- * <p>Contains all information needed to schedule a job: identifier, schedule strategy, job class,
- * and data to pass to the job when it executes.
- */
 public class ScheduledJobRequest {
 
   private final JobIdentifier jobId;
   private final ScheduleStrategy schedule;
-  private final Class<?> jobClass;
+  private final JobType jobType;
   private final Map<String, Object> data;
 
   private ScheduledJobRequest(
-      JobIdentifier jobId, ScheduleStrategy schedule, Class<?> jobClass, Map<String, Object> data) {
+      JobIdentifier jobId, ScheduleStrategy schedule, JobType jobType, Map<String, Object> data) {
     this.jobId = Objects.requireNonNull(jobId, "jobId must not be null");
     this.schedule = Objects.requireNonNull(schedule, "schedule must not be null");
-    this.jobClass = jobClass; // may be null - scheduler will determine based on data
-    this.data = Map.copyOf(data); // defensive copy
+    this.jobType = jobType;
+    this.data = Map.copyOf(data);
   }
 
   public static Builder builder() {
@@ -52,8 +46,8 @@ public class ScheduledJobRequest {
     return schedule;
   }
 
-  public Class<?> getJobClass() {
-    return jobClass;
+  public JobType getJobType() {
+    return jobType;
   }
 
   public Map<String, Object> getData() {
@@ -67,15 +61,15 @@ public class ScheduledJobRequest {
         + jobId
         + ", schedule="
         + schedule
-        + ", jobClass="
-        + (jobClass != null ? jobClass.getSimpleName() : "null")
+        + ", jobType="
+        + jobType
         + '}';
   }
 
   public static class Builder {
     private JobIdentifier jobId;
     private ScheduleStrategy schedule;
-    private Class<?> jobClass;
+    private JobType jobType;
     private Map<String, Object> data = new HashMap<>();
 
     public Builder jobId(JobIdentifier jobId) {
@@ -88,8 +82,8 @@ public class ScheduledJobRequest {
       return this;
     }
 
-    public Builder jobClass(Class<?> jobClass) {
-      this.jobClass = jobClass;
+    public Builder jobType(JobType jobType) {
+      this.jobType = jobType;
       return this;
     }
 
@@ -104,7 +98,7 @@ public class ScheduledJobRequest {
     }
 
     public ScheduledJobRequest build() {
-      return new ScheduledJobRequest(jobId, schedule, jobClass, data);
+      return new ScheduledJobRequest(jobId, schedule, jobType, data);
     }
   }
 }
