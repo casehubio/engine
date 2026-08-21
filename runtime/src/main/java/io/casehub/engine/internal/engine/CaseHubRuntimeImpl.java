@@ -178,6 +178,11 @@ class CaseHubRuntimeImpl implements CaseHubRuntime {
   }
 
   @Override
+  public CaseContext awaitQuiescence(UUID caseId, Duration timeout) {
+    return reactor.awaitQuiescence(caseId, timeout);
+  }
+
+  @Override
   public <T> void signal(UUID caseId, SignalType<T> signalType, T payload) {
     Objects.requireNonNull(payload, "Typed signal payload must not be null");
     CaseInstance instance = caseInstanceCache.get(caseId);

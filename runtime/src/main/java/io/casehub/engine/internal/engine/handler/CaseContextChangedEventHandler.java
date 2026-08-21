@@ -136,6 +136,7 @@ public class CaseContextChangedEventHandler {
   java.util.concurrent.ExecutorService virtualThreads;
 
   @Inject CaseEvaluationSerializer evaluationSerializer;
+  @Inject io.casehub.engine.internal.engine.QuiescenceTracker quiescenceTracker;
   @Inject io.casehub.engine.common.internal.worker.scope.ScopedWorkerRegistry scopedWorkerRegistry;
 
   @Inject
@@ -158,6 +159,7 @@ public class CaseContextChangedEventHandler {
       return;
     }
 
+    quiescenceTracker.onContextChangeConsumed(caseInstance.getUuid());
     evaluationSerializer.submit(caseInstance.getUuid(), () -> evaluateAndDispatch(event));
   }
 
@@ -592,6 +594,7 @@ public class CaseContextChangedEventHandler {
     if (signalId != null) {
       settlementTracker.incrementExpected(signalId);
     }
+    quiescenceTracker.onWorkerDispatched(caseInstance.getUuid());
 
     io.casehub.api.model.LifecycleScope ls = binding.lifecycleScope();
     io.casehub.api.model.ExecutionMode em = binding.executionMode();
