@@ -50,6 +50,9 @@ public class AnnotationValidationStep {
       DotName.createSimple("io.casehub.engine.annotations.Completion");
   private static final DotName SOFT_DEPENDENCY =
       DotName.createSimple("io.casehub.engine.annotations.SoftDependency");
+  private static final DotName COST = DotName.createSimple("io.casehub.engine.annotations.Cost");
+  private static final DotName GOAP_WORLD_STATE =
+      DotName.createSimple("io.casehub.engine.plan.goap.GoapWorldState");
 
   @BuildStep
   @Produce(ServiceStartBuildItem.class)
@@ -67,6 +70,14 @@ public class AnnotationValidationStep {
       Set<String> milestoneNames = new HashSet<>();
       Set<String> completionKinds = new HashSet<>();
 
+      Set<String> workerCapabilities = new HashSet<>();
+      for (MethodInfo method : caseClass.methods()) {
+        AnnotationInstance workerAnn = method.annotation(WORKER);
+        if (workerAnn != null) {
+          workerCapabilities.add(resolveCapabilityName(workerAnn, method, index));
+        }
+      }
+
       for (MethodInfo method : caseClass.methods()) {
         validateWorkerMethod(method, index, errors, warnings, isGoap);
         validateBindAnnotations(method, index, errors);
@@ -74,6 +85,7 @@ public class AnnotationValidationStep {
         validateMilestone(method, index, milestoneNames, errors);
         validateCompletion(method, index, completionKinds, errors);
         validateSystemPromptConflict(method, errors);
+        validateCostMethod(method, workerCapabilities, index, errors, warnings, isGoap);
       }
     }
 
@@ -213,5 +225,56 @@ public class AnnotationValidationStep {
   private static boolean boolOr(AnnotationInstance ann, IndexView index, String name, boolean def) {
     AnnotationValue v = ann.valueWithDefault(index, name);
     return v != null ? v.asBoolean() : def;
+  }
+
+  private void validateCostMethod(
+      MethodInfo method,
+      Set<String> workerCapabilities,
+      IndexView index,
+      List<String> errors,
+      List<String> warnings,
+      boolean isGoap) {
+    AnnotationInstance costAnn = method.annotation(COST);
+    if (costAnn == null) {
+      return;
+    }
+
+    String loc = method.declaringClass().name() + "#" + method.name();
+
+    if (method.hasAnnotation(WORKER)) {
+      errors.add(loc + ": @Cost and @Worker cannot be on the same method");
+      return;
+    }
+
+    if (method.parametersCount() != 1 || !method.parameterType(0).name().equals(GOAP_WORLD_STATE)) {
+      errors.add(loc + ": @Cost method must have exactly one parameter of type GoapWorldState");
+    }
+
+    if (method.returnType().kind() == org.jboss.jandex.Type.Kind.VOID
+        || !method.returnType().name().toString().equals("double")) {
+      errors.add(loc + ": @Cost method must return double");
+    }
+
+    String targetWorker = costAnn.value().asString();
+    if (!workerCapabilities.contains(targetWorker)) {
+      errors.add(loc + ": @Cost(\"" + targetWorker + "\") references unknown worker");
+    }
+
+    if (!isGoap) {
+      warnings.add(loc + ": @Cost has no effect in EXPLICIT planning mode");
+    }
+  }
+
+  private static String resolveCapabilityName(
+      AnnotationInstance workerAnn, MethodInfo method, IndexView index) {
+    String value = stringOr(workerAnn, index, "value", "");
+    if (!value.isEmpty()) {
+      return value;
+    }
+    String cap = stringOr(workerAnn, index, "capability", "");
+    if (!cap.isEmpty()) {
+      return cap;
+    }
+    return method.name();
   }
 }

@@ -77,6 +77,7 @@ public class EngineAnnotationsProcessor {
       DotName.createSimple("io.casehub.engine.annotations.SystemPrompt");
   private static final DotName CAPABILITY =
       DotName.createSimple("io.casehub.engine.annotations.Capability");
+  private static final DotName COST = DotName.createSimple("io.casehub.engine.annotations.Cost");
 
   @BuildStep
   @Record(ExecutionTime.RUNTIME_INIT)
@@ -230,6 +231,32 @@ public class EngineAnnotationsProcessor {
       }
     }
 
+    // Scan @Cost methods and attach to matching GOAP actions
+    Map<String, Integer> capNameToActionIndex = new HashMap<>();
+    for (int i = 0; i < goapActions.size(); i++) {
+      capNameToActionIndex.put(goapActions.get(i).name(), i);
+    }
+    for (MethodInfo method : caseClass.methods()) {
+      AnnotationInstance costAnn = method.annotation(COST);
+      if (costAnn != null) {
+        String targetWorker = costAnn.value().asString();
+        Integer actionIndex = capNameToActionIndex.get(targetWorker);
+        if (actionIndex != null) {
+          GoapActionDescriptor old = goapActions.get(actionIndex);
+          goapActions.set(
+              actionIndex,
+              new GoapActionDescriptor(
+                  old.name(),
+                  old.preconditions(),
+                  old.effects(),
+                  old.cost(),
+                  old.benefit(),
+                  old.softPreconditions(),
+                  method.name()));
+        }
+      }
+    }
+
     String implClassName = caseClass.name().toString() + "_CaseHubImpl";
 
     return new CaseDescriptor(
@@ -319,7 +346,7 @@ public class EngineAnnotationsProcessor {
           workerAnn.valueWithDefault(index, "benefit") != null
               ? workerAnn.valueWithDefault(index, "benefit").asDouble()
               : 0.0;
-      goapActions.add(inferGoapAction(method, method.name(), cost, benefit));
+      goapActions.add(inferGoapAction(method, capabilityName, cost, benefit));
     }
   }
 
@@ -411,7 +438,8 @@ public class EngineAnnotationsProcessor {
       effects.put(effectKey, true);
     }
 
-    return new GoapActionDescriptor(name, preconditions, effects, cost, benefit, softPreconditions);
+    return new GoapActionDescriptor(
+        name, preconditions, effects, cost, benefit, softPreconditions, null);
   }
 
   private List<AnnotationInstance> collectBindAnnotations(MethodInfo method) {

@@ -75,6 +75,11 @@ public interface GoapAnnotatedCase {
     return new RiskReport("LOW", jurisdiction, prior + "; opinion=" + opinion);
   }
 
+  @io.casehub.engine.annotations.Cost("assessRisk")
+  default double assessRiskCost(io.casehub.engine.plan.goap.GoapWorldState state) {
+    return state.get("priorReview") == io.casehub.engine.plan.goap.Condition.TRUE ? 0.2 : 0.8;
+  }
+
   @Goal(value = "Risk assessment completed", condition = ".riskAssessment != null")
   @Completion
   default GoalExpression reviewComplete() {

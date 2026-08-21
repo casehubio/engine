@@ -13,15 +13,15 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.casehub.engine.annotations.runtime;
+package io.casehub.engine.annotations;
 
-import java.util.Map;
+import java.lang.annotation.ElementType;
+import java.lang.annotation.Retention;
+import java.lang.annotation.RetentionPolicy;
+import java.lang.annotation.Target;
 
-public record GoapActionDescriptor(
-    String name,
-    Map<String, Boolean> preconditions,
-    Map<String, Boolean> effects,
-    double cost,
-    double benefit,
-    Map<String, Boolean> softPreconditions,
-    String costMethodName) {}
+@Retention(RetentionPolicy.RUNTIME)
+@Target(ElementType.METHOD)
+public @interface Cost {
+  String value();
+}

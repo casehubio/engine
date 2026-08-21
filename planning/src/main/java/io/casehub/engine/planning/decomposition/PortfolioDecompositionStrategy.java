@@ -76,21 +76,21 @@ public class PortfolioDecompositionStrategy implements DecompositionStrategy<Jso
       DecompositionStrategy<JsonNode> delegate =
           (DecompositionStrategy<JsonNode>) delegateOpt.get();
       long timeoutMs = config.timeoutFor(delegateId);
-      long startMs = System.currentTimeMillis();
+      long startNanos = System.nanoTime();
 
       try {
         DagPlan<TaskNode.LeafTask<JsonNode>> result =
             executeWithTimeout(delegate, task, context, timeoutMs);
-        long durationMs = System.currentTimeMillis() - startMs;
+        long durationMs = java.util.concurrent.TimeUnit.NANOSECONDS.toMillis(System.nanoTime() - startNanos);
         LOG.infof("Portfolio: delegate '%s' succeeded in %dms", delegateId, durationMs);
         attempts.add(PortfolioAttempt.success(delegateId, durationMs));
         return result;
       } catch (TimeoutException e) {
-        long durationMs = System.currentTimeMillis() - startMs;
+        long durationMs = java.util.concurrent.TimeUnit.NANOSECONDS.toMillis(System.nanoTime() - startNanos);
         LOG.infof("Portfolio: delegate '%s' timed out after %dms", delegateId, durationMs);
         attempts.add(PortfolioAttempt.timeout(delegateId, durationMs));
       } catch (Exception e) {
-        long durationMs = System.currentTimeMillis() - startMs;
+        long durationMs = java.util.concurrent.TimeUnit.NANOSECONDS.toMillis(System.nanoTime() - startNanos);
         LOG.infof(
             "Portfolio: delegate '%s' failed after %dms: %s",
             delegateId, durationMs, e.getMessage());

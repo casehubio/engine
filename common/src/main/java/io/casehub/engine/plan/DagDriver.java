@@ -44,6 +44,7 @@ public class DagDriver<T, R> {
   private final ConcurrentHashMap<String, NodeState<R>> states = new ConcurrentHashMap<>();
   private final AtomicBoolean executed = new AtomicBoolean(false);
   private final AtomicBoolean cancelSignal;
+  // Set before execute() on nested drivers — safe because construction and execute() are sequential
   private int contingencyDepth;
   private int maxContingencyDepth = DEFAULT_MAX_CONTINGENCY_DEPTH;
 

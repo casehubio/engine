@@ -84,6 +84,7 @@ public class DefaultPlanAdaptationEvaluator implements PlanAdaptationEvaluator {
       compoundCompletionEvaluator;
   private final Semaphore semaphore;
   private final long timeoutMs;
+  // Cleaned by onCompoundCompleted and cleanLocksForCase — entries leak only if events are missed
   private final ConcurrentHashMap<String, ReentrantLock> compoundLocks = new ConcurrentHashMap<>();
 
   @Inject

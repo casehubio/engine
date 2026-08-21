@@ -888,13 +888,13 @@ Refs engine#730.
 
 Annotation-driven programming model for CaseHub. Defines `@Case` interfaces that produce `CaseDefinition` CDI beans at build time — same types as fluent builders and YAML, no `CaseHub` subclass required. Two-module Quarkus extension: `annotations/runtime` (annotations, descriptors, recorder) and `annotations/deployment` (Jandex scanning, Gizmo codegen, validation). Refs engine#909.
 
-**Annotations:** `@Case`, `@Worker`, `@Bind` (repeatable), `@Goal`, `@Milestone`, `@Effect`, `@SoftDependency`, `@Param`, `@Completion`, `@Customize`, `@SystemPrompt`, `@Capability`. `PlanningMode` enum: `EXPLICIT`, `GOAP`, `ADAPTIVE`.
+**Annotations:** `@Case`, `@Worker`, `@Bind` (repeatable), `@Goal`, `@Milestone`, `@Effect`, `@SoftDependency`, `@Param`, `@Completion`, `@Customize`, `@SystemPrompt`, `@Capability`, `@Cost`. `PlanningMode` enum: `EXPLICIT`, `GOAP`, `ADAPTIVE`.
 
 **Build pipeline:** Jandex scan → validation (`AnnotationValidationStep`) → Gizmo synthetic subclass (`_CaseHubImpl`) → `CaseDefinitionRecorder` at `RUNTIME_INIT` → `SyntheticBeanBuildItem` with `setRuntimeInit()`.
 
 **Worker functions:** `AnnotationWorkerFunction.create()` returns `WorkerFunction.Sync<Map, Map>` that invokes default methods on the Gizmo subclass via reflection. `@SystemPrompt` workers use `AgentWorkerFunction` via `ChatModelProvider` (graceful no-op when absent). `WorkerScopeProducer` provides ThreadLocal-based `WorkerScope` CDI injection.
 
-**GOAP integration:** Type inference from method parameters (preconditions) and return types (effects). `@Effect` overrides inferred effect key. `@SoftDependency` marks optional preconditions. `GoalConditionParser` maps goal conditions to effect keys.
+**GOAP integration:** Type inference from method parameters (preconditions) and return types (effects). `@Effect` overrides inferred effect key. `@SoftDependency` marks optional preconditions. `GoalConditionParser` maps goal conditions to effect keys. `@Cost("workerCapability")` — method-level annotation declaring a dynamic `CostFunction` for a GOAP action. Method signature: one `GoapWorldState` parameter, returns `double`. Processor resolves `@Cost.value()` against resolved capability names (from `@Worker.capability()` or method name). `CaseDefinitionRecorder` creates `CostFunction` via reflective invocation on the Gizmo-generated impl class. Coexists with `@Worker.cost()` — static cost feeds A* heuristic, dynamic cost evaluates at planning time. GOAP action name uses the resolved capability name (not Java method name) for identity — matches `GoapDecompositionStrategy` filtering and blacklisting. Refs engine#939.
 
 **Build and test:**
 ```bash
