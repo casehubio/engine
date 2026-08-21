@@ -49,7 +49,7 @@ class CaseDefinitionYamlMapperAdaptationTest {
     var config = def.getAdaptationConfig();
     assertThat(config).isNotNull();
     assertThat(config.trigger()).isEqualTo("every-step");
-    assertThat(config.revision()).isEqualTo("forward-replan");
+    assertThat(config.optimization()).isEqualTo("forward-replan");
   }
 
   @Test
@@ -67,7 +67,7 @@ class CaseDefinitionYamlMapperAdaptationTest {
     var config = def.getAdaptationConfig();
     assertThat(config).isNotNull();
     assertThat(config.trigger()).isEqualTo("every-step");
-    assertThat(config.revision()).isEqualTo("forward-replan");
+    assertThat(config.optimization()).isEqualTo("forward-replan");
   }
 
   @Test
@@ -85,7 +85,7 @@ class CaseDefinitionYamlMapperAdaptationTest {
     var config = def.getAdaptationConfig();
     assertThat(config).isNotNull();
     assertThat(config.trigger()).isEqualTo("on-failure");
-    assertThat(config.revision()).isEqualTo("forward-replan");
+    assertThat(config.optimization()).isEqualTo("forward-replan");
   }
 
   @Test
@@ -117,7 +117,7 @@ class CaseDefinitionYamlMapperAdaptationTest {
     var config = def.getAdaptationConfig();
     assertThat(config).isNotNull();
     assertThat(config.trigger()).isEqualTo("on-failure");
-    assertThat(config.revision()).isEqualTo("forward-replan");
+    assertThat(config.optimization()).isEqualTo("forward-replan");
   }
 
   @Test
@@ -164,7 +164,7 @@ class CaseDefinitionYamlMapperAdaptationTest {
     var config = def.getAdaptationConfig();
     assertThat(config).isNotNull();
     assertThat(config.trigger()).isEqualTo("progress");
-    assertThat(config.revision()).isEqualTo("forward-replan");
+    assertThat(config.optimization()).isEqualTo("forward-replan");
     assertThat(config.threshold()).isEqualTo(0.3);
   }
 

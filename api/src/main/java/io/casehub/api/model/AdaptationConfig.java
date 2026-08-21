@@ -18,20 +18,30 @@ package io.casehub.api.model;
 import java.util.Objects;
 
 public record AdaptationConfig(
-    String trigger, String revision, Double threshold, String metaReasoner) {
+    String trigger, String optimization, Double threshold, String metaReasoner, String repair) {
 
   public static final double DEFAULT_PROGRESS_THRESHOLD = 0.3;
 
   public AdaptationConfig {
     Objects.requireNonNull(trigger, "trigger");
-    Objects.requireNonNull(revision, "revision");
+    Objects.requireNonNull(optimization, "optimization");
     if (threshold != null && (threshold < 0.0 || threshold > 1.0)) {
       throw new IllegalArgumentException("threshold must be in [0.0, 1.0]");
     }
   }
 
-  public static AdaptationConfig of(String trigger, String revision) {
-    return new AdaptationConfig(trigger, revision, null, null);
+  public static AdaptationConfig of(String trigger, String optimization) {
+    return new AdaptationConfig(trigger, optimization, null, null, null);
+  }
+
+  public String effectiveRepair(CaseDefinition definition) {
+    if (repair != null) {
+      return repair;
+    }
+    if ("goap".equals(definition.getDecompositionStrategy())) {
+      return "goap-repair";
+    }
+    return "llm-repair";
   }
 
   public String effectiveMetaReasoner() {

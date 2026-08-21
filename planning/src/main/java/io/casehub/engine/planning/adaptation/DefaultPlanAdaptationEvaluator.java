@@ -288,8 +288,19 @@ public class DefaultPlanAdaptationEvaluator implements PlanAdaptationEvaluator {
             definition.getCapabilities() != null ? definition.getCapabilities() : List.of(),
             List.of());
 
+    io.casehub.engine.plan.adaptation.AdaptationDecision.Refine refineDecision =
+        (io.casehub.engine.plan.adaptation.AdaptationDecision.Refine) decision;
     PlanRevisionStrategy revision =
-        strategyResolver.resolve(PlanRevisionStrategy.class, config.revision());
+        switch (refineDecision.scope()) {
+          case LOCAL ->
+              strategyResolver.resolve(
+                  io.casehub.engine.plan.adaptation.RepairStrategy.class,
+                  config.effectiveRepair(definition));
+          case COMPOUND ->
+              strategyResolver.resolve(
+                  io.casehub.engine.plan.adaptation.OptimizationStrategy.class,
+                  config.optimization());
+        };
 
     RevisedPlan revisedPlan;
     try {
@@ -321,7 +332,9 @@ public class DefaultPlanAdaptationEvaluator implements PlanAdaptationEvaluator {
         revisedPlan,
         pendingSteps,
         runningSteps,
-        completedSteps);
+        completedSteps,
+        refineDecision.scope(),
+        revision.id());
   }
 
   private void applyRevision(
@@ -335,7 +348,9 @@ public class DefaultPlanAdaptationEvaluator implements PlanAdaptationEvaluator {
       RevisedPlan revisedPlan,
       List<PlanStepDescriptor> pendingSteps,
       List<PlanStepDescriptor> runningSteps,
-      List<CompletedStep> completedSteps) {
+      List<CompletedStep> completedSteps,
+      io.casehub.engine.plan.adaptation.RefineScope revisionScope,
+      String resolvedStrategyId) {
 
     var obsoletedPlanItemIds = new ArrayList<String>();
     for (var pending : pendingSteps) {
@@ -402,7 +417,9 @@ public class DefaultPlanAdaptationEvaluator implements PlanAdaptationEvaluator {
         pendingSteps.size(),
         obsoletedPlanItemIds,
         materializedIds,
-        newGeneration);
+        newGeneration,
+        revisionScope,
+        resolvedStrategyId);
   }
 
   private AdaptationCause buildCause(String bindingName, TaskStatus status) {
@@ -530,7 +547,9 @@ public class DefaultPlanAdaptationEvaluator implements PlanAdaptationEvaluator {
       int previousStepCount,
       List<String> obsoletedPlanItemIds,
       List<String> materializedIds,
-      int newGeneration) {
+      int newGeneration,
+      io.casehub.engine.plan.adaptation.RefineScope revisionScope,
+      String resolvedStrategyId) {
     var eventLog = new EventLog();
     eventLog.setCaseId(caseId);
     eventLog.setEventType(CaseHubEventType.PLAN_ADAPTED);
@@ -541,7 +560,9 @@ public class DefaultPlanAdaptationEvaluator implements PlanAdaptationEvaluator {
     meta.put("goalName", compoundId);
     meta.put("compoundId", compoundId);
     meta.put("triggerStrategy", config.trigger());
-    meta.put("revisionStrategy", config.revision());
+    meta.put("revisionStrategy", config.optimization());
+    meta.put("revisionScope", revisionScope.name());
+    meta.put("resolvedStrategy", resolvedStrategyId);
     meta.put("previousStepCount", previousStepCount);
     meta.put("newStepCount", revisedPlan.steps().size());
     meta.set("obsoletedSteps", OBJECT_MAPPER.valueToTree(obsoletedPlanItemIds));

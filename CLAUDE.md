@@ -365,7 +365,7 @@ Three-level escalation for task failures, inspired by Graph Harness (arXiv:2604.
 
 `AdaptationMetaReasoner` (`engine-api`, `io.casehub.engine.plan.adaptation`, extends `NamedStrategy`) — SPI evaluating whether adaptation is worth performing and what scope is appropriate. Sits between `AdaptationTrigger` (binary PROCEED/SKIP gate) and `PlanRevisionStrategy` (execution). Returns `AdaptationDecision` sealed type: `Persist(reason)` (plan valid, skip adaptation), `Refine(RefineScope scope, reason)` (adapt with scope), `Concede(reason, compoundId)` (abandon compound). Pipeline: trigger → (SKIP: stop) → meta-reasoner → (Persist: stop, Refine: revise, Concede: abandon). Integrated in `DefaultPlanAdaptationEvaluator.performAdaptation()`. Refs engine#934.
 
-`RefineScope` — enum: `LOCAL` (repair one step), `COMPOUND` (re-decompose entire compound). v1: LOCAL falls back to ForwardReplanRevision (same as COMPOUND) until #935 adds dedicated RepairStrategy.
+`RefineScope` — enum: `LOCAL` (repair one step), `COMPOUND` (re-decompose entire compound). `LOCAL` routes to `RepairStrategy`, `COMPOUND` routes to `OptimizationStrategy` — see Plan Repair vs Optimization section below. Refs engine#935.
 
 `MetaReasoningContext` (`engine-api`) — record carrying: `AdaptationContext`, `adaptationCount` (from `CasePlanModel.getAdaptationGeneration()`), `completedStepCount`, `pendingStepCount`, `totalStepCount`, `latestFailureCategory` (nullable `FailureCategory`, resolved from `_diagnostics.<bindingName>.latestDiagnosis`). `remainingRatio()` convenience method.
 
@@ -380,6 +380,19 @@ Three-level escalation for task failures, inspired by Graph Harness (arXiv:2604.
 `CaseHubEventType.PLAN_CONCEDED` — audit event fired when meta-reasoner decides Concede. Metadata: `compoundId`, `reason`, `adaptationCount`, `triggerStrategy`, `metaReasoner`. Refs engine#934.
 
 `AdaptationCostComputer` (`engine-common`, `io.casehub.engine.common.internal.monitoring`, static utility) — computes `AdaptationCostSummary` from PLAN_ADAPTED EventLog entries per compound. Same on-demand pattern as `DivergenceScoreComputer`. Not used by `CostCeilingMetaReasoner` (which uses `adaptationGeneration` directly), available for future LLM-backed meta-reasoners. Refs engine#934.
+
+## Plan Repair vs Optimization
+
+`RepairStrategy` and `OptimizationStrategy` (`engine-api`, `io.casehub.engine.plan.adaptation`) — marker sub-interfaces of `PlanRevisionStrategy`. Same `revise(RevisionContext) → RevisedPlan` method, different semantic roles. `DefaultPlanAdaptationEvaluator` routes `Refine(LOCAL)` → `RepairStrategy`, `Refine(COMPOUND)` → `OptimizationStrategy` via `EngineStrategyResolver`. Type-level enforcement — a `RepairStrategy` cannot be misconfigured as optimization. Refs engine#935.
+
+`AdaptationConfig` gains `repair` (nullable String, strategy ID) and renames `revision` to `optimization`. `effectiveRepair(CaseDefinition)` auto-detects: `decompositionStrategy == "goap"` → `"goap-repair"`, else → `"llm-repair"`. Explicit `repair:` config overrides auto-detect. YAML backward compat: `revision:` key maps to `optimization`. Presets (`adaptive`, `conservative`, `progress`) leave `repair` null (auto-detect). Refs engine#935.
+
+**Built-in strategies:**
+- `GoapRepairStrategy` (`planning/adaptation/`, `@ApplicationScoped`, id=`"goap-repair"`) — standalone `GoapPlanner`, blacklists failed action, filters completed actions, resolves goals via `getGoalToEffectKeys()`, builds world state via `openWorld()` + close unknown preconditions. No ChatModelProvider dependency.
+- `LlmRepairStrategy` (`planning/adaptation/`, `@ApplicationScoped`, id=`"llm-repair"`) — repair-focused LLM prompt targeting the specific failed step. Includes failure critique from `_diagnostics`. Transparent no-op when `ChatModelProvider` absent.
+- `ForwardReplanRevision` (`planning/adaptation/`, `@ApplicationScoped`, id=`"forward-replan"`) — implements `OptimizationStrategy`. Full LLM replan for optimization. Unchanged from prior implementation.
+
+`PLAN_ADAPTED` EventLog metadata gains `revisionScope` (`"LOCAL"` or `"COMPOUND"`) and `resolvedStrategy` (actual strategy ID resolved, distinguishes auto-detected repair from explicitly configured). Existing `revisionStrategy` key retained for backward compat (captures config-level optimization strategy name). Refs engine#935.
 
 ## JQ Expression Evaluation Surface
 

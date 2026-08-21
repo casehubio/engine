@@ -38,7 +38,6 @@ import io.casehub.engine.common.spi.PlanItemStore;
 import io.casehub.engine.plan.adaptation.AdaptationCause;
 import io.casehub.engine.plan.adaptation.AdaptationSignal;
 import io.casehub.engine.plan.adaptation.AdaptationTrigger;
-import io.casehub.engine.plan.adaptation.PlanRevisionStrategy;
 import io.casehub.engine.plan.adaptation.PlanStepDescriptor;
 import io.casehub.engine.plan.adaptation.RevisedPlan;
 import io.casehub.engine.plan.adaptation.RevisionContext;
@@ -169,7 +168,8 @@ class DefaultPlanAdaptationEvaluatorTest {
     evaluator.evaluateAdaptation(caseId, TENANT, "cap-a", TaskStatus.COMPLETED);
 
     verify(trigger).evaluate(any());
-    verify(strategyResolver, never()).resolve(eq(PlanRevisionStrategy.class), anyString());
+    verify(strategyResolver, never())
+        .resolve(eq(io.casehub.engine.plan.adaptation.OptimizationStrategy.class), anyString());
   }
 
   @Test
@@ -183,7 +183,7 @@ class DefaultPlanAdaptationEvaluatorTest {
 
     setupDefaultMetaReasoner();
 
-    var revision = mock(PlanRevisionStrategy.class);
+    var revision = mock(io.casehub.engine.plan.adaptation.OptimizationStrategy.class);
     var revisedPlan =
         new RevisedPlan(
             List.of(
@@ -191,7 +191,9 @@ class DefaultPlanAdaptationEvaluatorTest {
                 new PlanStepDescriptor("new-2", "report", "cap-d")),
             "context changed");
     when(revision.revise(any())).thenReturn(revisedPlan);
-    when(strategyResolver.resolve(PlanRevisionStrategy.class, "forward-replan"))
+    when(revision.id()).thenReturn("forward-replan");
+    when(strategyResolver.resolve(
+            io.casehub.engine.plan.adaptation.OptimizationStrategy.class, "forward-replan"))
         .thenReturn(revision);
 
     evaluator.evaluateAdaptation(caseId, TENANT, "cap-a", TaskStatus.COMPLETED);
@@ -263,7 +265,7 @@ class DefaultPlanAdaptationEvaluatorTest {
     when(trigger.evaluate(any())).thenReturn(AdaptationSignal.PROCEED);
     when(strategyResolver.resolve(AdaptationTrigger.class, "every-step")).thenReturn(trigger);
 
-    var revision = mock(PlanRevisionStrategy.class);
+    var revision = mock(io.casehub.engine.plan.adaptation.OptimizationStrategy.class);
     when(revision.revise(any()))
         .thenAnswer(
             inv -> {
@@ -271,7 +273,9 @@ class DefaultPlanAdaptationEvaluatorTest {
               return new RevisedPlan(
                   List.of(new PlanStepDescriptor("new-1", "step", "cap-d")), "reason");
             });
-    when(strategyResolver.resolve(PlanRevisionStrategy.class, "forward-replan"))
+    when(revision.id()).thenReturn("forward-replan");
+    when(strategyResolver.resolve(
+            io.casehub.engine.plan.adaptation.OptimizationStrategy.class, "forward-replan"))
         .thenReturn(revision);
 
     // First adaptation succeeds, increments generation
@@ -293,9 +297,10 @@ class DefaultPlanAdaptationEvaluatorTest {
     when(trigger.evaluate(any())).thenReturn(AdaptationSignal.PROCEED);
     when(strategyResolver.resolve(AdaptationTrigger.class, "every-step")).thenReturn(trigger);
 
-    var revision = mock(PlanRevisionStrategy.class);
+    var revision = mock(io.casehub.engine.plan.adaptation.OptimizationStrategy.class);
     when(revision.revise(any())).thenThrow(new RuntimeException("LLM timeout"));
-    when(strategyResolver.resolve(PlanRevisionStrategy.class, "forward-replan"))
+    when(strategyResolver.resolve(
+            io.casehub.engine.plan.adaptation.OptimizationStrategy.class, "forward-replan"))
         .thenReturn(revision);
 
     // Should not throw — graceful degradation
@@ -314,9 +319,10 @@ class DefaultPlanAdaptationEvaluatorTest {
     when(trigger.evaluate(any())).thenReturn(AdaptationSignal.PROCEED);
     when(strategyResolver.resolve(AdaptationTrigger.class, "every-step")).thenReturn(trigger);
 
-    var revision = mock(PlanRevisionStrategy.class);
+    var revision = mock(io.casehub.engine.plan.adaptation.OptimizationStrategy.class);
     when(revision.revise(any())).thenThrow(new RuntimeException("Unexpected error"));
-    when(strategyResolver.resolve(PlanRevisionStrategy.class, "forward-replan"))
+    when(strategyResolver.resolve(
+            io.casehub.engine.plan.adaptation.OptimizationStrategy.class, "forward-replan"))
         .thenReturn(revision);
 
     // Should not propagate — existing plan unchanged
@@ -335,10 +341,12 @@ class DefaultPlanAdaptationEvaluatorTest {
     when(strategyResolver.resolve(AdaptationTrigger.class, "every-step")).thenReturn(trigger);
 
     var revisionCaptor = ArgumentCaptor.forClass(RevisionContext.class);
-    var revision = mock(PlanRevisionStrategy.class);
+    var revision = mock(io.casehub.engine.plan.adaptation.OptimizationStrategy.class);
     when(revision.revise(revisionCaptor.capture()))
         .thenReturn(new RevisedPlan(List.of(new PlanStepDescriptor("n1", "s", "cap-d")), null));
-    when(strategyResolver.resolve(PlanRevisionStrategy.class, "forward-replan"))
+    when(revision.id()).thenReturn("forward-replan");
+    when(strategyResolver.resolve(
+            io.casehub.engine.plan.adaptation.OptimizationStrategy.class, "forward-replan"))
         .thenReturn(revision);
 
     evaluator.evaluateAdaptation(caseId, TENANT, "cap-a", TaskStatus.COMPLETED);
@@ -359,10 +367,12 @@ class DefaultPlanAdaptationEvaluatorTest {
     when(strategyResolver.resolve(AdaptationTrigger.class, "every-step")).thenReturn(trigger);
 
     var revisionCaptor = ArgumentCaptor.forClass(RevisionContext.class);
-    var revision = mock(PlanRevisionStrategy.class);
+    var revision = mock(io.casehub.engine.plan.adaptation.OptimizationStrategy.class);
     when(revision.revise(revisionCaptor.capture()))
         .thenReturn(new RevisedPlan(List.of(new PlanStepDescriptor("n1", "s", "cap-d")), null));
-    when(strategyResolver.resolve(PlanRevisionStrategy.class, "forward-replan"))
+    when(revision.id()).thenReturn("forward-replan");
+    when(strategyResolver.resolve(
+            io.casehub.engine.plan.adaptation.OptimizationStrategy.class, "forward-replan"))
         .thenReturn(revision);
 
     evaluator.evaluateAdaptation(caseId, TENANT, "cap-a", TaskStatus.FAULTED);
@@ -473,9 +483,11 @@ class DefaultPlanAdaptationEvaluatorTest {
 
     setupDefaultMetaReasoner();
 
-    var revision = mock(PlanRevisionStrategy.class);
+    var revision = mock(io.casehub.engine.plan.adaptation.OptimizationStrategy.class);
     when(revision.revise(any())).thenReturn(new RevisedPlan(newSteps, "revised"));
-    when(strategyResolver.resolve(PlanRevisionStrategy.class, "forward-replan"))
+    when(revision.id()).thenReturn("forward-replan");
+    when(strategyResolver.resolve(
+            io.casehub.engine.plan.adaptation.OptimizationStrategy.class, "forward-replan"))
         .thenReturn(revision);
   }
 
