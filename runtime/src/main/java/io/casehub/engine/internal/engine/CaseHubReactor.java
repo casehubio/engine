@@ -69,6 +69,9 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 import org.eclipse.microprofile.config.inject.ConfigProperty;
 import org.jboss.logging.Logger;
 
@@ -373,17 +376,17 @@ class CaseHubReactor {
 
   CaseContext awaitQuiescence(UUID caseId, Duration timeout) {
     requireInstance(caseId);
-    java.util.concurrent.CompletableFuture<Void> future = quiescenceTracker.register(caseId);
+    CompletableFuture<Void> future = quiescenceTracker.register(caseId);
     quiescenceTracker.tryResolve(caseId);
     if (future.isDone()) {
       return requireInstance(caseId).getCaseContext();
     }
     try {
-      future.get(timeout.toMillis(), java.util.concurrent.TimeUnit.MILLISECONDS);
-    } catch (java.util.concurrent.TimeoutException e) {
+      future.get(timeout.toMillis(), TimeUnit.MILLISECONDS);
+    } catch (TimeoutException e) {
       quiescenceTracker.remove(caseId);
       throw new SettlementTimeoutException(caseId, timeout);
-    } catch (java.util.concurrent.ExecutionException e) {
+    } catch (ExecutionException e) {
       throw new RuntimeException(e.getCause());
     } catch (InterruptedException e) {
       Thread.currentThread().interrupt();

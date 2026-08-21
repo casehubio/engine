@@ -23,6 +23,7 @@ import io.casehub.engine.common.internal.event.WorkflowExecutionCompleted;
 import io.casehub.engine.common.internal.model.CaseInstance;
 import io.casehub.engine.common.spi.PlanAdaptationEvaluator;
 import io.casehub.engine.common.spi.event.PlanItemStateChangedEvent;
+import QuiescenceTracker;
 import io.casehub.engine.planning.event.BlackboardEventBusAddresses;
 import io.casehub.engine.planning.event.SubCaseExecutionCompleted;
 import io.casehub.engine.planning.plan.CasePlanModel;
@@ -69,7 +70,7 @@ public class PlanItemCompletionHandler {
   private final Event<PlanItemStateChangedEvent> planItemStateChangedEvents;
   private final CompoundCompletionEvaluator compoundCompletionEvaluator;
   private final Instance<PlanAdaptationEvaluator> planAdaptationEvaluator;
-  private final io.casehub.engine.internal.engine.QuiescenceTracker quiescenceTracker;
+  private final QuiescenceTracker quiescenceTracker;
 
   @Inject
   public PlanItemCompletionHandler(
@@ -78,7 +79,7 @@ public class PlanItemCompletionHandler {
       Event<PlanItemStateChangedEvent> planItemStateChangedEvents,
       CompoundCompletionEvaluator compoundCompletionEvaluator,
       Instance<PlanAdaptationEvaluator> planAdaptationEvaluator,
-      io.casehub.engine.internal.engine.QuiescenceTracker quiescenceTracker) {
+      QuiescenceTracker quiescenceTracker) {
     this.registry = registry;
     this.eventBus = eventBus;
     this.planItemStateChangedEvents = planItemStateChangedEvents;

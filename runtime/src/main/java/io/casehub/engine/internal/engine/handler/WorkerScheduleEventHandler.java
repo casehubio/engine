@@ -41,6 +41,7 @@ import io.casehub.engine.common.internal.model.CaseInstance;
 import io.casehub.engine.common.internal.utils.WorkerExecutionKeys;
 import io.casehub.engine.common.spi.EventLogRepository;
 import io.casehub.engine.common.spi.scheduler.WorkerExecutionManager;
+import io.casehub.engine.internal.engine.QuiescenceTracker;
 import io.casehub.platform.api.expression.ExpressionEvaluator;
 import io.casehub.qhorus.api.message.MessageType;
 import io.casehub.worker.api.Capability;
@@ -75,7 +76,7 @@ public class WorkerScheduleEventHandler {
 
   @Inject WorkerExecutionGuard workerExecutionGuard;
 
-  @Inject io.casehub.engine.internal.engine.QuiescenceTracker quiescenceTracker;
+  @Inject QuiescenceTracker quiescenceTracker;
 
   @Inject WorkerContextProvider workerContextProvider;
 
