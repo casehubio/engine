@@ -38,6 +38,7 @@ public class WorkerOutcomeResolvedHandler {
   private final CompoundCompletionEvaluator compoundCompletionEvaluator;
   private final EventBus eventBus;
   private final Event<PlanItemStateChangedEvent> planItemStateChangedEvents;
+  private final io.casehub.engine.internal.engine.QuiescenceTracker quiescenceTracker;
 
   @jakarta.inject.Inject
   jakarta.enterprise.inject.Instance<
@@ -49,11 +50,13 @@ public class WorkerOutcomeResolvedHandler {
       BlackboardRegistry registry,
       CompoundCompletionEvaluator compoundCompletionEvaluator,
       EventBus eventBus,
-      Event<PlanItemStateChangedEvent> planItemStateChangedEvents) {
+      Event<PlanItemStateChangedEvent> planItemStateChangedEvents,
+      io.casehub.engine.internal.engine.QuiescenceTracker quiescenceTracker) {
     this.registry = registry;
     this.compoundCompletionEvaluator = compoundCompletionEvaluator;
     this.eventBus = eventBus;
     this.planItemStateChangedEvents = planItemStateChangedEvents;
+    this.quiescenceTracker = quiescenceTracker;
   }
 
   @ConsumeEvent(value = EventBusAddresses.WORKER_OUTCOME_RESOLVED, blocking = true)
@@ -125,6 +128,7 @@ public class WorkerOutcomeResolvedHandler {
               }
 
               if (event.disposition() != OutcomeDisposition.FAULT) {
+                quiescenceTracker.onContextChangePublished(event.caseInstance().getUuid());
                 eventBus.publish(
                     EventBusAddresses.CONTEXT_CHANGED,
                     new CaseContextChangedEvent(

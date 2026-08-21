@@ -69,6 +69,7 @@ public class PlanItemCompletionHandler {
   private final Event<PlanItemStateChangedEvent> planItemStateChangedEvents;
   private final CompoundCompletionEvaluator compoundCompletionEvaluator;
   private final Instance<PlanAdaptationEvaluator> planAdaptationEvaluator;
+  private final io.casehub.engine.internal.engine.QuiescenceTracker quiescenceTracker;
 
   @Inject
   public PlanItemCompletionHandler(
@@ -76,12 +77,14 @@ public class PlanItemCompletionHandler {
       EventBus eventBus,
       Event<PlanItemStateChangedEvent> planItemStateChangedEvents,
       CompoundCompletionEvaluator compoundCompletionEvaluator,
-      Instance<PlanAdaptationEvaluator> planAdaptationEvaluator) {
+      Instance<PlanAdaptationEvaluator> planAdaptationEvaluator,
+      io.casehub.engine.internal.engine.QuiescenceTracker quiescenceTracker) {
     this.registry = registry;
     this.eventBus = eventBus;
     this.planItemStateChangedEvents = planItemStateChangedEvents;
     this.compoundCompletionEvaluator = compoundCompletionEvaluator;
     this.planAdaptationEvaluator = planAdaptationEvaluator;
+    this.quiescenceTracker = quiescenceTracker;
   }
 
   @ConsumeEvent(value = EventBusAddresses.WORKER_EXECUTION_FINISHED, blocking = true)
@@ -107,6 +110,7 @@ public class PlanItemCompletionHandler {
     // re-evaluation with consistent PlanItem state. Refs casehubio/engine#646, #659.
     CaseInstance ci = event.caseInstance();
     if (ci.getCaseContext() != null) {
+      quiescenceTracker.onContextChangePublished(ci.getUuid());
       eventBus.publish(
           EventBusAddresses.CONTEXT_CHANGED,
           new CaseContextChangedEvent(ci, ci.getCaseContext().snapshot(), ContextLayer.WORKING));
