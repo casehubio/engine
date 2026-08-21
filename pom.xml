@@ -110,6 +110,7 @@
         <module>flow</module>
         <module>a2a</module>
     <module>mcp</module>
+        <module>react</module>
         <module>queue</module>
         <module>rest</module>
         <module>graphql</module>
