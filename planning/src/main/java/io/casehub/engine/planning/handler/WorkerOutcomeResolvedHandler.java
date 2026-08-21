@@ -22,6 +22,7 @@ import io.casehub.engine.common.internal.event.EventBusAddresses;
 import io.casehub.engine.common.internal.event.OutcomeDisposition;
 import io.casehub.engine.common.internal.event.WorkerOutcomeResolvedEvent;
 import io.casehub.engine.common.spi.event.PlanItemStateChangedEvent;
+import QuiescenceTracker;
 import io.casehub.engine.planning.plan.CasePlanModel;
 import io.casehub.engine.planning.registry.BlackboardRegistry;
 import io.quarkus.vertx.ConsumeEvent;
@@ -38,7 +39,7 @@ public class WorkerOutcomeResolvedHandler {
   private final CompoundCompletionEvaluator compoundCompletionEvaluator;
   private final EventBus eventBus;
   private final Event<PlanItemStateChangedEvent> planItemStateChangedEvents;
-  private final io.casehub.engine.internal.engine.QuiescenceTracker quiescenceTracker;
+  private final QuiescenceTracker quiescenceTracker;
 
   @jakarta.inject.Inject
   jakarta.enterprise.inject.Instance<
@@ -51,7 +52,7 @@ public class WorkerOutcomeResolvedHandler {
       CompoundCompletionEvaluator compoundCompletionEvaluator,
       EventBus eventBus,
       Event<PlanItemStateChangedEvent> planItemStateChangedEvents,
-      io.casehub.engine.internal.engine.QuiescenceTracker quiescenceTracker) {
+      QuiescenceTracker quiescenceTracker) {
     this.registry = registry;
     this.compoundCompletionEvaluator = compoundCompletionEvaluator;
     this.eventBus = eventBus;
