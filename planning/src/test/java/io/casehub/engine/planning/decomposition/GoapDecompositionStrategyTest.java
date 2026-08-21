@@ -172,4 +172,168 @@ class GoapDecompositionStrategyTest {
     assertThat(replanSteps).doesNotContain("step1");
     assertThat(replanSteps).doesNotContain("step2");
   }
+
+  @Test
+  void decompose_highFailureRate_generatesContingency() {
+    // primary-cap cost 0.1, alt-cap cost 5.0 — after 10x enrichment, primary still wins (1.0 < 5.0)
+    var primary = new GoapAction("primary-cap", Map.of(), Map.of("goal", true), 0.1);
+    var alt = new GoapAction("alt-cap", Map.of(), Map.of("goal", true), 5.0);
+    when(definition.getGoapActions()).thenReturn(List.of(primary, alt));
+    when(definition.getGoalToEffectKeys()).thenReturn(Map.of("g", Set.of("goal")));
+    var adaptConfig = io.casehub.api.model.AdaptationConfig.of("every-step", "forward-replan");
+    when(definition.getAdaptationConfig()).thenReturn(adaptConfig);
+    when(definition.getCbrConfig()).thenReturn(null);
+
+    // 5 failures + 1 success = 83% failure rate, well above 0.15 threshold; 6 >= 5 minSamples
+    var steps =
+        List.of(
+            new io.casehub.api.spi.routing.ExperiencePlanStep(
+                "b",
+                "primary-cap",
+                "a1",
+                io.casehub.api.spi.routing.RoutingOutcome.FAILURE,
+                0,
+                Map.of()),
+            new io.casehub.api.spi.routing.ExperiencePlanStep(
+                "b",
+                "primary-cap",
+                "a2",
+                io.casehub.api.spi.routing.RoutingOutcome.FAILURE,
+                0,
+                Map.of()),
+            new io.casehub.api.spi.routing.ExperiencePlanStep(
+                "b",
+                "primary-cap",
+                "a3",
+                io.casehub.api.spi.routing.RoutingOutcome.FAILURE,
+                0,
+                Map.of()),
+            new io.casehub.api.spi.routing.ExperiencePlanStep(
+                "b",
+                "primary-cap",
+                "a4",
+                io.casehub.api.spi.routing.RoutingOutcome.FAILURE,
+                0,
+                Map.of()),
+            new io.casehub.api.spi.routing.ExperiencePlanStep(
+                "b",
+                "primary-cap",
+                "a5",
+                io.casehub.api.spi.routing.RoutingOutcome.FAILURE,
+                0,
+                Map.of()),
+            new io.casehub.api.spi.routing.ExperiencePlanStep(
+                "b",
+                "primary-cap",
+                "a6",
+                io.casehub.api.spi.routing.RoutingOutcome.SUCCESS,
+                0,
+                Map.of()));
+    var experiences =
+        List.of(
+            new io.casehub.api.spi.routing.RetrievedExperience(
+                "p", "s", "COMPLETED", 1.0, 0.9, Map.of(), steps, Map.of()));
+
+    ObjectNode state = MAPPER.createObjectNode();
+    var capabilities =
+        List.of(Capability.of("primary-cap", ".", "."), Capability.of("alt-cap", ".", "."));
+    var context =
+        new GoalDecompositionContext(state, 0, capabilities, null, definition, experiences);
+    var task = new TaskNode.CompoundTask<JsonNode>("goal", List.of());
+
+    var result = strategy.decompose(task, context);
+
+    assertThat(result.nodes()).hasSize(1);
+    var onlyNode = result.topologicalSort().get(0);
+    assertThat(onlyNode.task()).isInstanceOf(GoalStep.class);
+    assertThat(((GoalStep) onlyNode.task()).capabilityName()).isEqualTo("primary-cap");
+    assertThat(onlyNode.contingency()).isNotNull();
+    var contingencyStep = (GoalStep) onlyNode.contingency().topologicalSort().get(0).task();
+    assertThat(contingencyStep.capabilityName()).isEqualTo("alt-cap");
+  }
+
+  @Test
+  void decompose_lowFailureRate_noContingency() {
+    var primary = new GoapAction("primary-cap", Map.of(), Map.of("goal", true), 1.0);
+    var alt = new GoapAction("alt-cap", Map.of(), Map.of("goal", true), 2.0);
+    when(definition.getGoapActions()).thenReturn(List.of(primary, alt));
+    when(definition.getGoalToEffectKeys()).thenReturn(Map.of("g", Set.of("goal")));
+    var adaptConfig = io.casehub.api.model.AdaptationConfig.of("every-step", "forward-replan");
+    when(definition.getAdaptationConfig()).thenReturn(adaptConfig);
+    when(definition.getCbrConfig()).thenReturn(null);
+
+    var successStep =
+        new io.casehub.api.spi.routing.ExperiencePlanStep(
+            "binding-primary",
+            "primary-cap",
+            "agent-a",
+            io.casehub.api.spi.routing.RoutingOutcome.SUCCESS,
+            0,
+            Map.of());
+    var successStep2 =
+        new io.casehub.api.spi.routing.ExperiencePlanStep(
+            "binding-primary",
+            "primary-cap",
+            "agent-b",
+            io.casehub.api.spi.routing.RoutingOutcome.SUCCESS,
+            0,
+            Map.of());
+    var experiences =
+        List.of(
+            new io.casehub.api.spi.routing.RetrievedExperience(
+                "p",
+                "s",
+                "COMPLETED",
+                1.0,
+                0.9,
+                Map.of(),
+                List.of(successStep, successStep2),
+                Map.of()));
+
+    ObjectNode state = MAPPER.createObjectNode();
+    var capabilities =
+        List.of(Capability.of("primary-cap", ".", "."), Capability.of("alt-cap", ".", "."));
+    var context =
+        new GoalDecompositionContext(state, 0, capabilities, null, definition, experiences);
+    var task = new TaskNode.CompoundTask<JsonNode>("goal", List.of());
+
+    var result = strategy.decompose(task, context);
+
+    result.nodes().values().forEach(n -> assertThat(n.contingency()).isNull());
+  }
+
+  @Test
+  void decompose_belowMinSamples_noContingency() {
+    var primary = new GoapAction("primary-cap", Map.of(), Map.of("goal", true), 1.0);
+    var alt = new GoapAction("alt-cap", Map.of(), Map.of("goal", true), 2.0);
+    when(definition.getGoapActions()).thenReturn(List.of(primary, alt));
+    when(definition.getGoalToEffectKeys()).thenReturn(Map.of("g", Set.of("goal")));
+    var adaptConfig = io.casehub.api.model.AdaptationConfig.of("every-step", "forward-replan");
+    when(definition.getAdaptationConfig()).thenReturn(adaptConfig);
+    when(definition.getCbrConfig()).thenReturn(null);
+
+    var failureStep =
+        new io.casehub.api.spi.routing.ExperiencePlanStep(
+            "binding-primary",
+            "primary-cap",
+            "agent-a",
+            io.casehub.api.spi.routing.RoutingOutcome.FAILURE,
+            0,
+            Map.of());
+    var experiences =
+        List.of(
+            new io.casehub.api.spi.routing.RetrievedExperience(
+                "p", "s", "COMPLETED", 1.0, 0.9, Map.of(), List.of(failureStep), Map.of()));
+
+    ObjectNode state = MAPPER.createObjectNode();
+    var capabilities =
+        List.of(Capability.of("primary-cap", ".", "."), Capability.of("alt-cap", ".", "."));
+    var context =
+        new GoalDecompositionContext(state, 0, capabilities, null, definition, experiences);
+    var task = new TaskNode.CompoundTask<JsonNode>("goal", List.of());
+
+    var result = strategy.decompose(task, context);
+
+    result.nodes().values().forEach(n -> assertThat(n.contingency()).isNull());
+  }
 }

@@ -162,6 +162,8 @@ public class DefaultGoalDecomposer implements io.casehub.engine.common.spi.GoalD
       return;
     }
 
+    plan = attachYamlContingencies(plan, definition);
+
     var resolvedSteps = new ArrayList<ResolvedStep>();
     var skipped = new ArrayList<String>();
     for (var node : plan.nodes().values()) {
@@ -291,5 +293,56 @@ public class DefaultGoalDecomposer implements io.casehub.engine.common.spi.GoalD
       if (node.dependsOn().size() > 1) return false;
     }
     return true;
+  }
+
+  private DagPlan<TaskNode.LeafTask<JsonNode>> attachYamlContingencies(
+      DagPlan<TaskNode.LeafTask<JsonNode>> plan, CaseDefinition definition) {
+    var updatedNodes = new java.util.LinkedHashMap<String, DagNode<TaskNode.LeafTask<JsonNode>>>();
+    boolean changed = false;
+
+    for (var entry : plan.nodes().entrySet()) {
+      DagNode<TaskNode.LeafTask<JsonNode>> node = entry.getValue();
+
+      if (node.contingency() != null) {
+        updatedNodes.put(entry.getKey(), node);
+        continue;
+      }
+
+      String capabilityName = (node.task() instanceof GoalStep step) ? step.capabilityName() : null;
+      if (capabilityName == null) {
+        updatedNodes.put(entry.getKey(), node);
+        continue;
+      }
+
+      var bindings = definition.findBindingsByCapability(capabilityName);
+      if (!bindings.isEmpty()
+          && bindings.get(0).getContingency() != null
+          && !bindings.get(0).getContingency().isEmpty()) {
+        DagPlan<TaskNode.LeafTask<JsonNode>> contingencyPlan =
+            buildContingencyFromCapabilities(bindings.get(0).getContingency());
+        updatedNodes.put(
+            entry.getKey(),
+            new DagNode<>(
+                node.id(), node.task(), node.dependsOn(), node.joinType(), contingencyPlan));
+        changed = true;
+      } else {
+        updatedNodes.put(entry.getKey(), node);
+      }
+    }
+
+    return changed ? new DagPlan<>(updatedNodes) : plan;
+  }
+
+  private DagPlan<TaskNode.LeafTask<JsonNode>> buildContingencyFromCapabilities(
+      java.util.List<String> capabilityNames) {
+    java.util.List<TaskNode.LeafTask<JsonNode>> steps =
+        capabilityNames.stream()
+            .map(
+                name ->
+                    (TaskNode.LeafTask<JsonNode>)
+                        new GoalStep(
+                            java.util.UUID.randomUUID(), name, name, java.time.Instant.now()))
+            .toList();
+    return DagPlan.sequence(steps);
   }
 }

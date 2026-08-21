@@ -17,16 +17,26 @@ package io.casehub.engine.plan.execution;
 
 import io.casehub.engine.plan.NodeState;
 
-public record NodeStateSnapshot(String kind, String reason) {
+public record NodeStateSnapshot(String kind, String reason, DagResultSnapshot contingencyResult) {
+
+  public NodeStateSnapshot(String kind, String reason) {
+    this(kind, reason, null);
+  }
 
   public static NodeStateSnapshot from(NodeState<?> state) {
+    return from(state, null);
+  }
+
+  public static NodeStateSnapshot from(NodeState<?> state, DagResultSnapshot contingencyResult) {
     return switch (state) {
-      case NodeState.Pending<?> p -> new NodeStateSnapshot("Pending", null);
-      case NodeState.Dispatched<?> d -> new NodeStateSnapshot("Dispatched", null);
-      case NodeState.Completed<?> c -> new NodeStateSnapshot("Completed", null);
-      case NodeState.Failed<?> f -> new NodeStateSnapshot("Failed", f.reason());
-      case NodeState.Skipped<?> s -> new NodeStateSnapshot("Skipped", s.reason());
-      case NodeState.Cancelled<?> x -> new NodeStateSnapshot("Cancelled", null);
+      case NodeState.Pending<?> p -> new NodeStateSnapshot("Pending", null, contingencyResult);
+      case NodeState.Dispatched<?> d ->
+          new NodeStateSnapshot("Dispatched", null, contingencyResult);
+      case NodeState.Completed<?> c -> new NodeStateSnapshot("Completed", null, contingencyResult);
+      case NodeState.Failed<?> f -> new NodeStateSnapshot("Failed", f.reason(), contingencyResult);
+      case NodeState.Skipped<?> s ->
+          new NodeStateSnapshot("Skipped", s.reason(), contingencyResult);
+      case NodeState.Cancelled<?> x -> new NodeStateSnapshot("Cancelled", null, contingencyResult);
     };
   }
 }

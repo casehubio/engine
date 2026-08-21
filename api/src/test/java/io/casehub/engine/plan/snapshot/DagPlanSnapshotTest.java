@@ -75,4 +75,29 @@ class DagPlanSnapshotTest {
     assertThat(snap.taskDescription()).isNull();
     assertThat(snap.executorName()).isNull();
   }
+
+  @Test
+  void fromDagPlanWithContingency_includesContingencySnapshot() {
+    var contingency = DagPlan.singleton("fallback");
+    var node = new DagNode<>("n1", "primary", Set.of(), JoinType.ALL_OF, contingency);
+    var plan = DagPlan.fromNodes(List.of(node));
+    var now = Instant.now();
+
+    var snapshot = DagPlanSnapshot.from(plan, now);
+
+    assertThat(snapshot.nodes()).hasSize(1);
+    var nodeSnapshot = snapshot.nodes().get("n1");
+    assertThat(nodeSnapshot.contingency()).isNotNull();
+    assertThat(nodeSnapshot.contingency().nodes()).hasSize(1);
+  }
+
+  @Test
+  void fromDagPlanWithoutContingency_contingencyIsNull() {
+    var node = new DagNode<>("n1", "primary", Set.of(), JoinType.ALL_OF);
+    var plan = DagPlan.fromNodes(List.of(node));
+
+    var snapshot = DagPlanSnapshot.from(plan, Instant.now());
+
+    assertThat(snapshot.nodes().get("n1").contingency()).isNull();
+  }
 }

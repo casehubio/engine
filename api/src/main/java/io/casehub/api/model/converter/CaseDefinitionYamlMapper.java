@@ -1037,9 +1037,13 @@ public final class CaseDefinitionYamlMapper {
         String metaReasoner =
             adaptationNode.has("metaReasoner") ? adaptationNode.get("metaReasoner").asText() : null;
         String repair = adaptationNode.has("repair") ? adaptationNode.get("repair").asText() : null;
+        Double contingencyThreshold =
+            adaptationNode.has("contingencyThreshold")
+                ? adaptationNode.get("contingencyThreshold").asDouble()
+                : null;
         def.setAdaptationConfig(
             new io.casehub.api.model.AdaptationConfig(
-                trigger, optimization, threshold, metaReasoner, repair));
+                trigger, optimization, threshold, metaReasoner, repair, contingencyThreshold));
       }
       if (def.getAdaptationConfig() != null && def.getDecompositionStrategy() == null) {
         LOG.warnf(
@@ -1214,6 +1218,10 @@ public final class CaseDefinitionYamlMapper {
       builder.replanHint(
           io.casehub.api.model.ReplanHint.valueOf(
               schemaBinding.getReplanAfter().value().toUpperCase()));
+    }
+
+    if (schemaBinding.getContingency() != null && !schemaBinding.getContingency().isEmpty()) {
+      builder.contingency(schemaBinding.getContingency());
     }
 
     if (schemaBinding.getOutcomePolicy() != null) {

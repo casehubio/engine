@@ -36,13 +36,16 @@ import java.util.function.Function;
 public class DagDriver<T, R> {
 
   private static final System.Logger LOG = System.getLogger(DagDriver.class.getName());
+  private static final int DEFAULT_MAX_CONTINGENCY_DEPTH = 3;
 
   private final DagPlan<T> plan;
   private final DispatchMode mode;
   private final List<DagEventListener<T, R>> listeners;
   private final ConcurrentHashMap<String, NodeState<R>> states = new ConcurrentHashMap<>();
   private final AtomicBoolean executed = new AtomicBoolean(false);
-  private volatile boolean cancelled = false;
+  private final AtomicBoolean cancelSignal;
+  private int contingencyDepth;
+  private int maxContingencyDepth = DEFAULT_MAX_CONTINGENCY_DEPTH;
 
   public DagDriver(DagPlan<T> plan) {
     this(plan, DispatchMode.STREAMING, List.of());
@@ -53,9 +56,18 @@ public class DagDriver<T, R> {
   }
 
   public DagDriver(DagPlan<T> plan, DispatchMode mode, List<DagEventListener<T, R>> listeners) {
+    this(plan, mode, listeners, new AtomicBoolean(false));
+  }
+
+  DagDriver(
+      DagPlan<T> plan,
+      DispatchMode mode,
+      List<DagEventListener<T, R>> listeners,
+      AtomicBoolean cancelSignal) {
     this.plan = Objects.requireNonNull(plan);
     this.mode = Objects.requireNonNull(mode);
     this.listeners = List.copyOf(listeners);
+    this.cancelSignal = cancelSignal;
   }
 
   public DagResult<R> execute(Function<T, R> taskExecutor) {
@@ -80,7 +92,7 @@ public class DagDriver<T, R> {
   }
 
   public void cancel() {
-    cancelled = true;
+    cancelSignal.set(true);
     for (var entry : states.entrySet()) {
       if (entry.getValue() instanceof NodeState.Pending) {
         if (states.replace(entry.getKey(), entry.getValue(), new NodeState.Cancelled<>())) {
@@ -91,7 +103,7 @@ public class DagDriver<T, R> {
   }
 
   private void executeBarrier(Function<T, R> taskExecutor, Executor threadPool) {
-    while (!cancelled) {
+    while (!cancelSignal.get()) {
       propagateFailures();
       Set<String> ready = computeReadySet();
       if (ready.isEmpty()) {
@@ -145,7 +157,7 @@ public class DagDriver<T, R> {
               propagateFailures();
               countDownTerminal(latch);
 
-              if (!cancelled) {
+              if (!cancelSignal.get()) {
                 Set<String> newlyReady = computeReadySet();
                 for (String readyId : newlyReady) {
                   dispatchStreaming(readyId, taskExecutor, threadPool, latch);
@@ -168,8 +180,32 @@ public class DagDriver<T, R> {
       states.put(nodeId, new NodeState.Completed<>(result));
       fireNodeCompleted(nodeId, node.task(), result);
     } catch (Exception e) {
-      states.put(nodeId, new NodeState.Failed<>(e.getMessage(), e));
-      fireNodeFailed(nodeId, node.task(), e.getMessage(), e);
+      if (node.contingency() != null
+          && !cancelSignal.get()
+          && contingencyDepth < maxContingencyDepth) {
+        var contingencyDriver =
+            new DagDriver<T, R>(node.contingency(), mode, List.of(), cancelSignal);
+        contingencyDriver.contingencyDepth = this.contingencyDepth + 1;
+        contingencyDriver.maxContingencyDepth = this.maxContingencyDepth;
+        DagResult<R> contingencyResult = contingencyDriver.execute(taskExecutor);
+        fireContingencyActivated(nodeId, node.task(), contingencyResult);
+
+        if (cancelSignal.get()) {
+          states.put(nodeId, new NodeState.Cancelled<>());
+          fireNodeCancelled(nodeId, node.task());
+        } else if (contingencyResult.allSucceeded()) {
+          String exitId = node.contingency().exitNodeIds().iterator().next();
+          R fallbackResult = contingencyResult.completedResults().get(exitId);
+          states.put(nodeId, new NodeState.Completed<>(fallbackResult));
+          fireNodeCompleted(nodeId, node.task(), fallbackResult);
+        } else {
+          states.put(nodeId, new NodeState.Failed<>(e.getMessage(), e));
+          fireNodeFailed(nodeId, node.task(), e.getMessage(), e);
+        }
+      } else {
+        states.put(nodeId, new NodeState.Failed<>(e.getMessage(), e));
+        fireNodeFailed(nodeId, node.task(), e.getMessage(), e);
+      }
     }
   }
 
@@ -181,7 +217,7 @@ public class DagDriver<T, R> {
       if (!(states.get(nodeId) instanceof NodeState.Pending)) {
         continue;
       }
-      if (cancelled) {
+      if (cancelSignal.get()) {
         continue;
       }
 
@@ -307,6 +343,16 @@ public class DagDriver<T, R> {
         l.onNodeCancelled(nodeId, task);
       } catch (Exception e) {
         LOG.log(System.Logger.Level.WARNING, "Listener threw on cancel", e);
+      }
+    }
+  }
+
+  private void fireContingencyActivated(String nodeId, T task, DagResult<R> contingencyResult) {
+    for (var l : listeners) {
+      try {
+        l.onContingencyActivated(nodeId, task, contingencyResult);
+      } catch (Exception e) {
+        LOG.log(System.Logger.Level.WARNING, "Listener threw on contingency activated", e);
       }
     }
   }

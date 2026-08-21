@@ -50,6 +50,7 @@ public class Binding {
   private RecoveryOverride recoveryOverride;
   private SideEffectClassification sideEffectClassification;
   private ReplanHint replanHint;
+  private List<String> contingency;
 
   private Binding(String name, BindingTarget target, Trigger on) {
     this.name = name;
@@ -220,6 +221,14 @@ public class Binding {
     return replanHint != null ? replanHint : ReplanHint.CONDITIONAL;
   }
 
+  public void setContingency(List<String> contingency) {
+    this.contingency = contingency != null ? List.copyOf(contingency) : null;
+  }
+
+  public List<String> getContingency() {
+    return contingency;
+  }
+
   public static Builder builder() {
     return new Builder();
   }
@@ -246,6 +255,7 @@ public class Binding {
     private RecoveryOverride recoveryOverride;
     private SideEffectClassification sideEffectClassification;
     private ReplanHint replanHint;
+    private List<String> contingency;
 
     private Builder() {}
 
@@ -390,6 +400,16 @@ public class Binding {
       return this;
     }
 
+    public Builder contingency(List<String> capabilities) {
+      this.contingency = capabilities;
+      return this;
+    }
+
+    public Builder contingency(String... capabilities) {
+      this.contingency = java.util.Arrays.asList(capabilities);
+      return this;
+    }
+
     public Binding build() {
       Objects.requireNonNull(name);
       Objects.requireNonNull(on);
@@ -450,6 +470,7 @@ public class Binding {
       b.setRecoveryOverride(this.recoveryOverride);
       b.setSideEffectClassification(this.sideEffectClassification);
       b.setReplanHint(this.replanHint);
+      b.setContingency(this.contingency);
       return b;
     }
   }

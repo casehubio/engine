@@ -60,4 +60,28 @@ public record DagResultSnapshot(
         timestamp,
         nodeDurationsMs);
   }
+
+  public static DagResultSnapshot from(
+      DagResult<?> result,
+      Instant timestamp,
+      Map<String, Long> nodeDurationsMs,
+      Map<String, DagResultSnapshot> contingencyResults) {
+    Map<String, NodeStateSnapshot> states = new LinkedHashMap<>();
+    for (var entry : result.nodeStates().entrySet()) {
+      DagResultSnapshot cr =
+          contingencyResults != null ? contingencyResults.get(entry.getKey()) : null;
+      states.put(entry.getKey(), NodeStateSnapshot.from(entry.getValue(), cr));
+    }
+    Map<String, Object> completed = new LinkedHashMap<>();
+    for (var entry : result.completedResults().entrySet()) {
+      completed.put(entry.getKey(), entry.getValue());
+    }
+    return new DagResultSnapshot(
+        Map.copyOf(states),
+        Map.copyOf(completed),
+        result.allSucceeded(),
+        result.elapsed(),
+        timestamp,
+        nodeDurationsMs);
+  }
 }

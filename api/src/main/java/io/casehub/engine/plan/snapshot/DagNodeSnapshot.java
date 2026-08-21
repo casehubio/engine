@@ -24,4 +24,16 @@ public record DagNodeSnapshot(
     String taskDescription,
     String executorName,
     Set<String> dependsOn,
-    JoinType joinType) {}
+    JoinType joinType,
+    DagPlanSnapshot contingency) {
+
+  public DagNodeSnapshot(
+      String id,
+      String taskId,
+      String taskDescription,
+      String executorName,
+      Set<String> dependsOn,
+      JoinType joinType) {
+    this(id, taskId, taskDescription, executorName, dependsOn, joinType, null);
+  }
+}

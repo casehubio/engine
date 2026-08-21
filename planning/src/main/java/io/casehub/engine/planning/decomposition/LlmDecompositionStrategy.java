@@ -139,7 +139,20 @@ public class LlmDecompositionStrategy implements DecompositionStrategy<JsonNode>
         }
 
         var goalStep = new GoalStep(UUID.randomUUID(), desc, capName, Instant.now());
-        nodes.add(new DagNode<>(stepId, goalStep, dependsOn, JoinType.ALL_OF));
+
+        DagPlan<TaskNode.LeafTask<JsonNode>> contingency = null;
+        if (stepNode.has("contingency")
+            && stepNode.get("contingency").isArray()
+            && !stepNode.get("contingency").isEmpty()) {
+          var altSteps = new ArrayList<TaskNode.LeafTask<JsonNode>>();
+          for (var altNode : stepNode.get("contingency")) {
+            String altCap = altNode.asText();
+            altSteps.add(new GoalStep(UUID.randomUUID(), altCap, altCap, Instant.now()));
+          }
+          contingency = DagPlan.sequence(altSteps);
+        }
+
+        nodes.add(new DagNode<>(stepId, goalStep, dependsOn, JoinType.ALL_OF, contingency));
       }
 
       return DagPlan.fromNodes(nodes);
@@ -243,7 +256,20 @@ public class LlmDecompositionStrategy implements DecompositionStrategy<JsonNode>
           }
         }
         var goalStep = new GoalStep(UUID.randomUUID(), desc, capName, Instant.now());
-        nodes.add(new DagNode<>(stepId, goalStep, dependsOn, JoinType.ALL_OF));
+
+        DagPlan<TaskNode.LeafTask<JsonNode>> contingency = null;
+        if (stepNode.has("contingency")
+            && stepNode.get("contingency").isArray()
+            && !stepNode.get("contingency").isEmpty()) {
+          var altSteps = new ArrayList<TaskNode.LeafTask<JsonNode>>();
+          for (var altNode : stepNode.get("contingency")) {
+            String altCap = altNode.asText();
+            altSteps.add(new GoalStep(UUID.randomUUID(), altCap, altCap, Instant.now()));
+          }
+          contingency = DagPlan.sequence(altSteps);
+        }
+
+        nodes.add(new DagNode<>(stepId, goalStep, dependsOn, JoinType.ALL_OF, contingency));
       }
 
       return DagPlan.fromNodes(nodes);

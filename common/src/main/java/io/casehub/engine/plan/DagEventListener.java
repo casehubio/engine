@@ -26,5 +26,7 @@ public interface DagEventListener<T, R> {
 
   default void onNodeCancelled(String nodeId, T task) {}
 
+  default void onContingencyActivated(String nodeId, T task, DagResult<R> contingencyResult) {}
+
   default void onExecutionComplete(DagResult<R> result) {}
 }

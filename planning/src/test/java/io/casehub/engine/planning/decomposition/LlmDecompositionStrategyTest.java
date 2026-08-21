@@ -429,6 +429,56 @@ class LlmDecompositionStrategyTest {
         .hasMessageContaining("no steps");
   }
 
+  @Test
+  void parsesContingencyFromLlmResponse() {
+    String response =
+        "{\"steps\": ["
+            + "{\"id\": \"s1\", \"description\": \"Primary\", \"capabilityName\": \"primary-cap\","
+            + " \"contingency\": [\"alt-a\", \"alt-b\"]},"
+            + "{\"id\": \"s2\", \"description\": \"Second\", \"capabilityName\": \"second-cap\","
+            + " \"dependsOn\": [\"s1\"]}"
+            + "]}";
+    var strategy = buildWithMockChatModel(response);
+    var context =
+        new GoalDecompositionContext(
+            MAPPER.createObjectNode(),
+            0,
+            List.of(
+                new Capability("primary-cap", "", "", null),
+                new Capability("second-cap", "", "", null)));
+    var task = new TaskNode.CompoundTask<JsonNode>("goal", "goal", List.of());
+
+    var plan = strategy.decompose(task, context);
+
+    var s1 = plan.nodes().get("s1");
+    assertThat(s1.contingency()).isNotNull();
+    assertThat(s1.contingency().nodes()).hasSize(2);
+    var contingencySteps = s1.contingency().topologicalSort();
+    assertThat(((GoalStep) contingencySteps.get(0).task()).capabilityName()).isEqualTo("alt-a");
+    assertThat(((GoalStep) contingencySteps.get(1).task()).capabilityName()).isEqualTo("alt-b");
+
+    var s2 = plan.nodes().get("s2");
+    assertThat(s2.contingency()).isNull();
+  }
+
+  @Test
+  void noContingencyField_nodeHasNullContingency() {
+    var strategy = buildWithMockChatModel(sequentialResponse());
+    var context =
+        new GoalDecompositionContext(
+            MAPPER.createObjectNode(),
+            0,
+            List.of(
+                new Capability("data-gathering", "", "", null),
+                new Capability("analysis", "", "", null),
+                new Capability("reporting", "", "", null)));
+    var task = new TaskNode.CompoundTask<JsonNode>("goal", "goal", List.of());
+
+    var plan = strategy.decompose(task, context);
+
+    plan.nodes().values().forEach(n -> assertThat(n.contingency()).isNull());
+  }
+
   private static String sequentialResponse() {
     return "{\"steps\": ["
         + "{\"id\": \"s1\", \"description\": \"Gather data\", \"capabilityName\": \"data-gathering\"},"

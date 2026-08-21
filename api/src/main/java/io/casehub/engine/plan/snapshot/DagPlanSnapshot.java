@@ -39,10 +39,18 @@ public record DagPlanSnapshot(Map<String, DagNodeSnapshot> nodes, Instant timest
         ExecutorRef exec = td.executor();
         execName = exec != null ? exec.name() : null;
       }
+      DagPlanSnapshot contingencySnapshot =
+          node.contingency() != null ? DagPlanSnapshot.from(node.contingency(), timestamp) : null;
       snapshotNodes.put(
           entry.getKey(),
           new DagNodeSnapshot(
-              node.id(), taskId, taskDesc, execName, node.dependsOn(), node.joinType()));
+              node.id(),
+              taskId,
+              taskDesc,
+              execName,
+              node.dependsOn(),
+              node.joinType(),
+              contingencySnapshot));
     }
     return new DagPlanSnapshot(Map.copyOf(snapshotNodes), timestamp);
   }

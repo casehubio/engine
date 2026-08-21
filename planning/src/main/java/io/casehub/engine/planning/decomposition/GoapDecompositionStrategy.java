@@ -52,34 +52,39 @@ public class GoapDecompositionStrategy implements DecompositionStrategy<JsonNode
   @Override
   public DagPlan<TaskNode.LeafTask<JsonNode>> decompose(
       TaskNode<JsonNode> task, DecompositionContext<JsonNode> context) {
-
     CaseDefinition definition = extractDefinition(context);
-    if (definition == null)
+    if (definition == null) {
       throw new io.casehub.api.model.ai.AgentException("GOAP decomposition produced no plan");
+    }
 
     List<GoapAction> allActions = definition.getGoapActions();
-    if (allActions.isEmpty())
+    if (allActions.isEmpty()) {
       throw new io.casehub.api.model.ai.AgentException("GOAP decomposition produced no plan");
+    }
 
     Set<String> availableCapabilities = extractCapabilityNames(context);
     List<GoapAction> actions =
         allActions.stream().filter(a -> availableCapabilities.contains(a.name())).toList();
-    if (actions.isEmpty())
+    if (actions.isEmpty()) {
       throw new io.casehub.api.model.ai.AgentException("GOAP decomposition produced no plan");
+    }
 
     actions = enrichActions(actions, context, definition);
 
     GoapWorldState worldState = buildOpenWorldState(context.state(), actions);
     Set<String> goalConditions = resolveGoalConditions(definition);
-    if (goalConditions.isEmpty())
+    if (goalConditions.isEmpty()) {
       throw new io.casehub.api.model.ai.AgentException("GOAP decomposition produced no plan");
+    }
 
     List<GoapAction> planned =
         planner.plan(worldState, goalConditions, actions, PlannerConfig.defaults());
-    if (planned.isEmpty())
+    if (planned.isEmpty()) {
       throw new io.casehub.api.model.ai.AgentException("GOAP decomposition produced no plan");
+    }
 
-    return buildDagPlan(planned);
+    DagPlan<TaskNode.LeafTask<JsonNode>> plan = buildDagPlan(planned);
+    return attachCbrContingencies(plan, actions, worldState, goalConditions, context, definition);
   }
 
   @Override
@@ -201,6 +206,71 @@ public class GoapDecompositionStrategy implements DecompositionStrategy<JsonNode
             definition != null ? definition.getCbrConfig() : null);
     return io.casehub.engine.planning.control.GoapCostEnricher.enrichWithLearnedCosts(
         actions, experiences, minSamples);
+  }
+
+  private DagPlan<TaskNode.LeafTask<JsonNode>> attachCbrContingencies(
+      DagPlan<TaskNode.LeafTask<JsonNode>> plan,
+      List<GoapAction> allActions,
+      GoapWorldState worldState,
+      Set<String> goalConditions,
+      DecompositionContext<JsonNode> context,
+      CaseDefinition definition) {
+
+    List<io.casehub.api.spi.routing.RetrievedExperience> experiences = extractExperiences(context);
+    if (experiences.isEmpty()) {
+      return plan;
+    }
+
+    double threshold =
+        definition.getAdaptationConfig() != null
+            ? definition.getAdaptationConfig().effectiveContingencyThreshold()
+            : io.casehub.api.model.AdaptationConfig.DEFAULT_CONTINGENCY_THRESHOLD;
+    int minSamples =
+        io.casehub.engine.planning.control.GoapCostEnricher.resolveMinCostSamples(
+            definition.getCbrConfig());
+
+    Set<String> actionNames =
+        allActions.stream().map(GoapAction::name).collect(java.util.stream.Collectors.toSet());
+    java.util.Map<String, Double> failureRates =
+        io.casehub.api.spi.routing.ExperienceAnalyser.actionFailureRates(
+            experiences, actionNames, minSamples);
+    if (failureRates.isEmpty()) {
+      return plan;
+    }
+
+    java.util.Map<String, DagNode<TaskNode.LeafTask<JsonNode>>> updatedNodes =
+        new java.util.LinkedHashMap<>(plan.nodes());
+    boolean changed = false;
+
+    for (var entry : plan.nodes().entrySet()) {
+      DagNode<TaskNode.LeafTask<JsonNode>> node = entry.getValue();
+      if (node.contingency() != null) {
+        continue;
+      }
+      String actionName = (node.task() instanceof GoalStep step) ? step.capabilityName() : null;
+      if (actionName == null) {
+        continue;
+      }
+
+      Double failureRate = failureRates.get(actionName);
+      if (failureRate != null && failureRate >= threshold) {
+        var config =
+            new PlannerConfig(PlannerConfig.DEFAULT_MAX_ITERATIONS, Set.of(actionName), true, true);
+        List<GoapAction> altPlan = planner.plan(worldState, goalConditions, allActions, config);
+        if (!altPlan.isEmpty()) {
+          DagPlan<TaskNode.LeafTask<JsonNode>> contingencyPlan = buildDagPlan(altPlan);
+          if (contingencyPlan.exitNodeIds().size() == 1) {
+            updatedNodes.put(
+                entry.getKey(),
+                new DagNode<>(
+                    node.id(), node.task(), node.dependsOn(), node.joinType(), contingencyPlan));
+            changed = true;
+          }
+        }
+      }
+    }
+
+    return changed ? new DagPlan<>(updatedNodes) : plan;
   }
 
   private List<io.casehub.api.spi.routing.RetrievedExperience> extractExperiences(

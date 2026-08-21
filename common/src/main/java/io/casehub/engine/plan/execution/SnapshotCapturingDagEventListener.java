@@ -32,6 +32,8 @@ public class SnapshotCapturingDagEventListener<T, R> implements DagEventListener
   private final ExecutionSnapshotStore store;
   private final Map<String, Instant> dispatchTimes = new ConcurrentHashMap<>();
   private final Map<String, Long> nodeDurations = new ConcurrentHashMap<>();
+  private final java.util.Map<String, DagResultSnapshot> contingencyResults =
+      new java.util.concurrent.ConcurrentHashMap<>();
 
   public SnapshotCapturingDagEventListener(
       UUID caseId, String tenancyId, ExecutionSnapshotStore store, DagPlan<T> plan) {
@@ -57,10 +59,19 @@ public class SnapshotCapturingDagEventListener<T, R> implements DagEventListener
   }
 
   @Override
+  public void onContingencyActivated(String nodeId, T task, DagResult<R> contingencyResult) {
+    recordDuration(nodeId);
+    contingencyResults.put(
+        nodeId, DagResultSnapshot.from(contingencyResult, java.time.Instant.now(), null));
+  }
+
+  @Override
   public void onExecutionComplete(DagResult<R> result) {
     Map<String, Long> durations = nodeDurations.isEmpty() ? null : Map.copyOf(nodeDurations);
+    Map<String, DagResultSnapshot> contingencies =
+        contingencyResults.isEmpty() ? null : Map.copyOf(contingencyResults);
     store.storeDagResult(
-        caseId, tenancyId, DagResultSnapshot.from(result, Instant.now(), durations));
+        caseId, tenancyId, DagResultSnapshot.from(result, Instant.now(), durations, contingencies));
   }
 
   private void recordDuration(String nodeId) {

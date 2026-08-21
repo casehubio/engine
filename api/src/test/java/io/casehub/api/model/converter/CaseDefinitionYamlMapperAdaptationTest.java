@@ -335,4 +335,73 @@ class CaseDefinitionYamlMapperAdaptationTest {
     assertThat(def.getPortfolioConfig()).isNotNull();
     assertThat(def.getPortfolioConfig().delegates()).containsExactly("llm");
   }
+
+  @Test
+  void parsesContingencyThreshold() throws IOException {
+    String yaml =
+        """
+                dsl: "0.1.0"
+                namespace: test
+                name: test-case
+                version: "1.0.0"
+                spec:
+                  adaptation:
+                    trigger: every-step
+                    optimization: forward-replan
+                    contingencyThreshold: 0.25
+                """;
+    CaseDefinition def = load(yaml);
+    var config = def.getAdaptationConfig();
+    assertThat(config).isNotNull();
+    assertThat(config.contingencyThreshold()).isEqualTo(0.25);
+    assertThat(config.effectiveContingencyThreshold()).isEqualTo(0.25);
+  }
+
+  @Test
+  void contingencyThresholdDefaultsWhenOmitted() throws IOException {
+    String yaml =
+        """
+                dsl: "0.1.0"
+                namespace: test
+                name: test-case
+                version: "1.0.0"
+                spec:
+                  adaptation:
+                    trigger: every-step
+                    optimization: forward-replan
+                """;
+    CaseDefinition def = load(yaml);
+    var config = def.getAdaptationConfig();
+    assertThat(config).isNotNull();
+    assertThat(config.contingencyThreshold()).isNull();
+    assertThat(config.effectiveContingencyThreshold()).isEqualTo(0.15);
+  }
+
+  @Test
+  void parsesBindingContingency() throws IOException {
+    String yaml =
+        """
+              namespace: test
+              name: test-case
+              version: "1.0.0"
+              spec:
+                capabilities:
+                  - name: primary-cap
+                workers:
+                  - name: worker-1
+                    capabilities: [ primary-cap ]
+                bindings:
+                  - name: primary-binding
+                    capability: primary-cap
+                    on:
+                      contextChange:
+                        filter: ".ready"
+                    contingency:
+                      - alt-cap-a
+                      - alt-cap-b
+              """;
+    CaseDefinition def = load(yaml);
+    var binding = def.getBindings().get(0);
+    assertThat(binding.getContingency()).containsExactly("alt-cap-a", "alt-cap-b");
+  }
 }

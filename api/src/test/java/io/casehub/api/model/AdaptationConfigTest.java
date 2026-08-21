@@ -113,4 +113,31 @@ class AdaptationConfigTest {
     var config = AdaptationConfig.of("every-step", "forward-replan");
     assertNull(config.metaReasoner());
   }
+
+  @Test
+  void effectiveContingencyThreshold_defaultWhenNull() {
+    var config = AdaptationConfig.of("every-step", "forward-replan");
+    assertEquals(0.15, config.effectiveContingencyThreshold());
+  }
+
+  @Test
+  void effectiveContingencyThreshold_explicitValue() {
+    var config = new AdaptationConfig("every-step", "forward-replan", null, null, null, 0.25);
+    assertEquals(0.25, config.contingencyThreshold());
+    assertEquals(0.25, config.effectiveContingencyThreshold());
+  }
+
+  @Test
+  void rejectsNegativeContingencyThreshold() {
+    assertThrows(
+        IllegalArgumentException.class,
+        () -> new AdaptationConfig("progress", "forward-replan", null, null, null, -0.1));
+  }
+
+  @Test
+  void rejectsContingencyThresholdAboveOne() {
+    assertThrows(
+        IllegalArgumentException.class,
+        () -> new AdaptationConfig("progress", "forward-replan", null, null, null, 1.5));
+  }
 }
