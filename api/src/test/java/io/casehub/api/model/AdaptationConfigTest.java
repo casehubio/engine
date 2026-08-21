@@ -26,20 +26,22 @@ class AdaptationConfigTest {
   @Test
   void rejectsNullTrigger() {
     assertThrows(
-        NullPointerException.class, () -> new AdaptationConfig(null, "forward-replan", null, null));
+        NullPointerException.class,
+        () -> new AdaptationConfig(null, "forward-replan", null, null, null));
   }
 
   @Test
   void rejectsNullRevision() {
     assertThrows(
-        NullPointerException.class, () -> new AdaptationConfig("every-step", null, null, null));
+        NullPointerException.class,
+        () -> new AdaptationConfig("every-step", null, null, null, null));
   }
 
   @Test
   void storesFields() {
     var config = AdaptationConfig.of("every-step", "forward-replan");
     assertEquals("every-step", config.trigger());
-    assertEquals("forward-replan", config.revision());
+    assertEquals("forward-replan", config.optimization());
     assertNull(config.threshold());
   }
 
@@ -53,7 +55,7 @@ class AdaptationConfigTest {
             .adaptationConfig(AdaptationConfig.of("every-step", "forward-replan"))
             .build();
     assertEquals("every-step", def.getAdaptationConfig().trigger());
-    assertEquals("forward-replan", def.getAdaptationConfig().revision());
+    assertEquals("forward-replan", def.getAdaptationConfig().optimization());
   }
 
   @Test
@@ -64,7 +66,7 @@ class AdaptationConfigTest {
 
   @Test
   void storesThreshold() {
-    var config = new AdaptationConfig("progress", "forward-replan", 0.3, null);
+    var config = new AdaptationConfig("progress", "forward-replan", 0.3, null, null);
     assertEquals(0.3, config.threshold());
   }
 
@@ -78,19 +80,19 @@ class AdaptationConfigTest {
   void rejectsNegativeThreshold() {
     assertThrows(
         IllegalArgumentException.class,
-        () -> new AdaptationConfig("progress", "forward-replan", -0.1, null));
+        () -> new AdaptationConfig("progress", "forward-replan", -0.1, null, null));
   }
 
   @Test
   void rejectsThresholdAboveOne() {
     assertThrows(
         IllegalArgumentException.class,
-        () -> new AdaptationConfig("progress", "forward-replan", 1.1, null));
+        () -> new AdaptationConfig("progress", "forward-replan", 1.1, null, null));
   }
 
   @Test
   void acceptsNullThreshold() {
-    var config = new AdaptationConfig("every-step", "forward-replan", null, null);
+    var config = new AdaptationConfig("every-step", "forward-replan", null, null, null);
     assertNull(config.threshold());
   }
 
@@ -102,7 +104,7 @@ class AdaptationConfigTest {
 
   @Test
   void effectiveMetaReasoner_returns_explicit_value() {
-    var config = new AdaptationConfig("progress", "forward-replan", null, "custom-reasoner");
+    var config = new AdaptationConfig("progress", "forward-replan", null, "custom-reasoner", null);
     assertEquals("custom-reasoner", config.effectiveMetaReasoner());
   }
 

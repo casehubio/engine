@@ -21,7 +21,7 @@ import io.casehub.api.model.ai.Agent;
 import io.casehub.api.model.ai.AgentException;
 import io.casehub.api.model.ai.ChatModelProvider;
 import io.casehub.engine.plan.adaptation.CompletedStep;
-import io.casehub.engine.plan.adaptation.PlanRevisionStrategy;
+import io.casehub.engine.plan.adaptation.OptimizationStrategy;
 import io.casehub.engine.plan.adaptation.PlanStepDescriptor;
 import io.casehub.engine.plan.adaptation.RevisedPlan;
 import io.casehub.engine.plan.adaptation.RevisionContext;
@@ -34,7 +34,7 @@ import java.util.Map;
 import java.util.stream.Collectors;
 
 @ApplicationScoped
-public class ForwardReplanRevision implements PlanRevisionStrategy {
+public class ForwardReplanRevision implements OptimizationStrategy {
 
   private static final ObjectMapper MAPPER = new ObjectMapper();
 
@@ -135,7 +135,9 @@ public class ForwardReplanRevision implements PlanRevisionStrategy {
   }
 
   private String buildCompletedHistory(List<CompletedStep> steps) {
-    if (steps.isEmpty()) return "No steps completed yet.";
+    if (steps.isEmpty()) {
+      return "No steps completed yet.";
+    }
     var sb = new StringBuilder("Completed steps:\n");
     for (int i = 0; i < steps.size(); i++) {
       var step = steps.get(i);
@@ -155,7 +157,9 @@ public class ForwardReplanRevision implements PlanRevisionStrategy {
   }
 
   private String truncateContext(JsonNode context) {
-    if (context == null) return "{}";
+    if (context == null) {
+      return "{}";
+    }
     var str = context.toString();
     return str.length() > 2000 ? str.substring(0, 2000) + "..." : str;
   }

@@ -1016,6 +1016,7 @@ public final class CaseDefinitionYamlMapper {
                       "progress",
                       "forward-replan",
                       io.casehub.api.model.AdaptationConfig.DEFAULT_PROGRESS_THRESHOLD,
+                      null,
                       null));
           case "off" -> {} // null = disabled
           default -> throw new IllegalArgumentException("Unknown adaptation preset: " + preset);
@@ -1023,16 +1024,22 @@ public final class CaseDefinitionYamlMapper {
       } else if (adaptationNode.isObject()) {
         String trigger =
             adaptationNode.has("trigger") ? adaptationNode.get("trigger").asText() : "every-step";
-        String revision =
-            adaptationNode.has("revision")
-                ? adaptationNode.get("revision").asText()
-                : "forward-replan";
+        String optimization;
+        if (adaptationNode.has("optimization")) {
+          optimization = adaptationNode.get("optimization").asText();
+        } else if (adaptationNode.has("revision")) {
+          optimization = adaptationNode.get("revision").asText();
+        } else {
+          optimization = "forward-replan";
+        }
         Double threshold =
             adaptationNode.has("threshold") ? adaptationNode.get("threshold").asDouble() : null;
         String metaReasoner =
             adaptationNode.has("metaReasoner") ? adaptationNode.get("metaReasoner").asText() : null;
+        String repair = adaptationNode.has("repair") ? adaptationNode.get("repair").asText() : null;
         def.setAdaptationConfig(
-            new io.casehub.api.model.AdaptationConfig(trigger, revision, threshold, metaReasoner));
+            new io.casehub.api.model.AdaptationConfig(
+                trigger, optimization, threshold, metaReasoner, repair));
       }
       if (def.getAdaptationConfig() != null && def.getDecompositionStrategy() == null) {
         LOG.warnf(
