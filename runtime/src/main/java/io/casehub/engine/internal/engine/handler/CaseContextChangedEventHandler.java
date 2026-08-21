@@ -54,6 +54,7 @@ import io.casehub.api.spi.routing.HumanTaskRoutingStrategy;
 import io.casehub.api.spi.routing.RetrievedExperience;
 import io.casehub.api.spi.routing.RoutingResult;
 import io.casehub.eidos.api.CapabilityHealth;
+import io.casehub.engine.common.internal.context.BridgeResolver;
 import io.casehub.engine.common.internal.event.AgentRoutingEscalationEvent;
 import io.casehub.engine.common.internal.event.CaseContextChangedEvent;
 import io.casehub.engine.common.internal.event.EventBusAddresses;
@@ -67,10 +68,15 @@ import io.casehub.engine.common.internal.jq.JQEvaluator;
 import io.casehub.engine.common.internal.jq.ValidationResult;
 import io.casehub.engine.common.internal.model.CaseInstance;
 import io.casehub.engine.common.internal.model.CaseMetaModel;
+import io.casehub.engine.common.internal.worker.scope.ScopedWorkerRegistry;
 import io.casehub.engine.common.spi.CaseDefinitionRegistry;
+import io.casehub.engine.common.spi.event.CaseContextUpdatedEvent;
 import io.casehub.engine.common.spi.event.CaseLifecycleEvent;
 import io.casehub.engine.common.spi.scheduler.WorkerExecutionManager;
+import io.casehub.engine.internal.acl.WorkerGrantOrchestrator;
 import io.casehub.engine.internal.engine.CaseEvaluationSerializer;
+import io.casehub.engine.internal.engine.QuiescenceTracker;
+import io.casehub.engine.internal.engine.SignalSettlementTracker;
 import io.casehub.engine.internal.routing.AgentCandidateFactory;
 import io.casehub.engine.internal.routing.CbrRetrievalService;
 import io.casehub.ledger.api.spi.LedgerTraceIdProvider;
@@ -126,21 +132,20 @@ public class CaseContextChangedEventHandler {
 
   @Inject CbrRetrievalService cbrRetrievalService;
 
-  @Inject io.casehub.engine.common.internal.context.BridgeResolver bridgeResolver;
+  @Inject BridgeResolver bridgeResolver;
 
-  @Inject io.casehub.engine.internal.engine.SignalSettlementTracker settlementTracker;
+  @Inject SignalSettlementTracker settlementTracker;
 
-  @Inject io.casehub.engine.internal.acl.WorkerGrantOrchestrator workerGrantOrchestrator;
+  @Inject WorkerGrantOrchestrator workerGrantOrchestrator;
 
   @Inject @io.quarkus.virtual.threads.VirtualThreads
   java.util.concurrent.ExecutorService virtualThreads;
 
   @Inject CaseEvaluationSerializer evaluationSerializer;
-  @Inject io.casehub.engine.internal.engine.QuiescenceTracker quiescenceTracker;
-  @Inject io.casehub.engine.common.internal.worker.scope.ScopedWorkerRegistry scopedWorkerRegistry;
+  @Inject QuiescenceTracker quiescenceTracker;
+  @Inject ScopedWorkerRegistry scopedWorkerRegistry;
 
-  @Inject
-  Event<io.casehub.engine.common.spi.event.CaseContextUpdatedEvent> caseContextUpdatedEvents;
+  @Inject Event<CaseContextUpdatedEvent> caseContextUpdatedEvents;
 
   @RunOnVirtualThread
   @ConsumeEvent(value = EventBusAddresses.CONTEXT_CHANGED)
@@ -180,7 +185,7 @@ public class CaseContextChangedEventHandler {
 
     if (changedLayer != null) {
       caseContextUpdatedEvents.fireAsync(
-          new io.casehub.engine.common.spi.event.CaseContextUpdatedEvent(
+          new CaseContextUpdatedEvent(
               caseInstance.getUuid(), changedLayer, caseInstance.tenancyId));
     }
 
