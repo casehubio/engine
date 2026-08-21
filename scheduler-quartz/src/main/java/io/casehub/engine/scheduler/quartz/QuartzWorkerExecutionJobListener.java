@@ -27,7 +27,6 @@ import io.casehub.ledger.api.spi.LedgerTraceIdProvider;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.enterprise.event.Event;
 import jakarta.inject.Inject;
-import java.util.Map;
 import java.util.UUID;
 import org.jboss.logging.Logger;
 import org.quartz.JobExecutionContext;
@@ -63,45 +62,8 @@ class QuartzWorkerExecutionJobListener implements JobListener {
 
   @Override
   public void jobToBeExecuted(JobExecutionContext context) {
-    if (isNotWorkerExecutionJob(context)) {
-      return;
-    }
-
-    String jobName = context.getJobDetail().getKey().toString();
-    String idempotency = context.getMergedJobDataMap().getString("inputDataHash");
-    String workerId = context.getMergedJobDataMap().getString("workerId");
-    String caseHubInstanceUuid = context.getMergedJobDataMap().getString("caseHubInstanceUuid");
-    String tenancyId = context.getMergedJobDataMap().getString("tenancyId");
-    if (tenancyId == null) {
-      LOG.warnf(
-          "tenancyId absent from Quartz job data for job %s — lifecycle event will carry null tenancyId",
-          jobName);
-    }
-    LOG.infof("Job is about to be executed: %s, idempotency=%s", jobName, idempotency);
-    workerStatusListener.onWorkerStarted(workerId, Map.of("caseId", caseHubInstanceUuid));
-    lifecycleEvents.fireAsync(
-        CaseLifecycleEvent.of(
-            UUID.fromString(caseHubInstanceUuid),
-            tenancyId,
-            "ExecuteWorker",
-            "WorkerExecutionStarted",
-            null,
-            workerId,
-            "WORKER",
-            traceIdProvider.currentTraceId().orElse(null)));
-
-    EventLog eventLog =
-        createEventLog(
-            context,
-            CaseHubEventType.WORKER_EXECUTION_STARTED,
-            OBJECT_MAPPER.createObjectNode().put("inputDataHash", idempotency));
-
-    try {
-      persistEventLog(jobName, eventLog, tenancyId);
-      LOG.debugf("Persisted start event for %s", jobName);
-    } catch (Exception ex) {
-      LOG.errorf(ex, "Failed to persist start event for %s", jobName);
-    }
+    // Pre-execution lifecycle hooks have moved to WorkerExecutionOrchestrator.
+    // This listener is retained for Quartz registration but is a no-op.
   }
 
   @Override

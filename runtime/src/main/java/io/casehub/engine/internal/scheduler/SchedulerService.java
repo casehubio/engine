@@ -25,6 +25,7 @@ import io.casehub.api.model.SignalTarget;
 import io.casehub.api.model.SubCaseTarget;
 import io.casehub.engine.common.internal.model.CaseInstance;
 import io.casehub.engine.common.internal.scheduler.JobIdentifier;
+import io.casehub.engine.common.internal.scheduler.JobType;
 import io.casehub.engine.common.internal.scheduler.ScheduleStrategy;
 import io.casehub.engine.common.internal.scheduler.ScheduleStrategy.CronSchedule;
 import io.casehub.engine.common.internal.scheduler.ScheduleStrategy.DelaySchedule;
@@ -129,13 +130,16 @@ public class SchedulerService {
   }
 
   public void scheduleWorker(UUID caseId, Binding binding, ScheduleTrigger trigger, Worker worker) {
-
     JobIdentifier jobId = createJobIdentifier(caseId, binding.getName());
     ScheduleStrategy schedule = toScheduleStrategy(trigger);
     Map<String, Object> jobData = createJobData(caseId, binding, worker);
-    jobData.put("triggerType", "unconditional");
 
-    scheduler.schedule(ScheduledJobRequest.builder().jobId(jobId).schedule(schedule).data(jobData));
+    scheduler.schedule(
+        ScheduledJobRequest.builder()
+            .jobId(jobId)
+            .schedule(schedule)
+            .jobType(JobType.SCHEDULED_TRIGGER_UNCONDITIONAL)
+            .data(jobData));
     LOG.infof(
         "Scheduled unconditional trigger: case=%s, binding=%s, trigger=%s",
         caseId, binding.getName(), trigger);
@@ -143,13 +147,16 @@ public class SchedulerService {
 
   public void scheduleConditionalWorker(
       UUID caseId, Binding binding, ScheduleTrigger trigger, Worker worker) {
-
     JobIdentifier jobId = createJobIdentifier(caseId, binding.getName());
     ScheduleStrategy schedule = toScheduleStrategy(trigger);
     Map<String, Object> jobData = createJobData(caseId, binding, worker);
-    jobData.put("triggerType", "conditional");
 
-    scheduler.schedule(ScheduledJobRequest.builder().jobId(jobId).schedule(schedule).data(jobData));
+    scheduler.schedule(
+        ScheduledJobRequest.builder()
+            .jobId(jobId)
+            .schedule(schedule)
+            .jobType(JobType.SCHEDULED_TRIGGER_CONDITIONAL)
+            .data(jobData));
     LOG.infof(
         "Scheduled conditional trigger: case=%s, binding=%s, trigger=%s, condition=%s",
         caseId, binding.getName(), trigger, binding.getWhen());
@@ -162,7 +169,6 @@ public class SchedulerService {
     Map<String, Object> data = new HashMap<>();
     data.put("caseId", caseId.toString());
     data.put("bindingName", binding.getName());
-    data.put("triggerType", "signal");
     try {
       data.put(
           "signalPayload",
@@ -174,7 +180,12 @@ public class SchedulerService {
       data.put("hasCondition", "true");
     }
 
-    scheduler.schedule(ScheduledJobRequest.builder().jobId(jobId).schedule(schedule).data(data));
+    scheduler.schedule(
+        ScheduledJobRequest.builder()
+            .jobId(jobId)
+            .schedule(schedule)
+            .jobType(JobType.SIGNAL_TRIGGER)
+            .data(data));
     LOG.infof(
         "Scheduled signal trigger: case=%s, binding=%s, trigger=%s",
         caseId, binding.getName(), trigger);

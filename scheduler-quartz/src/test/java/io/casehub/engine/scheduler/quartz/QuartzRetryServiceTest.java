@@ -94,14 +94,14 @@ class QuartzRetryServiceTest {
 
   @BeforeEach
   void setUp() {
-    retryService =
-        new QuartzRetryService(
+    io.casehub.engine.common.internal.executor.RetryOrchestrator retryOrchestrator =
+        new io.casehub.engine.common.internal.executor.RetryOrchestrator(
             eventLogRepository,
             recoveryService,
             caseDefinitionRegistry,
-            schedulerService,
             eventBus,
             recoveryCoordinator);
+    retryService = new QuartzRetryService(retryOrchestrator, schedulerService);
   }
 
   @Test

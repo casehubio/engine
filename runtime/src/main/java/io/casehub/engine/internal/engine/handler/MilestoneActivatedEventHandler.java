@@ -32,6 +32,7 @@ import io.casehub.engine.common.internal.event.MilestoneSLAViolatedEvent;
 import io.casehub.engine.common.internal.history.EventLog;
 import io.casehub.engine.common.internal.model.CaseInstance;
 import io.casehub.engine.common.internal.scheduler.JobIdentifier;
+import io.casehub.engine.common.internal.scheduler.JobType;
 import io.casehub.engine.common.internal.scheduler.ScheduleStrategy.FixedAtSchedule;
 import io.casehub.engine.common.internal.scheduler.ScheduledJobRequest;
 import io.casehub.engine.common.spi.EventLogRepository;
@@ -215,6 +216,7 @@ public class MilestoneActivatedEventHandler {
         ScheduledJobRequest.builder()
             .jobId(jobId)
             .schedule(new FixedAtSchedule(slaDeadline.toEpochMilli()))
+            .jobType(JobType.MILESTONE_SLA_TIMEOUT)
             .data(jobData));
 
     LOG.infof("Scheduled SLA timeout job for milestone=%s at %s", milestone.getName(), slaDeadline);
