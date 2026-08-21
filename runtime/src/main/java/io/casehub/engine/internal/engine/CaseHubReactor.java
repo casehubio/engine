@@ -103,6 +103,7 @@ class CaseHubReactor {
   @Inject JQEvaluator jqEvaluator;
 
   @Inject SignalSettlementTracker settlementTracker;
+  @Inject QuiescenceTracker quiescenceTracker;
   @Inject AccessControlProvider accessControlProvider;
 
   UUID startCase(CaseDefinition definition, MutableCaseContext context, UUID caseId) {
@@ -360,6 +361,27 @@ class CaseHubReactor {
       future.get(timeout.toMillis(), java.util.concurrent.TimeUnit.MILLISECONDS);
     } catch (java.util.concurrent.TimeoutException e) {
       settlementTracker.remove(signalId);
+      throw new SettlementTimeoutException(caseId, timeout);
+    } catch (java.util.concurrent.ExecutionException e) {
+      throw new RuntimeException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new RuntimeException(e);
+    }
+    return requireInstance(caseId).getCaseContext();
+  }
+
+  CaseContext awaitQuiescence(UUID caseId, Duration timeout) {
+    requireInstance(caseId);
+    java.util.concurrent.CompletableFuture<Void> future = quiescenceTracker.register(caseId);
+    quiescenceTracker.tryResolve(caseId);
+    if (future.isDone()) {
+      return requireInstance(caseId).getCaseContext();
+    }
+    try {
+      future.get(timeout.toMillis(), java.util.concurrent.TimeUnit.MILLISECONDS);
+    } catch (java.util.concurrent.TimeoutException e) {
+      quiescenceTracker.remove(caseId);
       throw new SettlementTimeoutException(caseId, timeout);
     } catch (java.util.concurrent.ExecutionException e) {
       throw new RuntimeException(e.getCause());

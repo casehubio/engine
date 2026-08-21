@@ -75,6 +75,8 @@ public class WorkerScheduleEventHandler {
 
   @Inject WorkerExecutionGuard workerExecutionGuard;
 
+  @Inject io.casehub.engine.internal.engine.QuiescenceTracker quiescenceTracker;
+
   @Inject WorkerContextProvider workerContextProvider;
 
   @Inject CaseChannelProvider caseChannelProvider;
@@ -130,6 +132,7 @@ public class WorkerScheduleEventHandler {
         LOG.warnf(
             "Worker blocked by guard (quarantined?): caseId=%s worker=%s — emitting retries exhausted",
             instance.getUuid(), worker.name());
+        quiescenceTracker.onWorkerCompleted(instance.getUuid());
         eventBus.publish(
             EventBusAddresses.WORKER_RETRIES_EXHAUSTED,
             new WorkerRetriesExhaustedEvent(
@@ -178,6 +181,7 @@ public class WorkerScheduleEventHandler {
         lock.unlock();
       }
     } catch (Exception e) {
+      quiescenceTracker.onWorkerCompleted(event.caseInstance().getUuid());
       LOG.errorf(
           e,
           "WorkerScheduleEvent FAILED: caseId=%s worker=%s",
@@ -206,6 +210,9 @@ public class WorkerScheduleEventHandler {
     ScheduleAction action =
         isReinvoked ? ScheduleAction.createNew() : decideAction(existing, inputDataHash);
     Long eventLogId = executeAction(action, eventLog, instance, worker, capability);
+    if (eventLogId == null) {
+      quiescenceTracker.onWorkerCompleted(instance.getUuid());
+    }
     submitIfNeeded(eventLogId, instance, worker, capability, inputData, bindingName);
 
     LOG.infof(

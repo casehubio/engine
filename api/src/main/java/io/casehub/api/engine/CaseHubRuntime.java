@@ -122,6 +122,24 @@ public interface CaseHubRuntime {
     throw new UnsupportedOperationException();
   }
 
+  /**
+   * Waits until the case reaches quiescence — no workers are executing, no context change events
+   * are in-flight, and no pending evaluations remain. Unlike {@link #signalAndAwait} which tracks
+   * only the first wave of workers triggered by a signal, this tracks ALL cascading waves until the
+   * case is truly idle.
+   *
+   * <p>Returns the final {@link CaseContext} when quiescence is reached. If the case is already
+   * idle when called, returns immediately.
+   *
+   * <p>Throws {@link SettlementTimeoutException} if quiescence is not reached within the specified
+   * duration.
+   *
+   * <p>Refs casehubio/engine#610.
+   */
+  default CaseContext awaitQuiescence(UUID caseId, Duration timeout) {
+    throw new UnsupportedOperationException();
+  }
+
   default <T> void signal(UUID caseId, SignalType<T> signalType, T payload) {
     throw new UnsupportedOperationException("Typed signals not supported by this runtime");
   }

@@ -93,6 +93,7 @@ public class WorkflowExecutionCompletedHandler {
   @Inject ActionRiskClassifier actionRiskClassifier;
   @Inject CaseInstanceRepository caseInstanceRepository;
   @Inject io.casehub.engine.internal.engine.SignalSettlementTracker settlementTracker;
+  @Inject io.casehub.engine.internal.engine.QuiescenceTracker quiescenceTracker;
   @Inject PersonalitySignalRecorder personalitySignalRecorder;
   @Inject GoalOutcomeRecorder goalOutcomeRecorder;
   @Inject BehavioralComplianceRecorder behavioralComplianceRecorder;
@@ -150,6 +151,7 @@ public class WorkflowExecutionCompletedHandler {
         if (event.signalId() != null) {
           settlementTracker.recordCompletion(event.signalId());
         }
+        quiescenceTracker.onWorkerCompleted(event.caseInstance().getUuid());
         handleSemanticFailure(event, traceId);
         return;
       }
@@ -161,6 +163,7 @@ public class WorkflowExecutionCompletedHandler {
         if (event.signalId() != null) {
           settlementTracker.recordCompletion(event.signalId());
         }
+        quiescenceTracker.onWorkerCompleted(event.caseInstance().getUuid());
         handleWithPlannedAction(event, topLevelAction, traceId);
         return;
       }
@@ -314,6 +317,8 @@ public class WorkflowExecutionCompletedHandler {
                 validationResult.violations()));
       }
 
+      quiescenceTracker.onContextChangePublished(caseInstance.getUuid());
+      quiescenceTracker.onWorkerCompleted(caseInstance.getUuid());
       eventBus.publish(
           EventBusAddresses.CONTEXT_CHANGED,
           new CaseContextChangedEvent(

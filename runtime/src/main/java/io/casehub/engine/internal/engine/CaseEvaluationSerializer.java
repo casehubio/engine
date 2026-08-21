@@ -16,6 +16,7 @@
 package io.casehub.engine.internal.engine;
 
 import jakarta.enterprise.context.ApplicationScoped;
+import jakarta.inject.Inject;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.locks.ReentrantLock;
@@ -38,6 +39,8 @@ import org.jboss.logging.Logger;
 public class CaseEvaluationSerializer {
 
   private static final Logger LOG = Logger.getLogger(CaseEvaluationSerializer.class);
+
+  @Inject QuiescenceTracker quiescenceTracker;
 
   private final ConcurrentHashMap<UUID, CaseGate> gates = new ConcurrentHashMap<>();
 
@@ -76,6 +79,7 @@ public class CaseEvaluationSerializer {
         gate.pendingEvaluator = null;
         if (next == null) {
           gate.evaluating = false;
+          quiescenceTracker.onEvaluationDrained(caseId);
           return;
         }
       } finally {
