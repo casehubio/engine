@@ -18,9 +18,15 @@ package io.casehub.api.model;
 import java.util.Objects;
 
 public record AdaptationConfig(
-    String trigger, String optimization, Double threshold, String metaReasoner, String repair) {
+    String trigger,
+    String optimization,
+    Double threshold,
+    String metaReasoner,
+    String repair,
+    Double contingencyThreshold) {
 
   public static final double DEFAULT_PROGRESS_THRESHOLD = 0.3;
+  public static final double DEFAULT_CONTINGENCY_THRESHOLD = 0.15;
 
   public AdaptationConfig {
     Objects.requireNonNull(trigger, "trigger");
@@ -28,10 +34,23 @@ public record AdaptationConfig(
     if (threshold != null && (threshold < 0.0 || threshold > 1.0)) {
       throw new IllegalArgumentException("threshold must be in [0.0, 1.0]");
     }
+    if (contingencyThreshold != null
+        && (contingencyThreshold < 0.0 || contingencyThreshold > 1.0)) {
+      throw new IllegalArgumentException("contingencyThreshold must be in [0.0, 1.0]");
+    }
+  }
+
+  public AdaptationConfig(
+      String trigger, String optimization, Double threshold, String metaReasoner, String repair) {
+    this(trigger, optimization, threshold, metaReasoner, repair, null);
   }
 
   public static AdaptationConfig of(String trigger, String optimization) {
-    return new AdaptationConfig(trigger, optimization, null, null, null);
+    return new AdaptationConfig(trigger, optimization, null, null, null, null);
+  }
+
+  public double effectiveContingencyThreshold() {
+    return contingencyThreshold != null ? contingencyThreshold : DEFAULT_CONTINGENCY_THRESHOLD;
   }
 
   public String effectiveRepair(CaseDefinition definition) {

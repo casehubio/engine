@@ -52,6 +52,7 @@ public enum CaseHubEventType {
   PLAN_ADAPTED, // decomposed plan revised after worker completion
   PLAN_DEEPENED, // leaf task promoted to compound after Knowledge failure exhaustion
   PLAN_CONCEDED, // compound abandoned by meta-reasoner cost-benefit decision
+  CONTINGENCY_ACTIVATED, // pre-computed contingency sub-plan activated on node failure
   GOAL_REVISED, // agent goal revised based on accumulated outcome signals
   GOAL_FORMED, // new agent goal created from reflection insights
   GOAL_PROPOSED, // new agent goal proposed but not registered (auto-approve=false)

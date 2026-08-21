@@ -490,4 +490,63 @@ class ExperienceAnalyserTest {
   private static ExperiencePlanStep step(String worker, String capability, RoutingOutcome outcome) {
     return new ExperiencePlanStep("binding-" + worker, capability, worker, outcome, 0, Map.of());
   }
+
+  @Test
+  void actionFailureRates_computesRawRatios() {
+    var exp1 =
+        experience(
+            1.0,
+            step("agent-a", "cap-a", RoutingOutcome.SUCCESS),
+            step("agent-b", "cap-a", RoutingOutcome.SUCCESS),
+            step("agent-c", "cap-a", RoutingOutcome.FAILURE));
+    var exp2 =
+        experience(
+            1.0,
+            step("agent-d", "cap-b", RoutingOutcome.FAILURE),
+            step("agent-e", "cap-b", RoutingOutcome.FAILURE));
+
+    Map<String, Double> rates =
+        ExperienceAnalyser.actionFailureRates(List.of(exp1, exp2), Set.of("cap-a", "cap-b"), 2);
+
+    assertThat(rates.get("cap-a")).isCloseTo(0.333, within(0.01));
+    assertThat(rates.get("cap-b")).isCloseTo(1.0, within(0.01));
+  }
+
+  @Test
+  void actionFailureRates_belowMinSamples_excluded() {
+    var exp = experience(1.0, step("agent-a", "cap-a", RoutingOutcome.FAILURE));
+
+    Map<String, Double> rates =
+        ExperienceAnalyser.actionFailureRates(List.of(exp), Set.of("cap-a"), 5);
+
+    assertThat(rates).doesNotContainKey("cap-a");
+  }
+
+  @Test
+  void actionFailureRates_addedStepsExcluded() {
+    var addedStep =
+        new ExperiencePlanStep(
+            "binding-a",
+            "cap-a",
+            "agent-a",
+            RoutingOutcome.FAILURE,
+            0,
+            Map.of(),
+            "ADDED",
+            "adapter");
+    var normalStep = step("agent-b", "cap-a", RoutingOutcome.SUCCESS);
+    var exp = experience(1.0, addedStep, normalStep);
+
+    Map<String, Double> rates =
+        ExperienceAnalyser.actionFailureRates(List.of(exp), Set.of("cap-a"), 1);
+
+    assertThat(rates.get("cap-a")).isCloseTo(0.0, within(0.01));
+  }
+
+  @Test
+  void actionFailureRates_emptyExperiences_returnsEmpty() {
+    Map<String, Double> rates =
+        ExperienceAnalyser.actionFailureRates(List.of(), Set.of("cap-a"), 1);
+    assertThat(rates).isEmpty();
+  }
 }

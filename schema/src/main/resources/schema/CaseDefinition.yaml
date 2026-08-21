@@ -732,6 +732,11 @@ $defs:
         enum: [ always, conditional, never ]
         default: conditional
         description: "Per-binding hint for progress-gated adaptation trigger. ALWAYS = always replan after this binding. CONDITIONAL = use divergence score (default). NEVER = never replan after this binding."
+      contingency:
+        type: array
+        items:
+          type: string
+        description: "Alternative capability names to try in sequence if the primary capability fails. Used by DefaultGoalDecomposer to attach contingency sub-plans to DagNodes post-decomposition."
       permissionIntent:
         type: array
         description: >

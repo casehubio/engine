@@ -191,4 +191,37 @@ public final class ExperienceAnalyser {
     return actionCostFactors(
         experiences, actionNames, minSamples, DEFAULT_MAX_COST_FACTOR, DEFAULT_OUTCOME_WEIGHTS);
   }
+
+  public static Map<String, Double> actionFailureRates(
+      final List<RetrievedExperience> experiences,
+      final Set<String> actionNames,
+      final int minSamples) {
+    final Map<String, int[]> actionCounts = new HashMap<>();
+    for (final RetrievedExperience exp : experiences) {
+      for (final ExperiencePlanStep step : exp.planTrace()) {
+        if (step.capabilityName() == null || !actionNames.contains(step.capabilityName())) {
+          continue;
+        }
+        if ("ADDED".equals(step.adaptationAction())
+            || "SUBSTITUTED".equals(step.adaptationAction())) {
+          continue;
+        }
+        final int[] counts = actionCounts.computeIfAbsent(step.capabilityName(), k -> new int[2]);
+        counts[0]++;
+        if (step.stepOutcome() != RoutingOutcome.SUCCESS) {
+          counts[1]++;
+        }
+      }
+    }
+    final Map<String, Double> rates = new HashMap<>();
+    for (final var entry : actionCounts.entrySet()) {
+      final int total = entry.getValue()[0];
+      if (total < minSamples) {
+        continue;
+      }
+      final int failures = entry.getValue()[1];
+      rates.put(entry.getKey(), (double) failures / total);
+    }
+    return Map.copyOf(rates);
+  }
 }

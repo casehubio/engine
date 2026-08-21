@@ -194,13 +194,13 @@ is public (`public Long id`) and set by the repository after save.
 
 **Types:**
 - `DagPlan<T>` — immutable validated DAG (`engine-api`). Construction rejects cycles, dangling references, and plans with no entry nodes. `entryNodeIds()`, `exitNodeIds()`, `topologicalSort()`, `sequentialMerge(List<DagPlan<T>>)`. Factories: `singleton(T)` (auto-ID), `singleton(String id, T)`, `sequence(List<? extends T>)` (auto-wired chain), `fromNodes(List<DagNode<T>>)` (pre-wired nodes), `parallel(List<? extends T>)`. Blocks uses `DagPlan<LeafTask<T>>` — the type parameter carries the blocks constraint, not the plan type itself.
-- `DagNode<T>` — record `(id, task, dependsOn, joinType)`. `dependsOn` defaults to empty, `joinType` defaults to `ALL_OF`.
+- `DagNode<T>` — record `(id, task, dependsOn, joinType, contingency)`. `dependsOn` defaults to empty, `joinType` defaults to `ALL_OF`. `contingency` (nullable `DagPlan<T>`) — alternative sub-plan activated on primary node failure. Single-exit validation: rejected at construction if `contingency.exitNodeIds().size() > 1`. Backward-compatible 4-arg constructor passes null contingency. Refs engine#938.
 - `JoinType` — `ALL_OF` (conjunction, fire when every predecessor completes) | `ANY_OF` (disjunction, fire when any predecessor succeeds).
 - `NodeState<R>` — sealed interface: `Pending`, `Dispatched`, `Completed(R)`, `Failed(reason, cause)`, `Skipped(reason)`, `Cancelled`. `isTerminal()` and `toTaskStatus()` mapping to `io.casehub.api.model.TaskStatus`.
 - `DispatchMode` — `STREAMING` (default, dispatch on each completion) | `BARRIER` (wave-based, all ready → await all → next wave).
 - `DagResult<R>` — record `(nodeStates, completedResults, allSucceeded, elapsed)`. `taskStatuses()` projects to `TaskStatus` map.
-- `DagEventListener<T, R>` — observation callbacks: `onNodeDispatched`, `onNodeCompleted`, `onNodeFailed`, `onNodeSkipped`, `onNodeCancelled`, `onExecutionComplete`. Listener exceptions isolated — never crash the scheduler.
-- `DagDriver<T, R>` — single-use executor. `execute(Function<T, R>)` or `execute(Function<T, R>, Executor)`. `cancel()` marks pending nodes CANCELLED. Continue-by-default failure: failed node dependents transitively SKIPPED per join rules, independent paths unaffected.
+- `DagEventListener<T, R>` — observation callbacks: `onNodeDispatched`, `onNodeCompleted`, `onNodeFailed`, `onNodeSkipped`, `onNodeCancelled`, `onContingencyActivated`, `onExecutionComplete`. Listener exceptions isolated — never crash the scheduler. `onContingencyActivated(nodeId, task, DagResult<R>)` receives the full contingency execution result for audit/CBR learning. Refs engine#938.
+- `DagDriver<T, R>` — single-use executor. `execute(Function<T, R>)` or `execute(Function<T, R>, Executor)`. `cancel()` marks pending nodes CANCELLED via shared `AtomicBoolean cancelSignal`. Continue-by-default failure: failed node dependents transitively SKIPPED per join rules, independent paths unaffected. **Contingency execution:** when a node fails and has a contingency, creates a nested `DagDriver` with isolated listeners (empty list) and shared `cancelSignal`. Max contingency depth 3 (default, configurable). Contingency success → node Completed with exit result. Contingency failure → node Failed, normal propagation. `CaseHubEventType.CONTINGENCY_ACTIVATED` for audit. Refs engine#938.
 
 **Unified with blocks (blocks#60 Phase 4):** `ExecutionPlan<T>` deleted from blocks. Blocks now uses `DagPlan<LeafTask<T>>` directly from engine-api. `fromNodes()` (renamed from `sequence(List<DagNode<T>>)`) takes pre-wired nodes; `sequence(List<? extends T>)` auto-wires a sequential chain with auto-generated IDs.
 
@@ -393,6 +393,22 @@ Three-level escalation for task failures, inspired by Graph Harness (arXiv:2604.
 - `ForwardReplanRevision` (`planning/adaptation/`, `@ApplicationScoped`, id=`"forward-replan"`) — implements `OptimizationStrategy`. Full LLM replan for optimization. Unchanged from prior implementation.
 
 `PLAN_ADAPTED` EventLog metadata gains `revisionScope` (`"LOCAL"` or `"COMPOUND"`) and `resolvedStrategy` (actual strategy ID resolved, distinguishes auto-detected repair from explicitly configured). Existing `revisionStrategy` key retained for backward compat (captures config-level optimization strategy name). Refs engine#935.
+
+## Contingent Planning Branches
+
+Pre-computed alternative execution branches activated on DagNode failure before reactive adaptation. DagDriver-level mechanism — engine PlanItem dispatch uses the existing adaptation system. Refs engine#938.
+
+**DagNode contingency:** `DagNode<T>` gains nullable `DagPlan<T> contingency` — alternative sub-plan. Single-exit validation at construction (rejected if `exitNodeIds().size() > 1`). Backward-compatible 4-arg constructor passes null.
+
+**DagDriver activation:** On `taskExecutor.apply()` exception, if the node has a contingency and depth < `maxContingencyDepth` (default 3): creates nested `DagDriver` with empty listener list and shared `AtomicBoolean cancelSignal`. Contingency success → node Completed with exit result. Contingency failure → node Failed with original exception. `onContingencyActivated(nodeId, task, DagResult)` fires on outer listeners with the full nested execution trace. Cancellation propagates immediately via shared signal.
+
+**GOAP contingency generation:** `GoapDecompositionStrategy.attachCbrContingencies()` queries `ExperienceAnalyser.actionFailureRates()` (raw `failures/total` per capability from CBR plan traces). When `failureRate >= AdaptationConfig.effectiveContingencyThreshold()` (default 0.15) and sample count >= `minCostSamples` (default 5), generates contingency by replanning with the primary action blacklisted via `PlannerConfig`. `AdaptationConfig` gains `contingencyThreshold` (6th component, nullable `Double`, `[0.0, 1.0]` validated).
+
+**LLM contingency generation:** `LlmDecompositionStrategy` parses optional `contingency: ["alt-a", "alt-b"]` array per step in the JSON response. Creates `GoalStep` instances wrapped in `DagPlan.sequence()`. Absent field → null contingency (backward compat).
+
+**YAML contingency declaration:** `Binding` gains `contingency` (`List<String>`, nullable) — alternative capability names. YAML: `contingency: [manual-review, escalate-to-human]` on binding definitions. `DefaultGoalDecomposer.attachYamlContingencies()` attaches post-decomposition by matching DagNodes to bindings via `findBindingsByCapability()`, building `DagPlan.sequence()` of `GoalStep`s. Strategy-generated contingencies take precedence.
+
+**Snapshot support:** `DagNodeSnapshot` gains nullable `DagPlanSnapshot contingency` (recursive). `NodeStateSnapshot` gains nullable `DagResultSnapshot contingencyResult` (populated when contingency activated). `SnapshotCapturingDagEventListener` captures contingency results via `onContingencyActivated`. `CaseHubEventType.CONTINGENCY_ACTIVATED` for audit.
 
 ## JQ Expression Evaluation Surface
 

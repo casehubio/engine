@@ -352,6 +352,83 @@ class DefaultGoalDecomposerTest {
     verify(planItemStore, never()).save(any(), any());
   }
 
+  @Test
+  void yamlContingency_attachedToDecomposedNode() {
+    var caseId = UUID.randomUUID();
+    var instance = new CaseInstance();
+    instance.setUuid(caseId);
+    instance.tenancyId = "tenant-1";
+
+    var goal =
+        new io.casehub.eidos.api.AgentGoal(
+            "analyse",
+            "Analyse data",
+            io.casehub.eidos.api.GoalPriority.PRIMARY,
+            io.casehub.eidos.api.Visibility.PUBLIC,
+            List.of());
+
+    var descriptor =
+        io.casehub.eidos.api.AgentDescriptor.builder()
+            .agentId("agent-1")
+            .name("agent-1")
+            .slot("default")
+            .tenancyId("tenant-1")
+            .goals(List.of(goal))
+            .build();
+
+    var cap = new Capability("data-gathering", "Gathers data", "", null);
+    var altCap = new Capability("manual-review", "Manual review", "", null);
+    var worker =
+        Worker.builder()
+            .name("research-agent")
+            .capabilityName("data-gathering")
+            .noFunction()
+            .build();
+    var binding =
+        io.casehub.api.model.Binding.builder()
+            .name("gather")
+            .capability(cap)
+            .on(new io.casehub.api.model.ContextChangeTrigger(".sources != null"))
+            .contingency("manual-review")
+            .build();
+
+    var definition =
+        CaseDefinition.builder()
+            .namespace("test")
+            .name("test")
+            .version("1.0")
+            .capabilities(cap, altCap)
+            .workers(worker)
+            .bindings(binding)
+            .decompositionStrategy("llm")
+            .build();
+    setAgentDescriptors(definition, Map.of("research-agent", descriptor));
+
+    var step =
+        new GoalStep(UUID.randomUUID(), "Gather data", "data-gathering", java.time.Instant.now());
+
+    @SuppressWarnings("unchecked")
+    DecompositionStrategy<JsonNode> strategy = mock(DecompositionStrategy.class);
+    when(strategy.decompose(any(), any())).thenReturn(DagPlan.singleton(step));
+    when(strategyResolver.resolve(any(), anyString())).thenReturn(strategy);
+    when(abandonmentEvaluator.activeGoals(any())).thenReturn(List.of(goal));
+    when(planItemStore.findByCaseId(caseId, "tenant-1")).thenReturn(List.of());
+
+    var casePlanModel = mock(io.casehub.engine.planning.plan.CasePlanModel.class);
+    when(blackboardRegistry.getOrCreate(any(), anyString())).thenReturn(casePlanModel);
+
+    var context = mock(MutableCaseContext.class);
+    var layer = mock(WritableLayer.class);
+    when(context.layer(ContextLayer.WORKING)).thenReturn(layer);
+    when(layer.asJsonNode()).thenReturn(MAPPER.createObjectNode());
+
+    decomposer.decompose(instance, definition, context);
+
+    var eventCaptor = ArgumentCaptor.forClass(EventLog.class);
+    verify(eventLogRepository).append(eventCaptor.capture(), any());
+    assertThat(eventCaptor.getValue().getEventType()).isEqualTo(CaseHubEventType.GOAL_DECOMPOSED);
+  }
+
   private void setAgentDescriptors(
       CaseDefinition definition, Map<String, AgentDescriptor> descriptors) {
     try {
