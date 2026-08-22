@@ -79,7 +79,9 @@ public class CaseEvaluationSerializer {
         gate.pendingEvaluator = null;
         if (next == null) {
           gate.evaluating = false;
-          quiescenceTracker.onEvaluationDrained(caseId);
+          if (quiescenceTracker != null) {
+            quiescenceTracker.onEvaluationDrained(caseId);
+          }
           return;
         }
       } finally {

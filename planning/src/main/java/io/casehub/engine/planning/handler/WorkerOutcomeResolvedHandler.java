@@ -22,7 +22,7 @@ import io.casehub.engine.common.internal.event.EventBusAddresses;
 import io.casehub.engine.common.internal.event.OutcomeDisposition;
 import io.casehub.engine.common.internal.event.WorkerOutcomeResolvedEvent;
 import io.casehub.engine.common.spi.event.PlanItemStateChangedEvent;
-import QuiescenceTracker;
+import io.casehub.engine.internal.engine.QuiescenceTracker;
 import io.casehub.engine.planning.plan.CasePlanModel;
 import io.casehub.engine.planning.registry.BlackboardRegistry;
 import io.quarkus.vertx.ConsumeEvent;
