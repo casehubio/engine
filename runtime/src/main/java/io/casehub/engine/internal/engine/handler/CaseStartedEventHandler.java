@@ -36,6 +36,7 @@ import io.casehub.engine.common.spi.CaseInstanceRepository;
 import io.casehub.engine.common.spi.EventLogRepository;
 import io.casehub.engine.common.spi.event.CaseLifecycleEvent;
 import io.casehub.engine.internal.context.WritableLayerImpl;
+import io.casehub.engine.internal.engine.QuiescenceTracker;
 import io.casehub.engine.internal.routing.CbrRetrievalService;
 import io.casehub.engine.internal.scheduler.SchedulerService;
 import io.casehub.ledger.api.spi.LedgerTraceIdProvider;
@@ -72,6 +73,8 @@ public class CaseStartedEventHandler {
   @Inject CaseDefinitionRegistry caseDefinitionRegistry;
 
   @Inject CbrRetrievalService cbrRetrievalService;
+
+  @Inject QuiescenceTracker quiescenceTracker;
 
   @Inject
   jakarta.enterprise.inject.Instance<io.casehub.engine.common.spi.GoalDecomposer> goalDecomposer;
@@ -160,6 +163,7 @@ public class CaseStartedEventHandler {
                 }
               });
 
+      quiescenceTracker.onContextChangePublished(instance.getUuid());
       eventBus.publish(
           EventBusAddresses.CONTEXT_CHANGED,
           new CaseContextChangedEvent(instance, instance.getCaseContext().snapshot(), null));
