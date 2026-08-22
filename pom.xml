@@ -65,6 +65,7 @@
         <version.io.fabric8.zjsonpatch>7.5.2</version.io.fabric8.zjsonpatch>
         <version.io.serverlessworkflow>7.25.1.Final</version.io.serverlessworkflow>
         <version.jackson.jq>1.6.0</version.jackson.jq>
+        <version.db-scheduler>16.11.0</version.db-scheduler>
 
         <!-- casehubio ecosystem dependencies — aligned on same version as this project -->
         <version.io.casehub>0.2-SNAPSHOT</version.io.casehub>
@@ -95,6 +96,7 @@
         <module>schema</module>
         <module>common</module>
         <module>scheduler-quartz</module>
+        <module>scheduler-dbscheduler</module>
         <module>persistence-memory</module>
         <module>persistence-hibernate</module>
         <module>runtime</module>

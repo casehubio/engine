@@ -726,6 +726,38 @@ Use RAM store — no JDBC store, no Quartz tables:
 quarkus.quartz.store-type=ram
 ```
 
+## scheduler-dbscheduler Module
+
+Alternative scheduler implementation using db-scheduler (`com.github.kagkarlsson:db-scheduler`). `@WorkerBackend @Priority(10)` — becomes the default when both scheduler modules are on the classpath. Directory: `scheduler-dbscheduler/`. Refs engine#813.
+
+**Architecture:** Delegates all domain logic to the same orchestrators used by Quartz (`WorkerExecutionOrchestrator`, `RetryOrchestrator`, `ScheduledTriggerOrchestrator`, `MilestoneSLAOrchestrator` in `common/internal/executor/`). Five `OneTimeTask<ScheduledJobData>` definitions, one per `JobType`. Cron schedules use manual rescheduling after execution via shaded cron-utils.
+
+**Core types (all in `io.casehub.engine.scheduler.dbscheduler`):**
+- `ScheduledJobData` — `Serializable` task data carrier. Wraps `JobType` + `Map<String, String>` + nullable `cronExpression`. Static factories: `forWorkerExecution()`, `forScheduledTrigger()`, `forConditionalTrigger()`, `forMilestoneSLA()`, `forSignalTrigger()`. Conversion methods to orchestrator data records (`toWorkerTaskData()`, etc.).
+- `DbSchedulerLifecycle` — `@ApplicationScoped`. Creates H2 in-memory `DataSource`, schema, 5 task definitions, `Scheduler`. Starts on `@Observes StartupEvent`, stops on `ShutdownEvent`. Cron rescheduling via `CronUtils.nextExecution()` after handler execution.
+- `DbSchedulerJobScheduler` — `@ApplicationScoped`, implements `JobScheduler`. Instance ID convention: `"{group}:{name}"`. Maps `ScheduleStrategy` (delay/fixedAt/cron) to execution time. `cancelGroup()` queries `scheduled_tasks` table by instance prefix.
+- `DbSchedulerWorkerExecutionManager` — `@WorkerBackend @Priority(10) @ApplicationScoped`, implements `WorkerExecutionManager`. In-memory active work tracking via `ConcurrentHashMap<String, CopyOnWriteArraySet<UUID>>`. `supportsRecovery()` returns `true`.
+- `DbSchedulerRetryService` — `@ApplicationScoped`, implements `RetryHandler`. Wraps `RetryOrchestrator` with db-scheduler `RescheduleCallback` that schedules a new one-time worker-execution task.
+- `CronUtils` — Static utility. Computes next cron execution time using db-scheduler's shaded `com.github.kagkarlsson.shaded.cronutils` (Quartz cron type).
+
+**Default storage (H2 in-memory):** Ephemeral — identical to Quartz RAM store semantics. Recovery on restart uses `WorkerExecutionRecoveryService` (EventLog replay). No Flyway migration needed.
+
+**Configuration:**
+```properties
+casehub.scheduler.dbscheduler.threads=4              # default
+casehub.scheduler.dbscheduler.polling-interval-ms=500 # default
+```
+
+**To use Quartz instead:** Exclude `scheduler-dbscheduler` from the classpath. Quartz at `@Priority(0)` becomes the sole backend.
+
+**Compile dependencies:** `casehub-engine-common`, `casehub-engine-api`, `db-scheduler`, `quarkus-arc`, `quarkus-vertx`, `h2`.
+
+**Build and test:**
+```bash
+mvn install -DskipTests -q
+TESTCONTAINERS_RYUK_DISABLED=true mvn test -pl scheduler-dbscheduler
+```
+
 ## Ecosystem Conventions
 
 All casehubio projects align on these conventions:
