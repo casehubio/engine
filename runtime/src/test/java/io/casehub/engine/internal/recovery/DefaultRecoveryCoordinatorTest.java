@@ -47,6 +47,7 @@ import io.casehub.engine.plan.execution.InMemoryPlanVersionStore;
 import io.casehub.worker.api.Capability;
 import io.casehub.worker.api.WorkerOutcome;
 import io.vertx.core.eventbus.EventBus;
+import jakarta.enterprise.inject.Instance;
 import java.util.Set;
 import java.util.UUID;
 import org.junit.jupiter.api.BeforeEach;
@@ -80,6 +81,11 @@ class DefaultRecoveryCoordinatorTest {
     eventBus = mock(EventBus.class);
     lockRegistry = new CompoundLockRegistry();
     planItemStore = mock(io.casehub.engine.common.spi.PlanItemStore.class);
+    @SuppressWarnings("unchecked")
+    Instance<io.casehub.engine.common.spi.PlanItemStore> planItemStoreInstance =
+        mock(Instance.class);
+    when(planItemStoreInstance.isResolvable()).thenReturn(true);
+    when(planItemStoreInstance.get()).thenReturn(planItemStore);
 
     coordinator =
         new DefaultRecoveryCoordinator(
@@ -93,7 +99,7 @@ class DefaultRecoveryCoordinatorTest {
             eventLogRepository,
             eventBus,
             lockRegistry,
-            planItemStore);
+            planItemStoreInstance);
   }
 
   @Test
@@ -115,6 +121,8 @@ class DefaultRecoveryCoordinatorTest {
     when(classifier.classify(any())).thenReturn(RecoveryLevel.REASONING);
     RecoveryContext ctx = buildContext();
     CaseDefinition def = setupRecoveryEnabled(ctx);
+    when(adaptationEvaluator.findCompoundForBinding(ctx.caseId(), ctx.bindingName()))
+        .thenReturn("compound-1");
 
     boolean handled = coordinator.handleFailure(ctx);
 
@@ -286,6 +294,9 @@ class DefaultRecoveryCoordinatorTest {
     instance.setUuid(ctx.caseId());
     instance.tenancyId = ctx.tenancyId();
     instance.setCaseMetaModel(meta);
+    var caseContext = mock(io.casehub.api.context.MutableCaseContext.class);
+    when(caseContext.snapshot()).thenReturn(caseContext);
+    instance.setCaseContext(caseContext);
     when(caseInstanceCache.get(ctx.caseId())).thenReturn(instance);
     when(definitionRegistry.getCaseDefinition(meta)).thenReturn(def);
     return def;
