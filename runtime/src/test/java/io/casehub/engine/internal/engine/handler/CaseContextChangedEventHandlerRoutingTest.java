@@ -110,6 +110,8 @@ class CaseContextChangedEventHandlerRoutingTest {
 
   @Mock io.casehub.engine.internal.acl.WorkerGrantOrchestrator workerGrantOrchestrator;
 
+  @Mock io.casehub.engine.internal.engine.QuiescenceTracker quiescenceTracker;
+
   @InjectMocks CaseContextChangedEventHandler handler;
 
   private CaseInstance caseInstance;

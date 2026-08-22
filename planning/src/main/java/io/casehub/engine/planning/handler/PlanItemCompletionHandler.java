@@ -23,7 +23,7 @@ import io.casehub.engine.common.internal.event.WorkflowExecutionCompleted;
 import io.casehub.engine.common.internal.model.CaseInstance;
 import io.casehub.engine.common.spi.PlanAdaptationEvaluator;
 import io.casehub.engine.common.spi.event.PlanItemStateChangedEvent;
-import QuiescenceTracker;
+import io.casehub.engine.internal.engine.QuiescenceTracker;
 import io.casehub.engine.planning.event.BlackboardEventBusAddresses;
 import io.casehub.engine.planning.event.SubCaseExecutionCompleted;
 import io.casehub.engine.planning.plan.CasePlanModel;
