@@ -93,6 +93,7 @@ class QuiescenceTrackerTest {
     tracker.onEvaluationDrained(caseId);
 
     CompletableFuture<Void> future = tracker.register(caseId);
+    tracker.onEvaluationStarting(caseId);
     tracker.onContextChangeConsumed(caseId);
     tracker.onEvaluationDrained(caseId);
 
@@ -104,7 +105,9 @@ class QuiescenceTrackerTest {
     CompletableFuture<Void> future = tracker.register(caseId);
 
     // Simulate seed CC consumed without a matching publish
+    tracker.onEvaluationStarting(caseId);
     tracker.onContextChangeConsumed(caseId);
+    tracker.onEvaluationStarting(caseId);
     tracker.onContextChangeConsumed(caseId);
     tracker.onEvaluationDrained(caseId);
 
@@ -117,6 +120,7 @@ class QuiescenceTrackerTest {
     CompletableFuture<Void> future = tracker.register(caseId);
 
     // Seed CC consumed (clamped)
+    tracker.onEvaluationStarting(caseId);
     tracker.onContextChangeConsumed(caseId);
 
     // Tracked CC publish from worker completion
@@ -127,6 +131,7 @@ class QuiescenceTrackerTest {
     assertThat(future).isNotDone();
 
     // Consume the tracked CC
+    tracker.onEvaluationStarting(caseId);
     tracker.onContextChangeConsumed(caseId);
     tracker.onEvaluationDrained(caseId);
 
@@ -138,6 +143,7 @@ class QuiescenceTrackerTest {
     CompletableFuture<Void> future = tracker.register(caseId);
 
     // Seed CC consumed (clamped at 0)
+    tracker.onEvaluationStarting(caseId);
     tracker.onContextChangeConsumed(caseId);
 
     // Step1 dispatched
@@ -150,6 +156,7 @@ class QuiescenceTrackerTest {
     assertThat(future).isNotDone();
 
     // CC consumed, step2 dispatched
+    tracker.onEvaluationStarting(caseId);
     tracker.onContextChangeConsumed(caseId);
     tracker.onWorkerDispatched(caseId);
     tracker.onEvaluationDrained(caseId);
@@ -160,6 +167,7 @@ class QuiescenceTrackerTest {
     assertThat(future).isNotDone();
 
     // Final CC consumed, no more work
+    tracker.onEvaluationStarting(caseId);
     tracker.onContextChangeConsumed(caseId);
     tracker.onEvaluationDrained(caseId);
 
@@ -195,6 +203,7 @@ class QuiescenceTrackerTest {
     assertThat(future).isNotDone();
 
     // Complete the work
+    tracker.onEvaluationStarting(caseId);
     tracker.onContextChangeConsumed(caseId);
     tracker.onWorkerCompleted(caseId);
     tracker.onEvaluationDrained(caseId);
@@ -236,6 +245,43 @@ class QuiescenceTrackerTest {
     tracker.onWorkerDispatched(caseId);
     tracker.onWorkerCompleted(caseId);
 
+    tracker.onEvaluationDrained(caseId);
+
+    assertThat(future).isCompleted();
+  }
+
+  @Test
+  void doesNotResolve_whileEvaluationInProgress() {
+    tracker.onWorkerDispatched(caseId);
+    tracker.onEvaluationDrained(caseId);
+
+    CompletableFuture<Void> future = tracker.register(caseId);
+
+    // Worker completes, publishes CC
+    tracker.onContextChangePublished(caseId);
+    tracker.onWorkerCompleted(caseId);
+    assertThat(future).isNotDone();
+
+    // CC received: evaluationStarting set BEFORE consume
+    tracker.onEvaluationStarting(caseId);
+    tracker.onContextChangeConsumed(caseId);
+
+    // At this point pendingCC=0 and activeWorkers=0, but evaluationInProgress=true
+    tracker.tryResolve(caseId);
+    assertThat(future).as("must not resolve while evaluation in progress").isNotDone();
+
+    // Evaluation dispatches step2, then drains
+    tracker.onWorkerDispatched(caseId);
+    tracker.onEvaluationDrained(caseId);
+    assertThat(future).isNotDone();
+
+    // step2 completes
+    tracker.onContextChangePublished(caseId);
+    tracker.onWorkerCompleted(caseId);
+
+    // Final CC consumed, no more work
+    tracker.onEvaluationStarting(caseId);
+    tracker.onContextChangeConsumed(caseId);
     tracker.onEvaluationDrained(caseId);
 
     assertThat(future).isCompleted();
