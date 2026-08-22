@@ -164,6 +164,7 @@ public class CaseContextChangedEventHandler {
       return;
     }
 
+    quiescenceTracker.onEvaluationStarting(caseInstance.getUuid());
     quiescenceTracker.onContextChangeConsumed(caseInstance.getUuid());
     evaluationSerializer.submit(caseInstance.getUuid(), () -> evaluateAndDispatch(event));
   }

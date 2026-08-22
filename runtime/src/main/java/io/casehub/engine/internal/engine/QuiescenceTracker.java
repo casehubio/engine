@@ -27,16 +27,18 @@ import java.util.concurrent.locks.ReentrantLock;
  * events are in-flight. Unlike {@link SignalSettlementTracker} which tracks a single signal's wave
  * of workers, this tracks ALL cascading waves until the case reaches a true idle state.
  *
- * <p>Two counters per case:
+ * <p>Three dimensions per case:
  *
  * <ul>
  *   <li>{@code activeWorkers} — dispatched but not yet completed workers
- *   <li>{@code pendingContextChanges} — CONTEXT_CHANGED events published but not yet consumed by
+ *   <li>{@code pendingContextChanges} — CONTEXT_CHANGED events published but not yet received by
  *       {@code CaseContextChangedEventHandler}
+ *   <li>{@code evaluationInProgress} — set when a CC handler starts processing, cleared when the
+ *       evaluation serializer drains. Bridges the gap between CC receipt and worker dispatch.
  * </ul>
  *
- * <p>Quiescence is reached when at least one evaluation has drained, both counters are at or below
- * zero, and a future has been registered via {@link #register(UUID)}.
+ * <p>Quiescence is reached when at least one evaluation has drained, all counters are at or below
+ * zero, no evaluation is in progress, and a future has been registered via {@link #register(UUID)}.
  *
  * <p>State is created eagerly by increment methods ({@code onWorkerDispatched}, {@code
  * onContextChangePublished}) so counter updates are never lost — even when {@code
@@ -104,6 +106,24 @@ public class QuiescenceTracker {
     }
   }
 
+  /**
+   * Called by {@link io.casehub.engine.internal.engine.handler.CaseContextChangedEventHandler} when
+   * a CONTEXT_CHANGED event is received, BEFORE submitting the evaluation to the serializer. Must
+   * be called before {@link #onContextChangeConsumed(UUID)} to ensure there is no window where both
+   * {@code pendingContextChanges} and {@code evaluationInProgress} are clear while work is pending.
+   */
+  public void onEvaluationStarting(UUID caseId) {
+    QuiescenceState state = trackers.get(caseId);
+    if (state != null) {
+      state.lock.lock();
+      try {
+        state.evaluationInProgress = true;
+      } finally {
+        state.lock.unlock();
+      }
+    }
+  }
+
   // Clamped to never go below zero — seed CCs (from signals/case creation) are consumed
   // without a matching onContextChangePublished, so unclamped decrement would drive the
   // counter negative and cause premature resolution.
@@ -123,13 +143,15 @@ public class QuiescenceTracker {
 
   /**
    * Called by {@link CaseEvaluationSerializer} when drainPending finds no more pending work. This
-   * signals that at least one evaluation cycle has completed for the case.
+   * signals that at least one evaluation cycle has completed for the case and clears the
+   * evaluation-in-progress flag.
    */
   public void onEvaluationDrained(UUID caseId) {
     QuiescenceState state = trackers.get(caseId);
     if (state != null) {
       state.lock.lock();
       try {
+        state.evaluationInProgress = false;
         state.drainCount.incrementAndGet();
       } finally {
         state.lock.unlock();
@@ -146,7 +168,8 @@ public class QuiescenceTracker {
         if (state.future != null
             && state.drainCount.get() > 0
             && state.activeWorkers.get() <= 0
-            && state.pendingContextChanges.get() <= 0) {
+            && state.pendingContextChanges.get() <= 0
+            && !state.evaluationInProgress) {
           state.future.complete(null);
           trackers.remove(caseId);
         }
@@ -168,6 +191,7 @@ public class QuiescenceTracker {
     final AtomicInteger activeWorkers = new AtomicInteger(0);
     final AtomicInteger pendingContextChanges = new AtomicInteger(0);
     final AtomicInteger drainCount = new AtomicInteger(0);
+    boolean evaluationInProgress;
     volatile CompletableFuture<Void> future;
   }
 }
