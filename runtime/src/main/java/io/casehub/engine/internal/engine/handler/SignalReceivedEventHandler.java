@@ -33,6 +33,7 @@ import io.casehub.engine.common.spi.EventLogRepository;
 import io.casehub.engine.common.spi.cache.CaseInstanceCache;
 import io.casehub.engine.common.spi.event.CaseLifecycleEvent;
 import io.casehub.engine.common.spi.recovery.WorkerExecutionRecoveryService;
+import io.casehub.engine.internal.engine.QuiescenceTracker;
 import io.casehub.ledger.api.spi.LedgerTraceIdProvider;
 import io.vertx.mutiny.core.eventbus.EventBus;
 import jakarta.enterprise.context.ApplicationScoped;
@@ -63,6 +64,7 @@ public class SignalReceivedEventHandler {
   private final Event<CaseLifecycleEvent> lifecycleEvents;
   private final LedgerTraceIdProvider traceIdProvider;
   private final io.casehub.engine.common.internal.context.BridgeResolver bridgeResolver;
+  private final QuiescenceTracker quiescenceTracker;
 
   @Inject
   SignalReceivedEventHandler(
@@ -72,7 +74,8 @@ public class SignalReceivedEventHandler {
       EventLogRepository eventLogRepository,
       Event<CaseLifecycleEvent> lifecycleEvents,
       LedgerTraceIdProvider traceIdProvider,
-      io.casehub.engine.common.internal.context.BridgeResolver bridgeResolver) {
+      io.casehub.engine.common.internal.context.BridgeResolver bridgeResolver,
+      QuiescenceTracker quiescenceTracker) {
     this.eventBus = eventBus;
     this.caseInstanceCache = caseInstanceCache;
     this.recoveryService = recoveryService;
@@ -80,6 +83,7 @@ public class SignalReceivedEventHandler {
     this.lifecycleEvents = lifecycleEvents;
     this.traceIdProvider = traceIdProvider;
     this.bridgeResolver = bridgeResolver;
+    this.quiescenceTracker = quiescenceTracker;
   }
 
   public void onSignalReceived(SignalReceivedEvent event) {
@@ -217,6 +221,7 @@ public class SignalReceivedEventHandler {
               }
             });
 
+    quiescenceTracker.onContextChangePublished(instance.getUuid());
     eventBus.publish(
         CONTEXT_CHANGED,
         new CaseContextChangedEvent(
@@ -296,6 +301,7 @@ public class SignalReceivedEventHandler {
               }
             });
 
+    quiescenceTracker.onContextChangePublished(instance.getUuid());
     eventBus.publish(
         CONTEXT_CHANGED,
         new CaseContextChangedEvent(
@@ -360,6 +366,7 @@ public class SignalReceivedEventHandler {
               }
             });
 
+    quiescenceTracker.onContextChangePublished(instance.getUuid());
     eventBus.publish(
         CONTEXT_CHANGED,
         new CaseContextChangedEvent(

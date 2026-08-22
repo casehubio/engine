@@ -288,6 +288,61 @@ class QuiescenceTrackerTest {
   }
 
   @Test
+  void seedCCDrain_doesNotResolvePrematurelyWhenSignalCCPending() {
+    // Simulates: startCase publishes seed CC, signal publishes signal CC,
+    // awaitQuiescence registers, then seed CC evaluation drains before signal CC is processed.
+    tracker.onContextChangePublished(caseId); // startCase CC
+    tracker.onContextChangePublished(caseId); // signal CC
+
+    CompletableFuture<Void> future = tracker.register(caseId);
+    tracker.tryResolve(caseId);
+    assertThat(future).isNotDone();
+
+    // Seed CC evaluation: no workers match (empty context snapshot)
+    tracker.onEvaluationStarting(caseId);
+    tracker.onContextChangeConsumed(caseId);
+    // evaluation finds no matching bindings → no onWorkerDispatched
+    tracker.onEvaluationDrained(caseId);
+
+    // Must NOT resolve — signal CC is still pending (pendingCC=1)
+    assertThat(future).as("must not resolve while signal CC is pending").isNotDone();
+
+    // Signal CC evaluation: dispatches slow worker
+    tracker.onEvaluationStarting(caseId);
+    tracker.onContextChangeConsumed(caseId);
+    tracker.onWorkerDispatched(caseId);
+    tracker.onEvaluationDrained(caseId);
+
+    assertThat(future).as("must not resolve while worker active").isNotDone();
+
+    // Worker completes, publishes CC
+    tracker.onContextChangePublished(caseId);
+    tracker.onWorkerCompleted(caseId);
+    assertThat(future).isNotDone();
+
+    // Final CC consumed, no more work
+    tracker.onEvaluationStarting(caseId);
+    tracker.onContextChangeConsumed(caseId);
+    tracker.onEvaluationDrained(caseId);
+
+    assertThat(future).isCompleted();
+  }
+
+  @Test
+  void orphanState_cleanedUpWhenNoFutureRegistered() {
+    // State created by onContextChangePublished (from startCase) but no awaitQuiescence called
+    tracker.onContextChangePublished(caseId);
+
+    // CC consumed and evaluation drains
+    tracker.onEvaluationStarting(caseId);
+    tracker.onContextChangeConsumed(caseId);
+    tracker.onEvaluationDrained(caseId);
+
+    // State should be cleaned up — no future registered
+    assertThat(tracker.isTracking(caseId)).isFalse();
+  }
+
+  @Test
   void independentCases_doNotInterfere() {
     UUID case1 = UUID.randomUUID();
     UUID case2 = UUID.randomUUID();

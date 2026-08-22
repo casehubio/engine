@@ -165,12 +165,15 @@ public class QuiescenceTracker {
     if (state != null) {
       state.lock.lock();
       try {
-        if (state.future != null
-            && state.drainCount.get() > 0
-            && state.activeWorkers.get() <= 0
-            && state.pendingContextChanges.get() <= 0
-            && !state.evaluationInProgress) {
+        boolean quiescent =
+            state.drainCount.get() > 0
+                && state.activeWorkers.get() <= 0
+                && state.pendingContextChanges.get() <= 0
+                && !state.evaluationInProgress;
+        if (quiescent && state.future != null) {
           state.future.complete(null);
+          trackers.remove(caseId);
+        } else if (quiescent && state.future == null) {
           trackers.remove(caseId);
         }
       } finally {
