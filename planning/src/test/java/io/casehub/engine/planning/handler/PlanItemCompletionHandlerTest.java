@@ -63,7 +63,8 @@ class PlanItemCompletionHandlerTest {
             mockBus,
             mock(jakarta.enterprise.event.Event.class),
             new CompoundCompletionEvaluator(mockBus),
-            mockAdaptation);
+            mockAdaptation,
+            new io.casehub.engine.internal.engine.QuiescenceTracker());
     caseId = UUID.randomUUID();
     plan = (DefaultCasePlanModel) registry.getOrCreate(caseId, "test-tenant");
   }
