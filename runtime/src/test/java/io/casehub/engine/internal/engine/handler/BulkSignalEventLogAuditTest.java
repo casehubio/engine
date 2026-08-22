@@ -72,7 +72,8 @@ class BulkSignalEventLogAuditTest {
             eventLogRepository,
             lifecycleEvents,
             traceIdProvider,
-            bridgeResolver);
+            bridgeResolver,
+            new io.casehub.engine.internal.engine.QuiescenceTracker());
     when(traceIdProvider.currentTraceId()).thenReturn(Optional.empty());
   }
 
