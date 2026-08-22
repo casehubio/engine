@@ -36,7 +36,7 @@ public class Binding {
   private ExpressionEvaluator when;
   private String conflictResolverStrategy;
   private OutcomePolicy outcomePolicy;
-  private String inputProjectionOverride;
+  private ExpressionEvaluator inputProjectionOverride;
   private Map<String, Object> contextWrite;
   private Set<String> producedKeys;
   private LifecycleScope lifecycleScope;
@@ -70,7 +70,7 @@ public class Binding {
     this.outcomePolicy = outcomePolicy;
   }
 
-  public void setInputProjectionOverride(String inputProjectionOverride) {
+  public void setInputProjectionOverride(ExpressionEvaluator inputProjectionOverride) {
     this.inputProjectionOverride = inputProjectionOverride;
   }
 
@@ -127,7 +127,7 @@ public class Binding {
     return outcomePolicy;
   }
 
-  public String getInputProjectionOverride() {
+  public ExpressionEvaluator getInputProjectionOverride() {
     return inputProjectionOverride;
   }
 
@@ -155,8 +155,8 @@ public class Binding {
     return executionMode != null ? executionMode : ExecutionMode.TRANSIENT;
   }
 
-  public String effectiveInputProjection(Capability capability) {
-    return inputProjectionOverride != null ? inputProjectionOverride : capability.inputSchema();
+  public ExpressionEvaluator effectiveInputProjection(CapabilityTarget capTarget) {
+    return inputProjectionOverride != null ? inputProjectionOverride : capTarget.inputProjection();
   }
 
   public List<WorkerAction> getPermissionIntent() {
@@ -241,7 +241,7 @@ public class Binding {
     private ExpressionEvaluator when;
     private String conflictResolverStrategy;
     private OutcomePolicy outcomePolicy;
-    private String inputProjectionOverride;
+    private ExpressionEvaluator inputProjectionOverride;
     private Map<String, Object> contextWrite;
     private Set<String> producedKeys;
     private LifecycleScope lifecycleScope;
@@ -320,6 +320,14 @@ public class Binding {
     }
 
     public Builder inputProjectionOverride(String inputProjectionOverride) {
+      this.inputProjectionOverride =
+          inputProjectionOverride != null
+              ? new JQExpressionEvaluator(inputProjectionOverride)
+              : null;
+      return this;
+    }
+
+    public Builder inputProjectionOverride(ExpressionEvaluator inputProjectionOverride) {
       this.inputProjectionOverride = inputProjectionOverride;
       return this;
     }

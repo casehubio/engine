@@ -21,6 +21,7 @@ import io.casehub.api.engine.CaseHubRuntime;
 import io.casehub.api.model.CaseStatus;
 import io.casehub.api.model.SubCase;
 import io.casehub.api.model.TaskStatus;
+import io.casehub.api.model.evaluator.JQExpressionEvaluator;
 import io.casehub.api.model.event.CaseHubEventType;
 import io.casehub.api.model.event.EventStreamType;
 import io.casehub.engine.common.internal.event.EventBusAddresses;
@@ -239,7 +240,10 @@ public class SubCaseExecutionHandler {
     meta.put("waitForCompletion", true);
     meta.put("bindingName", bindingName);
     if (subCase.outputMapping() instanceof io.casehub.api.model.SubCaseMapping.Expression expr) {
-      meta.put("outputMapping", expr.expression());
+      if (expr.evaluator() instanceof JQExpressionEvaluator jq) {
+        meta.put("outputMapping", jq.expression());
+      }
+      meta.put("outputMappingType", expr.evaluator().type());
     }
     log.setMetadata(meta);
 
@@ -267,7 +271,10 @@ public class SubCaseExecutionHandler {
     meta.put("waitForCompletion", subCase.waitForCompletion());
     meta.put("bindingName", bindingName);
     if (subCase.outputMapping() instanceof io.casehub.api.model.SubCaseMapping.Expression expr) {
-      meta.put("outputMapping", expr.expression());
+      if (expr.evaluator() instanceof JQExpressionEvaluator jq) {
+        meta.put("outputMapping", jq.expression());
+      }
+      meta.put("outputMappingType", expr.evaluator().type());
     }
     log.setMetadata(meta);
 

@@ -53,9 +53,6 @@ import io.quarkus.vertx.ConsumeEvent;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.enterprise.inject.Instance;
 import jakarta.inject.Inject;
-import org.eclipse.microprofile.config.inject.ConfigProperty;
-import org.jboss.logging.Logger;
-
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
@@ -66,6 +63,8 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.Semaphore;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.locks.ReentrantLock;
+import org.eclipse.microprofile.config.inject.ConfigProperty;
+import org.jboss.logging.Logger;
 
 @ApplicationScoped
 public class DefaultPlanAdaptationEvaluator implements PlanAdaptationEvaluator {
@@ -193,13 +192,12 @@ public class DefaultPlanAdaptationEvaluator implements PlanAdaptationEvaluator {
     }
   }
 
-    @Override
-    public String findCompoundForBinding(UUID caseId, String bindingName) {
-        return registry.get(caseId).flatMap(plan -> plan.getParentOf(bindingName)).orElse(null);
-    }
+  @Override
+  public String findCompoundForBinding(UUID caseId, String bindingName) {
+    return registry.get(caseId).flatMap(plan -> plan.getParentOf(bindingName)).orElse(null);
+  }
 
-
-    private void performAdaptation(
+  private void performAdaptation(
       UUID caseId,
       String tenancyId,
       String completedBindingName,

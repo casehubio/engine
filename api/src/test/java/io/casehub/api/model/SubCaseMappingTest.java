@@ -19,6 +19,8 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import io.casehub.api.context.CaseContext;
+import io.casehub.api.model.evaluator.JQExpressionEvaluator;
+import io.casehub.api.model.evaluator.TypedMvelExpressionEvaluator;
 import java.util.Map;
 import java.util.function.Function;
 import org.junit.jupiter.api.Test;
@@ -29,7 +31,17 @@ class SubCaseMappingTest {
   void expression_wrapsString() {
     SubCaseMapping mapping = SubCaseMapping.of("{ id: .caseId }");
     assertThat(mapping).isInstanceOf(SubCaseMapping.Expression.class);
-    assertThat(((SubCaseMapping.Expression) mapping).expression()).isEqualTo("{ id: .caseId }");
+    var expr = (SubCaseMapping.Expression) mapping;
+    assertThat(expr.evaluator()).isInstanceOf(JQExpressionEvaluator.class);
+    assertThat(((JQExpressionEvaluator) expr.evaluator()).expression())
+        .isEqualTo("{ id: .caseId }");
+  }
+
+  @Test
+  void expression_preservesEvaluator() {
+    var mvel = new TypedMvelExpressionEvaluator("child", Object.class);
+    var expr = new SubCaseMapping.Expression(mvel);
+    assertThat(expr.evaluator()).isSameAs(mvel);
   }
 
   @Test
@@ -62,7 +74,8 @@ class SubCaseMappingTest {
     SubCaseMapping expr = SubCaseMapping.of(".field");
     String result =
         switch (expr) {
-          case SubCaseMapping.Expression e -> "expr:" + e.expression();
+          case SubCaseMapping.Expression e ->
+              "expr:" + ((JQExpressionEvaluator) e.evaluator()).expression();
           case SubCaseMapping.Lambda l -> "lambda";
         };
     assertThat(result).isEqualTo("expr:.field");

@@ -65,3 +65,5 @@ proj
 .build
 .worktrees
 .claude
+.execute-progress
+.land-ledger.jsonl

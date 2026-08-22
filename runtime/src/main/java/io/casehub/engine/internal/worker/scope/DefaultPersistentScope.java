@@ -18,18 +18,19 @@ package io.casehub.engine.internal.worker.scope;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import io.casehub.api.engine.ExpressionEngineRegistry;
 import io.casehub.api.model.WorkerContext;
 import io.casehub.engine.common.internal.event.EventBusAddresses;
 import io.casehub.engine.common.internal.event.ScopedWorkerOutputEvent;
-import io.casehub.engine.common.internal.jq.JQEvaluator;
-import io.casehub.engine.common.internal.jq.ValidationResult;
 import io.casehub.engine.common.internal.model.CaseInstance;
 import io.casehub.engine.internal.executor.WorkerRuntimeFactory;
+import io.casehub.platform.api.expression.ExpressionEvaluator;
 import io.casehub.worker.api.PersistentScope;
 import io.casehub.worker.api.ScopeTerminatedException;
 import io.casehub.worker.api.WorkerFunction;
 import io.casehub.worker.api.WorkerResult;
 import io.vertx.mutiny.core.eventbus.EventBus;
+import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.BlockingQueue;
@@ -44,9 +45,9 @@ public class DefaultPersistentScope<T> implements PersistentScope<T> {
   private final UUID caseId;
   private final String taskId;
   private final EventBus eventBus;
-  private final String inputProjection;
-  private final String outputSchema;
-  private final JQEvaluator jqEvaluator;
+  private final ExpressionEvaluator inputProjection;
+  private final ExpressionEvaluator outputProjection;
+  private final ExpressionEngineRegistry expressionEngineRegistry;
   private final io.casehub.api.engine.WorkerRuntime innerRuntime;
   private final CaseInstance caseInstance;
   private final String bindingName;
@@ -58,9 +59,9 @@ public class DefaultPersistentScope<T> implements PersistentScope<T> {
       String taskId,
       WorkerContext context,
       EventBus eventBus,
-      String inputProjection,
-      String outputSchema,
-      JQEvaluator jqEvaluator,
+      ExpressionEvaluator inputProjection,
+      ExpressionEvaluator outputProjection,
+      ExpressionEngineRegistry expressionEngineRegistry,
       WorkerRuntimeFactory workerRuntimeFactory,
       CaseInstance caseInstance,
       String bindingName) {
@@ -70,8 +71,8 @@ public class DefaultPersistentScope<T> implements PersistentScope<T> {
     this.taskId = taskId;
     this.eventBus = eventBus;
     this.inputProjection = inputProjection;
-    this.outputSchema = outputSchema;
-    this.jqEvaluator = jqEvaluator;
+    this.outputProjection = outputProjection;
+    this.expressionEngineRegistry = expressionEngineRegistry;
     this.innerRuntime = workerRuntimeFactory.create(caseId, taskId, context);
     this.caseInstance = caseInstance;
     this.bindingName = bindingName;
@@ -86,9 +87,9 @@ public class DefaultPersistentScope<T> implements PersistentScope<T> {
       }
       JsonNode snapshot = event.contextSnapshot();
       if (inputProjection != null) {
-        ValidationResult result = jqEvaluator.eval(inputProjection, snapshot);
-        if (result.ok() && result.output() != null && !result.output().isEmpty()) {
-          snapshot = result.output().get(0);
+        List<JsonNode> result = expressionEngineRegistry.transform(inputProjection, snapshot);
+        if (!result.isEmpty()) {
+          snapshot = result.get(0);
         }
       }
       return MAPPER.convertValue(snapshot, inputType);
@@ -101,12 +102,12 @@ public class DefaultPersistentScope<T> implements PersistentScope<T> {
   @Override
   public void emit(Map<String, Object> output) {
     Map<String, Object> projected = output;
-    if (outputSchema != null && output != null && !output.isEmpty()) {
+    if (outputProjection != null && output != null && !output.isEmpty()) {
       try {
         JsonNode outputNode = MAPPER.valueToTree(output);
-        ValidationResult result = jqEvaluator.eval(outputSchema, outputNode);
-        if (result.ok() && result.output() != null && !result.output().isEmpty()) {
-          projected = MAPPER.convertValue(result.output().get(0), MAP_TYPE);
+        List<JsonNode> result = expressionEngineRegistry.transform(outputProjection, outputNode);
+        if (!result.isEmpty()) {
+          projected = MAPPER.convertValue(result.get(0), MAP_TYPE);
         }
       } catch (Exception e) {
         // fall through with unprojected output

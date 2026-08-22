@@ -19,10 +19,12 @@ import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.casehub.api.context.ContextLayer;
+import io.casehub.api.model.CapabilityTarget;
 import io.casehub.api.model.CaseDefinition;
 import io.casehub.api.model.CaseStatus;
 import io.casehub.api.model.WorkRequest;
 import io.casehub.api.model.WorkResult;
+import io.casehub.api.model.evaluator.JQExpressionEvaluator;
 import io.casehub.api.model.event.CaseHubEventType;
 import io.casehub.api.model.event.EventStreamType;
 import io.casehub.api.spi.routing.AgentCandidate;
@@ -37,7 +39,6 @@ import io.casehub.engine.common.internal.event.EventBusAddresses;
 import io.casehub.engine.common.internal.event.WorkerScheduleEvent;
 import io.casehub.engine.common.internal.history.EventLog;
 import io.casehub.engine.common.internal.jq.JQEvaluator;
-import io.casehub.engine.common.internal.jq.ValidationResult;
 import io.casehub.engine.common.internal.model.CaseInstance;
 import io.casehub.engine.common.internal.utils.WorkerExecutionKeys;
 import io.casehub.engine.common.spi.CaseDefinitionRegistry;
@@ -48,6 +49,7 @@ import io.casehub.engine.common.spi.scheduler.WorkerExecutionManager;
 import io.casehub.engine.internal.routing.AgentCandidateFactory;
 import io.casehub.engine.internal.routing.CbrRetrievalService;
 import io.casehub.engine.internal.work.PendingWorkRegistry;
+import io.casehub.platform.api.expression.ExpressionEvaluator;
 import io.casehub.worker.api.Capability;
 import io.casehub.worker.api.Worker;
 import io.vertx.mutiny.core.eventbus.EventBus;
@@ -86,6 +88,7 @@ public class DefaultWorkOrchestrator implements WorkOrchestrator {
   private final EventLogRepository eventLogRepository;
   private final JQEvaluator jqEvaluator;
   private final CbrRetrievalService cbrRetrievalService;
+  private final io.casehub.api.engine.ExpressionEngineRegistry expressionEngineRegistry;
 
   @Inject
   public DefaultWorkOrchestrator(
@@ -99,7 +102,8 @@ public class DefaultWorkOrchestrator implements WorkOrchestrator {
       final CaseInstanceRepository caseInstanceRepository,
       final EventLogRepository eventLogRepository,
       final JQEvaluator jqEvaluator,
-      final CbrRetrievalService cbrRetrievalService) {
+      final CbrRetrievalService cbrRetrievalService,
+      final io.casehub.api.engine.ExpressionEngineRegistry expressionEngineRegistry) {
     this.agentCandidateFactory = agentCandidateFactory;
     this.agentRoutingStrategy = agentRoutingStrategy;
     this.executionManager = executionManager;
@@ -111,6 +115,7 @@ public class DefaultWorkOrchestrator implements WorkOrchestrator {
     this.eventLogRepository = eventLogRepository;
     this.jqEvaluator = jqEvaluator;
     this.cbrRetrievalService = cbrRetrievalService;
+    this.expressionEngineRegistry = expressionEngineRegistry;
   }
 
   /**
@@ -213,12 +218,19 @@ public class DefaultWorkOrchestrator implements WorkOrchestrator {
       return failed;
     }
 
-    // 5. Build inputData and compute correlationKey (includes caseId to prevent cross-case
-    // collision)
+    // 5. Build inputData — resolve projection evaluator from binding's CapabilityTarget
+    final ExpressionEvaluator inputEval =
+        definition.getBindings().stream()
+            .filter(
+                b ->
+                    b.target() instanceof CapabilityTarget ct
+                        && ct.capability().name().equals(capability.name()))
+            .findFirst()
+            .map(b -> ((CapabilityTarget) b.target()).inputProjection())
+            .orElse(new JQExpressionEvaluator(capability.inputSchema()));
     final Map<String, Object> inputData =
-        evalJqAsMap(
-            instance.getCaseContext().layer(ContextLayer.WORKING).asJsonNode(),
-            capability.inputSchema());
+        transformAsMap(
+            inputEval, instance.getCaseContext().layer(ContextLayer.WORKING).asJsonNode());
     final String correlationKey =
         WorkerExecutionKeys.inputDataHash(
             instance.getUuid(), selectedWorker.name(), capability.name(), inputData);
@@ -325,14 +337,15 @@ public class DefaultWorkOrchestrator implements WorkOrchestrator {
     return log;
   }
 
-  private Map<String, Object> evalJqAsMap(final JsonNode context, final String expression) {
-    if (expression == null || expression.isBlank()) return Map.of();
+  private Map<String, Object> transformAsMap(
+      final ExpressionEvaluator evaluator, final JsonNode input) {
+    if (evaluator == null) return Map.of();
     try {
-      final ValidationResult vr = jqEvaluator.eval(expression, context);
-      if (!vr.ok() || vr.output() == null || vr.output().isEmpty()) return Map.of();
-      return OBJECT_MAPPER.convertValue(vr.output().get(0), MAP_TYPE);
+      java.util.List<JsonNode> result = expressionEngineRegistry.transform(evaluator, input);
+      if (result.isEmpty()) return Map.of();
+      return OBJECT_MAPPER.convertValue(result.get(0), MAP_TYPE);
     } catch (Exception e) {
-      LOG.warnf(e, "jq evaluation failed for expression '%s'", expression);
+      LOG.warnf(e, "transform failed for expression '%s' (type=%s)", evaluator, evaluator.type());
       return Map.of();
     }
   }

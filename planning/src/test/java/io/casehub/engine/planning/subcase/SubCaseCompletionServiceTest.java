@@ -99,7 +99,8 @@ class SubCaseCompletionServiceTest {
             mockBus,
             registry,
             groupLifecycleEvents,
-            mock(io.casehub.engine.common.spi.CaseDefinitionRegistry.class));
+            mock(io.casehub.engine.common.spi.CaseDefinitionRegistry.class),
+            mock(io.casehub.api.engine.ExpressionEngineRegistry.class));
 
     parentCaseId = UUID.randomUUID();
     childCaseId = UUID.randomUUID();

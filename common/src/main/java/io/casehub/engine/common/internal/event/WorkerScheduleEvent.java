@@ -15,27 +15,22 @@
  */
 package io.casehub.engine.common.internal.event;
 
+import io.casehub.api.model.evaluator.JQExpressionEvaluator;
 import io.casehub.api.model.event.ExecutionOrigin;
 import io.casehub.api.spi.routing.RetrievedExperience;
 import io.casehub.engine.common.internal.model.CaseInstance;
+import io.casehub.platform.api.expression.ExpressionEvaluator;
 import io.casehub.worker.api.Capability;
 import io.casehub.worker.api.Worker;
 import java.util.List;
 import java.util.UUID;
 
-/**
- * Event triggering worker execution scheduling.
- *
- * @param executorRef Nullable {@link io.casehub.api.model.ExecutorRef} containing executor
- *     identity. Passed through to downstream handlers and EventLog for richer executor tracking.
- *     Refs engine#702.
- */
 public record WorkerScheduleEvent(
     CaseInstance caseInstance,
     Worker worker,
     Capability capability,
     String bindingName,
-    String inputProjectionOverride,
+    ExpressionEvaluator inputProjectionOverride,
     UUID signalId,
     ExecutionOrigin origin,
     List<RetrievedExperience> experiences,
@@ -54,7 +49,7 @@ public record WorkerScheduleEvent(
       Worker worker,
       Capability capability,
       String bindingName,
-      String inputProjectionOverride,
+      ExpressionEvaluator inputProjectionOverride,
       UUID signalId,
       ExecutionOrigin origin,
       List<RetrievedExperience> experiences) {
@@ -79,7 +74,7 @@ public record WorkerScheduleEvent(
       Worker worker,
       Capability capability,
       String bindingName,
-      String inputProjectionOverride) {
+      ExpressionEvaluator inputProjectionOverride) {
     this(
         caseInstance,
         worker,
@@ -103,7 +98,7 @@ public record WorkerScheduleEvent(
         worker,
         capability,
         bindingName,
-        null,
+        (ExpressionEvaluator) null,
         null,
         null,
         List.of(),
@@ -120,7 +115,7 @@ public record WorkerScheduleEvent(
         worker,
         capability,
         null,
-        null,
+        (ExpressionEvaluator) null,
         null,
         null,
         List.of(),
@@ -131,7 +126,11 @@ public record WorkerScheduleEvent(
         null);
   }
 
-  public String effectiveInputProjection() {
-    return inputProjectionOverride != null ? inputProjectionOverride : capability.inputSchema();
+  public ExpressionEvaluator effectiveInputProjection() {
+    return inputProjectionOverride != null
+        ? inputProjectionOverride
+        : (capability.inputSchema() != null
+            ? new JQExpressionEvaluator(capability.inputSchema())
+            : null);
   }
 }

@@ -25,6 +25,7 @@ import io.casehub.api.model.AgentWorkerFunction;
 import io.casehub.api.model.AllOfGoalExpression;
 import io.casehub.api.model.AnyOfGoalExpression;
 import io.casehub.api.model.Binding;
+import io.casehub.api.model.CapabilityTarget;
 import io.casehub.api.model.CaseDefinition;
 import io.casehub.api.model.CaseStatus;
 import io.casehub.api.model.CognitiveDemand;
@@ -356,6 +357,7 @@ public final class CaseDefinitionYamlMapper {
     // Convert capabilities — accepts both current (inputProjection/outputProjection) and
     // legacy (inputSchema/outputSchema) YAML field names for backward compatibility.
     final Map<String, Capability> capabilityMap = new LinkedHashMap<>();
+    final Map<String, CapabilityTarget> capTargetMap = new LinkedHashMap<>();
     final Map<String, CognitiveDemand> cognitiveDemands = new LinkedHashMap<>();
     if (schema.getSpec() != null && schema.getSpec().getCapabilities() != null) {
       final JsonNode rawCaps =
@@ -391,6 +393,28 @@ public final class CaseDefinitionYamlMapper {
                 .build();
         capabilityMap.put(sc.getName(), cap);
         def.getCapabilities().add(cap);
+
+        JsonNode rawInputNode =
+            rawCap != null
+                ? (rawCap.has("inputProjection")
+                    ? rawCap.get("inputProjection")
+                    : rawCap.has("inputSchema") ? rawCap.get("inputSchema") : null)
+                : null;
+        ExpressionEvaluator inputEval =
+            resolveExpression(rawInputNode, effectiveRegistry, expressionLang);
+        if (inputEval == null) inputEval = new JQExpressionEvaluator(cap.inputSchema());
+
+        JsonNode rawOutputNode =
+            rawCap != null
+                ? (rawCap.has("outputProjection")
+                    ? rawCap.get("outputProjection")
+                    : rawCap.has("outputSchema") ? rawCap.get("outputSchema") : null)
+                : null;
+        ExpressionEvaluator outputEval =
+            resolveExpression(rawOutputNode, effectiveRegistry, expressionLang);
+        if (outputEval == null) outputEval = new JQExpressionEvaluator(cap.outputSchema());
+
+        capTargetMap.put(sc.getName(), new CapabilityTarget(cap, inputEval, outputEval));
 
         if (rawCap != null && rawCap.has("cognitiveDemand")) {
           final JsonNode demandNode = rawCap.get("cognitiveDemand");
@@ -457,8 +481,10 @@ public final class CaseDefinitionYamlMapper {
           if (function == null) {
             // API-local construction (no external SDK dependency)
             if (sw.getAgent() != null) {
+              JsonNode rawAgentNode = rawWorkerNode != null ? rawWorkerNode.get("agent") : null;
               final io.casehub.api.model.ai.Agent apiAgent =
-                  AgentConverter.toApiAgent(sw.getAgent());
+                  AgentConverter.toApiAgent(
+                      sw.getAgent(), rawAgentNode, effectiveRegistry, expressionLang);
               function = new AgentWorkerFunction(apiAgent);
             } else if (sw.getContextType() != null) {
               try {
@@ -556,6 +582,7 @@ public final class CaseDefinitionYamlMapper {
                 schemaBindings.get(i),
                 rawBindingNode,
                 capabilityMap,
+                capTargetMap,
                 effectiveRegistry,
                 expressionLang);
         def.getBindings().add(binding);
@@ -1136,6 +1163,7 @@ public final class CaseDefinitionYamlMapper {
       final io.casehub.model.Binding schemaBinding,
       final JsonNode rawBindingNode,
       final Map<String, Capability> capabilityMap,
+      final Map<String, CapabilityTarget> capTargetMap,
       final ExpressionEngineRegistry registry,
       final String expressionLang) {
     if (schemaBinding == null) {
@@ -1152,8 +1180,8 @@ public final class CaseDefinitionYamlMapper {
     final Binding.Builder builder = Binding.builder().name(schemaBinding.getName()).on(trigger);
 
     if (schemaBinding.getCapability() != null) {
-      final Capability cap = capabilityMap.get(schemaBinding.getCapability());
-      if (cap == null) {
+      final CapabilityTarget capTarget = capTargetMap.get(schemaBinding.getCapability());
+      if (capTarget == null) {
         throw new IllegalArgumentException(
             "Capability '"
                 + schemaBinding.getCapability()
@@ -1161,9 +1189,11 @@ public final class CaseDefinitionYamlMapper {
                 + schemaBinding.getName()
                 + "'");
       }
-      builder.capability(cap);
+      builder.target(capTarget);
     } else if (schemaBinding.getSubCase() != null) {
-      final io.casehub.api.model.SubCase subCase = convertSubCase(schemaBinding.getSubCase());
+      final JsonNode rawSubCaseNode = rawBindingNode != null ? rawBindingNode.get("subCase") : null;
+      final io.casehub.api.model.SubCase subCase =
+          convertSubCase(schemaBinding.getSubCase(), rawSubCaseNode, registry, expressionLang);
       builder.subCase(subCase);
     } else if (schemaBinding.getHumanTask() != null) {
       try {
@@ -1197,7 +1227,11 @@ public final class CaseDefinitionYamlMapper {
       builder.conflictResolverStrategy(schemaBinding.getConflictResolverStrategy().value());
     }
 
-    if (schemaBinding.getInputProjectionOverride() != null) {
+    if (rawBindingNode != null && rawBindingNode.has("inputProjectionOverride")) {
+      builder.inputProjectionOverride(
+          resolveExpression(
+              rawBindingNode.get("inputProjectionOverride"), registry, expressionLang));
+    } else if (schemaBinding.getInputProjectionOverride() != null) {
       builder.inputProjectionOverride(schemaBinding.getInputProjectionOverride());
     }
 
@@ -1309,7 +1343,10 @@ public final class CaseDefinitionYamlMapper {
   }
 
   private static io.casehub.api.model.SubCase convertSubCase(
-      final io.casehub.model.SubCase schemaModel) {
+      final io.casehub.model.SubCase schemaModel,
+      final JsonNode rawSubCaseNode,
+      final ExpressionEngineRegistry registry,
+      final String expressionLang) {
     if (schemaModel == null) {
       return null;
     }
@@ -1317,27 +1354,51 @@ public final class CaseDefinitionYamlMapper {
     final io.casehub.api.model.SubCaseCompletionStrategy strategy =
         convertCompletionStrategy(schemaModel.getCompletionStrategy());
 
-    return io.casehub.api.model.SubCase.builder()
-        .namespace(schemaModel.getNamespace())
-        .name(schemaModel.getName())
-        .version(schemaModel.getVersion())
-        .completionStrategy(strategy)
-        .waitForCompletion(
-            schemaModel.getWaitForCompletion() != null ? schemaModel.getWaitForCompletion() : true)
-        .inputMapping(schemaModel.getInputMapping() != null ? schemaModel.getInputMapping() : ".")
-        .outputMapping(
-            schemaModel.getOutputMapping() != null ? schemaModel.getOutputMapping() : ".")
-        .maxRecursionDepth(
-            schemaModel.getMaxRecursionDepth() != null ? schemaModel.getMaxRecursionDepth() : 0)
-        .groupId(schemaModel.getGroupId())
-        .totalInGroup(schemaModel.getTotalInGroup() != null ? schemaModel.getTotalInGroup() : 0)
-        .requiredCount(schemaModel.getRequiredCount() != null ? schemaModel.getRequiredCount() : 0)
-        .onThresholdReached(
-            schemaModel.getOnThresholdReached() != null
-                ? io.casehub.api.model.OnThresholdReached.valueOf(
-                    schemaModel.getOnThresholdReached().value())
-                : io.casehub.api.model.OnThresholdReached.KEEP)
-        .build();
+    ExpressionEvaluator inputEval =
+        rawSubCaseNode != null && rawSubCaseNode.has("inputMapping")
+            ? resolveExpression(rawSubCaseNode.get("inputMapping"), registry, expressionLang)
+            : null;
+    ExpressionEvaluator outputEval =
+        rawSubCaseNode != null && rawSubCaseNode.has("outputMapping")
+            ? resolveExpression(rawSubCaseNode.get("outputMapping"), registry, expressionLang)
+            : null;
+
+    var builder =
+        io.casehub.api.model.SubCase.builder()
+            .namespace(schemaModel.getNamespace())
+            .name(schemaModel.getName())
+            .version(schemaModel.getVersion())
+            .completionStrategy(strategy)
+            .waitForCompletion(
+                schemaModel.getWaitForCompletion() != null
+                    ? schemaModel.getWaitForCompletion()
+                    : true)
+            .maxRecursionDepth(
+                schemaModel.getMaxRecursionDepth() != null ? schemaModel.getMaxRecursionDepth() : 0)
+            .groupId(schemaModel.getGroupId())
+            .totalInGroup(schemaModel.getTotalInGroup() != null ? schemaModel.getTotalInGroup() : 0)
+            .requiredCount(
+                schemaModel.getRequiredCount() != null ? schemaModel.getRequiredCount() : 0)
+            .onThresholdReached(
+                schemaModel.getOnThresholdReached() != null
+                    ? io.casehub.api.model.OnThresholdReached.valueOf(
+                        schemaModel.getOnThresholdReached().value())
+                    : io.casehub.api.model.OnThresholdReached.KEEP);
+
+    if (inputEval != null) {
+      builder.inputMapping(new io.casehub.api.model.SubCaseMapping.Expression(inputEval));
+    } else {
+      builder.inputMapping(
+          schemaModel.getInputMapping() != null ? schemaModel.getInputMapping() : ".");
+    }
+    if (outputEval != null) {
+      builder.outputMapping(new io.casehub.api.model.SubCaseMapping.Expression(outputEval));
+    } else {
+      builder.outputMapping(
+          schemaModel.getOutputMapping() != null ? schemaModel.getOutputMapping() : ".");
+    }
+
+    return builder.build();
   }
 
   private static io.casehub.api.model.SubCaseCompletionStrategy convertCompletionStrategy(

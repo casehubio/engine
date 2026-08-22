@@ -18,6 +18,7 @@ package io.casehub.api.model;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
+import io.casehub.api.model.evaluator.JQExpressionEvaluator;
 import io.casehub.worker.api.Capability;
 import java.util.Map;
 import org.junit.jupiter.api.Test;
@@ -91,7 +92,9 @@ class BindingTest {
             .inputProjectionOverride(".reduced")
             .build();
 
-    assertThat(b.getInputProjectionOverride()).isEqualTo(".reduced");
+    assertThat(b.getInputProjectionOverride()).isInstanceOf(JQExpressionEvaluator.class);
+    assertThat(((JQExpressionEvaluator) b.getInputProjectionOverride()).expression())
+        .isEqualTo(".reduced");
   }
 
   @Test
@@ -114,7 +117,10 @@ class BindingTest {
             .inputProjectionOverride(".reduced")
             .build();
 
-    assertThat(b.effectiveInputProjection(cap)).isEqualTo(".reduced");
+    assertThat(
+            ((JQExpressionEvaluator) b.effectiveInputProjection(new CapabilityTarget(cap)))
+                .expression())
+        .isEqualTo(".reduced");
   }
 
   @Test
@@ -123,7 +129,10 @@ class BindingTest {
     Binding b =
         Binding.builder().name("b").capability(cap).on(new ContextChangeTrigger(".x")).build();
 
-    assertThat(b.effectiveInputProjection(cap)).isEqualTo(".full");
+    assertThat(
+            ((JQExpressionEvaluator) b.effectiveInputProjection(new CapabilityTarget(cap)))
+                .expression())
+        .isEqualTo(".full");
   }
 
   @Test

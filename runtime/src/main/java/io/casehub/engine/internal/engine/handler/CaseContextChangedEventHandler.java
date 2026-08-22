@@ -74,6 +74,7 @@ import io.casehub.engine.internal.engine.CaseEvaluationSerializer;
 import io.casehub.engine.internal.routing.AgentCandidateFactory;
 import io.casehub.engine.internal.routing.CbrRetrievalService;
 import io.casehub.ledger.api.spi.LedgerTraceIdProvider;
+import io.casehub.platform.api.expression.ExpressionEvaluator;
 import io.casehub.platform.api.routing.StrategyResolver;
 import io.casehub.worker.api.Capability;
 import io.casehub.worker.api.Worker;
@@ -899,14 +900,18 @@ public class CaseContextChangedEventHandler {
       final String bindingName,
       final String triggerChannelId,
       final String triggerCorrelationId,
-      final String inputProjectionOverride,
+      final ExpressionEvaluator inputProjectionOverride,
       String traceId) {
-    final String effectiveProjection =
-        inputProjectionOverride != null ? inputProjectionOverride : capability.inputSchema();
+    final ExpressionEvaluator effectiveProjection =
+        inputProjectionOverride != null
+            ? inputProjectionOverride
+            : (capability.inputSchema() != null
+                ? new JQExpressionEvaluator(capability.inputSchema())
+                : null);
     final Map<String, Object> inputData =
-        evalJqAsMap(
-            caseInstance.getCaseContext().layer(ContextLayer.WORKING).asJsonNode(),
-            effectiveProjection);
+        transformAsMap(
+            effectiveProjection,
+            caseInstance.getCaseContext().layer(ContextLayer.WORKING).asJsonNode());
     final WorkRequest workRequest = WorkRequest.of(capability.name(), inputData);
 
     try {
@@ -1003,9 +1008,9 @@ public class CaseContextChangedEventHandler {
     switch (mapping) {
       case io.casehub.api.model.SubCaseMapping.Expression expr -> {
         Map<String, Object> result =
-            evalJqAsMap(
-                caseInstance.getCaseContext().layer(ContextLayer.WORKING).asJsonNode(),
-                expr.expression());
+            transformAsMap(
+                expr.evaluator(),
+                caseInstance.getCaseContext().layer(ContextLayer.WORKING).asJsonNode());
         if (result.isEmpty()) {
           LOG.errorf(
               "SubCase inputMapping produced empty result for binding '%s' on case %s — not dispatching",
@@ -1042,18 +1047,19 @@ public class CaseContextChangedEventHandler {
         new SubCaseScheduleEvent(caseInstance, subCase, childContext, null, bindingName));
   }
 
-  private Map<String, Object> evalJqAsMap(final JsonNode context, final String expression) {
-    if (expression == null || expression.isBlank()) {
+  private Map<String, Object> transformAsMap(
+      final ExpressionEvaluator evaluator, final JsonNode input) {
+    if (evaluator == null) {
       return Map.of();
     }
     try {
-      final ValidationResult vr = jqEvaluator.eval(expression, context);
-      if (!vr.ok() || vr.output() == null || vr.output().isEmpty()) {
+      List<JsonNode> result = expressionEngineRegistry.transform(evaluator, input);
+      if (result.isEmpty()) {
         return Map.of();
       }
-      return MAPPER.convertValue(vr.output().get(0), MAP_TYPE);
+      return MAPPER.convertValue(result.get(0), MAP_TYPE);
     } catch (Exception e) {
-      LOG.warnf(e, "jq evaluation failed for expression '%s'", expression);
+      LOG.warnf(e, "transform failed for expression '%s' (type=%s)", evaluator, evaluator.type());
       return Map.of();
     }
   }

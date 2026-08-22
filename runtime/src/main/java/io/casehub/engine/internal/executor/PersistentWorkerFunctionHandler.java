@@ -30,6 +30,7 @@ import io.casehub.engine.common.internal.worker.scope.ScopedWorkerSession;
 import io.casehub.engine.common.spi.CaseDefinitionRegistry;
 import io.casehub.engine.common.spi.recovery.WorkerExecutionRecoveryService;
 import io.casehub.engine.internal.worker.scope.DefaultPersistentScope;
+import io.casehub.platform.api.expression.ExpressionEvaluator;
 import io.casehub.worker.api.PersistentScope;
 import io.casehub.worker.api.ScopeTerminatedException;
 import io.casehub.worker.api.Worker;
@@ -55,6 +56,7 @@ public class PersistentWorkerFunctionHandler implements WorkerFunctionHandler {
   @Inject WorkerRuntimeFactory workerRuntimeFactory;
   @Inject CaseDefinitionRegistry definitionRegistry;
   @Inject JQEvaluator jqEvaluator;
+  @Inject io.casehub.api.engine.ExpressionEngineRegistry expressionEngineRegistry;
   @Inject EventBus eventBus;
   @Inject WorkerExecutionRecoveryService recoveryService;
 
@@ -89,8 +91,8 @@ public class PersistentWorkerFunctionHandler implements WorkerFunctionHandler {
 
     CaseDefinition definition = definitionRegistry.getCaseDefinition(instance.getCaseMetaModel());
     Binding binding = null;
-    String inputProjection = null;
-    String outputSchema = null;
+    ExpressionEvaluator inputProjection = null;
+    ExpressionEvaluator outputProjection = null;
     if (definition != null && definition.getBindings() != null) {
       binding =
           definition.getBindings().stream()
@@ -98,8 +100,8 @@ public class PersistentWorkerFunctionHandler implements WorkerFunctionHandler {
               .findFirst()
               .orElse(null);
       if (binding != null && binding.target() instanceof CapabilityTarget ct) {
-        inputProjection = binding.effectiveInputProjection(ct.capability());
-        outputSchema = ct.capability().outputSchema();
+        inputProjection = binding.effectiveInputProjection(ct);
+        outputProjection = ct.outputProjection();
       }
     }
 
@@ -112,8 +114,8 @@ public class PersistentWorkerFunctionHandler implements WorkerFunctionHandler {
             context,
             eventBus,
             inputProjection,
-            outputSchema,
-            jqEvaluator,
+            outputProjection,
+            expressionEngineRegistry,
             workerRuntimeFactory,
             instance,
             metadata.bindingName());

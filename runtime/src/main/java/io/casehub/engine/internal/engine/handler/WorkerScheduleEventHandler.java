@@ -37,12 +37,11 @@ import io.casehub.engine.common.internal.event.EventBusAddresses;
 import io.casehub.engine.common.internal.event.WorkerRetriesExhaustedEvent;
 import io.casehub.engine.common.internal.event.WorkerScheduleEvent;
 import io.casehub.engine.common.internal.history.EventLog;
-import io.casehub.engine.common.internal.jq.JQEvaluator;
-import io.casehub.engine.common.internal.jq.ValidationResult;
 import io.casehub.engine.common.internal.model.CaseInstance;
 import io.casehub.engine.common.internal.utils.WorkerExecutionKeys;
 import io.casehub.engine.common.spi.EventLogRepository;
 import io.casehub.engine.common.spi.scheduler.WorkerExecutionManager;
+import io.casehub.platform.api.expression.ExpressionEvaluator;
 import io.casehub.qhorus.api.message.MessageType;
 import io.casehub.worker.api.Capability;
 import io.casehub.worker.api.Worker;
@@ -84,7 +83,8 @@ public class WorkerScheduleEventHandler {
 
   @Inject EventLogRepository eventLogRepository;
 
-  @Inject JQEvaluator jqEvaluator;
+  @Inject io.casehub.api.engine.ExpressionEngineRegistry expressionEngineRegistry;
+
   @Inject io.casehub.engine.common.internal.context.BridgeResolver bridgeResolver;
 
   @Inject io.casehub.engine.common.spi.CaseDefinitionRegistry caseDefinitionRegistry;
@@ -110,10 +110,9 @@ public class WorkerScheduleEventHandler {
       Capability capability = event.capability();
       String bindingName = event.bindingName();
 
-      JsonNode narrowedInput =
-          evalJqAsJsonNode(
-              instance.getCaseContext().layer(ContextLayer.WORKING).asJsonNode(),
-              event.effectiveInputProjection());
+      JsonNode workingLayer = instance.getCaseContext().layer(ContextLayer.WORKING).asJsonNode();
+      ExpressionEvaluator projectionEval = event.effectiveInputProjection();
+      JsonNode narrowedInput = transformSingle(projectionEval, workingLayer);
 
       CaseDefinition definition =
           caseDefinitionRegistry.getCaseDefinition(instance.getCaseMetaModel());
@@ -362,35 +361,16 @@ public class WorkerScheduleEventHandler {
     return ScheduleAction.createNew();
   }
 
-  private Map<String, Object> evalJqAsMap(JsonNode context, String expression) {
-    if (expression == null || expression.isBlank()) {
-      return Map.of();
+  private JsonNode transformSingle(ExpressionEvaluator evaluator, JsonNode input) {
+    if (evaluator == null) {
+      return input;
     }
     try {
-      ValidationResult vr = jqEvaluator.eval(expression, context);
-      if (!vr.ok() || vr.output() == null || vr.output().isEmpty()) {
-        return Map.of();
-      }
-      return OBJECT_MAPPER.convertValue(vr.output().get(0), MAP_TYPE);
+      List<JsonNode> result = expressionEngineRegistry.transform(evaluator, input);
+      return result.isEmpty() ? input : result.get(0);
     } catch (Exception e) {
-      LOG.warnf(e, "jq evaluation failed for expression '%s'", expression);
-      return Map.of();
-    }
-  }
-
-  private JsonNode evalJqAsJsonNode(JsonNode context, String expression) {
-    if (expression == null || expression.isBlank()) {
-      return context;
-    }
-    try {
-      ValidationResult vr = jqEvaluator.eval(expression, context);
-      if (!vr.ok() || vr.output() == null || vr.output().isEmpty()) {
-        return context;
-      }
-      return vr.output().get(0);
-    } catch (Exception e) {
-      LOG.warnf(e, "jq evaluation failed for expression '%s'", expression);
-      return context;
+      LOG.warnf(e, "transform failed for expression (type=%s)", evaluator.type());
+      return input;
     }
   }
 

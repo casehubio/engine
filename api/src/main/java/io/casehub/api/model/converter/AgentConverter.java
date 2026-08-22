@@ -53,6 +53,61 @@ public class AgentConverter {
     return builder.build();
   }
 
+  public static io.casehub.api.model.ai.Agent toApiAgent(
+      Agent schemaAgent,
+      com.fasterxml.jackson.databind.JsonNode rawAgentNode,
+      io.casehub.api.engine.ExpressionEngineRegistry registry,
+      String expressionLang) {
+    if (schemaAgent == null) {
+      return null;
+    }
+
+    ChatModelProvider modelProvider = toChatModelProvider(schemaAgent.getModel());
+
+    AgentBuilder builder =
+        io.casehub.api.model.ai.Agent.builder()
+            .systemPrompt(schemaAgent.getSystemPrompt())
+            .model(modelProvider);
+
+    io.casehub.platform.api.expression.ExpressionEvaluator inputEval =
+        CaseDefinitionYamlMapper.resolveExpression(
+            rawAgentNode != null ? rawAgentNode.get("inputProjection") : null,
+            registry,
+            expressionLang);
+    if (inputEval != null) {
+      builder.inputTransformer(
+          input -> {
+            java.util.List<com.fasterxml.jackson.databind.JsonNode> result =
+                registry.transform(inputEval, input);
+            return result.isEmpty() ? input : result.get(0);
+          });
+    } else if (schemaAgent.getInputProjection() != null) {
+      builder.inputProjection(schemaAgent.getInputProjection());
+    }
+
+    io.casehub.platform.api.expression.ExpressionEvaluator outputEval =
+        CaseDefinitionYamlMapper.resolveExpression(
+            rawAgentNode != null ? rawAgentNode.get("outputProjection") : null,
+            registry,
+            expressionLang);
+    if (outputEval != null) {
+      builder.outputTransformer(
+          output -> {
+            java.util.List<com.fasterxml.jackson.databind.JsonNode> result =
+                registry.transform(outputEval, output);
+            return result.isEmpty() ? output : result.get(0);
+          });
+    } else if (schemaAgent.getOutputProjection() != null) {
+      builder.outputProjection(schemaAgent.getOutputProjection());
+    }
+
+    if (schemaAgent.getUserMessageTemplate() != null) {
+      builder.userMessage(schemaAgent.getUserMessageTemplate());
+    }
+
+    return builder.build();
+  }
+
   private static ChatModelProvider toChatModelProvider(AgentModel model) {
     if (model == null) {
       throw new IllegalArgumentException("AgentModel is required");
