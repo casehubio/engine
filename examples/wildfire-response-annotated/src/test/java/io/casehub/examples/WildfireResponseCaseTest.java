@@ -62,7 +62,9 @@ class WildfireResponseCaseTest {
   @Test
   void goap_chain_assess_has_no_domain_preconditions() {
     var assessAction =
-        definition.getGoapActions().stream().filter(a -> a.name().equals("assessRisk")).findFirst();
+        definition.getGoapActions().stream()
+            .filter(a -> a.name().equals("assessFireRisk"))
+            .findFirst();
     assertThat(assessAction).isPresent();
     assertThat(assessAction.get().preconditions()).isEmpty();
   }

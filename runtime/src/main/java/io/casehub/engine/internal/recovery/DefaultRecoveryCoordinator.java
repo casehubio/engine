@@ -50,6 +50,7 @@ import io.casehub.engine.plan.snapshot.PlanVersionTrigger;
 import io.casehub.worker.api.WorkerOutcome;
 import io.vertx.core.eventbus.EventBus;
 import jakarta.enterprise.context.ApplicationScoped;
+import jakarta.enterprise.inject.Instance;
 import jakarta.inject.Inject;
 import java.time.Instant;
 import java.util.List;
@@ -73,7 +74,7 @@ public class DefaultRecoveryCoordinator implements RecoveryCoordinator {
   private final EventBus eventBus;
   private final CompoundLockRegistry lockRegistry;
 
-  private final io.casehub.engine.common.spi.PlanItemStore planItemStore;
+  private final Instance<io.casehub.engine.common.spi.PlanItemStore> planItemStore;
 
   @Inject
   public DefaultRecoveryCoordinator(
@@ -87,7 +88,7 @@ public class DefaultRecoveryCoordinator implements RecoveryCoordinator {
       EventLogRepository eventLogRepository,
       EventBus eventBus,
       CompoundLockRegistry lockRegistry,
-      io.casehub.engine.common.spi.PlanItemStore planItemStore) {
+      Instance<io.casehub.engine.common.spi.PlanItemStore> planItemStore) {
     this.classifier = classifier;
     this.stateRegistry = stateRegistry;
     this.planVersionStore = planVersionStore;
@@ -302,10 +303,14 @@ public class DefaultRecoveryCoordinator implements RecoveryCoordinator {
   }
 
   private List<String> obsoletePendingPlanItems(java.util.UUID caseId, String tenancyId) {
+    if (!planItemStore.isResolvable()) {
+      return List.of();
+    }
+    var store = planItemStore.get();
     List<String> obsoleted = new java.util.ArrayList<>();
-    for (var record : planItemStore.findByCaseId(caseId, tenancyId)) {
+    for (var record : store.findByCaseId(caseId, tenancyId)) {
       if (record.status() == TaskStatus.PENDING) {
-        planItemStore.updateStatus(record.planItemId(), TaskStatus.OBSOLETE, tenancyId);
+        store.updateStatus(record.planItemId(), TaskStatus.OBSOLETE, tenancyId);
         obsoleted.add(record.planItemId());
       }
     }
