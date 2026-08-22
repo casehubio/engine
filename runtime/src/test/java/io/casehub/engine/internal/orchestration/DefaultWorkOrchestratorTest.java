@@ -155,7 +155,8 @@ class DefaultWorkOrchestratorTest {
             caseInstanceRepository,
             eventLogRepository,
             jqEvaluator,
-            cbrRetrievalService);
+            cbrRetrievalService,
+            mock(io.casehub.api.engine.ExpressionEngineRegistry.class));
   }
 
   @Test

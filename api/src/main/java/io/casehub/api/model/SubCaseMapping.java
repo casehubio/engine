@@ -16,15 +16,28 @@
 package io.casehub.api.model;
 
 import io.casehub.api.context.CaseContext;
+import io.casehub.api.model.evaluator.JQExpressionEvaluator;
+import io.casehub.platform.api.expression.ExpressionEvaluator;
 import java.util.Objects;
 import java.util.function.Function;
 
 public sealed interface SubCaseMapping permits SubCaseMapping.Expression, SubCaseMapping.Lambda {
 
-  record Expression(String expression) implements SubCaseMapping {
+  static SubCaseMapping of(String expression) {
+    Objects.requireNonNull(expression, "expression");
+    if (expression.isBlank()) {
+      throw new IllegalArgumentException("expression must not be blank");
+    }
+    return new Expression(new JQExpressionEvaluator(expression));
+  }
+
+  static SubCaseMapping of(Function<CaseContext, Object> fn) {
+    return new Lambda(fn);
+  }
+
+  record Expression(ExpressionEvaluator evaluator) implements SubCaseMapping {
     public Expression {
-      Objects.requireNonNull(expression, "expression");
-      if (expression.isBlank()) throw new IllegalArgumentException("expression must not be blank");
+      Objects.requireNonNull(evaluator, "evaluator");
     }
   }
 
@@ -32,13 +45,5 @@ public sealed interface SubCaseMapping permits SubCaseMapping.Expression, SubCas
     public Lambda {
       Objects.requireNonNull(fn, "fn");
     }
-  }
-
-  static SubCaseMapping of(String expression) {
-    return new Expression(expression);
-  }
-
-  static SubCaseMapping of(Function<CaseContext, Object> fn) {
-    return new Lambda(fn);
   }
 }

@@ -16,6 +16,7 @@
 package io.casehub.engine.planning.subcase;
 
 import com.fasterxml.jackson.core.type.TypeReference;
+import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import io.casehub.api.context.ContextLayer;
@@ -27,7 +28,6 @@ import io.casehub.api.model.event.CaseHubEventType;
 import io.casehub.api.model.event.EventStreamType;
 import io.casehub.engine.common.internal.history.EventLog;
 import io.casehub.engine.common.internal.jq.JQEvaluator;
-import io.casehub.engine.common.internal.jq.ValidationResult;
 import io.casehub.engine.common.internal.model.CaseInstance;
 import io.casehub.engine.common.internal.model.GroupStatus;
 import io.casehub.engine.common.internal.model.SubCaseGroup;
@@ -44,6 +44,7 @@ import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.enterprise.event.Event;
 import jakarta.inject.Inject;
 import java.time.Instant;
+import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 import org.jboss.logging.Logger;
@@ -79,6 +80,7 @@ public class SubCaseCompletionService {
   private final BlackboardRegistry registry;
   private final Event<SubCaseGroupLifecycleEvent> groupLifecycleEvents;
   private final io.casehub.engine.common.spi.CaseDefinitionRegistry caseDefinitionRegistry;
+  private final io.casehub.api.engine.ExpressionEngineRegistry expressionEngineRegistry;
 
   @Inject
   public SubCaseCompletionService(
@@ -91,7 +93,8 @@ public class SubCaseCompletionService {
       EventBus eventBus,
       BlackboardRegistry registry,
       Event<SubCaseGroupLifecycleEvent> groupLifecycleEvents,
-      io.casehub.engine.common.spi.CaseDefinitionRegistry caseDefinitionRegistry) {
+      io.casehub.engine.common.spi.CaseDefinitionRegistry caseDefinitionRegistry,
+      io.casehub.api.engine.ExpressionEngineRegistry expressionEngineRegistry) {
     this.eventLogRepository = eventLogRepository;
     this.jqEvaluator = jqEvaluator;
     this.caseInstanceCache = caseInstanceCache;
@@ -102,6 +105,7 @@ public class SubCaseCompletionService {
     this.registry = registry;
     this.groupLifecycleEvents = groupLifecycleEvents;
     this.caseDefinitionRegistry = caseDefinitionRegistry;
+    this.expressionEngineRegistry = expressionEngineRegistry;
   }
 
   public void handleCompletion(CaseLifecycleEvent event) {
@@ -335,12 +339,12 @@ public class SubCaseCompletionService {
       Object result;
       switch (mapping) {
         case io.casehub.api.model.SubCaseMapping.Expression expr -> {
-          ValidationResult vr =
-              jqEvaluator.eval(
-                  expr.expression(),
+          List<JsonNode> transformed =
+              expressionEngineRegistry.transform(
+                  expr.evaluator(),
                   child.getCaseContext().layer(ContextLayer.WORKING).asJsonNode());
-          if (!vr.ok() || vr.output() == null || vr.output().isEmpty()) return null;
-          result = OBJECT_MAPPER.convertValue(vr.output().get(0), MAP_TYPE);
+          if (transformed.isEmpty()) return null;
+          result = OBJECT_MAPPER.convertValue(transformed.get(0), MAP_TYPE);
         }
         case io.casehub.api.model.SubCaseMapping.Lambda lambda -> {
           result = lambda.fn().apply(child.getCaseContext());

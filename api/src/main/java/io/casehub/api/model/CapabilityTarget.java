@@ -15,7 +15,25 @@
  */
 package io.casehub.api.model;
 
+import io.casehub.api.model.evaluator.JQExpressionEvaluator;
+import io.casehub.platform.api.expression.ExpressionEvaluator;
 import io.casehub.worker.api.Capability;
 
 /** Binding target that routes to an available worker via capability matching. */
-public record CapabilityTarget(Capability capability) implements BindingTarget {}
+public record CapabilityTarget(
+    Capability capability,
+    ExpressionEvaluator inputProjection,
+    ExpressionEvaluator outputProjection)
+    implements BindingTarget {
+
+  public CapabilityTarget(Capability capability) {
+    this(
+        capability,
+        capability.inputSchema() != null
+            ? new JQExpressionEvaluator(capability.inputSchema())
+            : null,
+        capability.outputSchema() != null
+            ? new JQExpressionEvaluator(capability.outputSchema())
+            : null);
+  }
+}
