@@ -445,7 +445,52 @@ All JQ expressions evaluate against the **working layer** (`context.layer(Contex
 
 ### Expression Engine
 
-Engine expression evaluation is unified with the platform `ExpressionEngine` and `ExpressionEvaluator` hierarchy. `ExpressionEngineRegistry` resolves evaluators. Supported: JQ expressions (`JQExpressionEvaluator`) and lambda predicates (`LambdaExpressionEvaluator`).
+Engine expression evaluation is unified with the platform `ExpressionEngine` and `ExpressionEvaluator` hierarchy. `ExpressionEngineRegistry` resolves evaluators.
+
+**Supported languages:**
+
+| Language | Evaluator | Evaluation target | Default for |
+|---|---|---|---|
+| JQ | `JQExpressionEvaluator` | `JsonNode` (working layer) | All expression sites when no `contextType` declared |
+| MVEL | `TypedMvelExpressionEvaluator` | Typed POJO (`contextType` class) | Inferred when `contextType` is set |
+| Lambda | `LambdaExpressionEvaluator` | Java DSL only (not YAML) | Programmatic predicates |
+
+**`expressionLang` field** — declares the default expression language for ALL expressions in a case definition:
+
+```yaml
+spec:
+  expressionLang: mvel   # all when/filter/inputProjection/etc use MVEL
+```
+
+When omitted, JQ is the default. When `contextType` is set, MVEL is inferred automatically (no explicit `expressionLang` needed).
+
+**`contextType` declaration** — declares a typed Java context class. The engine auto-constructs a `JacksonPojoBridge` for the type and infers MVEL as the expression language:
+
+```yaml
+spec:
+  contextType: com.example.LoanApplication
+```
+
+JQ expressions evaluate against `JsonNode`. MVEL expressions evaluate against the typed POJO instance — property access uses natural Java syntax (e.g., `amount > 10000`) instead of JQ paths (`.amount > 10000`).
+
+**Per-expression language override** — any expression site supports inline language selection via the `{lang: expr}` map syntax. This overrides the definition-level `expressionLang` for a single expression:
+
+```yaml
+bindings:
+  - name: high-value
+    on:
+      contextChange:
+        when: { mvel: "amount > 10000" }
+    inputProjection: { jq: ".amount" }
+
+labelRules:
+  - name: urgent
+    when: { jq: '.priority == "URGENT"' }
+    actions:
+      - add: "priority/urgent"
+```
+
+Supported at: binding `when`, trigger `contextChange`/`filter`, `inputProjection`, `outputProjection`, `inputMapping`, `outputMapping`, goal/milestone conditions, `doneWhen`, label rule `when`.
 
 ### Resilience Configuration
 
