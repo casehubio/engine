@@ -7,7 +7,6 @@ projects: [casehub]
 tags: [architecture, clean-architecture, hexagonal, ddd, llm, ai-agents, spec-driven-development]
 ---
 
-# Spec-Driven LLM Development at Scale: Why Architectural Patterns Are the Foundation
 Working with LLMs on small, isolated tasks is straightforward. Working with them on a production platform — multiple repos, evolving domain, long-lived codebase — is a different problem. The difference is scale, and scale requires discipline.
 
 The discipline is spec-driven development: you define the contract first, the LLM implements to it. But that only works if the contracts are grounded in something. Architectural patterns are that something. They give you the vocabulary to write specs that are bounded, verifiable, and composable. Without them, a spec is just a description. With them, it's a contract the LLM can actually hold.

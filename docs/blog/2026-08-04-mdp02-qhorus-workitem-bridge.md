@@ -10,7 +10,6 @@ tags: [qhorus, event-mesh, mcp-tools, bridge-module]
 series: issue-97-workitem-event-mesh
 ---
 
-# The Qhorus Bridge
 The Qhorus blockers cleared — both the Channel abstraction (#131) and delivery guarantees (#132) shipped while I wasn't looking. That makes #97 (WorkItem event mesh) actionable for the first time since the issue was filed.
 
 The design question at the root: how should WorkItem lifecycle visibility cross service boundaries? The `work-and-workitems.md` document in Qhorus already describes the principled relationship — WorkItems are the oversight channel materialised. An agent posts an oversight/QUERY, a WorkItem captures it as a human-paced obligation, and the completion posts a terminal speech act back. The question was how much of that to build now.

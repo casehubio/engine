@@ -8,7 +8,6 @@ subtype: diary
 status: draft
 ---
 
-# Two Primitives, One Graph
 The unified execution model spec sat for eleven days after its adversarial review. Thirty-five issues raised, twenty-three verified, ten accepted. The spec was solid. The implementation plan existed. What was missing was someone sitting down and cutting code.
 
 ## The Two-Primitives Thesis

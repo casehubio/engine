@@ -9,7 +9,6 @@ projects: [casehub]
 tags: [eidos, templates, multi-agent, wacky-races]
 ---
 
-# Wacky Manor: When Cartoon Characters Come Alive in an LLM
 The question was simple: can you give an LLM a personality descriptor and have it produce output that sounds like a specific Hanna-Barbera cartoon character? Not "responds in the style of" — actually *sounds like* them. The villain monologues. The Southern drawl. The Brooklyn gangster suspicions. The physical comedy narrated in real time.
 
 I wasn't sure it would work. Cartoon characters have a specific performance mode — they narrate their own situation aloud, telegraph their emotions with exaggeration, repeat plot points for the audience, and use catchphrases at emotional peaks. That's a convention called expository soliloquy, and it's what makes cartoon dialogue different from normal conversation. An LLM trained on internet text might not reproduce it naturally.

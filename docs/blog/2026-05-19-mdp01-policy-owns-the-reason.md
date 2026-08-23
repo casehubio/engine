@@ -9,7 +9,6 @@ projects: [casehub-work]
 tags: [exclusion-policy, audit, jta, requires-new, spi]
 ---
 
-# Policy owns the reason
 `ExclusionPolicy.isExcluded()` returned a boolean. It answered the wrong question.
 
 The question isn't "is this user excluded?" It's "why is this user excluded, and

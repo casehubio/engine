@@ -9,7 +9,6 @@ projects: [casehub-work]
 tags: [mongodb, cdi, multi-tenancy, cross-tenant]
 ---
 
-# The Producer That Forgot Its Own Interfaces
 When I filed #267 during the MongoDB completion work, the shape of the bug was already clear: `CrossTenantProducer` hardcodes three JPA concrete types. The cross-tenant path — cleanup jobs, timer recovery — was silently querying an empty JPA store while live data sat in MongoDB. No errors, no exceptions. The cleanup job ran, found nothing, reported success.
 
 The original multi-tenancy spec had it right. `docs/specs/2026-06-08-multi-tenancy-design.md` describes the producer with interface-typed fields. The implementation drifted to concrete JPA types without anyone noticing, because until MongoDB became a real backend, the distinction didn't matter. The JPA impl was the only impl. Interface or concrete — CDI resolved to the same bean.

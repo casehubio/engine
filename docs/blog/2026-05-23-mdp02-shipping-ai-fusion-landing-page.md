@@ -8,7 +8,6 @@ subtype: diary
 projects: [CaseHub Parent]
 ---
 
-# Shipping the AI Fusion landing page
 I wanted something on casehubio.github.io that said what CaseHub actually is.
 The GitHub org page lists repos and their descriptions — useful for people who
 already know the project, useless for anyone arriving cold. The platform has a

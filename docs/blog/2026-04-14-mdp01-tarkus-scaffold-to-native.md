@@ -10,7 +10,6 @@ tags: [quarkus, tdd, native-image, workflow, human-tasks]
 excerpt: "Six phases of quarkus-work ship in one session — the WS-HumanTask research expands the WorkItem model to 27 fields before a line of code is written, and TDD catches two real bugs in Phase 2."
 ---
 
-# Building  WorkItems.From Scaffold to Native in One Session
 I came into this session with a skeleton — a Maven multi-module layout, a pom.xml tree, and a design spec with eight phases marked pending. Nothing built yet. I wanted to see how far we'd get in one run.
 
 Six phases shipped. Two are waiting on upstream projects that aren't finished.

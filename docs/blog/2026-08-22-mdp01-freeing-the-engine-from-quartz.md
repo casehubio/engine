@@ -9,7 +9,6 @@ tags: [scheduler, quartz, db-scheduler, refactoring, spi]
 series: issue-813-alternative-scheduler-spi
 ---
 
-# Freeing the Engine from Quartz
 The engine's worker scheduling was welded to Quartz. Not by design — by accumulation. Six job classes had grown to hold domain logic that had nothing to do with scheduling: case loading, definition resolution, retry policy evaluation, scoped worker registry interaction, milestone lifecycle queries. The scheduling concern was maybe 10% of each file. The other 90% was engine orchestration wearing a Quartz costume.
 
 We're replacing Quartz with db-scheduler as the default scheduler — lighter dependency, simpler API, dual-mode storage (H2 in-memory for development, PostgreSQL for production). But you can't swap a scheduler when the domain logic is trapped inside its job classes. Phase 1 is the extraction: pull every piece of engine logic out of Quartz into scheduler-agnostic orchestrators that any backend can call.

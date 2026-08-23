@@ -8,7 +8,6 @@ subtype: diary
 projects: [casehub]
 ---
 
-# Two Writing Styles, one commit — and a spec that forgot to check the skill
 The issue description was confident: parent#144, duplicate `## Writing Style` in `arc42stories-spec.md`, introduced by the PR#138 merge, both sections identical. Fix: delete the first.
 
 We checked the diff before touching anything.

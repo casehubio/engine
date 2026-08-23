@@ -9,7 +9,6 @@ projects: [casehub]
 tags: [ai-fusion, architecture, neural-text, write-content]
 ---
 
-# AI Fusion Direction, a New Repo, and a README That Taught Me Something
 The session started as doc sync — six open issues, all documentation, work from
 other repos that hadn't landed in the platform docs yet. DraftHouse Layer 2 shipped
 and APPLICATIONS.md still said "Scaffold." casehub-engine had a tenancy enforcement

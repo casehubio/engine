@@ -10,7 +10,6 @@ tags: [architecture, casehub, subprocess-spawning, layering, ai-agents]
 excerpt: "A data-driven spawn rule table is rejected before a line of code — the right answer is that subprocess orchestration belongs to CaseHub, and quarkus-work should expose the primitive that CaseHub reaches for."
 ---
 
-# The primitive and the orchestrator
 Claude's first spec for subprocess spawning had a data-driven rule table: store
 spawn rules in the database, fire them as WorkItems transition states, complete
 the parent when children finish. Runtime-configurable, no Quarkus-Flow needed.

@@ -9,7 +9,6 @@ projects: [casehub-work]
 tags: [cdi, flyway, jandex, build]
 ---
 
-# The build that kept giving
 The sweep was done. The branch was closed. Then I ran `mvn install`.
 
 ## #234 — when S · Low isn't

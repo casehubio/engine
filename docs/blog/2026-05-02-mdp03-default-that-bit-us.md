@@ -10,7 +10,6 @@ tags: [testing, ci, multi-instance, defaults, design]
 excerpt: "Three unrelated CI failures arrive at once — a Friday business-hours assertion, a SNAPSHOT API drift, and a multi-instance default whose effects only appear under concurrent load — all sharing the shape 'works locally, fails in CI.'"
 ---
 
-# The default that bit us, and why defaults matter
 CI was failing on three separate tests. None of them were related — except
 they all had the same shape: works locally, fails in CI under load.
 

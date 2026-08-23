@@ -9,7 +9,6 @@ projects: [CaseHub Parent]
 tags: [github-actions, incremental-build, ci]
 ---
 
-# Build Drift
 The ecosystem had drifted. Build scripts, workflows, and the website dashboard were all tracking a different set of repos — some stale, some just missing.
 
 I brought Claude in to audit everything: `build-all.sh`, `aggregator.xml`, five GitHub Actions workflows, and `docs/index.html`. The scope of drift was worse than expected.

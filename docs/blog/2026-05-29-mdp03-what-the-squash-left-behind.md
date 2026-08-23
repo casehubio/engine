@@ -8,7 +8,6 @@ subtype: diary
 projects: [casehub]
 ---
 
-# What the interrupted squash left behind
 The squash branch from this morning had been sitting at 1:53 AM — interrupted
 before it could be pushed. It contained something worth rescuing: a terminology
 shift that had been rewritten into `tutorial-strategy.md` and

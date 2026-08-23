@@ -8,7 +8,6 @@ subtype: diary
 projects: [casehub]
 ---
 
-# Four backends, one question — and the fault-tolerance bug hiding in the safety net
 The question was simple: what is this agent currently doing? Trust score, active WorkItems,
 open Commitments, running cases. Four systems, four separate calls, manual join at the
 caller. We filed it as parent#56 back in the coherence audit and left it open.

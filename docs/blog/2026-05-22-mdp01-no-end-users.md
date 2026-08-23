@@ -9,7 +9,6 @@ projects: [CaseHub Parent]
 tags: [design-philosophy, tooling, git]
 ---
 
-# No End Users
 There's a pattern I keep seeing. Claude builds a workaround. Not wrong exactly — the workaround works — but it accumulates a layer where none is needed. A wrapper class to avoid breaking a caller. A compatibility shim to preserve an old API. Design debt dressed up as pragmatism.
 
 The underlying cause isn't a capability gap. It's training bias. Every real-world codebase Claude learned from had end users, had API consumers, had things that couldn't break. Breaking callers is usually expensive and sometimes catastrophic. That bias runs deep, and overriding it requires being explicit — not once, but persistently.

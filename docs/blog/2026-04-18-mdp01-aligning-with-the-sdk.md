@@ -10,7 +10,6 @@ tags: [architecture, testing, tamboui]
 excerpt: "Studying the SWF SDK storage abstraction confirms that WorkItemRepository needs multi-field inbox queries — Map<String, byte[]> doesn't express them cleanly — so a richer query object replaces a direct SWF port."
 ---
 
-# Aligning with the SDK — storage, expressions, and a hidden test class
 There were three threads this session. They don't share a clean narrative arc, so I won't
 force one on them. What they have in common is alignment — against the CNCF Serverless
 Workflow SDK, against Tamboui's published APIs, and against what was actually in the

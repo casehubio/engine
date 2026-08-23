@@ -8,7 +8,6 @@ projects: [casehub-parent, casehub-iot]
 tags: [documentation, protocols, workspace-setup, rbac]
 ---
 
-# The Migration That Wasn't
 Spent most of this session clearing a backlog of doc sync issues — twelve across PLATFORM.md, casehub-engine, casehub-ledger, casehub-eidos, casehub-work, casehub-clinical, claudony, and casehub-connectors. Mechanical work, but it surfaced something I hadn't expected.
 
 I asked why peer repos were still writing protocols to casehubio/parent instead of casehubio/garden. The answer was embarrassingly simple: the migration was never actually complete. The `docs/protocols/` directory in parent still existed, still accepted writes, and — crucially — PLATFORM.md still told sessions to add new protocols there. No error. No signal. Sessions wrote to the old location and the files landed silently.
