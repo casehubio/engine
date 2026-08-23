@@ -79,6 +79,8 @@ public class DefaultPlanAdaptationEvaluator implements PlanAdaptationEvaluator {
   private final CaseDefinitionRegistry caseDefinitionRegistry;
   private final StrategyResolver strategyResolver;
   private final Instance<Object> agentMemoryRetriever;
+  private final Instance<io.casehub.engine.internal.routing.CbrRetrievalService>
+      cbrRetrievalService;
   private final io.casehub.engine.planning.handler.CompoundCompletionEvaluator
       compoundCompletionEvaluator;
   private final Semaphore semaphore;
@@ -95,6 +97,7 @@ public class DefaultPlanAdaptationEvaluator implements PlanAdaptationEvaluator {
       CaseDefinitionRegistry caseDefinitionRegistry,
       StrategyResolver strategyResolver,
       Instance<Object> agentMemoryRetriever,
+      Instance<io.casehub.engine.internal.routing.CbrRetrievalService> cbrRetrievalService,
       io.casehub.engine.planning.handler.CompoundCompletionEvaluator compoundCompletionEvaluator,
       @ConfigProperty(name = "casehub.engine.adaptation.max-concurrent", defaultValue = "3")
           int maxConcurrent,
@@ -107,6 +110,7 @@ public class DefaultPlanAdaptationEvaluator implements PlanAdaptationEvaluator {
     this.caseDefinitionRegistry = caseDefinitionRegistry;
     this.strategyResolver = strategyResolver;
     this.agentMemoryRetriever = agentMemoryRetriever;
+    this.cbrRetrievalService = cbrRetrievalService;
     this.compoundCompletionEvaluator = compoundCompletionEvaluator;
     this.semaphore = new Semaphore(maxConcurrent);
     this.timeoutMs = timeoutMs;
@@ -280,12 +284,16 @@ public class DefaultPlanAdaptationEvaluator implements PlanAdaptationEvaluator {
 
     AdaptationCause cause = buildCause(completedBindingName, completedStatus);
 
+    List<io.casehub.api.spi.routing.RetrievedExperience> experiences =
+        retrieveExperiences(definition, instance);
+
     var revisionContext =
         new RevisionContext(
             adaptationContext,
             cause,
             definition.getCapabilities() != null ? definition.getCapabilities() : List.of(),
-            List.of());
+            List.of(),
+            experiences);
 
     io.casehub.engine.plan.adaptation.AdaptationDecision.Refine refineDecision =
         (io.casehub.engine.plan.adaptation.AdaptationDecision.Refine) decision;
@@ -573,6 +581,22 @@ public class DefaultPlanAdaptationEvaluator implements PlanAdaptationEvaluator {
     eventLog.setMetadata(meta);
 
     eventLogRepository.append(eventLog, tenancyId);
+  }
+
+  private List<io.casehub.api.spi.routing.RetrievedExperience> retrieveExperiences(
+      CaseDefinition definition, CaseInstance instance) {
+    if (!cbrRetrievalService.isResolvable()) {
+      return List.of();
+    }
+    if (definition.getCbrConfig() == null) {
+      return List.of();
+    }
+    try {
+      return cbrRetrievalService.get().retrieve(definition, instance);
+    } catch (Exception e) {
+      LOG.debugf(e, "CBR retrieval failed during adaptation — continuing without experiences");
+      return List.of();
+    }
   }
 
   @ConsumeEvent(value = EventBusAddresses.COMPOUND_COMPLETED, blocking = true)

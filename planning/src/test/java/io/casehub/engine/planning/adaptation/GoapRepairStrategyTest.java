@@ -28,6 +28,8 @@ import com.fasterxml.jackson.databind.node.ObjectNode;
 import io.casehub.api.model.CaseDefinition;
 import io.casehub.api.model.TaskStatus;
 import io.casehub.api.model.ai.AgentException;
+import io.casehub.api.spi.routing.ExperiencePlanStep;
+import io.casehub.api.spi.routing.RetrievedExperience;
 import io.casehub.engine.plan.adaptation.AdaptationCause;
 import io.casehub.engine.plan.adaptation.AdaptationContext;
 import io.casehub.engine.plan.adaptation.CompletedStep;
@@ -236,5 +238,112 @@ class GoapRepairStrategyTest {
     assertNotNull(result);
     assertTrue(
         result.steps().stream().noneMatch(s -> s.capabilityName().equals("action-unavailable")));
+  }
+
+  @Test
+  void enrichesActionCostsFromExperiences() {
+    var strategy = new GoapRepairStrategy();
+
+    var actions =
+        List.of(
+            new GoapAction("reliable-action", Map.of(), Map.of("mid", true), 1.0),
+            new GoapAction("unreliable-action", Map.of(), Map.of("mid", true), 1.0),
+            new GoapAction("step-2", Map.of("mid", true), Map.of("goal", true), 1.0));
+
+    ObjectNode context = MAPPER.createObjectNode();
+
+    var definition = mock(CaseDefinition.class);
+    when(definition.getGoapActions()).thenReturn(actions);
+    when(definition.getGoalToEffectKeys()).thenReturn(Map.of("reach", Set.of("goal")));
+    when(definition.getCbrConfig()).thenReturn(null);
+
+    var adaptCtx =
+        new AdaptationContext(
+            UUID.randomUUID(),
+            "tenant1",
+            "c1",
+            "c1",
+            List.of(),
+            List.of(),
+            List.of(),
+            context,
+            definition,
+            TaskStatus.COMPLETED,
+            "reliable-action",
+            0);
+
+    var cause = new AdaptationCause.StepCompleted("reliable-action", "reliable-action", Map.of());
+    var capabilities =
+        List.of(
+            Capability.of("reliable-action", "", ""),
+            Capability.of("unreliable-action", "", ""),
+            Capability.of("step-2", "", ""));
+
+    var experiences =
+        List.of(
+            buildExperience(
+                0.9,
+                List.of(
+                    new ExperiencePlanStep(
+                        "reliable-action",
+                        "reliable-action",
+                        "agent-1",
+                        io.casehub.api.spi.routing.RoutingOutcome.SUCCESS,
+                        0,
+                        Map.of()),
+                    new ExperiencePlanStep(
+                        "unreliable-action",
+                        "unreliable-action",
+                        "agent-2",
+                        io.casehub.api.spi.routing.RoutingOutcome.FAILURE,
+                        0,
+                        Map.of()),
+                    new ExperiencePlanStep(
+                        "step-2",
+                        "step-2",
+                        "agent-3",
+                        io.casehub.api.spi.routing.RoutingOutcome.SUCCESS,
+                        0,
+                        Map.of()))),
+            buildExperience(
+                0.8,
+                List.of(
+                    new ExperiencePlanStep(
+                        "reliable-action",
+                        "reliable-action",
+                        "agent-1",
+                        io.casehub.api.spi.routing.RoutingOutcome.SUCCESS,
+                        0,
+                        Map.of()),
+                    new ExperiencePlanStep(
+                        "unreliable-action",
+                        "unreliable-action",
+                        "agent-2",
+                        io.casehub.api.spi.routing.RoutingOutcome.FAILURE,
+                        0,
+                        Map.of()),
+                    new ExperiencePlanStep(
+                        "step-2",
+                        "step-2",
+                        "agent-3",
+                        io.casehub.api.spi.routing.RoutingOutcome.SUCCESS,
+                        0,
+                        Map.of()))));
+
+    var revisionCtx = new RevisionContext(adaptCtx, cause, capabilities, List.of(), experiences);
+
+    RevisedPlan result = strategy.revise(revisionCtx);
+
+    assertNotNull(result);
+    assertFalse(result.steps().isEmpty());
+    assertTrue(
+        result.steps().stream().anyMatch(s -> s.capabilityName().equals("step-2")),
+        "Goal-reaching action should be in the plan");
+  }
+
+  private static RetrievedExperience buildExperience(
+      double score, List<ExperiencePlanStep> planSteps) {
+    return new RetrievedExperience(
+        "test-problem", "test-solution", "COMPLETED", 1.0, score, Map.of(), planSteps, Map.of());
   }
 }

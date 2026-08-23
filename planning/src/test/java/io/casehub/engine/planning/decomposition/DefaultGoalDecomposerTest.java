@@ -97,7 +97,8 @@ class DefaultGoalDecomposerTest {
             "Analyse data",
             io.casehub.eidos.api.GoalPriority.PRIMARY,
             io.casehub.eidos.api.Visibility.PUBLIC,
-            List.of());
+            List.of(),
+            Map.of());
 
     var descriptor =
         io.casehub.eidos.api.AgentDescriptor.builder()
@@ -162,7 +163,8 @@ class DefaultGoalDecomposerTest {
             "Analyse data",
             io.casehub.eidos.api.GoalPriority.PRIMARY,
             io.casehub.eidos.api.Visibility.PUBLIC,
-            List.of());
+            List.of(),
+            Map.of());
 
     var descriptor =
         io.casehub.eidos.api.AgentDescriptor.builder()
@@ -220,7 +222,8 @@ class DefaultGoalDecomposerTest {
             "Analyse data comprehensively",
             io.casehub.eidos.api.GoalPriority.PRIMARY,
             io.casehub.eidos.api.Visibility.PUBLIC,
-            List.of());
+            List.of(),
+            Map.of());
 
     var descriptor =
         io.casehub.eidos.api.AgentDescriptor.builder()
@@ -307,7 +310,8 @@ class DefaultGoalDecomposerTest {
             "Analyse data",
             io.casehub.eidos.api.GoalPriority.PRIMARY,
             io.casehub.eidos.api.Visibility.PUBLIC,
-            List.of());
+            List.of(),
+            Map.of());
 
     var descriptor =
         io.casehub.eidos.api.AgentDescriptor.builder()
@@ -365,7 +369,8 @@ class DefaultGoalDecomposerTest {
             "Analyse data",
             io.casehub.eidos.api.GoalPriority.PRIMARY,
             io.casehub.eidos.api.Visibility.PUBLIC,
-            List.of());
+            List.of(),
+            Map.of());
 
     var descriptor =
         io.casehub.eidos.api.AgentDescriptor.builder()
