@@ -92,7 +92,8 @@ class GoalRevisionIntegrationTest {
                         "Find bugs in code",
                         GoalPriority.SECONDARY,
                         Visibility.PUBLIC,
-                        List.of())))
+                        List.of(),
+                        null)))
             .build());
 
     for (int i = 0; i < 3; i++) {
@@ -132,7 +133,8 @@ class GoalRevisionIntegrationTest {
                         "Find bugs in code",
                         GoalPriority.SECONDARY,
                         Visibility.PUBLIC,
-                        List.of())))
+                        List.of(),
+                        null)))
             .build());
 
     for (int i = 0; i < 3; i++) {
@@ -253,7 +255,8 @@ class GoalRevisionIntegrationTest {
                               "Find bugs in code",
                               GoalPriority.SECONDARY,
                               Visibility.PUBLIC,
-                              List.of())))
+                              List.of(),
+                              null)))
                   .build())
           .build();
     }

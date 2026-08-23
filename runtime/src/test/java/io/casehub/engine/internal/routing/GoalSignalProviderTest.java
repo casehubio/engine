@@ -201,7 +201,8 @@ class GoalSignalProviderTest {
   }
 
   private static AgentGoal goal(String name) {
-    return new AgentGoal(name, "Test goal", GoalPriority.PRIMARY, Visibility.PUBLIC, List.of());
+    return new AgentGoal(
+        name, "Test goal", GoalPriority.PRIMARY, Visibility.PUBLIC, List.of(), null);
   }
 
   private static AgentRoutingContext ctx() {

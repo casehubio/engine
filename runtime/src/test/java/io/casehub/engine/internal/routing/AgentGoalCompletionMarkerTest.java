@@ -69,13 +69,15 @@ class AgentGoalCompletionMarkerTest {
                                 "Resolve customer issues",
                                 GoalPriority.PRIMARY,
                                 Visibility.PUBLIC,
-                                List.of()),
+                                List.of(),
+                                null),
                             new AgentGoal(
                                 "maintain-customer-satisfaction",
                                 "Maintain satisfaction",
                                 GoalPriority.SECONDARY,
                                 Visibility.PUBLIC,
-                                List.of())))
+                                List.of(),
+                                null)))
                     .build())
             .build();
 
@@ -178,7 +180,8 @@ class AgentGoalCompletionMarkerTest {
                                 "Complete task",
                                 GoalPriority.PRIMARY,
                                 Visibility.PUBLIC,
-                                List.of())))
+                                List.of(),
+                                null)))
                     .build())
             .build();
 

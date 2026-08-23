@@ -133,7 +133,12 @@ class LlmGoalFormationStrategyTest {
         List.of("Review turnaround has been slow"),
         List.of(
             new AgentGoal(
-                "find-bugs", "Find bugs", GoalPriority.PRIMARY, Visibility.PUBLIC, List.of())),
+                "find-bugs",
+                "Find bugs",
+                GoalPriority.PRIMARY,
+                Visibility.PUBLIC,
+                List.of(),
+                null)),
         List.of(
             new RetrievedMemory(
                 "mem-1", "Past review took 3 days", "reflection", Instant.now(), Map.of())),

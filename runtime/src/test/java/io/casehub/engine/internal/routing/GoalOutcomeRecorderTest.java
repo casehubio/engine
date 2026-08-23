@@ -145,7 +145,12 @@ class GoalOutcomeRecorderTest {
             Optional.of(
                 descriptorWithGoals(
                     new AgentGoal(
-                        "goal-a", "First", GoalPriority.PRIMARY, Visibility.PUBLIC, List.of()))));
+                        "goal-a",
+                        "First",
+                        GoalPriority.PRIMARY,
+                        Visibility.PUBLIC,
+                        List.of(),
+                        null))));
 
     recorder.record(instance, "worker-1", "cap-y", new WorkerOutcome.Declined<>("fail"));
 
@@ -174,7 +179,12 @@ class GoalOutcomeRecorderTest {
                     goal("goal-a", "cap-x"),
                     goal("goal-b", "cap-y"),
                     new AgentGoal(
-                        "goal-c", "Third", GoalPriority.PRIMARY, Visibility.PUBLIC, List.of()))));
+                        "goal-c",
+                        "Third",
+                        GoalPriority.PRIMARY,
+                        Visibility.PUBLIC,
+                        List.of(),
+                        null))));
 
     recorder.record(instance, "worker-1", "cap-x", WorkerOutcome.success());
 
@@ -230,7 +240,7 @@ class GoalOutcomeRecorderTest {
 
   private AgentGoal goal(String name, String capability) {
     return new AgentGoal(
-        name, "desc-" + name, GoalPriority.PRIMARY, Visibility.PUBLIC, List.of(capability));
+        name, "desc-" + name, GoalPriority.PRIMARY, Visibility.PUBLIC, List.of(capability), null);
   }
 
   private AgentDescriptor descriptorWithGoals(AgentGoal... goals) {
