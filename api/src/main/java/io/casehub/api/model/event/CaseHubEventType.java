@@ -56,6 +56,7 @@ public enum CaseHubEventType {
   GOAL_REVISED, // agent goal revised based on accumulated outcome signals
   GOAL_FORMED, // new agent goal created from reflection insights
   GOAL_PROPOSED, // new agent goal proposed but not registered (auto-approve=false)
+  GOAL_REMOVED, // agent goal removed via GoalRemovalService
   CONSTRAINTS_INFEASIBLE, // decomposition produced empty plan with active hard constraints
 
   SUBCASE_STARTED, // child case spawned by a SubCase binding

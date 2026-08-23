@@ -15,29 +15,24 @@
  */
 package io.casehub.api.spi.routing;
 
-import io.casehub.eidos.api.GoalPriority;
+import io.casehub.eidos.api.AgentGoal;
 import java.util.List;
-import java.util.Map;
 import java.util.Objects;
-import org.jspecify.annotations.Nullable;
 
-public record GoalFormationProposal(List<ProposedGoal> goals, String rationale) {
-  public GoalFormationProposal {
-    Objects.requireNonNull(goals, "goals must not be null");
-    goals = List.copyOf(goals);
+public record GoalFormationResult(
+    List<AgentGoal> registered, List<RejectedGoal> rejected, int totalGoalCount) {
+
+  public GoalFormationResult {
+    Objects.requireNonNull(registered, "registered must not be null");
+    Objects.requireNonNull(rejected, "rejected must not be null");
+    registered = List.copyOf(registered);
+    rejected = List.copyOf(rejected);
   }
 
-  public record ProposedGoal(
-      String name,
-      String description,
-      GoalPriority suggestedPriority,
-      String formationReason,
-      @Nullable Map<String, String> attributes) {
-    public ProposedGoal {
+  public record RejectedGoal(String name, String reason) {
+    public RejectedGoal {
       Objects.requireNonNull(name, "name must not be null");
-      Objects.requireNonNull(description, "description must not be null");
-      Objects.requireNonNull(formationReason, "formationReason must not be null");
-      attributes = attributes != null ? Map.copyOf(attributes) : null;
+      Objects.requireNonNull(reason, "reason must not be null");
     }
   }
 }

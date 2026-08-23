@@ -29,7 +29,7 @@ class GoalFormationProposalTest {
   void constructsWithValidData() {
     var goal =
         new GoalFormationProposal.ProposedGoal(
-            "new-goal", "A new goal", GoalPriority.SECONDARY, "emerged from experience");
+            "new-goal", "A new goal", GoalPriority.SECONDARY, "emerged from experience", null);
     var proposal = new GoalFormationProposal(List.of(goal), "test rationale");
     assertEquals(1, proposal.goals().size());
     assertEquals("new-goal", proposal.goals().get(0).name());
@@ -44,7 +44,8 @@ class GoalFormationProposalTest {
             proposal
                 .goals()
                 .add(
-                    new GoalFormationProposal.ProposedGoal("g", "d", GoalPriority.SECONDARY, "r")));
+                    new GoalFormationProposal.ProposedGoal(
+                        "g", "d", GoalPriority.SECONDARY, "r", null)));
   }
 
   @Test
@@ -57,12 +58,13 @@ class GoalFormationProposalTest {
     assertThrows(
         NullPointerException.class,
         () ->
-            new GoalFormationProposal.ProposedGoal(null, "desc", GoalPriority.SECONDARY, "reason"));
+            new GoalFormationProposal.ProposedGoal(
+                null, "desc", GoalPriority.SECONDARY, "reason", null));
   }
 
   @Test
   void nullPriorityAllowed() {
-    var goal = new GoalFormationProposal.ProposedGoal("g", "d", null, "reason");
+    var goal = new GoalFormationProposal.ProposedGoal("g", "d", null, "reason", null);
     assertNull(goal.suggestedPriority());
   }
 
@@ -70,6 +72,6 @@ class GoalFormationProposalTest {
   void nullFormationReasonThrows() {
     assertThrows(
         NullPointerException.class,
-        () -> new GoalFormationProposal.ProposedGoal("g", "d", GoalPriority.SECONDARY, null));
+        () -> new GoalFormationProposal.ProposedGoal("g", "d", GoalPriority.SECONDARY, null, null));
   }
 }
