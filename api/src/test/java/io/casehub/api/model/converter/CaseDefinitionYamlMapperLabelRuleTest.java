@@ -114,6 +114,26 @@ class CaseDefinitionYamlMapperLabelRuleTest {
     assertThat(actions).isEmpty();
   }
 
+  @Test
+  void labelRuleCondition_perExpressionOverride_jq() throws Exception {
+    String yaml =
+        """
+                namespace: test
+                name: test-case
+                version: "1.0"
+                labelRules:
+                  - name: high-priority
+                    when:
+                      jq: '.severity == "HIGH"'
+                    actions:
+                      - add: "priority/high"
+                """;
+    CaseDefinition def = load(yaml);
+    LabelRule rule = def.getLabelRules().get(0);
+    assertThat(rule.name()).isEqualTo("high-priority");
+    assertThat(rule.condition().type()).isEqualTo("jq");
+  }
+
   private CaseDefinition load(String yaml) throws java.io.IOException {
     return CaseDefinitionYamlMapper.load(
         new ByteArrayInputStream(yaml.getBytes(StandardCharsets.UTF_8)));

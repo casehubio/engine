@@ -192,8 +192,9 @@ public final class CaseDefinitionYamlMapper {
     final byte[] bytes = yamlStream.readAllBytes();
     final JsonNode rawNode = objectMapper.readTree(bytes);
     final ObjectMapper lenient = createLenientMapper(objectMapper);
+    JsonNode schemaNode = flattenExpressionOverrides(rawNode, objectMapper);
     final io.casehub.model.CaseDefinition schema =
-        lenient.readValue(bytes, io.casehub.model.CaseDefinition.class);
+        lenient.convertValue(schemaNode, io.casehub.model.CaseDefinition.class);
     return convertToApiModel(schema, rawNode, objectMapper, registry, providerRegistry);
   }
 
@@ -216,8 +217,9 @@ public final class CaseDefinitionYamlMapper {
       throw new IllegalArgumentException("JsonNode cannot be null");
     }
     final ObjectMapper lenient = createLenientMapper(objectMapper);
+    JsonNode schemaNode = flattenExpressionOverrides(mergedNode, objectMapper);
     final io.casehub.model.CaseDefinition schema =
-        lenient.convertValue(mergedNode, io.casehub.model.CaseDefinition.class);
+        lenient.convertValue(schemaNode, io.casehub.model.CaseDefinition.class);
     return convertToApiModel(
         schema,
         mergedNode,
@@ -234,6 +236,35 @@ public final class CaseDefinitionYamlMapper {
                 com.fasterxml.jackson.databind.DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES);
     lenient.addHandler(UnknownPropertyWarningHandler.INSTANCE);
     return lenient;
+  }
+
+  private static JsonNode flattenExpressionOverrides(JsonNode node, ObjectMapper mapper) {
+    if (!node.has("labelRules")) {
+      return node;
+    }
+    JsonNode rules = node.get("labelRules");
+    boolean needsFlatten = false;
+    for (JsonNode rule : rules) {
+      if (rule.has("when") && rule.get("when").isObject()) {
+        needsFlatten = true;
+        break;
+      }
+    }
+    if (!needsFlatten) {
+      return node;
+    }
+    com.fasterxml.jackson.databind.node.ObjectNode copy = mapper.valueToTree(node);
+    com.fasterxml.jackson.databind.node.ArrayNode rulesArr =
+        (com.fasterxml.jackson.databind.node.ArrayNode) copy.get("labelRules");
+    for (int i = 0; i < rulesArr.size(); i++) {
+      com.fasterxml.jackson.databind.node.ObjectNode rule =
+          (com.fasterxml.jackson.databind.node.ObjectNode) rulesArr.get(i);
+      JsonNode when = rule.get("when");
+      if (when != null && when.isObject() && when.size() == 1) {
+        rule.put("when", when.fields().next().getValue().asText());
+      }
+    }
+    return copy;
   }
 
   /**
@@ -869,9 +900,18 @@ public final class CaseDefinitionYamlMapper {
       List<LabelRule> labelRules = new ArrayList<>();
       for (JsonNode ruleNode : rawNode.get("labelRules")) {
         String ruleName = ruleNode.get("name").asText();
-        String when = ruleNode.get("when").asText();
-        validateJqSyntax(when, "labelRules[" + ruleName + "].when");
-        CompiledExpression<Map<String, Object>, Boolean> condition = compileJqBoolean(when);
+        JsonNode whenNode = ruleNode.get("when");
+        CompiledExpression<Map<String, Object>, Boolean> condition;
+        if (whenNode.isTextual()
+            && (expressionLang == null || JQExpressionEvaluator.TYPE.equals(expressionLang))
+            && !whenNode.asText().isEmpty()) {
+          validateJqSyntax(whenNode.asText(), "labelRules[" + ruleName + "].when");
+          condition = compileJqBoolean(whenNode.asText());
+        } else {
+          ExpressionEvaluator evaluator =
+              resolveExpression(whenNode, effectiveRegistry, expressionLang);
+          condition = toCompiledBooleanExpression(evaluator, effectiveRegistry);
+        }
         List<LabelAction> actions = new ArrayList<>();
         for (JsonNode actionNode : ruleNode.get("actions")) {
           if (actionNode.has("add")) {
@@ -1157,6 +1197,22 @@ public final class CaseDefinitionYamlMapper {
     throw new IllegalArgumentException(
         "Expression must be a string or single-key map {lang: expr}, got: "
             + rawValue.getNodeType());
+  }
+
+  private static CompiledExpression<Map<String, Object>, Boolean> toCompiledBooleanExpression(
+      ExpressionEvaluator evaluator, ExpressionEngineRegistry registry) {
+    return new CompiledExpression<>() {
+      @Override
+      public String type() {
+        return evaluator.type();
+      }
+
+      @Override
+      public Boolean eval(Map<String, Object> context) {
+        JsonNode node = MAPPER.valueToTree(context);
+        return registry.evaluate(evaluator, node);
+      }
+    };
   }
 
   private static Binding convertBinding(
