@@ -16,6 +16,7 @@
 package io.casehub.engine.plan.adaptation;
 
 import io.casehub.api.model.RetrievedMemory;
+import io.casehub.api.spi.routing.RetrievedExperience;
 import io.casehub.worker.api.Capability;
 import java.util.List;
 import java.util.Objects;
@@ -24,12 +25,22 @@ public record RevisionContext(
     AdaptationContext adaptationContext,
     AdaptationCause cause,
     List<Capability> capabilities,
-    List<RetrievedMemory> memories) {
+    List<RetrievedMemory> memories,
+    List<RetrievedExperience> experiences) {
 
   public RevisionContext {
     Objects.requireNonNull(adaptationContext, "adaptationContext");
     Objects.requireNonNull(cause, "cause");
     capabilities = capabilities == null ? List.of() : List.copyOf(capabilities);
     memories = memories == null ? List.of() : List.copyOf(memories);
+    experiences = experiences == null ? List.of() : List.copyOf(experiences);
+  }
+
+  public RevisionContext(
+      AdaptationContext adaptationContext,
+      AdaptationCause cause,
+      List<Capability> capabilities,
+      List<RetrievedMemory> memories) {
+    this(adaptationContext, cause, capabilities, memories, List.of());
   }
 }

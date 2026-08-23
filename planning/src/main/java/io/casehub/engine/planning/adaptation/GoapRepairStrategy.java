@@ -28,6 +28,7 @@ import io.casehub.engine.plan.goap.GoapAction;
 import io.casehub.engine.plan.goap.GoapPlanner;
 import io.casehub.engine.plan.goap.GoapWorldState;
 import io.casehub.engine.plan.goap.PlannerConfig;
+import io.casehub.engine.planning.control.GoapCostEnricher;
 import jakarta.enterprise.context.ApplicationScoped;
 import java.util.ArrayList;
 import java.util.HashSet;
@@ -64,6 +65,12 @@ public class GoapRepairStrategy implements RepairStrategy {
             .filter(a -> availableCapabilities.contains(a.name()))
             .filter(a -> !completedActionNames.contains(a.name()))
             .toList();
+
+    actions =
+        GoapCostEnricher.enrichWithLearnedCosts(
+            actions,
+            context.experiences(),
+            GoapCostEnricher.resolveMinCostSamples(definition.getCbrConfig()));
 
     String failedAction = null;
     if (context.cause() instanceof AdaptationCause.StepFailed failed) {

@@ -123,6 +123,11 @@ class DefaultPlanAdaptationEvaluatorTest {
     when(registry.get(caseId)).thenReturn(Optional.of(casePlanModel));
     when(planItemStore.findByCaseId(caseId, TENANT)).thenReturn(List.of());
 
+    @SuppressWarnings("unchecked")
+    Instance<io.casehub.engine.internal.routing.CbrRetrievalService> cbrInstance =
+        mock(Instance.class);
+    when(cbrInstance.isResolvable()).thenReturn(false);
+
     evaluator =
         new DefaultPlanAdaptationEvaluator(
             registry,
@@ -132,6 +137,7 @@ class DefaultPlanAdaptationEvaluatorTest {
             caseDefinitionRegistry,
             strategyResolver,
             memoryRetriever,
+            cbrInstance,
             compoundCompletionEvaluator,
             3,
             30000L);
