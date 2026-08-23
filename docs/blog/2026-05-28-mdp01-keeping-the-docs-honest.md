@@ -8,7 +8,6 @@ subtype: diary
 projects: [CaseHub Parent]
 ---
 
-# Keeping the docs honest
 ## Keeping the docs honest
 
 Eight open documentation issues, all in the parent repo, none requiring changes elsewhere. The kind of session that sounds boring and is actually necessary.

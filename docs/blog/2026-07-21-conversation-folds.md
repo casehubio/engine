@@ -6,7 +6,6 @@ tags: [conversation, epistemic, convergence, fold, blocks]
 issue: "casehubio/blocks#65, casehubio/blocks#66"
 ---
 
-# Conversation Folds — Epistemic Ground and Convergence
 Multi-agent conversations accumulate assertions but nothing tracks what's
 established vs what's still contested. The conversation projection folds
 messages into structured state — points, threads, statuses — but the fold

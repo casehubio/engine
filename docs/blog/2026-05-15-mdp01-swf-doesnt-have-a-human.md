@@ -9,7 +9,6 @@ projects: [casehub-work, casehub-engine]
 tags: [engine, adapter, human-task, serverless-workflow, standards]
 ---
 
-# SWF doesn't have a human
 The previous entry covered the HumanTask binding design — the sealed
 `BindingTarget`, the outbound `HumanTaskScheduleHandler`, the `outputMapping`
 round-trip. Claude had built the implementation in a separate session. We

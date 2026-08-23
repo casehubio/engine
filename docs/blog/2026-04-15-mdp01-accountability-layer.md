@@ -10,7 +10,6 @@ tags: [ledger, eigentrust, quarkus-flow, tdd]
 excerpt: "The ledger becomes a CDI observer on WorkItemLifecycleEvent — invisible when absent, zero overhead, zero tables — with hash chain and decision context on by default for GDPR Article 22 compliance."
 ---
 
-# The accountability layer — complexity must not leak
 The conversation that shaped everything in this session came before I wrote a line of code.
 
 I asked whether to build the ledger as a standalone Quarkus module. My first instinct was yes — the design felt like a separate concern. Then I stopped and asked the harder question: if someone adds `quarkus-work` to their application and doesn't want the ledger, do they have to carry it? Does the `WorkItemService` get `if (ledgerConfig.enabled())` guards? Does `WorkItemsConfig` grow a ledger section?

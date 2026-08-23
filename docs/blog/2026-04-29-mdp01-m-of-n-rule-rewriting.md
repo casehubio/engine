@@ -10,7 +10,6 @@ tags: [multi-instance, cdi, jta, occ, threaded-inbox, architecture]
 excerpt: "M-of-N parallel WorkItems ships after rewriting LAYERING.md — the rule \"if it touches another WorkItem it's orchestration\" was already broken by cascade cancellation, so the real test is whether it imposes ordering or requires external context."
 ---
 
-# M-of-N parallel WorkItems and a rule that needed rewriting
 Multi-instance WorkItems shipped today. Four-eyes approval, peer review, supermajority voting — all of it. The feature itself is straightforward in principle: spawn N child WorkItems from a template, complete the parent when M of them are done. What was less straightforward was whether this belongs in `quarkus-work` at all.
 
 ## The rule that was wrong

@@ -10,7 +10,6 @@ tags: [ci-cd, strategy, positioning, incremental-build, aml]
 excerpt: "Scoring ten use-case candidates across separate market-fit and community-fit tables reveals AML as the strongest entry point — Java is banking, banking is compliance infrastructure, and developers have built transaction monitoring before."
 ---
 
-# Platform Positioning and Incremental Build
 Two days of work, two completely different kinds of thinking. One thread was technical infrastructure — finishing what we started. The other was strategic positioning: where does CaseHub fit, and how do we explain it?
 
 The CI chain is mostly green. The GH_PAT fix from the previous session worked — once ledger and connectors published, the cascade fired correctly. What remained was a series of individual breakages: qhorus importing `CapabilityTag` before ledger's artifact contained it (timing race, resolved itself), `BusinessHoursIntegrationTest` failing every Friday evening (the assertion `isBefore(now + 1 day)` is wrong after business hours on a Friday — next 2 business hours are Monday), and claudony failing to compile because engine PR #224 added `UUID caseId` to `WorkerContextProvider.buildContext()` without updating claudony's implementation. Work and claudony need their respective Claudes for those two fixes. Nothing we can touch from here.

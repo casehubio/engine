@@ -10,7 +10,6 @@ tags: [workflow, cc-praxis, routing, epic, workspace]
 excerpt: "A systematic audit found 20 gaps in the epic/workspace workflow. Nine fixed. Claude moved artifacts the wrong direction three times before we got the routing right across all ten repos."
 ---
 
-# Workflow Audit and the Routing Repair
 The session started with a question I'd been avoiding: is the epic workflow actually coherent, or just plausible-sounding? A systematic audit of every skill involved gave the answer. Twenty distinct gaps, ranging from missing a pause mechanism for mid-epic interruptions to `HANDOFF.md` being committed to the epic branch where the next session can't find it.
 
 We worked through the trivial and easy items — nine fixed across two sessions. The trivial ones were template string edits: wrong routing defaults in workspace-init, Session Start missing the workspace add-dir, journal-entry defaulting off when it should default on mid-epic. Each took minutes. The easy ones were guard clauses and validation checks: handle missing DESIGN.md at epic close, validate branch alignment at start, check epic state in work-start before anything else. The harder items sit in a GitHub epic at `mdproctor/cc-praxis#71` with child issues for each.

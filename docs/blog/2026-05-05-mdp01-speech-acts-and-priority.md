@@ -10,7 +10,6 @@ tags: [webhooks, github, jira, normative-layer, priority, testing, panache]
 excerpt: "NormativeResolution maps GitHub and Jira close events to speech-act semantics, CRITICAL gets renamed URGENT after finding it borrows ITSM severity vocabulary into a task scheduling context where it doesn't belong."
 ---
 
-# Speech acts, priority names, and a Panache coupling
 The `close` event from GitHub doesn't just mean "done." It might mean the work was completed, or abandoned as not worth doing, or attempted and failed. Those three outcomes — fulfilled, refused, failed — map to COMPLETED, CANCELLED, REJECTED in WorkItems.
 
 I'd been thinking of this as a mapping problem until the Qhorus normative layer docs clarified it. Speech act theory has names for these: DONE, DECLINE, FAILURE. GitHub's `state_reason: not_planned` is a DECLINE. Jira's "Cannot Reproduce" is a FAILURE. GitHub has no FAILURE equivalent at all. That asymmetry is real and documented — the tracker vocabulary doesn't need to match, but the transition semantics do.

@@ -5,7 +5,6 @@ author: mdp
 tags: [casehub-work, multi-tenancy, architecture, CDI, quartz]
 ---
 
-# Every Query, Every Entity
 casehub-work had zero tenant scoping. Every WorkItem, every template, every audit entry — visible to every tenant. The platform foundation was ready (CurrentPrincipal.tenancyId() has existed since casehub-engine's multi-tenancy work), but casehub-work hadn't started.
 
 The scope was larger than it looked. A tenancy_id column on WorkItem is the obvious part. The non-obvious part: casehub-work has 12 runtime entities, 9 optional-module entities, 4 CDI event types, 2 SSE broadcaster SPIs, 4 background schedulers, and dozens of static Panache calls scattered across resources, services, policies, and observers — all bypassing any data access layer where filtering could be enforced.

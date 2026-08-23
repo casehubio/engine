@@ -9,7 +9,6 @@ projects: [casehub]
 tags: [docs, platform, debugging]
 ---
 
-# Five Doc Syncs and One Parse Bug
 The first thing ctx.py returned was `OWNER_REPO=**`. Not `casehubio/parent` — two asterisks.
 
 Claude and I traced it back to the `## Work Tracking` section in CLAUDE.md. At some point the section had acquired bold markdown formatting: `**GitHub repo:** casehubio/parent`. The ctx.py regex `GitHub repo:\s*(\S+)` finds `GitHub repo:` correctly, then `\s*(\S+)` captures the first non-whitespace after the colon — in bold markdown, that's the closing `**`. The actual repo name sits after a space that the regex has already consumed.

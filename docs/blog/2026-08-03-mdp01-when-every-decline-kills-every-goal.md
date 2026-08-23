@@ -9,7 +9,6 @@ projects: [CaseHub Engine]
 tags: [goal-abandonment, routing, eidos, ledger]
 ---
 
-# When every decline kills every goal
 The goal abandonment work looked straightforward on paper: track DECLINE signals per goal, threshold, abandon. The APIs are there — eidos ships goals and constraints as first-class fields on `AgentDescriptor`, and `BehavioralSignalStore` already records signals keyed by agent, capability, and qualifier. The infrastructure should have been routine.
 
 The interesting part was the gap I didn't see until I started implementing.
@@ -22,7 +21,7 @@ Without a goal-to-capability mapping, every decline increments every goal. An ag
 
 The value of goal abandonment is discrimination: agent X pursues goal A but has given up on goal B. Without the mapping, that discrimination doesn't exist. The feature degrades to a duplicate of something the platform already provides.
 
-Claude and I built the infrastructure anyway — `GoalAbandonmentEvaluator` queries `BehavioralSignalStore` using a `__goal__` sentinel as the capability name, with goal names as qualifiers. `GoalOutcomeRecorder` records DECLINE signals on non-success outcomes, wired into `WorkflowExecutionCompletedHandler` at the semantic failure path. Both use `Instance<BehavioralSignalStore>` with `isResolvable()` guards — transparent no-op when eidos runtime isn't on the classpath. The threshold is configurable (`casehub.engine.goal.abandonment-threshold`, default 5). I filed #860 for the goal-capability mapping that would make it actually useful.
+Claude and I built the infrastructure anyway — `GoalAbandonmentEvaluator` queries `BehavioralSignalStore` using a `__goal__` sentinel as the capability name, with goal names as qualifiers. `GoalFailureRecorder` records DECLINE signals on non-success outcomes, wired into `WorkflowExecutionCompletedHandler` at the semantic failure path. Both use `Instance<BehavioralSignalStore>` with `isResolvable()` guards — transparent no-op when eidos runtime isn't on the classpath. The threshold is configurable (`casehub.engine.goal.abandonment-threshold`, default 5). I filed #860 for the goal-capability mapping that would make it actually useful.
 
 ## Breaking what deserves breaking
 

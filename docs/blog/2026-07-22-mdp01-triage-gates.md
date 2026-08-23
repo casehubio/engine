@@ -9,7 +9,6 @@ projects: [casehub-aml]
 tags: [triage, cbr, regulatory-compliance, investigation]
 ---
 
-# Triage gates — when scoring isn't enough
 The investigation triage worker was a stub — every case got `SAR_WARRANTED` regardless
 of what the specialist findings said. That was fine for wiring the engine layers together,
 but it meant the `investigation-cleared` goal never fired. Every transaction went through

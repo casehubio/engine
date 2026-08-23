@@ -9,7 +9,6 @@ projects: [casehub-parent, cc-praxis]
 tags: [protocols, sla, path-detection, workspace]
 ---
 
-# Cleaning the Board
 Two sessions of maintenance work. Not glamorous, but the kind of day that leaves
 the board genuinely cleaner than it started.
 

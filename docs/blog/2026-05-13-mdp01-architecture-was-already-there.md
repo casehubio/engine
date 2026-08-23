@@ -9,7 +9,6 @@ projects: [casehub]
 tags: [architecture, clean-architecture, hexagonal, ddd, llm]
 ---
 
-# The Architecture Was Already There
 The question was whether the platform had chosen the right architectures. It led somewhere more interesting: the dependency rule had been there all along, enforced, just unnamed.
 
 Source code dependencies only point inward. Domain never depends on infrastructure. That principle was already in `module-tier-structure.md`, expressed as a Maven module convention:

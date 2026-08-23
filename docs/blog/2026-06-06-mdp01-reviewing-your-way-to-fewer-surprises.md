@@ -8,7 +8,6 @@ projects: [casehub-work]
 tags: [design-review, jexl, conditional-outcomes, patch-api]
 ---
 
-# Reviewing your way to fewer surprises
 The last two issues on my S-scale backlog — conditional outcomes (#177) and
 JSON Merge Patch for templates (#199) — went through four rounds of spec review
 before a line of code was written. I went in thinking the review was mostly pro
