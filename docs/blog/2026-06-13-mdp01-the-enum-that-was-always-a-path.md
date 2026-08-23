@@ -9,6 +9,7 @@ projects: [casehub-work]
 tags: [path, scope, refactoring, multi-tenancy]
 ---
 
+# The Enum That Was Always a Path
 ## The Enum That Was Always a Path
 
 casehub-work had a `VocabularyScope` enum — four values: GLOBAL, ORG, TEAM, PERSONAL — controlling which label vocabularies a caller could see. Accessibility was ordinal comparison: `definitionScope.ordinal() <= callerScope.ordinal()`. It worked, but it was a linear four-step hierarchy hardcoded in an enum, sitting right next to `casehub-platform-api`'s `Path` type which already provides `isAncestorOf()`, `root()`, `depth()`, and tree-shaped scope traversal.

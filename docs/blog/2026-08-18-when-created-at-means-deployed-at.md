@@ -9,6 +9,7 @@ tags: [domain-model, jpa, semantic-correctness]
 author: mdp
 ---
 
+# When \"Created At\" Means \"Deployed At\
 `CaseInstanceResponse` had a `createdAt` field from day one. It was labelled "Case creation timestamp" in the OpenAPI schema. The value came from `CaseMetaModel.getCreatedAt()` — which records when the *definition* was deployed, not when the instance was created.
 
 Multiple instances share the same `CaseMetaModel`. A definition deployed on Monday that spawns ten instances throughout the week reports all ten as created on Monday. casehub-soc hit this first — their incident summary view was forced to use `Instant.now()` as a placeholder because the real timestamp didn't exist.

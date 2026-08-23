@@ -9,6 +9,7 @@ projects: [casehub]
 tags: [documentation, neural-text, deep-dive]
 ---
 
+# Documentation Debt Has a Half-Life
 ## Documentation Debt Has a Half-Life
 
 The neural-text deep-dive needed four new items: `MatryoshkaEmbeddingModel`, `DenseQuantization`, search-time oversampling, and the CDI wiring that ties them together. All shipped in neural-text#31, all verified against source code — straightforward sync work.

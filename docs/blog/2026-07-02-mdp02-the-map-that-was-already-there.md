@@ -9,6 +9,7 @@ projects: [casehub-work]
 tags: [normative, speech-acts, qhorus, alignment, deontic]
 ---
 
+# The Map That Was Already There
 The Qhorus normative layer has had a clear speech act taxonomy for months — nine types, seven commitment states, a sealed CommitmentStore. casehub-work has had a complete WorkItem lifecycle for nearly as long — twelve statuses, twenty-six event types, the delegation chain, the SLA breach policy framework. What it didn't have was an explicit document mapping one to the other.
 
 Issue #159 was filed before FAULTED, OBSOLETE, and progress tracking existed. Back then the mapping table in the issue body had ten statuses and no MANUALLY_ESCALATED. The lifecycle alignment work (#240) added the missing states and brought the WorkItem model into alignment with WS-HumanTask 1.1. But the *normative* alignment — how each WorkItem concept maps to Qhorus speech acts and deontic commitment states — remained undocumented.

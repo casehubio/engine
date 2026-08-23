@@ -6,6 +6,7 @@ entry: mdp04
 status: draft
 ---
 
+# When Annotations Meet Planners
 CaseHub has three ways to define a case: YAML, fluent builders, and now — annotations. The builder API works. The YAML mapper works. But both require you to know the type system intimately: `CaseDefinition.builder().namespace(...).name(...).capabilities(...).workers(...).bindings(...)`. A hundred lines for a case that does three things.
 
 The annotation model collapses that. A `@Case` interface with `@Worker` methods, `@Bind` triggers, and `@Goal` conditions — the build extension generates the same `CaseDefinition` the builder would produce. Embabel proved this DX pattern works for agent frameworks. The question was whether CaseHub's richer model (reactive dispatch, lifecycle scopes, outcome policies, planning strategies) could fit into annotations without turning them into a configuration DSL with thirty attributes.

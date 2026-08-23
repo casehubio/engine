@@ -9,6 +9,7 @@ projects: [casehub-engine]
 tags: [java, quarkus, cdi, arc]
 ---
 
+# Nine defaults, one wrong package
 When a platform's no-op SPI defaults use bare `@ApplicationScoped`, consumer
 repos pay the price. CDI sees two qualifying beans for the same injection point
 — the engine's fallback and the consumer's real implementation — and fails at

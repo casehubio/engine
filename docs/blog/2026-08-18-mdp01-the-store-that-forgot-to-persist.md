@@ -8,6 +8,7 @@ projects: [casehub-engine]
 tags: [sse, persistence, spi, mutiny, broadcast]
 ---
 
+# The Store That Forgot to Persist
 The orchestration workbench needed an SSE endpoint streaming execution state. The engine already had all the data — `ExecutionStateSnapshot` composing plan model, DAG plan, and DAG result into a single view — but served it via GET at `/plan/state`. Wrong protocol, wrong path.
 
 The fix looked straightforward: a `BroadcastProcessor` observing the same CDI events as the existing `CaseStreamBroadcaster`, composing a full snapshot on each trigger instead of wrapping a thin notification. Wire it to a new resource at `/api/v1/cases/{caseId}/state`. Done.

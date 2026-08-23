@@ -10,6 +10,7 @@ tags: [architecture, ai-native, routing, casehub, filter-registry]
 excerpt: "A confidence-gated routing rule that could be wired in twenty lines becomes quarkus-work-filter-registry instead — because inline logic is a trap that becomes load-bearing and unremovable."
 ---
 
+# The filter that grew into a contract
 Three epics shipped before the interesting thing happened.
 
 Form schemas (#98) — a JSON Schema definition per WorkItem category, stored as TEXT,

@@ -9,6 +9,7 @@ projects: [casehub-work]
 tags: [round-robin, occ, cdi, backlog, tier-1]
 ---
 
+# The retry that wasn't
 The backlog is clear. Everything filed as S or M this session is done — six issues
 including one I'd underestimated. That felt satisfying until the code reviewer
 flagged a bug I hadn't suspected.

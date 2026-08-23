@@ -9,6 +9,7 @@ projects: [CaseHub Engine]
 tags: [goal-abandonment, routing, eidos, ledger]
 ---
 
+# When every decline kills every goal
 The goal abandonment work looked straightforward on paper: track DECLINE signals per goal, threshold, abandon. The APIs are there — eidos ships goals and constraints as first-class fields on `AgentDescriptor`, and `BehavioralSignalStore` already records signals keyed by agent, capability, and qualifier. The infrastructure should have been routine.
 
 The interesting part was the gap I didn't see until I started implementing.

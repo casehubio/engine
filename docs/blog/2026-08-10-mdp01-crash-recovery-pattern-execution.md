@@ -9,6 +9,7 @@ tags: [agentic, checkpointing, durability, pattern-execution]
 series: issue-881-agentic-planning
 ---
 
+# Crash Recovery for Pattern Execution
 The agentic pattern infrastructure can now survive a JVM crash mid-execution. Before this, if the process died while a DEBATE or SEQUENCE pattern was running, the engine retried from scratch — every agent re-invoked, every result recomputed. For short-lived patterns that's fine. For a five-round debate with LLM judges, it's expensive and potentially non-deterministic.
 
 The fix is iteration-level checkpointing. After each complete iteration of the driver loop, the engine writes a `PATTERN_CHECKPOINT` event to the EventLog — the same audit trail that already records every other engine event. The checkpoint captures the driver's full resumable state: completed iteration count, all agent results so far, and the per-agent activation and idle counts that the driver uses for routing decisions.

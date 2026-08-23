@@ -9,6 +9,7 @@ projects: [casehub-work]
 tags: [git, squash, hooks, rebase]
 ---
 
+# The Hook That Passed Everything
 The pre-push hook checks for squash candidates before anything leaves the machine. The patterns in it look reasonable: `^docs\(claude\):`, `^fix\(test\):`, `^chore:`. It had been in place for weeks. Every push sailed through.
 
 We ran the squash check manually today and found 43 commits in the range with candidates the hook should have flagged. The hook had passed all of them.

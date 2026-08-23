@@ -8,6 +8,7 @@ subtype: diary
 projects: [CaseHub Parent]
 ---
 
+# Not just drift
 ## Not just drift
 
 There's drift, and then there's just wrong.

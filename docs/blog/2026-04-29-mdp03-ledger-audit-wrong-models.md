@@ -10,6 +10,7 @@ tags: [ledger, audit, bayesian, jackson, java]
 excerpt: "Three audit findings include a String.format JSON builder that silently corrupts output on non-trivial actor IDs, a bug the auditor described with the wrong mechanism, and a Bayesian mental model error about what a Beta distribution actually computes."
 ---
 
+# Three audit findings and a wrong mental model
 An external audit of `quarkus-work-ledger` came back with three findings. I worked through them with Claude.
 
 ## String.format JSON: the quiet injection risk

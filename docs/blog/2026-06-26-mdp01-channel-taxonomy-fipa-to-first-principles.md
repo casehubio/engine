@@ -9,6 +9,7 @@ projects: [casehub]
 tags: [channels, qhorus, fipa, architecture]
 ---
 
+# Channel Taxonomy: From FIPA to First Principles
 When I originally designed qhorus's `MessageType` enum, I modelled it on FIPA ACL — the IEEE standard for agent communication that grew out of speech act theory. FIPA defines 22 communicative acts. Qhorus has 9. I'd never written down why.
 
 Formalising the channel taxonomy forced that question. The answer turned out to be more interesting than "we simplified."

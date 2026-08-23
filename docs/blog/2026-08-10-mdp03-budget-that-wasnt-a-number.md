@@ -8,6 +8,7 @@ projects: [casehub-engine]
 tags: [planning-constraints, cost-budgets, decomposition, llm-prompts]
 ---
 
+# The Budget That Wasn't a Number
 Cost budgets looked simple at first glance. The issue asked for a `costBudget` field on `PlanningConstraints` — an integer, like `resourceLimit`. One number, one meaning.
 
 The problem surfaces when you try to write the LLM prompt. "Cost budget: 5000." Five thousand *what*? Tokens? API calls? Dollars? The prompt renderer has to say something meaningful, and an abstract integer with no declared dimension says nothing. The enforcement layer has the same problem — it needs to know what it's counting to know when to stop.

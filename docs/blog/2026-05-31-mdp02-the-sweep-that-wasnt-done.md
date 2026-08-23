@@ -9,6 +9,7 @@ projects: [casehub-work]
 tags: [exclusion-policy, sweep, cdi]
 ---
 
+# The sweep that wasn't done
 The branch was supposed to be closed. Handover said so. Seven items swept,
 committed, pushed upstream.
 

@@ -9,6 +9,7 @@ projects: [casehub-work]
 tags: [multiinstance, callerref, engine-routing, awaitility]
 ---
 
+# The parent gets the callerRef
 A prompt arrived at the start describing three bugs in `casehub-work-ledger`
 — JSON built with `String.format()`, a null guard missing on `eventSuffix()`,
 eight tests with wrong expectations. I looked at the code. All three were

@@ -10,6 +10,7 @@ tags: [maven, naming, protocols, intellij, refactoring]
 excerpt: "A systematic scan of nine repos revealed consistent naming drift. Most fixes were mechanical. Claudony was not — and the connectors rename surfaced exactly the gap we needed a protocol for."
 ---
 
+# Naming Alignment and Artifact Propagation
 Platform naming has been inconsistent since the repos multiplied. Nine repos, each with its own drift: claudony on `dev.claudony` groupId, engine folders not matching their artifactIds, work carrying the full `casehub-work-` prefix on directory names that should be short. We ran a full scan and fixed all of it.
 
 Most fixes were mechanical. Claudony was not.

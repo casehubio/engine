@@ -9,6 +9,7 @@ projects: [casehub-engine]
 tags: [quarkus, cdi, testing, event-bus, transactional]
 ---
 
+# Testing the Handler, Not the Bus
 Most of the day was cleanup — small things that had accumulated since the atomicity work. A two-arg arity mismatch when casehub-work extended `SelectionContext` and `WorkItemCreateRequest` without updating the engine call sites. A missing `flush()` in `JpaReactivePlanItemStore.updateStatus()` that silently no-oped when called in the same session as a `save()`. A detached entity mutation in a template-mode test that let the test pass for the wrong reason — the `defaultPayload` assignment happened after the transaction committed, so the database never saw it.
 
 I brought Claude in early and we worked through most of it quickly. What took longer was understanding why `HumanTaskScheduleHandlerTest` needed timing machinery at all.

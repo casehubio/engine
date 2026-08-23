@@ -9,6 +9,7 @@ projects: [casehub-engine]
 tags: [cdi, mutiny, quarkus, bugs]
 ---
 
+# Six handlers and a miss
 The batch we cleared this session was five issues — all small, all overdue,
 all the kind of bugs that pass unit tests and quietly break in production.
 

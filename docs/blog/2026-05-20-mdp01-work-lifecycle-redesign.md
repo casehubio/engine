@@ -9,6 +9,7 @@ projects: [cc-praxis]
 tags: [workflow, shell, claude-code, design]
 ---
 
+# Designing the Work Lifecycle
 The old workflow needed two commands to start any piece of work: `/work-start`
 for pre-checks, then `/epic begin` to create a branch. If you forgot the second
 one, you'd be writing artifacts to the wrong place — journal missing, design

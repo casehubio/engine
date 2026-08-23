@@ -8,6 +8,7 @@ subtype: diary
 projects: [casehub]
 ---
 
+# Teaching ARC42STORIES.MD to declare itself
 The issue was filed to add a tier taxonomy to the Arc42Stories spec — Application tier,
 Foundation tier, Extension tier. Reading it, something felt off.
 

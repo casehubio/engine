@@ -9,6 +9,7 @@ projects: [casehub-work]
 tags: [builder-pattern, java, design-philosophy, jax-rs]
 ---
 
+# A record can't say no
 `WorkItemCreateRequest` had 24 parameters. A new field meant adding it to the end
 and passing null at every call site you could find. Sometimes you missed one. The
 record was too honest about its own constructibility.

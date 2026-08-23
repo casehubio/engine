@@ -8,6 +8,7 @@ projects: [casehub]
 tags: [lifecycle, cdi, coherence]
 ---
 
+# Three Stale Enums and a Question About Transactions
 Another Claude session had reviewed our Lifecycle Coherence Protocol — the normative doc that registers every lifecycle state machine across CaseHub. It came back with a rewritten version of the state machine table. Every row was different.
 
 The question was whether the other Claude was right or hallucinating. We verified each enum against the actual code — `PlanItemStatus` in engine, `WorkItemStatus` in work, `CommitmentState` in qhorus. All three had drifted from what LIFECYCLE.md recorded. Engine had 9 states where the doc said 8. Work had 12 where the doc said 10, with two renames (`CREATED`→`PENDING`, `CLAIMED`→`ASSIGNED`) the doc never picked up. Qhorus renamed `HANDOFF` to `DELEGATED` and added `ACKNOWLEDGED` — the doc still listed the old names.

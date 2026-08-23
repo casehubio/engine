@@ -10,6 +10,7 @@ tags: [cdi, cloudevents, event-bus, dual-channel]
 series: issue-273-work-cloudevent-adapter
 ---
 
+# The Channel Nobody Was Listening On
 casehub-work fires lifecycle events on every WorkItem transition — created, assigned, completed, rejected, the full twelve-status lifecycle plus operational events like spawned and claim-expired. Twenty-four distinct event types in total. The CDI event bus has been the backbone of the system since C4.
 
 What I hadn't noticed: CDI has two independent delivery channels. `fire()` reaches `@Observes` handlers. `fireAsync()` reaches `@ObservesAsync` handlers. They don't bridge. casehub-work was firing non-terminal transitions (created, assigned, started, delegated — thirteen methods) on the sync channel only. Terminal transitions (completed, rejected, cancelled, faulted, obsolete) fired both.

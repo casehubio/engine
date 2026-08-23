@@ -9,6 +9,7 @@ projects: [casehub]
 tags: [eidos, jungian, personality, wacky-manor, vocabulary]
 ---
 
+# The Personality That Thinks
 Most LLM personality systems work the same way. You write a flat list of traits — "competitive", "bold", "autonomous" — drop them into the system prompt, and hope the model picks up enough signal to behave differently from an agent with "collaborative", "moderate", "directed". It works, kind of. The characters sound different. But they don't *think* differently.
 
 I've been building Wacky Manor — a multi-agent LLM demo where five Wacky Races characters improvise their way through a haunted mansion. Phase 2.5 proved the engine works: characters act autonomously, the Hooded Claw discovers rat poison and poisons the tea without any scripted triggers telling him to. But every character's personality was a set of flat strings. The Hooded Claw was "competitive" and "extreme" on the risk axis. Penelope Pitstop was "collaborative" and "moderate". These labels told the model *what* each character is, but nothing about *how* they process information and make decisions.

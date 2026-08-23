@@ -8,6 +8,7 @@ projects: [casehub-work]
 tags: [lifecycle, java, quarkus]
 ---
 
+# States That Existed on Paper
 ## States That Existed on Paper
 
 Five bugs had been sitting in the issue tracker: `EXPIRED` missing from `isTerminal()`, `ESCALATED` in `isTerminal()` but never set, `DELEGATED` in the enum but `delegate()` setting `PENDING` instead. I knew they were there. I kept deferring them because each one looked small.

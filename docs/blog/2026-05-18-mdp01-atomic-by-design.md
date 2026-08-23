@@ -9,6 +9,7 @@ projects: [casehub-engine]
 tags: [quarkus, jpa, transactional, spi, atomicity]
 ---
 
+# Atomic by Design
 The bug in `HumanTaskScheduleHandler` was easy to describe: if WorkItem creation fails after `item.markRunning()`, the PlanItem ends up stuck RUNNING with no WorkItem to complete it. The engine won't reschedule it — the PlanItem is no longer PENDING — and the case is blocked indefinitely.
 
 The obvious fix is to invert the calls: create the WorkItem first, then mark RUNNING. That closes the exception gap. But it doesn't help if the process crashes between the two operations. And it leaves PlanItem status as ephemeral in-memory state with no durable record.

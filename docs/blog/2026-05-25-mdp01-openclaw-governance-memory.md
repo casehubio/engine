@@ -9,6 +9,7 @@ projects: [CaseHub]
 tags: [openclaw, qhorus, integration, architecture]
 ---
 
+# OpenClaw, CaseHub, and the channel context gap
 Today started with a question that sounded simple: what would OpenClaw + CaseHub look like?
 
 OpenClaw is the fastest-growing open-source project on GitHub right now — 250k stars in 60 days. It's a self-hosted personal AI agent that lives in WhatsApp or Telegram and runs heartbeat-based autonomous tasks from a library of 5,400 community-built platform skills. It solves the "execute this thing" problem well.

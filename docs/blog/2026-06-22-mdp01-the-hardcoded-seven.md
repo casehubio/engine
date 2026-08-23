@@ -9,6 +9,7 @@ projects: [casehub-work]
 tags: [jpa, terminal-status, occ, bug-fix]
 ---
 
+# The Hardcoded Seven
 The #270 review surfaced two follow-up issues. #271 was a pre-existing bug: `JpaWorkItemStore.countByParentAndAssignee()` hardcoded a terminal status exclusion list — COMPLETED, REJECTED, CANCELLED, ESCALATED — four of seven. FAULTED, OBSOLETE, and EXPIRED leaked through, meaning a user whose previous WorkItem instance had faulted could be permanently blocked from claiming new instances in an `allowSameAssignee=false` group.
 
 The interesting part was the scope. The issue named one method in one store. Searching for the same pattern found a second instance in `JpaCrossTenantWorkItemStore.findActiveWithDeadlines()` — five of seven there, a slightly different subset but the same root cause. Meanwhile, both MongoDB stores had independently gotten it right from the start: `Arrays.stream(WorkItemStatus.values()).filter(WorkItemStatus::isTerminal)`. The JPA stores were written earlier, before all seven terminal statuses existed. The Mongo stores were written after #240 added FAULTED and OBSOLETE, so they used the dynamic pattern from day one.

@@ -10,6 +10,7 @@ tags: [distributed, sse, spi, architecture, broadcaster]
 excerpt: "Redis for distributed SSE fan-out is rejected because it would force two new infrastructure pieces on users who have neither Redis nor MongoDB — a pluggable WorkItemEventBroadcaster SPI defers the choice to the deployment."
 ---
 
+# Distributed SSE and the infrastructure tax
 The broadcaster issue had Redis in the solution description from the start. Makes sense — Redis pub/sub is the canonical answer to fan-out across nodes. But before writing a line of code I asked the question that should have come first: does quarkus-work currently use Redis for anything else?
 
 It doesn't. And MongoDB is on the roadmap as an alternative persistence backend.

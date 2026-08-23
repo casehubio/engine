@@ -8,6 +8,7 @@ projects: [casehub-parent, casehub-life, casehub-iot]
 tags: [iot, home-automation, home-assistant, openhab, platform-design]
 ---
 
+# The Gap in Smart Home Orchestration
 Started by clearing seven PLATFORM.md doc syncs — cross-dep table entries, deep-dive updates, protocol entries to the garden. Mechanical work. Done by mid-session.
 
 The rest of the day was home automation.

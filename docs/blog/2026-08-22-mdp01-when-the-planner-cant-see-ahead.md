@@ -8,6 +8,7 @@ projects: [casehub-engine]
 tags: [goap, planning, integration-testing, dispatch-pipeline]
 ---
 
+# When the planner can't see ahead
 The GOAP planning strategies had comprehensive unit tests — mock the `CaseDefinition`, mock the `CaseContext`, assert the planner returns the right binding. What they didn't have was a single test exercising the real dispatch pipeline. A case starts, context changes fire, Quartz picks up the job, the worker runs, output merges into the context, and the next planning cycle evaluates from the new world state. The unit tests proved the planner's logic. They said nothing about whether the planner actually gets called with the right inputs when embedded in the engine.
 
 Writing those integration tests surfaced something I hadn't thought about.

@@ -9,6 +9,7 @@ projects: [casehub-work]
 tags: [exclusion-policy, cdi, quarkus]
 ---
 
+# The date in the field
 The `ExclusionPolicy` javadoc had a forward reference to issue #185 where proper extension guidance should be. I wanted that resolved: what the activation pattern looks like, what the `excludedUsers` field means, and a concrete non-trivial example to copy from.
 
 I sent the spec to review before any code touched the project. The spec proposed `ExpiringExclusionPolicy` — a policy where `excludedUsers` encodes `userId:YYYY-MM-DD` entries, denying access during a cooling-off period. Conflict-of-interest enforcement, SOX controls, that kind of thing.

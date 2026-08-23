@@ -10,6 +10,7 @@ tags: [business-hours, notifications, spi, cdi, connectors]
 excerpt: "Business-hours SLA and outbound notifications ship, and a notification routing detail that starts as a one-line decision grows into casehub-connectors — a separate repository born from the question of where channel adapters should live."
 ---
 
+# SLAs, signals, and a connector library
 Three epics this session: business-hours SLA, outbound notifications, and something
 that started as a detail and became its own repository.
 
