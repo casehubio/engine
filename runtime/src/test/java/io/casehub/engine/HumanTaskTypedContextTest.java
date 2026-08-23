@@ -23,14 +23,11 @@ import io.casehub.api.model.Binding;
 import io.casehub.api.model.CaseDefinition;
 import io.casehub.api.model.ContextChangeTrigger;
 import io.casehub.api.model.HumanTaskTarget;
-import io.casehub.engine.common.internal.event.EventBusAddresses;
-import io.casehub.engine.common.internal.event.HumanTaskScheduleEvent;
+import io.casehub.engine.common.spi.HumanTaskScheduleRequest;
 import io.quarkus.test.junit.QuarkusTest;
-import io.quarkus.vertx.ConsumeEvent;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
 import java.util.Map;
-import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.TimeUnit;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -43,7 +40,7 @@ class HumanTaskTypedContextTest {
 
   @BeforeEach
   void reset() {
-    TypedEventRecorder.events.clear();
+    RecordingHumanTaskScheduler.events.clear();
   }
 
   @Test
@@ -52,9 +49,9 @@ class HumanTaskTypedContextTest {
 
     await()
         .atMost(5, TimeUnit.SECONDS)
-        .untilAsserted(() -> assertThat(TypedEventRecorder.events).isNotEmpty());
+        .untilAsserted(() -> assertThat(RecordingHumanTaskScheduler.events).isNotEmpty());
 
-    HumanTaskScheduleEvent event = TypedEventRecorder.events.get(0);
+    HumanTaskScheduleRequest event = RecordingHumanTaskScheduler.events.get(0);
     assertThat(event.payloadTypeName()).isEqualTo(PayloadPojo.class.getName());
     assertThat(event.resolutionTypeName()).isEqualTo(ResolutionPojo.class.getName());
     assertThat(event.inputData()).containsEntry("amount", 100);
@@ -67,9 +64,9 @@ class HumanTaskTypedContextTest {
 
     await()
         .atMost(5, TimeUnit.SECONDS)
-        .untilAsserted(() -> assertThat(TypedEventRecorder.events).isNotEmpty());
+        .untilAsserted(() -> assertThat(RecordingHumanTaskScheduler.events).isNotEmpty());
 
-    HumanTaskScheduleEvent event = TypedEventRecorder.events.get(0);
+    HumanTaskScheduleRequest event = RecordingHumanTaskScheduler.events.get(0);
     assertThat(event.payloadTypeName()).isNotNull();
     assertThat(event.resolutionTypeName()).isNotNull();
   }
@@ -85,22 +82,12 @@ class HumanTaskTypedContextTest {
       Thread.currentThread().interrupt();
     }
 
-    assertThat(TypedEventRecorder.events).isEmpty();
+    assertThat(RecordingHumanTaskScheduler.events).isEmpty();
   }
 
   public record PayloadPojo(int amount, String currency) {}
 
   public record ResolutionPojo(String decision, String reason) {}
-
-  @ApplicationScoped
-  static class TypedEventRecorder {
-    static final CopyOnWriteArrayList<HumanTaskScheduleEvent> events = new CopyOnWriteArrayList<>();
-
-    @ConsumeEvent(EventBusAddresses.HUMAN_TASK_SCHEDULE)
-    void onHumanTaskSchedule(HumanTaskScheduleEvent event) {
-      events.add(event);
-    }
-  }
 
   @ApplicationScoped
   static class TypedPayloadCaseBean extends CaseHub {

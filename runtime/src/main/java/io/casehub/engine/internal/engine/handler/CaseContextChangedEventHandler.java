@@ -59,7 +59,6 @@ import io.casehub.engine.common.internal.event.AgentRoutingEscalationEvent;
 import io.casehub.engine.common.internal.event.CaseContextChangedEvent;
 import io.casehub.engine.common.internal.event.EventBusAddresses;
 import io.casehub.engine.common.internal.event.GoalReachedEvent;
-import io.casehub.engine.common.internal.event.HumanTaskScheduleEvent;
 import io.casehub.engine.common.internal.event.OutcomeDisposition;
 import io.casehub.engine.common.internal.event.SubCaseScheduleEvent;
 import io.casehub.engine.common.internal.event.WorkerOutcomeResolvedEvent;
@@ -70,6 +69,8 @@ import io.casehub.engine.common.internal.model.CaseInstance;
 import io.casehub.engine.common.internal.model.CaseMetaModel;
 import io.casehub.engine.common.internal.worker.scope.ScopedWorkerRegistry;
 import io.casehub.engine.common.spi.CaseDefinitionRegistry;
+import io.casehub.engine.common.spi.HumanTaskScheduleRequest;
+import io.casehub.engine.common.spi.HumanTaskScheduler;
 import io.casehub.engine.common.spi.event.CaseContextUpdatedEvent;
 import io.casehub.engine.common.spi.event.CaseLifecycleEvent;
 import io.casehub.engine.common.spi.scheduler.WorkerExecutionManager;
@@ -146,6 +147,8 @@ public class CaseContextChangedEventHandler {
   @Inject ScopedWorkerRegistry scopedWorkerRegistry;
 
   @Inject Event<CaseContextUpdatedEvent> caseContextUpdatedEvents;
+
+  @Inject jakarta.enterprise.inject.Instance<HumanTaskScheduler> humanTaskScheduler;
 
   @RunOnVirtualThread
   @ConsumeEvent(value = EventBusAddresses.CONTEXT_CHANGED)
@@ -686,6 +689,13 @@ public class CaseContextChangedEventHandler {
       final HumanTaskTarget target,
       final List<RetrievedExperience> experiences,
       JsonNode activationSnapshot) {
+    if (!humanTaskScheduler.isResolvable()) {
+      LOG.warnf(
+          "No HumanTaskScheduler on classpath — skipping human task binding '%s' caseId=%s",
+          binding.getName(), caseInstance.getUuid());
+      return;
+    }
+
     final Map<String, Object> inputData = evaluateInputMapping(caseInstance, target);
 
     if (target.payloadType() != null && target.inputMapping() != null && !inputData.isEmpty()) {
@@ -762,10 +772,9 @@ public class CaseContextChangedEventHandler {
           resolveStringExpression(caseInstance, target.titleExpression(), "titleExpression");
       final String resolvedScope =
           resolveStringExpression(caseInstance, target.scopeExpression(), "scopeExpression");
-      final java.time.Duration resolvedExpiresIn = resolveExpiresInExpression(caseInstance, target);
 
       LOG.infof(
-          "Publishing HumanTaskScheduleEvent: caseId=%s binding=%s template=%s deadline=%s expiresAtDeadline=%s",
+          "Scheduling human task: caseId=%s binding=%s template=%s deadline=%s expiresAtDeadline=%s",
           caseInstance.getUuid(),
           binding.getName(),
           target.templateRef(),
@@ -777,26 +786,25 @@ public class CaseContextChangedEventHandler {
       final String resolutionTypeName =
           target.resolutionType() != null ? target.resolutionType().getName() : null;
 
-      eventBus.publish(
-          EventBusAddresses.HUMAN_TASK_SCHEDULE,
-          new HumanTaskScheduleEvent(
-              caseInstance.getUuid(),
-              caseInstance.tenancyId,
-              binding.getName(),
-              target,
-              inputData,
-              payloadTypeName,
-              resolutionTypeName,
-              finalGroups,
-              finalUsers,
-              caseBudgetDeadline,
-              expiresAtDeadline,
-              resolvedTitle,
-              resolvedScope,
-              resolvedExpiresIn,
-              experiences,
-              scores,
-              activationSnapshot));
+      humanTaskScheduler
+          .get()
+          .schedule(
+              new HumanTaskScheduleRequest(
+                  caseInstance.getUuid(),
+                  caseInstance.tenancyId,
+                  binding.getName(),
+                  target,
+                  inputData,
+                  payloadTypeName,
+                  resolutionTypeName,
+                  finalGroups,
+                  finalUsers,
+                  caseBudgetDeadline,
+                  expiresAtDeadline,
+                  resolvedTitle,
+                  resolvedScope,
+                  experiences,
+                  scores));
     } catch (Exception t) {
       LOG.warnf(
           t,
@@ -852,27 +860,6 @@ public class CaseContextChangedEventHandler {
     }
     return expressionEngineRegistry
         .extractString(evaluator, caseInstance.getCaseContext())
-        .orElse(null);
-  }
-
-  private java.time.Duration resolveExpiresInExpression(
-      final CaseInstance caseInstance, final HumanTaskTarget target) {
-    if (target.expiresInExpression() == null) {
-      return null;
-    }
-    return expressionEngineRegistry
-        .extractString(target.expiresInExpression(), caseInstance.getCaseContext())
-        .map(
-            s -> {
-              try {
-                return java.time.Duration.parse(s);
-              } catch (Exception e) {
-                LOG.warnf(
-                    "expiresInExpression result '%s' is not a valid ISO-8601 duration — ignoring",
-                    s);
-                return null;
-              }
-            })
         .orElse(null);
   }
 
