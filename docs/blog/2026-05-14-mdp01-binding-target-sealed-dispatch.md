@@ -9,6 +9,7 @@ projects: [casehub-engine]
 tags: [java, quarkus, sealed-interface, hitl, vertx]
 ---
 
+# BindingTarget and the sealed dispatch
 The `Binding` class in casehub-engine has had two nullable fields since the beginning — `capability` for worker routing and `subCase` for spawning child cases. Mutually exclusive by construction, which meant dispatch code everywhere had to check `binding.getSubCase() != null` to know which path to take. Every new binding type would add another nullable field and another branch, scattered.
 
 I wanted to fix that before adding the third type. The result is a sealed interface — `BindingTarget` — with four permits: `CapabilityTarget`, `SubCaseTarget`, `HumanTaskTarget`, and `ExtensionTarget`. `Binding` now carries a single `target()`. The project is on Java 17, so dispatch uses if-else instanceof chains rather than exhaustive switch — but the sealed semantics are there. No new subtype can be introduced silently.

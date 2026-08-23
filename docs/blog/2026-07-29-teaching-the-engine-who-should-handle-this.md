@@ -8,6 +8,7 @@ projects: [casehub-engine]
 tags: [cbr, routing, human-tasks, spi]
 ---
 
+# Teaching the Engine Who Should Handle This
 Most workflow engines assign human tasks the same way they did twenty years ago: a queue, a round-robin, maybe a role-based filter. The task appears in someone's inbox. Whether that person is the right person — whether they've handled this kind of work before, whether they're already overloaded, whether the case context makes one reviewer more appropriate than another — is left to the humans to figure out.
 
 We've been building the infrastructure to change that.

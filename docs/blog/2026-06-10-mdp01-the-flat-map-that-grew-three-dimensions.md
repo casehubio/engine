@@ -4,6 +4,7 @@ date: 2026-06-10
 tags: [casehub-engine, blackboard, memory, design]
 ---
 
+# The Flat Map That Grew Three Dimensions
 The CaseContext in casehub-engine has been, since the beginning, a flat `Map<String, Object>`. Workers write their output into it, the engine writes its signals — `actionGateRejected`, `workItemEscalated`, whatever — and domain initialization data lands there too. One namespace for everything.
 
 This was always a collision waiting to happen. A worker that returns a key named `actionGateRejected` would silently trigger engine behaviour. Semantic domain knowledge — the fraud threshold for a fraud-check case, the entity ID for a clinical trial — lives alongside mutable worker outputs with no distinction.

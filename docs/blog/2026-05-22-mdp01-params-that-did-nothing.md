@@ -9,6 +9,7 @@ projects: [casehub-work]
 tags: [quarkus, cdi, testing, routing, jq]
 ---
 
+# The Params That Did Nothing
 There's a particular kind of bug that's easy to miss in review: code that compiles, ships, and runs fine — it just doesn't do what it says it does.
 
 We spent a session clearing backlog items, and kept finding them.

@@ -10,6 +10,7 @@ tags: [mongodb, persistence, occ, data-loss]
 series: issue-270-mongo-document-field-sync
 ---
 
+# The Thirteen Fields That Weren't There
 MongoWorkItemDocument has been shipping since Chapter C20 with a silent data loss bug: 13 of the 44 WorkItem fields weren't mapped in `from()` or `toDomain()`. Put a WorkItem through the MongoDB store, get it back, and `callerRef`, `parentId`, `templateId`, `confidenceScore`, `outcome`, and eight others come back null. The JPA store round-trips everything because Hibernate maps the entity directly. MongoDB doesn't — you write the mapping by hand, and nobody wrote it for the fields added after C20.
 
 The immediate trigger was #240 (lifecycle alignment), which added `percentComplete` and `statusNote`. Those got mapped. But during post-merge cleanup I noticed the issue body for #270 listing thirteen fields that predated #240 and were never there. Claim SLA tracking (`accumulatedUnclaimedSeconds`, `lastReturnedToPoolAt`), spawn routing (`callerRef`, `parentId`), named outcomes (`templateId`, `permittedOutcomes`, `excludedUsers`, `outcome`), schema validation (`inputDataSchema`, `outputDataSchema`), AI metadata (`confidenceScore`), and scope — all silently dropped on every round-trip.

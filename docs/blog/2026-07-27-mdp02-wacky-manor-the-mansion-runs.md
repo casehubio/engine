@@ -9,6 +9,7 @@ projects: [casehub]
 tags: [eidos, qhorus, game-engine, multi-agent, wacky-races, ui]
 ---
 
+# Wacky Manor: The Mansion Runs
 The previous entry proved the characters could talk. This one proves they can act — navigate rooms, pick up objects, trigger plot beats, and produce an actual scene where the Ant Hill Mob accidentally saves Penelope from being poisoned. With a browser UI showing SVG character illustrations sliding between rooms while dialogue streams into per-room chat panels.
 
 The whole stack: Eidos descriptors → SystemPromptRenderer → AgentProvider (Claude CLI) → structured JSON response → ActionResolver → TriggerEvaluator → SceneDirector → Qhorus channels → WebSocket → Lit frontend. Built in one session. 113 tests. The live scenario took five minutes of LLM calls and produced something genuinely funny.

@@ -9,6 +9,7 @@ projects: [casehub]
 tags: [documentation, api-design, issue-management]
 ---
 
+# Two gaps hiding in plain sight
 The branch started as routine maintenance. Four docs issues, all small — update some type names, remove a stale deferred note, update the neural-text section, register a new repo in the build dashboards. Nothing that should surprise anyone.
 
 It didn't quite work out that way.

@@ -9,6 +9,7 @@ projects: [CaseHub Work]
 tags: [queues, api, refactoring]
 ---
 
+# The summary that was already there
 ## The summary that was already there
 
 I needed a `GET /queues/{id}/summary` endpoint — pre-computed aggregates so the

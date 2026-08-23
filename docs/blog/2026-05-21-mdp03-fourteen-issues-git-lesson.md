@@ -9,6 +9,7 @@ projects: [casehub]
 tags: [protocols, git, squash]
 ---
 
+# Fourteen Issues and a Git Lesson
 This morning started as a maintenance day. Fourteen open issues on the parent repo, almost all XS or S, almost all doc or protocol work that had accumulated over a few sessions. The kind of backlog where each item takes ten minutes but together they represent real drift between what's built and what's documented.
 
 We worked through them in order: PLATFORM.md dependency rows, cross-repo table updates, seven new protocol files. The most substantial was the trust routing maturity model — a four-phase pattern for any casehub application that uses trust-based worker routing. Phase 0 is pure availability routing, identical to the Gastown GUPP baseline. Phases advance automatically as `minimumObservations` thresholds are crossed per agent per capability. No operator intervention, no configuration switches. The system never blocks on cold-start because Phase 0 is always there — it just accumulates evidence until it can route by trust.

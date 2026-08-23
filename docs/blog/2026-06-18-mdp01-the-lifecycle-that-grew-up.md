@@ -5,6 +5,7 @@ author: Mark Proctor
 tags: [casehub-work, lifecycle, design, WS-HumanTask, architecture]
 ---
 
+# The Lifecycle That Grew Up
 WorkItemStatus started life with ten states. Enough to model a human task inbox — claim, start, complete, reject, cancel, the usual suspects. It handled delegation, suspension, expiry, and escalation. It was functional.
 
 But functional isn't the same as correct.

@@ -9,6 +9,7 @@ projects: [casehub-work]
 tags: [capability-registry, value-type, quarkus]
 ---
 
+# The string that looked like a string
 The problem with `"legal_review"` is that it looks exactly like `"legal-review"`. One underscore. WorkBroker does exact string matching — if the engine puts `"legal-review"` in a case definition and the worker registers `"legal_review"`, nothing gets assigned, and the error says "no worker available for capability: legal-review" with no indication of why.
 
 I wanted to fix this at the type level, not the validation level. The alternative — keep `String` everywhere and add a `CapabilityValidator` to check things at the write boundary — would have left every new consumer of capability data facing the same format risk. The next thing that reads from `WorkerCandidate.capabilities` would need its own guards. The type approach means you get it right once or you don't compile.

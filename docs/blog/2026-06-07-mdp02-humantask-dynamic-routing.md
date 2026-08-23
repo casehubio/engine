@@ -9,6 +9,7 @@ projects: [casehub-engine]
 tags: [java, quarkus, sealed-types, humanTask, async-testing, routing]
 ---
 
+# Breaking static routing in humanTask bindings
 Until now a humanTask binding in a case definition had fixed routing. You'd write:
 
 ```yaml

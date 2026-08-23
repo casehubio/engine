@@ -9,6 +9,7 @@ projects: [casehub-work]
 tags: [path, scope, queues, refactoring]
 ---
 
+# Filtering Out the Enum
 ## Filtering Out the Enum
 
 PR #236 replaced `VocabularyScope` with `Path` in the casehub-work runtime module three days ago. `FilterScope` was the same mistake in the queues module — PERSONAL, TEAM, ORG hardcoded as enum values when a hierarchical path type that already does this exists in `casehub-platform-api`. I brought Claude in to help work through the 58 call sites and we found three things worth noting beyond the mechanical replacements.

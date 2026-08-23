@@ -9,6 +9,7 @@ projects: [casehub-engine]
 tags: [cdi, routing, trust, architecture]
 ---
 
+# The Wrong Abstraction
 **Seven null fields**
 
 One of the better diagnostic tests for a wrong abstraction: count how many fields you're passing as `null`.

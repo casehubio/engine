@@ -9,6 +9,7 @@ projects: [casehub-engine]
 tags: [java, quarkus, cdi, arc]
 ---
 
+# Config over CDI
 The previous entry ended with a loose end: `JsonPatchContextDiffStrategy` still
 using `@Alternative` while the no-op next door had just moved to `@DefaultBean`.
 Before touching it I wanted to understand why the inconsistency existed at all.

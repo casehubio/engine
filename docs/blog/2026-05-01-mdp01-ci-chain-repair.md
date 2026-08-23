@@ -10,6 +10,7 @@ tags: [ci-cd, github-actions, cross-repo, debugging]
 excerpt: "The cross-repo dispatch never fired because GITHUB_TOKEN is scoped to the repo where the workflow runs — six repos needed a PAT, and the CI UI was showing success for failed steps because continue-on-error hides step outcomes at the job level."
 ---
 
+# CI Chain Repair
 The CaseHub build chain has been broken since the repo renames. Not broken in an obvious way — each repo's CI was green on its own, but the cross-repo dispatch never fired. Work, qhorus, and claudony were red because ledger and connectors artifacts weren't being published when upstream changed.
 
 The root cause was embarrassingly simple. Every publish.yml file used `GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}` for the cross-repo `repository_dispatch` call. That token is scoped to the repo where the workflow runs. GitHub returns 403 — "Resource not accessible by integration" — when you use it against another repo's API. The fix is a classic PAT stored as `GH_PAT`. One line across six repos.

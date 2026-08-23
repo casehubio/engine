@@ -10,6 +10,7 @@ tags: [workflow, cc-praxis, epic, workspace, permissions]
 excerpt: "Twenty workflow gaps identified, all closed. The epic/workspace/journal machinery is now hardened — section hashing, atomic branch switching, HANDOFF.md always on main, anchors validated before commit."
 ---
 
+# Closing the Gaps
 The workflow audit started two sessions ago with a question: is the epic workflow actually coherent? Twenty gaps later, we had the answer. This session closed the last of them.
 
 The hard items (#87–89) were the interesting ones. Section heading hashes in `.meta` at epic start — the merge at close now detects renamed or deleted headings before attempting to apply journal entries, presenting a choice rather than silently producing wrong output. Atomic branch switching became a named helper procedure in work-start, with alignment verification after every switch. HANDOFF.md now always lands on workspace main regardless of which branch the session is on — a stash-commit-restore sequence that took one concise code block to express clearly.

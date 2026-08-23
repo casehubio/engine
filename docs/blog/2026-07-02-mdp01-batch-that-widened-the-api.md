@@ -9,6 +9,7 @@ projects: [casehub-work]
 tags: [spi, api, workitem, escalation, observer]
 ---
 
+# The Batch That Widened the API
 Seven issues, all small, all on one branch. The kind of session where the value isn't in any single change but in the cumulative surface area they open for downstream consumers.
 
 The issues fell into three categories. First, the callerRef lookup fix — `WorkItemService.findByCallerRef()` was doing a linear scan in Java even though the store already had indexed query overrides. One-line delegation. But documenting the ordering semantics (#280) forced a real decision: when multiple WorkItems share the same callerRef (first expires, second created), which one wins? "Most recently created" is the only answer that makes callerRef round-tripping work reliably. That meant adding `ORDER BY createdAt DESC` to JPA and MongoDB store implementations and switching the default fallback from `findFirst()` to `max(Comparator.comparing(wi -> wi.createdAt))`.

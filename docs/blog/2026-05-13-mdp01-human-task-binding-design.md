@@ -9,6 +9,7 @@ projects: [casehub-work, casehub-engine]
 tags: [cdi, engine, adapter, human-task, design, binding]
 ---
 
+# The half that was missing
 The issue said the casehub-work adapter wasn't implemented. Claude opened the `work-adapter` module and immediately found `WorkItemLifecycleAdapter.java`, `CallerRef.java`, and eight passing tests. The inbound path — WorkItem completes, adapter parses `callerRef`, marks the PlanItem, fires `CONTEXT_CHANGED` — was done. The issue description was wrong, or at least incomplete.
 
 What wasn't done was the outbound path. When a case binding activates for a human task, nothing creates the WorkItem. The `ProvisionContext` the engine passes to `WorkerProvisioner.provision()` doesn't include `planItemId` — only `caseId` and the capability name. Without `planItemId`, there's no way to encode `callerRef = CallerRef.encode(caseId, planItemId)`. The provisioner approach didn't work.

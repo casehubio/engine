@@ -8,6 +8,7 @@ subtype: diary
 projects: [CaseHub]
 ---
 
+# What Wasn't on the Map
 I asked about quarkmind issues. The response: "what's quarkmind?" That was the tell. The repo existed locally, built in the incremental CI, had its own CLAUDE.md. Entirely invisible to the peer repo list, the full-stack build, and the platform documentation.
 
 That's the failure mode: a repo can be building and shipping while being blind to any session-level reasoning about the platform.

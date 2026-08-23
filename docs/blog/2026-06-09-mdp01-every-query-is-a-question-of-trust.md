@@ -9,6 +9,7 @@ projects: [casehub-work]
 tags: [multi-tenancy, architecture, cdi]
 ---
 
+# Every Query Is a Question of Trust
 I'd been putting off multi-tenancy. Not because it was hard to understand — add a
 column, filter by it — but because "add a column" in a system with 20+ stores across
 three persistence backends means touching everything. Every query, every event handler,

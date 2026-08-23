@@ -9,6 +9,7 @@ projects: [casehub-engine]
 tags: [java, quarkus, tdd, multi-repo]
 ---
 
+# Honouring the Contract
 `HumanTaskScheduleHandler` has had a stub in template mode for a while. The comment was honest: `// Template mode not yet implemented — leave PlanItem PENDING so binding stays eligible.` What was less obvious was that the API had already made a promise.
 
 `HumanTaskTarget`'s javadoc says both inline and template modes support `inputMapping` — the JQ expression that maps case context to task payload. The promise was in the type, not the implementation. Closing the stub meant honouring the whole contract, not just the lookup part.

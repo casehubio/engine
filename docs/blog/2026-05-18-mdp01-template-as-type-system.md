@@ -9,6 +9,7 @@ projects: [casehub-work]
 tags: [oht, schema-validation, excluded-users, cherry-pick, flyway]
 ---
 
+# Template as type system — and a merge that lied
 The last OHT gaps are closed. `WorkItemTemplate` now carries the full type
 contract: named outcomes, JSON Schema for payload and resolution, and an
 explicit exclusion list for conflict-of-interest enforcement. Three issues, two

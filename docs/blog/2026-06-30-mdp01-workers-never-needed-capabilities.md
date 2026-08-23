@@ -10,6 +10,7 @@ tags: [worker-api, casehub-engine, first-principles]
 series: issue-509-binding-inputschema-yaml-augment
 ---
 
+# Workers Never Needed Capabilities
 I started this session planning to add a template method to YamlCaseHub — a straightforward refactoring to eliminate duplicated double-checked locks across eight consumer subclasses. The kind of thing you file as "S / Low" and expect to close before lunch.
 
 The interesting part was what happened when I traced the duplication to its root.

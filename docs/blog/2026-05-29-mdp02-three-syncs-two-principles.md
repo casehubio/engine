@@ -8,6 +8,7 @@ subtype: diary
 projects: [CaseHub Parent]
 ---
 
+# Three syncs, two principles
 ## Three syncs, two principles
 
 Three doc issues, all in the parent repo. Mechanical work — updating references that had fallen behind code changes. What makes it worth writing up is what the changes reveal about how the platform thinks about extension.

@@ -9,6 +9,7 @@ projects: [casehub-engine]
 tags: [java, yaml, validation]
 ---
 
+# P1D Was Never Invalid
 The issue description was confident: "`Duration.parse()` throws `DateTimeParseException` for any non-PT-prefixed format (e.g. `P1D`)." We were adding validation to `CaseDefinitionYamlMapper.convertHumanTask` — the method that converts YAML `humanTask` binding schemas to API model objects — and the issue gave `"P1D"` as the test case for the invalid-format path.
 
 `"P1D"` parses fine. Java's `Duration.parse()` accepts the full ISO-8601 extended duration format, day components included. `"P1D"` returns 86400 seconds without complaint.

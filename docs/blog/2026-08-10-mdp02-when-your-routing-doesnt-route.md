@@ -9,6 +9,7 @@ tags: [htn, re-planning, stateful-routing, agentic]
 series: issue-881-agentic-planning
 ---
 
+# When Your Routing Doesn't Route
 The plan for engine#882 was straightforward: when an HTN step fails, feed the failure context back to the decomposition strategy and let it produce a revised plan. Three moving parts — `ReplanContext` to carry the failure data, `ReplanPolicy` to configure the guard rails, and `HtnExecutor` to run the loop. The interesting part wasn't any of those.
 
 The design spec placed `ReplanContext` in `casehub-engine-agentic`, the execution module. That's wrong — `DecompositionStrategy.replan()` needs it as a parameter, and `DecompositionStrategy` lives in `engine-api`. Placing the context type in a downstream module would create a circular dependency. It belongs alongside `DecompositionContext` in `engine-api`, where it's a plan-definition type that any strategy implementation can consume.

@@ -8,6 +8,7 @@ projects: [casehub-engine]
 tags: [mutiny, timeout, virtual-threads, quarkus, agentic-planning, constraints]
 ---
 
+# When Your Timeout Doesn't Actually Time Out
 The agentic planning epic has four phases. Phase 1 landed the execution bridge — blocks patterns running inside the engine's worker boundary. Phase 2 is about giving those patterns resource awareness: how long can you run, how many agents can you use at once.
 
 The design looked clean on paper. `PlanningConstraints` carries a time budget and a resource limit. The decomposition strategy gets them for prompt guidance — tell the LLM "you have 30 minutes and 3 agents, plan accordingly." The execution handler enforces them at runtime. Two enforcement points, two different mechanisms.

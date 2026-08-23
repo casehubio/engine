@@ -9,6 +9,7 @@ projects: [casehub-work]
 tags: [sla, design-patterns, sealed-interface, transactional]
 ---
 
+# The Decision the Policy Returns
 `EscalationPolicy.escalate()` was always a lie. It pretended to be a hook, but it was really fire-and-forget: the expiry service called it and moved on with no way to know what happened next. Escalation was void.
 
 We replaced it with `SlaBreachPolicy.onBreach() → BreachDecision`, where the policy returns what should happen and casehub-work executes it. The runtime owns execution; the policy owns the decision.

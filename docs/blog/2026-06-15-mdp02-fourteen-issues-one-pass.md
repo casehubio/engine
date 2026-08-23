@@ -9,6 +9,7 @@ projects: [casehub]
 tags: [docs, platform, engine, qhorus]
 ---
 
+# Fourteen Issues in One Pass
 Fourteen open doc sync issues. One pass. The size of the batch is itself a signal — platform development across a dozen repos had outrun the documentation. The previous session closed five; this one closed fourteen. The gap had been growing.
 
 Clinical's Layer 8 is now complete. The last entry noted it as partial: `ClinicalActionRiskClassifier` and `SusarCriteriaEvaluator` were wired, but the worker binding was deferred. Since then: `ClinicalSusarOversightCaseHub` shipped with `susar-oversight.yaml`, a three-phase `SusarOversightCaseService`, and `SusarGateDecisionListener` with DB-discriminated `@ConsumeEvent(blocking = true)` for all three gate outcomes (approved/rejected/expired). GDPR Art.17 consent withdrawal, W3C PROV-DM export, and `ClinicalComplianceSupplement` for EU AI Act Art.12 all landed in the same branch. Layer 8 had a busy month.

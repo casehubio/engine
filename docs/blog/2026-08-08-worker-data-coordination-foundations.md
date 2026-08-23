@@ -6,6 +6,7 @@ tags: [engine, exchange, data-channel, camel, design]
 issue: 633
 ---
 
+# Worker Data Coordination — From Camel Analysis to Foundation Types
 The Blackboard has been the only data coordination path for workers since day one. Every worker reads from CaseContext via JQ projection, writes output that gets merged back, and the shared mutable state is how bindings communicate. It works — but it's the only option. Two patterns have been missing: discrete payload handoff with metadata (1→1), and continuous streaming between workers with backpressure.
 
 The issue (#633) came out of the blocks consolidation brainstorming. The original framing referenced Camel's Exchange/Message model and suggested DataChannel for streaming pipes. The question was whether to use Camel directly or build native types.

@@ -10,6 +10,7 @@ tags: [virtual-threads, reactive, intellij-mcp, scope-discovery]
 series: issue-319-retire-reactive-tier
 ---
 
+# casehub-work was already blocking
 I went into #319 expecting a significant migration — the engine's virtual-thread-migration.md cookbook describes deleting reactive SPIs, rewriting JPA repositories from Panache Reactive to EntityManager, converting handler return types. The issue itself lists six scope items. I assumed the work repo would mirror the engine's dual-stack pattern.
 
 It doesn't. casehub-work uses `quarkus-hibernate-orm-panache` (blocking JPA) and `quarkus-jdbc-postgresql`. Zero reactive source files. Zero reactive Maven dependencies outside the broadcaster modules. The reactive tier I spent an hour scoping was entirely in the engine repo.

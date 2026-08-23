@@ -8,6 +8,7 @@ projects: [CaseHub Parent]
 tags: [arc42stories, sial, architecture-documentation, llm-development, vertical-slice]
 ---
 
+# Arc42Stories: When Layer 3 Broke Open Something Bigger
 The plan was to implement Layer 3 of devtown.
 
 Devtown is CaseHub's reference application for software engineering — a PR review

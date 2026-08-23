@@ -9,6 +9,7 @@ projects: [casehub]
 tags: [architecture, streams, desiredstate, cloudevents]
 ---
 
+# Three questions, three repos unblocked
 Three questions, three repos unblocked.
 
 The spec I've been avoiding is done. Not because the questions were hard to answer — they weren't, once I sat down with them — but because getting the answers *right* required reading enough code to know what constraints actually existed rather than what I imagined they did.

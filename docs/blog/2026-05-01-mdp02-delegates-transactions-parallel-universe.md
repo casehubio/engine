@@ -10,6 +10,7 @@ tags: [postgresql, cdi, vertx, mutiny, github, testing]
 excerpt: "castTo(PgConnection.class) fails immediately because Mutiny codegen produces sibling hierarchies, not parent-child — the subscription needs the raw Vert.x delegate to call notificationHandler()."
 ---
 
+# Delegates, transactions, and not building a parallel universe
 The decision to use PostgreSQL LISTEN/NOTIFY for distributed SSE was already
 made — the April 29 entry covers it. This is about what we found when we
 actually built it.
