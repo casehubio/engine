@@ -35,7 +35,6 @@ import io.quarkus.deployment.builditem.GeneratedClassBuildItem;
 import io.quarkus.gizmo.ClassCreator;
 import io.quarkus.gizmo.MethodCreator;
 import io.quarkus.gizmo.MethodDescriptor;
-import io.quarkus.runtime.RuntimeValue;
 import jakarta.enterprise.context.ApplicationScoped;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -84,22 +83,36 @@ public class EngineAnnotationsProcessor {
   void generateCaseDefinitions(
       CombinedIndexBuildItem indexBuildItem,
       CaseDefinitionRecorder recorder,
-      BuildProducer<SyntheticBeanBuildItem> syntheticBeans) {
+      BuildProducer<SyntheticBeanBuildItem> syntheticBeans,
+      BuildProducer<io.quarkus.arc.deployment.UnremovableBeanBuildItem> unremovableBeans) {
 
     IndexView index = indexBuildItem.getIndex();
+    String builderClassName = CaseDefinition.Builder.class.getName();
 
     for (AnnotationInstance caseAnn : index.getAnnotations(CASE)) {
       ClassInfo caseClass = caseAnn.target().asClass();
       CaseDescriptor descriptor = buildDescriptor(caseAnn, caseClass, index);
 
-      RuntimeValue<CaseDefinition> runtimeValue = recorder.createCaseDefinition(descriptor);
+      if (descriptor.customizers() != null) {
+        for (var cd : descriptor.customizers()) {
+          for (String paramType : cd.parameterTypes()) {
+            if (!paramType.equals(builderClassName)) {
+              unremovableBeans.produce(
+                  io.quarkus.arc.deployment.UnremovableBeanBuildItem.beanClassNames(paramType));
+            }
+          }
+        }
+      }
+
+      java.util.function.Supplier<CaseDefinition> supplier =
+          recorder.createCaseDefinitionSupplier(descriptor);
 
       syntheticBeans.produce(
           SyntheticBeanBuildItem.configure(CaseDefinition.class)
               .scope(ApplicationScoped.class)
               .unremovable()
               .setRuntimeInit()
-              .runtimeValue(runtimeValue)
+              .supplier(supplier)
               .done());
     }
   }
@@ -203,11 +216,14 @@ public class EngineAnnotationsProcessor {
       AnnotationInstance customizeAnn = method.annotation(CUSTOMIZE);
       if (customizeAnn != null) {
         String targetBinding = stringValueOrDefault(customizeAnn, index, "value", "");
+        List<String> paramTypes =
+            method.parameterTypes().stream().map(t -> t.name().toString()).toList();
         customizers.add(
             new io.casehub.engine.annotations.runtime.CustomizerDescriptor(
                 method.name(),
                 targetBinding.isEmpty() ? null : targetBinding,
-                caseClass.name().toString()));
+                caseClass.name().toString(),
+                paramTypes));
       }
 
       AnnotationInstance capAnn = method.annotation(CAPABILITY);

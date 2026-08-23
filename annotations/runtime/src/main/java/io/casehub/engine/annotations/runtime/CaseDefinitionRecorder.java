@@ -29,7 +29,6 @@ import io.casehub.api.model.StandardGoalKind;
 import io.casehub.engine.plan.goap.GoapAction;
 import io.casehub.worker.api.Capability;
 import io.casehub.worker.api.Worker;
-import io.quarkus.runtime.RuntimeValue;
 import io.quarkus.runtime.annotations.Recorder;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -43,7 +42,12 @@ public class CaseDefinitionRecorder {
 
   private static final Logger LOG = Logger.getLogger(CaseDefinitionRecorder.class);
 
-  public RuntimeValue<CaseDefinition> createCaseDefinition(CaseDescriptor descriptor) {
+  public java.util.function.Supplier<CaseDefinition> createCaseDefinitionSupplier(
+      CaseDescriptor descriptor) {
+    return () -> createCaseDefinitionInternal(descriptor);
+  }
+
+  CaseDefinition createCaseDefinitionInternal(CaseDescriptor descriptor) {
     var builder =
         CaseDefinition.builder()
             .namespace(descriptor.namespace())
@@ -278,18 +282,36 @@ public class CaseDefinitionRecorder {
       for (CustomizerDescriptor cd : descriptor.customizers()) {
         if (cd.targetBinding() == null) {
           try {
-            Class<?> iface =
-                Thread.currentThread().getContextClassLoader().loadClass(cd.interfaceName());
-            java.lang.reflect.Method customizer =
-                iface.getMethod(cd.methodName(), CaseDefinition.Builder.class);
-            customizer.invoke(null, builder);
+            ClassLoader cl = Thread.currentThread().getContextClassLoader();
+            Class<?> iface = cl.loadClass(cd.interfaceName());
+            Class<?>[] paramClasses =
+                cd.parameterTypes().stream()
+                    .map(
+                        t -> {
+                          try {
+                            return cl.loadClass(t);
+                          } catch (ClassNotFoundException e) {
+                            throw new RuntimeException(e);
+                          }
+                        })
+                    .toArray(Class<?>[]::new);
+            java.lang.reflect.Method customizer = iface.getMethod(cd.methodName(), paramClasses);
+            Object[] args = new Object[paramClasses.length];
+            for (int i = 0; i < paramClasses.length; i++) {
+              if (CaseDefinition.Builder.class.isAssignableFrom(paramClasses[i])) {
+                args[i] = builder;
+              } else {
+                args[i] = io.quarkus.arc.Arc.container().select(paramClasses[i]).get();
+              }
+            }
+            customizer.invoke(null, args);
           } catch (Exception e) {
-            LOG.warn("Failed to apply @Customize: " + e.getMessage());
+            LOG.warnf(e, "Failed to apply @Customize method '%s'", cd.methodName());
           }
         }
       }
     }
 
-    return new RuntimeValue<>(builder.build());
+    return builder.build();
   }
 }
