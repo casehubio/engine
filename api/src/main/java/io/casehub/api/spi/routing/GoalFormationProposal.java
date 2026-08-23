@@ -17,7 +17,9 @@ package io.casehub.api.spi.routing;
 
 import io.casehub.eidos.api.GoalPriority;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
+import org.jspecify.annotations.Nullable;
 
 public record GoalFormationProposal(List<ProposedGoal> goals, String rationale) {
   public GoalFormationProposal {
@@ -26,11 +28,16 @@ public record GoalFormationProposal(List<ProposedGoal> goals, String rationale) 
   }
 
   public record ProposedGoal(
-      String name, String description, GoalPriority suggestedPriority, String formationReason) {
+      String name,
+      String description,
+      GoalPriority suggestedPriority,
+      String formationReason,
+      @Nullable Map<String, String> attributes) {
     public ProposedGoal {
       Objects.requireNonNull(name, "name must not be null");
       Objects.requireNonNull(description, "description must not be null");
       Objects.requireNonNull(formationReason, "formationReason must not be null");
+      attributes = attributes != null ? Map.copyOf(attributes) : null;
     }
   }
 }

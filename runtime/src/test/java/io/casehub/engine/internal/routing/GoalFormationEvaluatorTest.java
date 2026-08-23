@@ -25,6 +25,7 @@ import static org.mockito.Mockito.when;
 
 import io.casehub.api.model.CaseDefinition;
 import io.casehub.api.spi.routing.GoalFormationProposal;
+import io.casehub.api.spi.routing.GoalFormationService;
 import io.casehub.api.spi.routing.GoalFormationStrategy;
 import io.casehub.eidos.api.AgentDescriptor;
 import io.casehub.eidos.api.AgentGoal;
@@ -74,6 +75,12 @@ class GoalFormationEvaluatorTest {
     Instance<CaseMemoryStore> memoryInstance = mock(Instance.class);
     when(memoryInstance.isResolvable()).thenReturn(false);
 
+    GoalFormationService formationService =
+        new DefaultGoalFormationService(agentRegistry, eventLogRepository);
+    Instance<GoalFormationService> formationServiceInstance = mock(Instance.class);
+    when(formationServiceInstance.isResolvable()).thenReturn(true);
+    when(formationServiceInstance.get()).thenReturn(formationService);
+
     try {
       when(strategyResolver.resolve(GoalFormationStrategy.class, "llm")).thenReturn(strategy);
     } catch (Exception e) {
@@ -83,6 +90,7 @@ class GoalFormationEvaluatorTest {
     evaluator =
         new GoalFormationEvaluator(
             registryInstance,
+            formationServiceInstance,
             memoryInstance,
             caseDefinitionRegistry,
             strategyResolver,
@@ -100,10 +108,13 @@ class GoalFormationEvaluatorTest {
     @SuppressWarnings("unchecked")
     Instance<AgentRegistry> ri = mock(Instance.class);
     @SuppressWarnings("unchecked")
+    Instance<GoalFormationService> fsi = mock(Instance.class);
+    @SuppressWarnings("unchecked")
     Instance<CaseMemoryStore> mi = mock(Instance.class);
     var disabled =
         new GoalFormationEvaluator(
             ri,
+            fsi,
             mi,
             caseDefinitionRegistry,
             strategyResolver,
@@ -124,10 +135,12 @@ class GoalFormationEvaluatorTest {
   void skipsWhenAgentRegistryNotResolvable() {
     Instance<AgentRegistry> absent = mock(Instance.class);
     when(absent.isResolvable()).thenReturn(false);
+    Instance<GoalFormationService> fsi = mock(Instance.class);
     Instance<CaseMemoryStore> mi = mock(Instance.class);
     var eval =
         new GoalFormationEvaluator(
             absent,
+            fsi,
             mi,
             caseDefinitionRegistry,
             strategyResolver,
@@ -181,7 +194,7 @@ class GoalFormationEvaluatorTest {
 
     var proposed =
         new GoalFormationProposal.ProposedGoal(
-            "new-goal", "A new goal", GoalPriority.SECONDARY, "from insight");
+            "new-goal", "A new goal", GoalPriority.SECONDARY, "from insight", null);
     when(strategy.propose(any()))
         .thenReturn(new GoalFormationProposal(List.of(proposed), "rationale"));
 
@@ -214,9 +227,12 @@ class GoalFormationEvaluatorTest {
     Instance<CaseMemoryStore> mi = mock(Instance.class);
     when(mi.isResolvable()).thenReturn(false);
 
+    Instance<GoalFormationService> fsi = mock(Instance.class);
+
     var noApprove =
         new GoalFormationEvaluator(
             ri,
+            fsi,
             mi,
             caseDefinitionRegistry,
             strategyResolver,
@@ -233,7 +249,7 @@ class GoalFormationEvaluatorTest {
 
     var proposed =
         new GoalFormationProposal.ProposedGoal(
-            "new-goal", "A new goal", GoalPriority.SECONDARY, "from insight");
+            "new-goal", "A new goal", GoalPriority.SECONDARY, "from insight", null);
     when(strategy.propose(any()))
         .thenReturn(new GoalFormationProposal(List.of(proposed), "rationale"));
 
@@ -258,7 +274,8 @@ class GoalFormationEvaluatorTest {
     setupDefinition(instance, "worker-1", goal("existing-goal"));
 
     var proposed =
-        new GoalFormationProposal.ProposedGoal("new-goal", "A new goal", null, "from insight");
+        new GoalFormationProposal.ProposedGoal(
+            "new-goal", "A new goal", null, "from insight", null);
     when(strategy.propose(any()))
         .thenReturn(new GoalFormationProposal(List.of(proposed), "rationale"));
 
@@ -290,7 +307,8 @@ class GoalFormationEvaluatorTest {
 
     String longName = "x".repeat(101);
     var proposed =
-        new GoalFormationProposal.ProposedGoal(longName, "desc", GoalPriority.SECONDARY, "reason");
+        new GoalFormationProposal.ProposedGoal(
+            longName, "desc", GoalPriority.SECONDARY, "reason", null);
     when(strategy.propose(any()))
         .thenReturn(new GoalFormationProposal(List.of(proposed), "rationale"));
 
@@ -306,7 +324,7 @@ class GoalFormationEvaluatorTest {
 
     var proposed =
         new GoalFormationProposal.ProposedGoal(
-            "existing-goal", "duplicate", GoalPriority.SECONDARY, "reason");
+            "existing-goal", "duplicate", GoalPriority.SECONDARY, "reason", null);
     when(strategy.propose(any()))
         .thenReturn(new GoalFormationProposal(List.of(proposed), "rationale"));
 
@@ -324,7 +342,7 @@ class GoalFormationEvaluatorTest {
     for (int i = 0; i < 5; i++) {
       proposed.add(
           new GoalFormationProposal.ProposedGoal(
-              "goal-" + i, "desc " + i, GoalPriority.SECONDARY, "reason"));
+              "goal-" + i, "desc " + i, GoalPriority.SECONDARY, "reason", null));
     }
     when(strategy.propose(any())).thenReturn(new GoalFormationProposal(proposed, "rationale"));
 
@@ -352,10 +370,10 @@ class GoalFormationEvaluatorTest {
 
     var invalid =
         new GoalFormationProposal.ProposedGoal(
-            "x".repeat(101), "desc", GoalPriority.SECONDARY, "reason");
+            "x".repeat(101), "desc", GoalPriority.SECONDARY, "reason", null);
     var valid =
         new GoalFormationProposal.ProposedGoal(
-            "valid-goal", "A valid goal", GoalPriority.SECONDARY, "reason");
+            "valid-goal", "A valid goal", GoalPriority.SECONDARY, "reason", null);
     when(strategy.propose(any()))
         .thenReturn(new GoalFormationProposal(List.of(invalid, valid), "rationale"));
 
@@ -396,9 +414,15 @@ class GoalFormationEvaluatorTest {
     Instance<CaseMemoryStore> mi = mock(Instance.class);
     when(mi.isResolvable()).thenReturn(false);
 
+    GoalFormationService fs = new DefaultGoalFormationService(agentRegistry, eventLogRepository);
+    Instance<GoalFormationService> fsi = mock(Instance.class);
+    when(fsi.isResolvable()).thenReturn(true);
+    when(fsi.get()).thenReturn(fs);
+
     var withCooldown =
         new GoalFormationEvaluator(
             ri,
+            fsi,
             mi,
             caseDefinitionRegistry,
             strategyResolver,
@@ -415,7 +439,7 @@ class GoalFormationEvaluatorTest {
 
     var proposed =
         new GoalFormationProposal.ProposedGoal(
-            "new-goal", "desc", GoalPriority.SECONDARY, "reason");
+            "new-goal", "desc", GoalPriority.SECONDARY, "reason", null);
     when(strategy.propose(any()))
         .thenReturn(new GoalFormationProposal(List.of(proposed), "rationale"));
 
@@ -454,11 +478,13 @@ class GoalFormationEvaluatorTest {
   }
 
   private void setupDefinition(CaseInstance instance, String workerName, AgentGoal... goals) {
+    AgentDescriptor descriptor = descriptorWithGoals(goals);
     CaseDefinition definition = mock(CaseDefinition.class);
     when(caseDefinitionRegistry.getCaseDefinition(instance.getCaseMetaModel()))
         .thenReturn(definition);
-    when(definition.agentDescriptorFor(workerName))
-        .thenReturn(Optional.of(descriptorWithGoals(goals)));
+    when(definition.agentDescriptorFor(workerName)).thenReturn(Optional.of(descriptor));
+    when(agentRegistry.findById(descriptor.agentId(), instance.tenancyId))
+        .thenReturn(Optional.of(descriptor));
   }
 
   private CaseInstance buildCaseInstance(String tenancyId) {

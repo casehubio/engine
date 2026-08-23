@@ -139,7 +139,8 @@ public class LlmGoalFormationStrategy implements GoalFormationStrategy {
             }
           }
           String reason = node.get("formationReason").asText();
-          goals.add(new GoalFormationProposal.ProposedGoal(name, description, priority, reason));
+          goals.add(
+              new GoalFormationProposal.ProposedGoal(name, description, priority, reason, null));
         }
       }
       return new GoalFormationProposal(goals, rationale);

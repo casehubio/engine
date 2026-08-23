@@ -20,12 +20,10 @@ import io.casehub.api.model.RetrievedMemory;
 import io.casehub.api.model.event.CaseHubEventType;
 import io.casehub.api.spi.routing.GoalFormationContext;
 import io.casehub.api.spi.routing.GoalFormationProposal;
+import io.casehub.api.spi.routing.GoalFormationService;
 import io.casehub.api.spi.routing.GoalFormationStrategy;
 import io.casehub.eidos.api.AgentDescriptor;
-import io.casehub.eidos.api.AgentGoal;
 import io.casehub.eidos.api.AgentRegistry;
-import io.casehub.eidos.api.GoalPriority;
-import io.casehub.eidos.api.Visibility;
 import io.casehub.engine.common.internal.history.EventLog;
 import io.casehub.engine.common.internal.model.CaseInstance;
 import io.casehub.engine.common.spi.CaseDefinitionRegistry;
@@ -42,11 +40,9 @@ import java.time.Duration;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
-import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import org.eclipse.microprofile.config.inject.ConfigProperty;
 import org.jboss.logging.Logger;
@@ -56,10 +52,8 @@ public class GoalFormationEvaluator {
 
   private static final Logger LOG = Logger.getLogger(GoalFormationEvaluator.class);
   private static final int MAX_GOALS = 10;
-  private static final int MAX_NAME_LENGTH = 100;
-  private static final int MAX_DESCRIPTION_LENGTH = 500;
-
   private final Instance<AgentRegistry> agentRegistry;
+  private final Instance<GoalFormationService> goalFormationService;
   private final Instance<CaseMemoryStore> caseMemoryStore;
   private final CaseDefinitionRegistry caseDefinitionRegistry;
   private final EngineStrategyResolver strategyResolver;
@@ -76,6 +70,7 @@ public class GoalFormationEvaluator {
   @Inject
   public GoalFormationEvaluator(
       Instance<AgentRegistry> agentRegistry,
+      Instance<GoalFormationService> goalFormationService,
       Instance<CaseMemoryStore> caseMemoryStore,
       CaseDefinitionRegistry caseDefinitionRegistry,
       EngineStrategyResolver strategyResolver,
@@ -95,6 +90,7 @@ public class GoalFormationEvaluator {
       @ConfigProperty(name = "casehub.engine.goal.formation.max-memories", defaultValue = "20")
           int maxMemories) {
     this.agentRegistry = agentRegistry;
+    this.goalFormationService = goalFormationService;
     this.caseMemoryStore = caseMemoryStore;
     this.caseDefinitionRegistry = caseDefinitionRegistry;
     this.strategyResolver = strategyResolver;
@@ -188,81 +184,27 @@ public class GoalFormationEvaluator {
         return;
       }
 
-      List<AgentGoal> newGoals = validateAndConvert(proposal.goals(), descriptor, remaining);
-      if (newGoals.isEmpty()) {
-        return;
-      }
+      List<GoalFormationProposal.ProposedGoal> trimmed =
+          proposal.goals().size() > maxNewPerReflection
+              ? proposal.goals().subList(0, maxNewPerReflection)
+              : proposal.goals();
+      GoalFormationProposal trimmedProposal =
+          new GoalFormationProposal(trimmed, proposal.rationale());
 
       if (autoApprove) {
-        List<AgentGoal> merged = new ArrayList<>(descriptor.goals());
-        merged.addAll(newGoals);
-        AgentDescriptor updated = descriptor.toBuilder().goals(merged).build();
-        agentRegistry.get().register(updated);
-        writeAuditLog(
-            agentId,
-            tenancyId,
-            newGoals,
-            descriptor.goals().size(),
-            merged.size(),
-            insights.size(),
-            memories.size(),
-            CaseHubEventType.GOAL_FORMED);
+        if (!goalFormationService.isResolvable()) {
+          LOG.debug("GoalFormationService not resolvable, skipping registration");
+          return;
+        }
+        goalFormationService.get().propose(agentId, tenancyId, trimmedProposal);
       } else {
-        writeAuditLog(
-            agentId,
-            tenancyId,
-            newGoals,
-            descriptor.goals().size(),
-            descriptor.goals().size(),
-            insights.size(),
-            memories.size(),
-            CaseHubEventType.GOAL_PROPOSED);
+        writeProposedAuditLog(
+            agentId, tenancyId, trimmedProposal, insights.size(), memories.size());
       }
 
     } catch (Exception e) {
       LOG.warnf(e, "Goal formation failed for agent %s", agentId);
     }
-  }
-
-  private List<AgentGoal> validateAndConvert(
-      List<GoalFormationProposal.ProposedGoal> proposed,
-      AgentDescriptor descriptor,
-      int remaining) {
-    Set<String> existingNames = new HashSet<>();
-    for (AgentGoal g : descriptor.goals()) {
-      existingNames.add(g.name());
-    }
-
-    List<AgentGoal> validated = new ArrayList<>();
-    for (GoalFormationProposal.ProposedGoal p : proposed) {
-      if (validated.size() >= maxNewPerReflection || validated.size() >= remaining) {
-        break;
-      }
-      try {
-        if (p.name() == null || p.name().length() > MAX_NAME_LENGTH) {
-          LOG.debugf("Rejected goal: name too long or null: %s", p.name());
-          continue;
-        }
-        if (p.description() == null || p.description().length() > MAX_DESCRIPTION_LENGTH) {
-          LOG.debugf("Rejected goal: description too long or null: %s", p.name());
-          continue;
-        }
-        if (existingNames.contains(p.name())) {
-          LOG.debugf("Rejected goal: duplicate name: %s", p.name());
-          continue;
-        }
-
-        GoalPriority priority =
-            p.suggestedPriority() != null ? p.suggestedPriority() : GoalPriority.SECONDARY;
-        AgentGoal goal =
-            new AgentGoal(p.name(), p.description(), priority, Visibility.PUBLIC, List.of(), null);
-        validated.add(goal);
-        existingNames.add(p.name());
-      } catch (Exception e) {
-        LOG.warnf("Invalid proposed goal %s, skipping: %s", p.name(), e.getMessage());
-      }
-    }
-    return validated;
   }
 
   private List<RetrievedMemory> retrieveMemories(String workerName, String tenancyId) {
@@ -289,44 +231,39 @@ public class GoalFormationEvaluator {
     }
   }
 
-  private void writeAuditLog(
+  private void writeProposedAuditLog(
       String agentId,
       String tenancyId,
-      List<AgentGoal> formedGoals,
-      int previousCount,
-      int newCount,
+      GoalFormationProposal proposal,
       int insightCount,
-      int memoryCount,
-      CaseHubEventType eventType) {
+      int memoryCount) {
     try {
       com.fasterxml.jackson.databind.ObjectMapper mapper =
           new com.fasterxml.jackson.databind.ObjectMapper();
       Map<String, Object> metadata = new HashMap<>();
       metadata.put("agentId", agentId);
-      metadata.put("previousGoalCount", previousCount);
-      metadata.put("newGoalCount", newCount);
       metadata.put("insightCount", insightCount);
       metadata.put("memoryCount", memoryCount);
       metadata.put("strategyId", strategyId);
-      metadata.put("approved", eventType == CaseHubEventType.GOAL_FORMED);
+      metadata.put("approved", false);
 
-      List<Map<String, String>> formedGoalDetails = new ArrayList<>();
-      for (AgentGoal g : formedGoals) {
+      List<Map<String, String>> proposedGoals = new ArrayList<>();
+      for (var g : proposal.goals()) {
         Map<String, String> detail = new HashMap<>();
         detail.put("name", g.name());
         detail.put("description", g.description());
-        detail.put("priority", g.priority().name());
-        formedGoalDetails.add(detail);
+        detail.put("formationReason", g.formationReason());
+        proposedGoals.add(detail);
       }
-      metadata.put("formedGoals", formedGoalDetails);
+      metadata.put("proposedGoals", proposedGoals);
 
       EventLog eventLog = new EventLog();
-      eventLog.setEventType(eventType);
+      eventLog.setEventType(CaseHubEventType.GOAL_PROPOSED);
       eventLog.setPayload(mapper.valueToTree(metadata));
       eventLog.setTimestamp(Instant.now());
       eventLogRepository.append(eventLog, tenancyId);
     } catch (Exception e) {
-      LOG.warnf(e, "Failed to write %s audit log for agent %s", eventType, agentId);
+      LOG.warnf(e, "Failed to write GOAL_PROPOSED audit log for agent %s", agentId);
     }
   }
 }
