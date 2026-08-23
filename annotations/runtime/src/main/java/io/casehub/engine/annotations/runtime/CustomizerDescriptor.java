@@ -15,4 +15,7 @@
  */
 package io.casehub.engine.annotations.runtime;
 
-public record CustomizerDescriptor(String methodName, String targetBinding, String interfaceName) {}
+import java.util.List;
+
+public record CustomizerDescriptor(
+    String methodName, String targetBinding, String interfaceName, List<String> parameterTypes) {}
