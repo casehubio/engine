@@ -13,15 +13,17 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.casehub.engine.common.internal.event;
+package io.casehub.engine.common.spi;
 
 import io.casehub.api.model.HumanTaskTarget;
+import io.casehub.api.spi.routing.RetrievedExperience;
 import java.time.Instant;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
 
-public record HumanTaskScheduleEvent(
+public record HumanTaskScheduleRequest(
     UUID caseId,
     String tenancyId,
     String bindingName,
@@ -35,7 +37,5 @@ public record HumanTaskScheduleEvent(
     Instant expiresAtDeadline,
     String resolvedTitle,
     String resolvedScope,
-    java.time.Duration resolvedExpiresIn,
-    java.util.List<io.casehub.api.spi.routing.RetrievedExperience> experiences,
-    Map<String, Double> candidateScores,
-    com.fasterxml.jackson.databind.JsonNode activationContext) {}
+    List<RetrievedExperience> experiences,
+    Map<String, Double> candidateScores) {}

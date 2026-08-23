@@ -23,23 +23,21 @@ import io.casehub.api.model.Binding;
 import io.casehub.api.model.CaseDefinition;
 import io.casehub.api.model.ContextChangeTrigger;
 import io.casehub.api.model.HumanTaskTarget;
-import io.casehub.engine.common.internal.event.EventBusAddresses;
-import io.casehub.engine.common.internal.event.HumanTaskScheduleEvent;
+import io.casehub.engine.common.spi.HumanTaskScheduleRequest;
 import io.quarkus.test.junit.QuarkusTest;
-import io.quarkus.vertx.ConsumeEvent;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
-import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.TimeUnit;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 /**
- * Verifies that CaseContextChangedEventHandler publishes HumanTaskScheduleEvent when a binding with
- * HumanTaskTarget is eligible and evaluates inputMapping before publishing. Refs engine#245.
+ * Verifies that CaseContextChangedEventHandler invokes {@link HumanTaskScheduler} when a binding
+ * with HumanTaskTarget is eligible and evaluates inputMapping before dispatching. Refs engine#245,
+ * work#298.
  */
 @QuarkusTest
 class HumanTaskTargetDispatchTest {
@@ -62,17 +60,16 @@ class HumanTaskTargetDispatchTest {
 
     await()
         .atMost(5, TimeUnit.SECONDS)
-        .untilAsserted(() -> assertThat(HumanTaskEventRecorder.events).isNotEmpty());
+        .untilAsserted(() -> assertThat(RecordingHumanTaskScheduler.events).isNotEmpty());
 
-    HumanTaskScheduleEvent event = HumanTaskEventRecorder.events.get(0);
+    HumanTaskScheduleRequest event = RecordingHumanTaskScheduler.events.get(0);
     assertThat(event.resolvedTitle()).isEqualTo("IRB Review — PROTO-42");
     assertThat(event.resolvedScope()).isEqualTo("site-london");
-    assertThat(event.resolvedExpiresIn()).isEqualTo(java.time.Duration.ofHours(72));
   }
 
   @BeforeEach
   void reset() {
-    HumanTaskEventRecorder.events.clear();
+    RecordingHumanTaskScheduler.events.clear();
   }
 
   @Test
@@ -81,9 +78,9 @@ class HumanTaskTargetDispatchTest {
 
     await()
         .atMost(5, TimeUnit.SECONDS)
-        .untilAsserted(() -> assertThat(HumanTaskEventRecorder.events).isNotEmpty());
+        .untilAsserted(() -> assertThat(RecordingHumanTaskScheduler.events).isNotEmpty());
 
-    HumanTaskScheduleEvent event = HumanTaskEventRecorder.events.get(0);
+    HumanTaskScheduleRequest event = RecordingHumanTaskScheduler.events.get(0);
     assertThat(event.caseId()).isEqualTo(caseId);
     assertThat(event.bindingName()).isEqualTo("review-binding");
     assertThat(event.target()).isInstanceOf(HumanTaskTarget.class);
@@ -101,9 +98,9 @@ class HumanTaskTargetDispatchTest {
 
     await()
         .atMost(5, TimeUnit.SECONDS)
-        .untilAsserted(() -> assertThat(HumanTaskEventRecorder.events).isNotEmpty());
+        .untilAsserted(() -> assertThat(RecordingHumanTaskScheduler.events).isNotEmpty());
 
-    HumanTaskScheduleEvent event = HumanTaskEventRecorder.events.get(0);
+    HumanTaskScheduleRequest event = RecordingHumanTaskScheduler.events.get(0);
     assertThat(event.resolvedCandidateGroups()).containsExactlyInAnyOrder("irb-committee");
     assertThat(event.resolvedCandidateUsers()).isNull();
   }
@@ -117,9 +114,9 @@ class HumanTaskTargetDispatchTest {
 
     await()
         .atMost(5, TimeUnit.SECONDS)
-        .untilAsserted(() -> assertThat(HumanTaskEventRecorder.events).isNotEmpty());
+        .untilAsserted(() -> assertThat(RecordingHumanTaskScheduler.events).isNotEmpty());
 
-    HumanTaskScheduleEvent event = HumanTaskEventRecorder.events.get(0);
+    HumanTaskScheduleRequest event = RecordingHumanTaskScheduler.events.get(0);
     assertThat(event.resolvedCandidateGroups()).containsExactly("not-an-array");
   }
 
@@ -135,22 +132,11 @@ class HumanTaskTargetDispatchTest {
 
     await()
         .atMost(5, TimeUnit.SECONDS)
-        .untilAsserted(() -> assertThat(HumanTaskEventRecorder.events).isNotEmpty());
+        .untilAsserted(() -> assertThat(RecordingHumanTaskScheduler.events).isNotEmpty());
 
-    HumanTaskScheduleEvent event = HumanTaskEventRecorder.events.get(0);
+    HumanTaskScheduleRequest event = RecordingHumanTaskScheduler.events.get(0);
     assertThat(event.resolvedCandidateGroups()).containsExactly("wrong");
     assertThat(event.resolvedCandidateUsers()).containsExactly("user-1");
-  }
-
-  /** Records HumanTaskScheduleEvent arrivals for test assertions. */
-  @ApplicationScoped
-  static class HumanTaskEventRecorder {
-    static final CopyOnWriteArrayList<HumanTaskScheduleEvent> events = new CopyOnWriteArrayList<>();
-
-    @ConsumeEvent(EventBusAddresses.HUMAN_TASK_SCHEDULE)
-    void onHumanTaskSchedule(HumanTaskScheduleEvent event) {
-      events.add(event);
-    }
   }
 
   /** CaseHub with a HumanTaskTarget binding. Fires when stage == "review". */
