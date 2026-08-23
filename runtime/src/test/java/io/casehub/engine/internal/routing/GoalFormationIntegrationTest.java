@@ -79,7 +79,8 @@ class GoalFormationIntegrationTest {
                         "Find bugs in code",
                         GoalPriority.PRIMARY,
                         Visibility.PUBLIC,
-                        List.of())))
+                        List.of(),
+                        null)))
             .build());
 
     var caseId = caseHub.startCase(Map.of("task", "analysis-1"));
@@ -127,7 +128,8 @@ class GoalFormationIntegrationTest {
                         "Find bugs in code",
                         GoalPriority.PRIMARY,
                         Visibility.PUBLIC,
-                        List.of())))
+                        List.of(),
+                        null)))
             .build());
 
     var caseId = caseHub.startCase(Map.of("task", "empty-1"));
@@ -147,7 +149,12 @@ class GoalFormationIntegrationTest {
     for (int i = 0; i < 10; i++) {
       goalsAtCapacity.add(
           new AgentGoal(
-              "goal-" + i, "Goal " + i, GoalPriority.SECONDARY, Visibility.PUBLIC, List.of()));
+              "goal-" + i,
+              "Goal " + i,
+              GoalPriority.SECONDARY,
+              Visibility.PUBLIC,
+              List.of(),
+              null));
     }
 
     agentRegistry.seed(
@@ -266,7 +273,8 @@ class GoalFormationIntegrationTest {
                               "Find bugs in code",
                               GoalPriority.PRIMARY,
                               Visibility.PUBLIC,
-                              List.of())))
+                              List.of(),
+                              null)))
                   .build())
           .build();
     }

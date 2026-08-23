@@ -255,7 +255,7 @@ public class GoalFormationEvaluator {
         GoalPriority priority =
             p.suggestedPriority() != null ? p.suggestedPriority() : GoalPriority.SECONDARY;
         AgentGoal goal =
-            new AgentGoal(p.name(), p.description(), priority, Visibility.PUBLIC, List.of());
+            new AgentGoal(p.name(), p.description(), priority, Visibility.PUBLIC, List.of(), null);
         validated.add(goal);
         existingNames.add(p.name());
       } catch (Exception e) {

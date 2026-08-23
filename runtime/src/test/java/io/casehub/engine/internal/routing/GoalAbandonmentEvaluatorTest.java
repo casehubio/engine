@@ -109,13 +109,15 @@ class GoalAbandonmentEvaluatorTest {
                         "Active goal",
                         GoalPriority.PRIMARY,
                         Visibility.PUBLIC,
-                        List.of()),
+                        List.of(),
+                        null),
                     new AgentGoal(
                         "goal-b",
                         "Abandoned goal",
                         GoalPriority.SECONDARY,
                         Visibility.PUBLIC,
-                        List.of())))
+                        List.of(),
+                        null)))
             .build();
 
     List<AgentGoal> active = evaluator.activeGoals(descriptor);

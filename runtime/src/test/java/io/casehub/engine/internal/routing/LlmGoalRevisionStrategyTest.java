@@ -266,7 +266,7 @@ class LlmGoalRevisionStrategyTest {
         "tenant-1",
         List.of(
             new AgentGoal(
-                "g1", "original desc", GoalPriority.PRIMARY, Visibility.PUBLIC, List.of())),
+                "g1", "original desc", GoalPriority.PRIMARY, Visibility.PUBLIC, List.of(), null)),
         Map.of("g1", new GoalOutcomeCounts(8, 2)));
   }
 }

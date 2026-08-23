@@ -312,7 +312,7 @@ class GoalRevisionEvaluatorTest {
   }
 
   private AgentGoal goal(String name, GoalPriority priority) {
-    return new AgentGoal(name, "desc-" + name, priority, Visibility.PUBLIC, List.of());
+    return new AgentGoal(name, "desc-" + name, priority, Visibility.PUBLIC, List.of(), null);
   }
 
   private AgentDescriptor descriptorWithGoals(AgentGoal... goals) {

@@ -440,7 +440,7 @@ class GoalFormationEvaluatorTest {
 
   private AgentGoal goal(String name) {
     return new AgentGoal(
-        name, "desc-" + name, GoalPriority.SECONDARY, Visibility.PUBLIC, List.of());
+        name, "desc-" + name, GoalPriority.SECONDARY, Visibility.PUBLIC, List.of(), null);
   }
 
   private AgentDescriptor descriptorWithGoals(AgentGoal... goals) {
