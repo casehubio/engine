@@ -1511,9 +1511,33 @@ public final class CaseDefinitionYamlMapper {
       }
     }
 
-    throw new UnsupportedOperationException(
-        "Only ContextChangeTrigger, ScopeActivatedTrigger, and ScheduleTrigger are currently"
-            + " supported. CloudEventTrigger conversion not yet implemented.");
+    if (schemaTrigger.getCloudEvent() != null) {
+      final JsonNode ceNode = rawTriggerNode != null ? rawTriggerNode.get("cloudEvent") : null;
+      if (ceNode == null) {
+        throw new IllegalArgumentException("CloudEvent trigger present but raw node is missing");
+      }
+      if (ceNode.isTextual()) {
+        return new io.casehub.api.model.CloudEventTrigger(ceNode.asText());
+      }
+      if (ceNode.isObject()) {
+        if (!ceNode.has("type")) {
+          throw new IllegalArgumentException("CloudEvent trigger object must have a 'type' field");
+        }
+        final String type = ceNode.get("type").asText();
+        final String source = ceNode.has("source") ? ceNode.get("source").asText() : null;
+        final String subject = ceNode.has("subject") ? ceNode.get("subject").asText() : null;
+        final ExpressionEvaluator filter =
+            ceNode.has("filter")
+                ? resolveExpression(ceNode.get("filter"), registry, expressionLang)
+                : null;
+        return new io.casehub.api.model.CloudEventTrigger(type, source, subject, filter);
+      }
+      throw new IllegalArgumentException(
+          "CloudEvent trigger must be a string or object, got: " + ceNode.getNodeType());
+    }
+
+    throw new IllegalArgumentException(
+        "Trigger must have one of: contextChange, cloudEvent, schedule, scopeActivated");
   }
 
   private static GoalExpression convertGoalExpression(
