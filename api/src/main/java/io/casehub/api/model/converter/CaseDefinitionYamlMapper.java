@@ -54,6 +54,7 @@ import io.casehub.api.model.SignalType;
 import io.casehub.api.model.SingleGoalExpression;
 import io.casehub.api.model.SlaStartFrom;
 import io.casehub.api.model.StandardGoalKind;
+import io.casehub.api.model.Use;
 import io.casehub.api.model.WorkerFunctions;
 import io.casehub.api.model.evaluator.JQExpressionEvaluator;
 import io.casehub.api.model.evaluator.TypedMvelExpressionEvaluator;
@@ -330,6 +331,17 @@ public final class CaseDefinitionYamlMapper {
     def.setTitle(schema.getTitle());
     if (schema.getSummary() != null) {
       def.setSummary(schema.getSummary());
+    }
+
+    if (schema.getUse() != null) {
+      final Use apiUse = new Use();
+      if (schema.getUse().getSecrets() != null && !schema.getUse().getSecrets().isEmpty()) {
+        apiUse.setSecrets(new LinkedHashSet<>(schema.getUse().getSecrets()));
+      }
+      if (schema.getUse().getConfigMaps() != null && !schema.getUse().getConfigMaps().isEmpty()) {
+        apiUse.setConfigMaps(new LinkedHashSet<>(schema.getUse().getConfigMaps()));
+      }
+      def.setUse(apiUse);
     }
 
     if (contextClass != null) {
