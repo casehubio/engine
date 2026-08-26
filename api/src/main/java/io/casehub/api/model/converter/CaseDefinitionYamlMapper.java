@@ -612,6 +612,23 @@ public final class CaseDefinitionYamlMapper {
 
       // Add all to definition
       def.getWorkers().addAll(builtWorkers.values());
+
+      // Parse agentDescriptor blocks from raw worker nodes
+      if (rawWorkers != null) {
+        final Map<String, io.casehub.eidos.api.AgentDescriptor> descriptors = new LinkedHashMap<>();
+        for (int di = 0; di < rawWorkers.size(); di++) {
+          final JsonNode rawWorkerNode = rawWorkers.get(di);
+          if (rawWorkerNode.has("agentDescriptor")) {
+            final String workerName = rawWorkerNode.get("name").asText();
+            descriptors.put(
+                workerName,
+                convertAgentDescriptor(rawWorkerNode.get("agentDescriptor"), workerName));
+          }
+        }
+        if (!descriptors.isEmpty()) {
+          def.setAgentDescriptors(descriptors);
+        }
+      }
     }
 
     // Convert bindings
@@ -1873,6 +1890,94 @@ public final class CaseDefinitionYamlMapper {
             : BackoffStrategy.FIXED;
     final RetryPolicy retries = new RetryPolicy(sr.getMaxAttempts(), sr.getDelayMs(), strategy);
     return new ExecutionPolicy(schema.getTimeoutMs(), retries);
+  }
+
+  private static io.casehub.eidos.api.AgentDescriptor convertAgentDescriptor(
+      final JsonNode node, final String workerName) {
+    final var builder = io.casehub.eidos.api.AgentDescriptor.builder();
+    builder.agentId(node.has("agentId") ? node.get("agentId").asText() : workerName);
+    builder.name(node.has("name") ? node.get("name").asText() : workerName);
+    builder.slot(node.has("slot") ? node.get("slot").asText() : workerName);
+    builder.tenancyId(node.has("tenancyId") ? node.get("tenancyId").asText() : "default");
+
+    if (node.has("briefing")) builder.briefing(node.get("briefing").asText());
+    if (node.has("version")) builder.version(node.get("version").asText());
+    if (node.has("provider")) builder.provider(node.get("provider").asText());
+    if (node.has("modelFamily")) builder.modelFamily(node.get("modelFamily").asText());
+    if (node.has("modelVersion")) builder.modelVersion(node.get("modelVersion").asText());
+    if (node.has("jurisdiction")) builder.jurisdiction(node.get("jurisdiction").asText());
+    if (node.has("dataHandlingPolicy"))
+      builder.dataHandlingPolicy(node.get("dataHandlingPolicy").asText());
+
+    if (node.has("goals") && node.get("goals").isArray()) {
+      final List<io.casehub.eidos.api.AgentGoal> goals = new ArrayList<>();
+      for (final JsonNode gn : node.get("goals")) {
+        final String priority = gn.has("priority") ? gn.get("priority").asText() : "PRIMARY";
+        final String visibility = gn.has("visibility") ? gn.get("visibility").asText() : "PUBLIC";
+        final List<String> capRefs = new ArrayList<>();
+        if (gn.has("capabilities") && gn.get("capabilities").isArray()) {
+          gn.get("capabilities").forEach(c -> capRefs.add(c.asText()));
+        }
+        goals.add(
+            new io.casehub.eidos.api.AgentGoal(
+                gn.get("name").asText(),
+                gn.has("description") ? gn.get("description").asText() : gn.get("name").asText(),
+                io.casehub.eidos.api.GoalPriority.valueOf(priority),
+                io.casehub.eidos.api.Visibility.valueOf(visibility),
+                capRefs));
+      }
+      builder.goals(goals);
+    }
+
+    if (node.has("constraints") && node.get("constraints").isArray()) {
+      final List<io.casehub.eidos.api.AgentConstraint> constraints = new ArrayList<>();
+      for (final JsonNode cn : node.get("constraints")) {
+        constraints.add(
+            new io.casehub.eidos.api.AgentConstraint(
+                cn.get("name").asText(),
+                cn.has("description") ? cn.get("description").asText() : cn.get("name").asText(),
+                cn.has("visibility")
+                    ? io.casehub.eidos.api.Visibility.valueOf(cn.get("visibility").asText())
+                    : io.casehub.eidos.api.Visibility.PUBLIC,
+                cn.has("severity")
+                    ? io.casehub.eidos.api.ConstraintSeverity.valueOf(cn.get("severity").asText())
+                    : io.casehub.eidos.api.ConstraintSeverity.HARD));
+      }
+      builder.constraints(constraints);
+    }
+
+    if (node.has("disposition") && node.get("disposition").isObject()) {
+      final JsonNode dn = node.get("disposition");
+      final var db = io.casehub.eidos.api.AgentDisposition.builder();
+      if (dn.has("socialOrient")) db.socialOrient(dn.get("socialOrient").asText());
+      if (dn.has("ruleFollowing")) db.ruleFollowing(dn.get("ruleFollowing").asText());
+      if (dn.has("riskAppetite")) db.riskAppetite(dn.get("riskAppetite").asText());
+      if (dn.has("autonomy")) db.autonomy(dn.get("autonomy").asText());
+      if (dn.has("conflictMode")) db.conflictMode(dn.get("conflictMode").asText());
+      if (dn.has("delegation")) db.delegation(dn.get("delegation").asBoolean());
+      builder.disposition(db.build());
+    }
+
+    if (node.has("capabilities") && node.get("capabilities").isArray()) {
+      final List<io.casehub.eidos.api.AgentCapability> caps = new ArrayList<>();
+      for (final JsonNode cn : node.get("capabilities")) {
+        final var cb = io.casehub.eidos.api.AgentCapability.builder();
+        cb.name(cn.get("name").asText());
+        if (cn.has("description")) cb.description(cn.get("description").asText());
+        if (cn.has("qualityHint")) cb.qualityHint(cn.get("qualityHint").asDouble());
+        if (cn.has("latencyHintP50Ms")) cb.latencyHintP50Ms(cn.get("latencyHintP50Ms").asLong());
+        if (cn.has("costHint")) cb.costHint(cn.get("costHint").asText());
+        if (cn.has("tags") && cn.get("tags").isArray()) {
+          final List<String> tags = new ArrayList<>();
+          cn.get("tags").forEach(t -> tags.add(t.asText()));
+          cb.tags(tags);
+        }
+        caps.add(cb.build());
+      }
+      builder.capabilities(caps);
+    }
+
+    return builder.build();
   }
 
   @SuppressWarnings("unchecked")
