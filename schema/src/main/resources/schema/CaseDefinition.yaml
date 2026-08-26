@@ -385,6 +385,15 @@ $defs:
           action sequences toward goal states.
         items:
           $ref: "#/$defs/GoapActionDef"
+      compounds:
+        type: array
+        description: >
+          Compound task declarations for multi-phase orchestration. Each compound
+          groups bindings with completion semantics (all, firstWins, M-of-N) and
+          dispatch mode (ORCHESTRATED or CHOREOGRAPHED). The engine creates
+          PlanItemDefinition.Compound instances from these at runtime.
+        items:
+          $ref: "#/$defs/CompoundDef"
       authorization:
         $ref: "#/$defs/Authorization"
         description: >
@@ -495,6 +504,60 @@ $defs:
           action if they don't.
         additionalProperties:
           type: boolean
+
+  CompoundDef:
+    type: object
+    description: >
+      A compound task declaration for multi-phase orchestration. Groups
+      bindings under a named phase with completion semantics and dispatch mode.
+    required: [ name ]
+    unevaluatedProperties: false
+    properties:
+      name:
+        type: string
+        minLength: 1
+        description: "Compound name — must be unique within the definition."
+      completionSemantics:
+        type: string
+        default: "all"
+        description: >
+          How children must complete: "all" (all children must complete),
+          "firstWins" (first child to complete finishes the compound),
+          or an integer N for M-of-N (N children must complete).
+      dispatchMode:
+        type: string
+        enum: [ ORCHESTRATED, CHOREOGRAPHED ]
+        default: CHOREOGRAPHED
+        description: >
+          ORCHESTRATED = sequential child execution.
+          CHOREOGRAPHED = parallel child execution (default).
+      scopedBindings:
+        type: object
+        description: >
+          Bindings scoped to this compound, keyed by binding name. Values
+          are participation level: PARTICIPANT or COMPANION.
+        additionalProperties:
+          type: string
+          enum: [ PARTICIPANT, COMPANION ]
+      entryCondition:
+        type: string
+        description: >
+          Expression that must evaluate to true before this compound activates.
+          Uses the definition's expression language.
+      exitCondition:
+        type: string
+        description: >
+          Expression that forces compound completion when true, regardless
+          of child status.
+      repeatable:
+        type: boolean
+        default: false
+        description: "Whether this compound can be re-entered after completion."
+      planningStrategy:
+        type: string
+        description: >
+          Optional planning strategy override for this compound's children.
+          Overrides the definition-level planningStrategy within this scope.
 
   LabelRule:
     type: object
