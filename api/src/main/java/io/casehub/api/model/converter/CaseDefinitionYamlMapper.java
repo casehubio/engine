@@ -59,6 +59,7 @@ import io.casehub.api.model.WorkerFunctions;
 import io.casehub.api.model.evaluator.JQExpressionEvaluator;
 import io.casehub.api.model.evaluator.TypedMvelExpressionEvaluator;
 import io.casehub.api.spi.WorkerFunctionProviderRegistry;
+import io.casehub.engine.plan.goap.GoapAction;
 import io.casehub.platform.api.acl.AclAction;
 import io.casehub.platform.api.expression.CompiledExpression;
 import io.casehub.platform.api.expression.ExpressionEvaluator;
@@ -1180,6 +1181,34 @@ public final class CaseDefinitionYamlMapper {
       def.setPortfolioConfig(
           new io.casehub.engine.plan.PortfolioConfig(
               delegates.isEmpty() ? null : delegates, timeouts.isEmpty() ? null : timeouts));
+    }
+
+    // GOAP actions — convert schema GoapActionDef to engine GoapAction
+    if (schema.getSpec() != null && schema.getSpec().getActions() != null) {
+      final List<io.casehub.model.GoapActionDef> schemaActions = schema.getSpec().getActions();
+      if (!schemaActions.isEmpty()) {
+        final List<GoapAction> goapActions = new ArrayList<>(schemaActions.size());
+        for (final io.casehub.model.GoapActionDef sa : schemaActions) {
+          final Map<String, Boolean> preconditions =
+              sa.getPreconditions() != null
+                  ? new LinkedHashMap<>(sa.getPreconditions().getAdditionalProperties())
+                  : Map.of();
+          final Map<String, Boolean> effects =
+              sa.getEffects() != null
+                  ? new LinkedHashMap<>(sa.getEffects().getAdditionalProperties())
+                  : Map.of();
+          final Map<String, Boolean> softPreconditions =
+              sa.getSoftPreconditions() != null
+                  ? new LinkedHashMap<>(sa.getSoftPreconditions().getAdditionalProperties())
+                  : Map.of();
+          final double cost = sa.getCost() != null ? sa.getCost() : 1.0;
+          final double benefit = sa.getBenefit() != null ? sa.getBenefit() : 0.0;
+          goapActions.add(
+              new GoapAction(
+                  sa.getName(), preconditions, effects, cost, benefit, softPreconditions, null));
+        }
+        def.setGoapActions(goapActions);
+      }
     }
 
     return def;
