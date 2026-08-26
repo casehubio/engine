@@ -376,6 +376,15 @@ $defs:
           make local decisions, and perform work.
         items:
           $ref: "#/$defs/Worker"
+      actions:
+        type: array
+        description: >
+          GOAP (Goal-Oriented Action Planning) action declarations. Each action
+          declares preconditions (world state required), effects (world state
+          produced), and cost. The GOAP planner uses these to compute optimal
+          action sequences toward goal states.
+        items:
+          $ref: "#/$defs/GoapActionDef"
       authorization:
         $ref: "#/$defs/Authorization"
         description: >
@@ -427,6 +436,65 @@ $defs:
         type: array
         items: { type: string }
         description: "Groups granted CLAIM — claim work items for execution"
+
+  GoapActionDef:
+    type: object
+    description: >
+      A GOAP action declaration. Defines preconditions (world state facts that
+      must be true before the action can execute), effects (world state facts
+      that become true after execution), and cost (planning weight).
+    required: [ name, preconditions, effects ]
+    unevaluatedProperties: false
+    properties:
+      name:
+        type: string
+        minLength: 1
+        description: >
+          Action name — must be unique within the definition. Typically matches
+          a capability name so the planner can map actions to worker bindings.
+      capability:
+        type: string
+        minLength: 1
+        description: >
+          Capability name this action maps to. When omitted, defaults to the
+          action name. Used by the planner to dispatch planned actions to
+          worker bindings.
+      preconditions:
+        type: object
+        description: >
+          World state facts required before this action can execute.
+          Keys are fact names, values are boolean (true = fact must hold,
+          false = fact must not hold).
+        additionalProperties:
+          type: boolean
+      effects:
+        type: object
+        description: >
+          World state facts produced by this action.
+          Keys are fact names, values are boolean.
+        additionalProperties:
+          type: boolean
+      cost:
+        type: number
+        minimum: 0
+        default: 1.0
+        description: "Static cost for GOAP planning. Lower cost = preferred action."
+      benefit:
+        type: number
+        minimum: 0
+        maximum: 1
+        default: 0
+        description: >
+          Benefit factor in [0.0, 1.0]. Effective cost = cost * (1 - benefit).
+          Higher benefit reduces effective cost, making the action more attractive.
+      softPreconditions:
+        type: object
+        description: >
+          Soft preconditions — preferred but not required. The planner prefers
+          actions whose soft preconditions hold but will still consider the
+          action if they don't.
+        additionalProperties:
+          type: boolean
 
   LabelRule:
     type: object
