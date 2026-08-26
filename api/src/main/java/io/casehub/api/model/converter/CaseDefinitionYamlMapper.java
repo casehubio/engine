@@ -1918,13 +1918,23 @@ public final class CaseDefinitionYamlMapper {
         if (gn.has("capabilities") && gn.get("capabilities").isArray()) {
           gn.get("capabilities").forEach(c -> capRefs.add(c.asText()));
         }
+        Map<String, String> attrs = null;
+        if (gn.has("attributes") && gn.get("attributes").isObject()) {
+          attrs = new LinkedHashMap<>();
+          final var it = gn.get("attributes").fields();
+          while (it.hasNext()) {
+            final var entry = it.next();
+            attrs.put(entry.getKey(), entry.getValue().asText());
+          }
+        }
         goals.add(
             new io.casehub.eidos.api.AgentGoal(
                 gn.get("name").asText(),
                 gn.has("description") ? gn.get("description").asText() : gn.get("name").asText(),
                 io.casehub.eidos.api.GoalPriority.valueOf(priority),
                 io.casehub.eidos.api.Visibility.valueOf(visibility),
-                capRefs));
+                capRefs,
+                attrs));
       }
       builder.goals(goals);
     }
