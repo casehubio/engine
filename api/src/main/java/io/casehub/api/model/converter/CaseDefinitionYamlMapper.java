@@ -29,6 +29,7 @@ import io.casehub.api.model.CapabilityTarget;
 import io.casehub.api.model.CaseDefinition;
 import io.casehub.api.model.CaseStatus;
 import io.casehub.api.model.CognitiveDemand;
+import io.casehub.api.model.CompoundDeclaration;
 import io.casehub.api.model.EpisodicMemoryConfig;
 import io.casehub.api.model.ExecutionMode;
 import io.casehub.api.model.Goal;
@@ -1208,6 +1209,57 @@ public final class CaseDefinitionYamlMapper {
                   sa.getName(), preconditions, effects, cost, benefit, softPreconditions, null));
         }
         def.setGoapActions(goapActions);
+      }
+    }
+
+    // Compounds — convert schema CompoundDef to CompoundDeclaration
+    if (schema.getSpec() != null && schema.getSpec().getCompounds() != null) {
+      final List<io.casehub.model.CompoundDef> schemaCompounds = schema.getSpec().getCompounds();
+      if (!schemaCompounds.isEmpty()) {
+        final JsonNode compoundsNode =
+            specNode != null && specNode.has("compounds") ? specNode.get("compounds") : null;
+        final List<CompoundDeclaration> compounds = new ArrayList<>(schemaCompounds.size());
+        for (int ci = 0; ci < schemaCompounds.size(); ci++) {
+          final io.casehub.model.CompoundDef sc = schemaCompounds.get(ci);
+          final JsonNode rawCompound =
+              compoundsNode != null && ci < compoundsNode.size() ? compoundsNode.get(ci) : null;
+
+          final Map<String, Participation> scopedBindings = new LinkedHashMap<>();
+          if (sc.getScopedBindings() != null) {
+            sc.getScopedBindings()
+                .getAdditionalProperties()
+                .forEach((k, v) -> scopedBindings.put(k, Participation.valueOf(v.value())));
+          }
+
+          final ExpressionEvaluator entryCondition =
+              rawCompound != null && rawCompound.has("entryCondition")
+                  ? resolveExpression(
+                      rawCompound.get("entryCondition"), effectiveRegistry, expressionLang)
+                  : null;
+          final ExpressionEvaluator exitCondition =
+              rawCompound != null && rawCompound.has("exitCondition")
+                  ? resolveExpression(
+                      rawCompound.get("exitCondition"), effectiveRegistry, expressionLang)
+                  : null;
+
+          final String completionSemantics =
+              sc.getCompletionSemantics() != null ? sc.getCompletionSemantics() : "all";
+          final String dispatchMode =
+              sc.getDispatchMode() != null ? sc.getDispatchMode().value() : "CHOREOGRAPHED";
+          final boolean repeatable = sc.getRepeatable() != null && sc.getRepeatable();
+
+          compounds.add(
+              new CompoundDeclaration(
+                  sc.getName(),
+                  completionSemantics,
+                  dispatchMode,
+                  scopedBindings,
+                  entryCondition,
+                  exitCondition,
+                  repeatable,
+                  sc.getPlanningStrategy()));
+        }
+        def.setCompounds(compounds);
       }
     }
 
