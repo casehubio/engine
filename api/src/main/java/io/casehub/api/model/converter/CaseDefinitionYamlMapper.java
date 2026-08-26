@@ -60,6 +60,14 @@ import io.casehub.api.model.WorkerFunctions;
 import io.casehub.api.model.evaluator.JQExpressionEvaluator;
 import io.casehub.api.model.evaluator.TypedMvelExpressionEvaluator;
 import io.casehub.api.spi.WorkerFunctionProviderRegistry;
+import io.casehub.eidos.api.AgentCapability;
+import io.casehub.eidos.api.AgentConstraint;
+import io.casehub.eidos.api.AgentDescriptor;
+import io.casehub.eidos.api.AgentDisposition;
+import io.casehub.eidos.api.AgentGoal;
+import io.casehub.eidos.api.ConstraintSeverity;
+import io.casehub.eidos.api.GoalPriority;
+import io.casehub.eidos.api.Visibility;
 import io.casehub.engine.plan.goap.GoapAction;
 import io.casehub.platform.api.acl.AclAction;
 import io.casehub.platform.api.expression.CompiledExpression;
@@ -615,7 +623,7 @@ public final class CaseDefinitionYamlMapper {
 
       // Parse agentDescriptor blocks from raw worker nodes
       if (rawWorkers != null) {
-        final Map<String, io.casehub.eidos.api.AgentDescriptor> descriptors = new LinkedHashMap<>();
+        final Map<String, AgentDescriptor> descriptors = new LinkedHashMap<>();
         for (int di = 0; di < rawWorkers.size(); di++) {
           final JsonNode rawWorkerNode = rawWorkers.get(di);
           if (rawWorkerNode.has("agentDescriptor")) {
@@ -1892,9 +1900,9 @@ public final class CaseDefinitionYamlMapper {
     return new ExecutionPolicy(schema.getTimeoutMs(), retries);
   }
 
-  private static io.casehub.eidos.api.AgentDescriptor convertAgentDescriptor(
+  private static AgentDescriptor convertAgentDescriptor(
       final JsonNode node, final String workerName) {
-    final var builder = io.casehub.eidos.api.AgentDescriptor.builder();
+    final var builder = AgentDescriptor.builder();
     builder.agentId(node.has("agentId") ? node.get("agentId").asText() : workerName);
     builder.name(node.has("name") ? node.get("name").asText() : workerName);
     builder.slot(node.has("slot") ? node.get("slot").asText() : workerName);
@@ -1910,7 +1918,7 @@ public final class CaseDefinitionYamlMapper {
       builder.dataHandlingPolicy(node.get("dataHandlingPolicy").asText());
 
     if (node.has("goals") && node.get("goals").isArray()) {
-      final List<io.casehub.eidos.api.AgentGoal> goals = new ArrayList<>();
+      final List<AgentGoal> goals = new ArrayList<>();
       for (final JsonNode gn : node.get("goals")) {
         final String priority = gn.has("priority") ? gn.get("priority").asText() : "PRIMARY";
         final String visibility = gn.has("visibility") ? gn.get("visibility").asText() : "PUBLIC";
@@ -1928,11 +1936,11 @@ public final class CaseDefinitionYamlMapper {
           }
         }
         goals.add(
-            new io.casehub.eidos.api.AgentGoal(
+            new AgentGoal(
                 gn.get("name").asText(),
                 gn.has("description") ? gn.get("description").asText() : gn.get("name").asText(),
-                io.casehub.eidos.api.GoalPriority.valueOf(priority),
-                io.casehub.eidos.api.Visibility.valueOf(visibility),
+                GoalPriority.valueOf(priority),
+                Visibility.valueOf(visibility),
                 capRefs,
                 attrs));
       }
@@ -1940,25 +1948,25 @@ public final class CaseDefinitionYamlMapper {
     }
 
     if (node.has("constraints") && node.get("constraints").isArray()) {
-      final List<io.casehub.eidos.api.AgentConstraint> constraints = new ArrayList<>();
+      final List<AgentConstraint> constraints = new ArrayList<>();
       for (final JsonNode cn : node.get("constraints")) {
         constraints.add(
-            new io.casehub.eidos.api.AgentConstraint(
+            new AgentConstraint(
                 cn.get("name").asText(),
                 cn.has("description") ? cn.get("description").asText() : cn.get("name").asText(),
                 cn.has("visibility")
-                    ? io.casehub.eidos.api.Visibility.valueOf(cn.get("visibility").asText())
-                    : io.casehub.eidos.api.Visibility.PUBLIC,
+                    ? Visibility.valueOf(cn.get("visibility").asText())
+                    : Visibility.PUBLIC,
                 cn.has("severity")
-                    ? io.casehub.eidos.api.ConstraintSeverity.valueOf(cn.get("severity").asText())
-                    : io.casehub.eidos.api.ConstraintSeverity.HARD));
+                    ? ConstraintSeverity.valueOf(cn.get("severity").asText())
+                    : ConstraintSeverity.HARD));
       }
       builder.constraints(constraints);
     }
 
     if (node.has("disposition") && node.get("disposition").isObject()) {
       final JsonNode dn = node.get("disposition");
-      final var db = io.casehub.eidos.api.AgentDisposition.builder();
+      final var db = AgentDisposition.builder();
       if (dn.has("socialOrient")) db.socialOrient(dn.get("socialOrient").asText());
       if (dn.has("ruleFollowing")) db.ruleFollowing(dn.get("ruleFollowing").asText());
       if (dn.has("riskAppetite")) db.riskAppetite(dn.get("riskAppetite").asText());
@@ -1969,9 +1977,9 @@ public final class CaseDefinitionYamlMapper {
     }
 
     if (node.has("capabilities") && node.get("capabilities").isArray()) {
-      final List<io.casehub.eidos.api.AgentCapability> caps = new ArrayList<>();
+      final List<AgentCapability> caps = new ArrayList<>();
       for (final JsonNode cn : node.get("capabilities")) {
-        final var cb = io.casehub.eidos.api.AgentCapability.builder();
+        final var cb = AgentCapability.builder();
         cb.name(cn.get("name").asText());
         if (cn.has("description")) cb.description(cn.get("description").asText());
         if (cn.has("qualityHint")) cb.qualityHint(cn.get("qualityHint").asDouble());
