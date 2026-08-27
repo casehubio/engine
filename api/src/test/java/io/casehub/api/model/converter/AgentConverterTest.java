@@ -18,13 +18,9 @@ package io.casehub.api.model.converter;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import io.casehub.api.model.ai.Agent;
-import io.casehub.model.AgentModel;
-import io.casehub.model.AnthropicModel;
-import io.casehub.model.GoogleAiGeminiModel;
-import io.casehub.model.MistralAiModel;
-import io.casehub.model.OllamaModel;
-import io.casehub.model.OpenAiModel;
 import org.junit.jupiter.api.Test;
 
 /**
@@ -33,275 +29,152 @@ import org.junit.jupiter.api.Test;
  */
 class AgentConverterTest {
 
+  private static final ObjectMapper JSON = new ObjectMapper();
+
   // ---- null / error handling ------------------------------------------------
 
   @Test
   void toApiAgent_nullInput_returnsNull() {
-    Agent result = AgentConverter.toApiAgent(null);
+    Agent result = AgentConverter.toApiAgent((JsonNode) null);
     assertThat(result).isNull();
   }
 
   @Test
-  void toApiAgent_nullModel_throwsIllegalArgument() {
-    io.casehub.model.Agent schemaAgent = new io.casehub.model.Agent();
-    schemaAgent.setSystemPrompt("You are a test agent");
-    schemaAgent.setInputProjection(".");
-    schemaAgent.setOutputProjection(".");
-    // model is null
-
-    assertThatThrownBy(() -> AgentConverter.toApiAgent(schemaAgent))
-        .isInstanceOf(IllegalArgumentException.class)
-        .hasMessage("AgentModel is required");
+  void toApiAgent_nullJsonNode_returnsNull() throws Exception {
+    JsonNode node = JSON.readTree("null");
+    Agent result = AgentConverter.toApiAgent(node);
+    assertThat(result).isNull();
   }
 
   @Test
-  void toApiAgent_emptyModel_throwsIllegalArgument() {
-    io.casehub.model.Agent schemaAgent = new io.casehub.model.Agent();
-    schemaAgent.setSystemPrompt("You are a test agent");
-    schemaAgent.setInputProjection(".");
-    schemaAgent.setOutputProjection(".");
-    schemaAgent.setModel(new AgentModel()); // no provider set
-
-    assertThatThrownBy(() -> AgentConverter.toApiAgent(schemaAgent))
+  void toApiAgent_missingModel_throwsIllegalArgument() throws Exception {
+    JsonNode node = JSON.readTree("{\"systemPrompt\": \"You are a test agent\"}");
+    assertThatThrownBy(() -> AgentConverter.toApiAgent(node))
         .isInstanceOf(IllegalArgumentException.class)
-        .hasMessage("No model provider configured in AgentModel");
+        .hasMessageContaining("model");
+  }
+
+  @Test
+  void toApiAgent_unknownProvider_throwsIllegalArgument() throws Exception {
+    JsonNode node = JSON.readTree("{\"model\": \"unknown-llm\", \"modelName\": \"x\"}");
+    assertThatThrownBy(() -> AgentConverter.toApiAgent(node))
+        .isInstanceOf(IllegalArgumentException.class)
+        .hasMessageContaining("Unknown model provider");
   }
 
   // ---- OpenAI provider ------------------------------------------------------
 
   @Test
-  void toApiAgent_openai_allFields() {
-    io.casehub.model.Agent schemaAgent = schemaAgent();
-    OpenAiModel openai = new OpenAiModel();
-    openai.setApiKey("sk-test-key");
-    openai.setModelName("gpt-4");
-    openai.setBaseUrl("http://openclaw:3000/v1");
-    openai.setOrganizationId("org-test");
-    openai.setTemperature(0.7);
-    openai.setTopP(0.9);
-    openai.setMaxTokens(1024);
-    openai.setFrequencyPenalty(0.5);
-    openai.setPresencePenalty(0.3);
-    AgentModel model = new AgentModel();
-    model.setOpenai(openai);
-    schemaAgent.setModel(model);
-
-    Agent result = AgentConverter.toApiAgent(schemaAgent);
+  void toApiAgent_openai_allFields() throws Exception {
+    JsonNode node =
+        JSON.readTree(
+            """
+        {"model":"openai","modelName":"gpt-4","apiKey":"sk-test-key",
+         "baseUrl":"http://openclaw:3000/v1","organizationId":"org-test",
+         "temperature":0.7,"topP":0.9,"maxTokens":1024,
+         "systemPrompt":"You are a test agent"}""");
+    Agent result = AgentConverter.toApiAgent(node);
     assertThat(result).isNotNull();
   }
 
   @Test
-  void toApiAgent_openai_minimalFields() {
-    io.casehub.model.Agent schemaAgent = schemaAgent();
-    OpenAiModel openai = new OpenAiModel();
-    openai.setApiKey("sk-test-key");
-    openai.setModelName("gpt-4o-mini");
-    AgentModel model = new AgentModel();
-    model.setOpenai(openai);
-    schemaAgent.setModel(model);
-
-    Agent result = AgentConverter.toApiAgent(schemaAgent);
+  void toApiAgent_openai_minimalFields() throws Exception {
+    JsonNode node =
+        JSON.readTree(
+            "{\"model\":\"openai\",\"modelName\":\"gpt-4o-mini\",\"apiKey\":\"sk-test-key\",\"systemPrompt\":\"test\"}");
+    Agent result = AgentConverter.toApiAgent(node);
     assertThat(result).isNotNull();
   }
 
   // ---- Ollama provider ------------------------------------------------------
 
   @Test
-  void toApiAgent_ollama_allFields() {
-    io.casehub.model.Agent schemaAgent = schemaAgent();
-    OllamaModel ollama = new OllamaModel();
-    ollama.setBaseUrl("http://localhost:11434");
-    ollama.setModelName("llama2");
-    ollama.setTemperature(0.5);
-    ollama.setTopP(0.8);
-    AgentModel model = new AgentModel();
-    model.setOllama(ollama);
-    schemaAgent.setModel(model);
-
-    Agent result = AgentConverter.toApiAgent(schemaAgent);
+  void toApiAgent_ollama_allFields() throws Exception {
+    JsonNode node =
+        JSON.readTree(
+            "{\"model\":\"ollama\",\"baseUrl\":\"http://localhost:11434\","
+                + "\"modelName\":\"llama2\",\"temperature\":0.5,\"topP\":0.8,\"systemPrompt\":\"test\"}");
+    Agent result = AgentConverter.toApiAgent(node);
     assertThat(result).isNotNull();
   }
 
   @Test
-  void toApiAgent_ollama_minimalFields() {
-    io.casehub.model.Agent schemaAgent = schemaAgent();
-    OllamaModel ollama = new OllamaModel();
-    ollama.setBaseUrl("http://localhost:11434");
-    ollama.setModelName("mistral");
-    AgentModel model = new AgentModel();
-    model.setOllama(ollama);
-    schemaAgent.setModel(model);
-
-    Agent result = AgentConverter.toApiAgent(schemaAgent);
+  void toApiAgent_ollama_minimalFields() throws Exception {
+    JsonNode node =
+        JSON.readTree(
+            "{\"model\":\"ollama\",\"baseUrl\":\"http://localhost:11434\","
+                + "\"modelName\":\"mistral\",\"systemPrompt\":\"test\"}");
+    Agent result = AgentConverter.toApiAgent(node);
     assertThat(result).isNotNull();
   }
 
   // ---- Anthropic provider ---------------------------------------------------
 
   @Test
-  void toApiAgent_anthropic_allFields() {
-    io.casehub.model.Agent schemaAgent = schemaAgent();
-    AnthropicModel anthropic = new AnthropicModel();
-    anthropic.setApiKey("sk-ant-test-key");
-    anthropic.setModelName("claude-3-sonnet-20240229");
-    anthropic.setBaseUrl("https://custom-anthropic.example.com");
-    anthropic.setVersion("2023-06-01");
-    anthropic.setTemperature(0.3);
-    anthropic.setTopP(0.95);
-    anthropic.setTopK(40);
-    anthropic.setMaxTokens(2048);
-    AgentModel model = new AgentModel();
-    model.setAnthropic(anthropic);
-    schemaAgent.setModel(model);
-
-    Agent result = AgentConverter.toApiAgent(schemaAgent);
+  void toApiAgent_anthropic_allFields() throws Exception {
+    JsonNode node =
+        JSON.readTree(
+            """
+        {"model":"anthropic","modelName":"claude-3-sonnet-20240229",
+         "apiKey":"sk-ant-test-key","baseUrl":"https://custom-anthropic.example.com",
+         "version":"2023-06-01","temperature":0.3,"topP":0.95,"topK":40,"maxTokens":2048,
+         "systemPrompt":"You are a test agent"}""");
+    Agent result = AgentConverter.toApiAgent(node);
     assertThat(result).isNotNull();
   }
 
   @Test
-  void toApiAgent_anthropic_minimalFields() {
-    io.casehub.model.Agent schemaAgent = schemaAgent();
-    AnthropicModel anthropic = new AnthropicModel();
-    anthropic.setApiKey("sk-ant-test-key");
-    anthropic.setModelName("claude-3-5-sonnet-20241022");
-    AgentModel model = new AgentModel();
-    model.setAnthropic(anthropic);
-    schemaAgent.setModel(model);
-
-    Agent result = AgentConverter.toApiAgent(schemaAgent);
+  void toApiAgent_anthropic_minimalFields() throws Exception {
+    JsonNode node =
+        JSON.readTree(
+            "{\"model\":\"anthropic\",\"modelName\":\"claude-3-haiku-20240307\","
+                + "\"apiKey\":\"sk-ant-key\",\"systemPrompt\":\"test\"}");
+    Agent result = AgentConverter.toApiAgent(node);
     assertThat(result).isNotNull();
   }
 
-  // ---- MistralAI provider ---------------------------------------------------
+  // ---- Mistral provider -----------------------------------------------------
 
   @Test
-  void toApiAgent_mistral_allFields() {
-    io.casehub.model.Agent schemaAgent = schemaAgent();
-    MistralAiModel mistral = new MistralAiModel();
-    mistral.setApiKey("mistral-test-key");
-    mistral.setModelName("mistral-large-latest");
-    mistral.setBaseUrl("https://custom-mistral.example.com");
-    mistral.setTemperature(0.6);
-    mistral.setTopP(0.85);
-    mistral.setMaxTokens(4096);
-    AgentModel model = new AgentModel();
-    model.setMistralAi(mistral);
-    schemaAgent.setModel(model);
-
-    Agent result = AgentConverter.toApiAgent(schemaAgent);
+  void toApiAgent_mistral_allFields() throws Exception {
+    JsonNode node =
+        JSON.readTree(
+            "{\"model\":\"mistralai\",\"modelName\":\"mistral-large-latest\","
+                + "\"apiKey\":\"msk-test-key\",\"baseUrl\":\"https://custom-mistral.example.com\","
+                + "\"temperature\":0.4,\"topP\":0.85,\"maxTokens\":512,\"systemPrompt\":\"test\"}");
+    Agent result = AgentConverter.toApiAgent(node);
     assertThat(result).isNotNull();
   }
 
   @Test
-  void toApiAgent_mistral_minimalFields() {
-    io.casehub.model.Agent schemaAgent = schemaAgent();
-    MistralAiModel mistral = new MistralAiModel();
-    mistral.setApiKey("mistral-test-key");
-    mistral.setModelName("mistral-small-latest");
-    AgentModel model = new AgentModel();
-    model.setMistralAi(mistral);
-    schemaAgent.setModel(model);
-
-    Agent result = AgentConverter.toApiAgent(schemaAgent);
+  void toApiAgent_mistral_minimalFields() throws Exception {
+    JsonNode node =
+        JSON.readTree(
+            "{\"model\":\"mistral\",\"modelName\":\"mistral-small\",\"apiKey\":\"msk-key\",\"systemPrompt\":\"test\"}");
+    Agent result = AgentConverter.toApiAgent(node);
     assertThat(result).isNotNull();
   }
 
   // ---- Google AI Gemini provider --------------------------------------------
 
   @Test
-  void toApiAgent_googleAiGemini_allFields() {
-    io.casehub.model.Agent schemaAgent = schemaAgent();
-    GoogleAiGeminiModel gemini = new GoogleAiGeminiModel();
-    gemini.setApiKey("google-test-key");
-    gemini.setModelName("gemini-pro");
-    gemini.setTemperature(0.4);
-    gemini.setTopP(0.9);
-    gemini.setMaxTokens(8192);
-    AgentModel model = new AgentModel();
-    model.setGoogleAiGemini(gemini);
-    schemaAgent.setModel(model);
-
-    Agent result = AgentConverter.toApiAgent(schemaAgent);
+  void toApiAgent_googleAiGemini_allFields() throws Exception {
+    JsonNode node =
+        JSON.readTree(
+            """
+        {"model":"googleaigemini","modelName":"gemini-pro",
+         "apiKey":"gai-test-key","temperature":0.6,"topP":0.7,"maxTokens":1500,
+         "systemPrompt":"test"}""");
+    Agent result = AgentConverter.toApiAgent(node);
     assertThat(result).isNotNull();
   }
 
   @Test
-  void toApiAgent_googleAiGemini_minimalFields() {
-    io.casehub.model.Agent schemaAgent = schemaAgent();
-    GoogleAiGeminiModel gemini = new GoogleAiGeminiModel();
-    gemini.setApiKey("google-test-key");
-    gemini.setModelName("gemini-2.0-flash");
-    AgentModel model = new AgentModel();
-    model.setGoogleAiGemini(gemini);
-    schemaAgent.setModel(model);
-
-    Agent result = AgentConverter.toApiAgent(schemaAgent);
+  void toApiAgent_googleAiGemini_minimalFields() throws Exception {
+    JsonNode node =
+        JSON.readTree(
+            "{\"model\":\"gemini\",\"modelName\":\"gemini-1.5-pro\",\"apiKey\":\"gai-key\",\"systemPrompt\":\"test\"}");
+    Agent result = AgentConverter.toApiAgent(node);
     assertThat(result).isNotNull();
-  }
-
-  // ---- userMessageTemplate --------------------------------------------------
-
-  @Test
-  void toApiAgent_withUserMessageTemplate() {
-    io.casehub.model.Agent schemaAgent = schemaAgent();
-    schemaAgent.setUserMessageTemplate("Analyze this: {{input}}");
-    OpenAiModel openai = new OpenAiModel();
-    openai.setApiKey("sk-test-key");
-    openai.setModelName("gpt-4");
-    AgentModel model = new AgentModel();
-    model.setOpenai(openai);
-    schemaAgent.setModel(model);
-
-    Agent result = AgentConverter.toApiAgent(schemaAgent);
-    assertThat(result).isNotNull();
-  }
-
-  @Test
-  void toApiAgent_withoutUserMessageTemplate() {
-    io.casehub.model.Agent schemaAgent = schemaAgent();
-    // userMessageTemplate left null
-    OpenAiModel openai = new OpenAiModel();
-    openai.setApiKey("sk-test-key");
-    openai.setModelName("gpt-4");
-    AgentModel model = new AgentModel();
-    model.setOpenai(openai);
-    schemaAgent.setModel(model);
-
-    Agent result = AgentConverter.toApiAgent(schemaAgent);
-    assertThat(result).isNotNull();
-  }
-
-  // ---- provider priority (dispatch order) -----------------------------------
-
-  @Test
-  void toApiAgent_openaiTakesPriorityOverOllama() {
-    io.casehub.model.Agent schemaAgent = schemaAgent();
-    AgentModel model = new AgentModel();
-
-    OpenAiModel openai = new OpenAiModel();
-    openai.setApiKey("sk-test-key");
-    openai.setModelName("gpt-4");
-    model.setOpenai(openai);
-
-    OllamaModel ollama = new OllamaModel();
-    ollama.setBaseUrl("http://localhost:11434");
-    ollama.setModelName("llama2");
-    model.setOllama(ollama);
-
-    schemaAgent.setModel(model);
-
-    // Should not throw — picks openai first per dispatch order
-    Agent result = AgentConverter.toApiAgent(schemaAgent);
-    assertThat(result).isNotNull();
-  }
-
-  // ---- helper ---------------------------------------------------------------
-
-  private static io.casehub.model.Agent schemaAgent() {
-    io.casehub.model.Agent agent = new io.casehub.model.Agent();
-    agent.setSystemPrompt("You are a test agent");
-    agent.setInputProjection(".");
-    agent.setOutputProjection(".");
-    return agent;
   }
 }

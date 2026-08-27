@@ -129,6 +129,16 @@ public class BindingDeserializer extends StdDeserializer<Binding> {
     if (node.has("exchangeProjectionStrategy")) {
       builder.exchangeProjectionStrategy(node.get("exchangeProjectionStrategy").asText());
     }
+    String epExpression = null;
+    if (node.has("exchangeProjection")) {
+      JsonNode ep = node.get("exchangeProjection");
+      if (ep.isTextual()) {
+        builder.exchangeProjectionStrategy(ep.asText());
+      } else if (ep.isObject()) {
+        if (ep.has("strategy")) builder.exchangeProjectionStrategy(ep.get("strategy").asText());
+        if (ep.has("expression")) epExpression = ep.get("expression").asText();
+      }
+    }
     if (node.has("produces")) {
       builder.produces(node.get("produces").asText());
     }
@@ -145,12 +155,25 @@ public class BindingDeserializer extends StdDeserializer<Binding> {
       builder.recoveryOverride(deserializeRecoveryOverride(node.get("recoveryOverride")));
     }
 
-    return builder.build();
+    if (node.has("permissionIntent") && node.get("permissionIntent").isArray()) {
+      List<io.casehub.platform.api.acl.WorkerAction> actions = new ArrayList<>();
+      for (JsonNode an : node.get("permissionIntent")) {
+        actions.add(io.casehub.api.acl.EngineWorkerActions.fromKebabCase(an.asText()));
+      }
+      builder.permissionIntent(actions);
+    }
+
+    Binding result = builder.build();
+    if (epExpression != null) {
+      result.setExchangeProjectionExpression(epExpression);
+    }
+    return result;
   }
 
   private void resolveTarget(
       JsonNode node, Binding.Builder builder, ObjectCodec codec, DeserializationContext ctxt)
       throws IOException {
+    String bindingName = textOrNull(node, "name");
     if (node.has("capability")) {
       String capName = node.get("capability").asText();
       @SuppressWarnings("unchecked")
@@ -164,7 +187,7 @@ public class BindingDeserializer extends StdDeserializer<Binding> {
     } else if (node.has("subCase")) {
       builder.subCase(deserializeSubCase(node.get("subCase"), codec, ctxt));
     } else if (node.has("humanTask")) {
-      builder.humanTask(deserializeHumanTask(node.get("humanTask"), codec, ctxt));
+      builder.humanTask(deserializeHumanTask(node.get("humanTask"), bindingName, codec, ctxt));
     } else if (node.has("signal")) {
       @SuppressWarnings("unchecked")
       Map<String, Object> payload =
@@ -198,47 +221,152 @@ public class BindingDeserializer extends StdDeserializer<Binding> {
   }
 
   private HumanTaskTarget deserializeHumanTask(
-      JsonNode node, ObjectCodec codec, DeserializationContext ctxt) throws IOException {
+      JsonNode node, String bindingName, ObjectCodec codec, DeserializationContext ctxt)
+      throws IOException {
+    boolean hasTemplate = node.has("templateRef");
+    boolean hasTitle = node.has("title");
+    if (hasTemplate && hasTitle) {
+      throw new IllegalArgumentException(
+          "Binding '"
+              + bindingName
+              + "' cannot specify both 'title' and 'templateRef' on humanTask");
+    }
+
     HumanTaskTarget.Builder b;
-    if (node.has("templateRef")) {
+    if (hasTemplate) {
       b = HumanTaskTarget.template(node.get("templateRef").asText());
     } else {
       b = HumanTaskTarget.inline();
     }
-    if (node.has("title")) b.title(node.get("title").asText());
+    if (hasTitle) {
+      b.title(node.get("title").asText());
+    }
+    if (node.has("titleExpression")) {
+      b.titleExpression(
+          readExpressionWithContext(
+              node.get("titleExpression"), "titleExpression", bindingName, codec, ctxt));
+    }
     if (node.has("candidateGroups")) {
       JsonNode cg = node.get("candidateGroups");
       if (cg.isArray()) {
-        Set<String> groups = new LinkedHashSet<>();
-        cg.forEach(n -> groups.add(n.asText()));
-        b.candidateGroups(groups);
+        if (cg.size() > 0) {
+          Set<String> groups = new LinkedHashSet<>();
+          for (JsonNode n : cg) {
+            if (!n.isTextual()) {
+              throw new IllegalArgumentException(
+                  "candidateGroups elements must be strings, got: " + n.getNodeType());
+            }
+            groups.add(n.asText());
+          }
+          b.candidateGroups(groups);
+        }
+      } else if (cg.isTextual()) {
+        b.candidateGroupsExpression(cg.asText());
       }
     }
     if (node.has("candidateUsers")) {
       JsonNode cu = node.get("candidateUsers");
       if (cu.isArray()) {
-        Set<String> users = new LinkedHashSet<>();
-        cu.forEach(n -> users.add(n.asText()));
-        b.candidateUsers(users);
+        if (cu.size() > 0) {
+          Set<String> users = new LinkedHashSet<>();
+          cu.forEach(n -> users.add(n.asText()));
+          b.candidateUsers(users);
+        }
+      } else if (cu.isTextual()) {
+        b.candidateUsersExpression(cu.asText());
       }
     }
     if (node.has("expiresIn")) {
-      b.expiresIn(java.time.Duration.parse(node.get("expiresIn").asText()));
+      String raw = node.get("expiresIn").asText();
+      try {
+        java.time.Duration d = java.time.Duration.parse(raw);
+        if (d.isZero() || d.isNegative()) {
+          throw new IllegalArgumentException(
+              "Binding '" + bindingName + "' humanTask expiresIn must be positive, got: " + raw);
+        }
+        b.expiresIn(d);
+      } catch (java.time.format.DateTimeParseException e) {
+        throw new IllegalArgumentException(
+            "Binding '" + bindingName + "' humanTask has invalid expiresIn: " + raw, e);
+      }
     }
-    if (node.has("priority")) b.priority(node.get("priority").asText());
+    if (node.has("expiresInExpression")) {
+      String eiExpr = node.get("expiresInExpression").asText();
+      if (eiExpr != null && !eiExpr.isBlank()) {
+        b.expiresInExpression(
+            readExpressionWithContext(
+                node.get("expiresInExpression"), "expiresInExpression", bindingName, codec, ctxt));
+      }
+    }
+    if (node.has("claimDeadlineHours")) {
+      b.claimDeadlineHours(node.get("claimDeadlineHours").asInt());
+    }
+    if (node.has("expiresAtExpression")) {
+      b.expiresAtExpression(
+          readExpressionWithContext(
+              node.get("expiresAtExpression"), "expiresAtExpression", bindingName, codec, ctxt));
+    }
+    if (node.has("priority")) {
+      b.priority(node.get("priority").asText());
+    }
     if (node.has("inputMapping")) {
       b.inputMapping(readValue(node.get("inputMapping"), ExpressionEvaluator.class, codec, ctxt));
     }
     if (node.has("outputMapping")) {
       b.outputMapping(readValue(node.get("outputMapping"), ExpressionEvaluator.class, codec, ctxt));
     }
-    if (node.has("scope")) b.scope(node.get("scope").asText());
+    if (node.has("scope")) {
+      b.scope(node.get("scope").asText());
+    }
+    if (node.has("scopeExpression")) {
+      b.scopeExpression(
+          readValue(node.get("scopeExpression"), ExpressionEvaluator.class, codec, ctxt));
+    }
     if (node.has("outcomes")) {
       Set<String> outcomes = new LinkedHashSet<>();
       node.get("outcomes").forEach(n -> outcomes.add(n.asText()));
       b.outcomes(outcomes);
     }
-    return b.build();
+    if (node.has("payloadType")) {
+      try {
+        b.payloadType(Class.forName(node.get("payloadType").asText()));
+      } catch (ClassNotFoundException e) {
+        throw new IllegalArgumentException(
+            "humanTask payloadType class not found: " + node.get("payloadType").asText(), e);
+      }
+    }
+    if (node.has("resolutionType")) {
+      try {
+        b.resolutionType(Class.forName(node.get("resolutionType").asText()));
+      } catch (ClassNotFoundException e) {
+        throw new IllegalArgumentException(
+            "humanTask resolutionType class not found: " + node.get("resolutionType").asText(), e);
+      }
+    }
+    try {
+      return b.build();
+    } catch (IllegalStateException e) {
+      throw new IllegalArgumentException("Binding '" + bindingName + "' " + e.getMessage(), e);
+    }
+  }
+
+  private ExpressionEvaluator readExpressionWithContext(
+      JsonNode node,
+      String fieldName,
+      String bindingName,
+      ObjectCodec codec,
+      DeserializationContext ctxt)
+      throws IOException {
+    try {
+      ExpressionEvaluator result = readValue(node, ExpressionEvaluator.class, codec, ctxt);
+      if (result instanceof io.casehub.api.model.evaluator.JQExpressionEvaluator jq) {
+        io.casehub.api.model.evaluator.JQExpressionEvaluator.validate(jq.expression());
+      }
+      return result;
+    } catch (Exception e) {
+      throw new IllegalArgumentException(
+          "Binding '" + bindingName + "' has invalid " + fieldName + ": " + e.getMessage(), e);
+    }
   }
 
   private OutcomePolicy deserializeOutcomePolicy(JsonNode node) {
