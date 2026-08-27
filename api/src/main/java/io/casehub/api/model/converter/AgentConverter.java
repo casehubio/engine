@@ -22,225 +22,147 @@ import io.casehub.api.model.ai.gemini.GoogleAiGeminiChatModelProvider;
 import io.casehub.api.model.ai.mistral.MistralAiChatModelProvider;
 import io.casehub.api.model.ai.ollama.OllamaChatModelProvider;
 import io.casehub.api.model.ai.openai.OpenAiChatModelProvider;
-import io.casehub.model.Agent;
-import io.casehub.model.AgentModel;
-import io.casehub.model.AnthropicModel;
-import io.casehub.model.GoogleAiGeminiModel;
-import io.casehub.model.MistralAiModel;
-import io.casehub.model.OllamaModel;
-import io.casehub.model.OpenAiModel;
 
 public class AgentConverter {
 
-  public static io.casehub.api.model.ai.Agent toApiAgent(Agent schemaAgent) {
-    if (schemaAgent == null) {
-      return null;
-    }
-
-    ChatModelProvider modelProvider = toChatModelProvider(schemaAgent.getModel());
-
-    AgentBuilder builder =
-        io.casehub.api.model.ai.Agent.builder()
-            .systemPrompt(schemaAgent.getSystemPrompt())
-            .inputProjection(schemaAgent.getInputProjection())
-            .outputProjection(schemaAgent.getOutputProjection())
-            .model(modelProvider);
-
-    if (schemaAgent.getUserMessageTemplate() != null) {
-      builder.userMessage(schemaAgent.getUserMessageTemplate());
-    }
-
-    return builder.build();
-  }
-
+  /**
+   * Builds an Agent directly from a raw YAML {@link com.fasterxml.jackson.databind.JsonNode},
+   * bypassing the generated schema POJOs. Supports the flat YAML format where {@code model:} is the
+   * provider name string and other fields ({@code modelName}, {@code apiKey}, etc.) sit at the same
+   * level.
+   */
   public static io.casehub.api.model.ai.Agent toApiAgent(
-      Agent schemaAgent,
-      com.fasterxml.jackson.databind.JsonNode rawAgentNode,
-      io.casehub.api.engine.ExpressionEngineRegistry registry,
-      String expressionLang) {
-    if (schemaAgent == null) {
+      com.fasterxml.jackson.databind.JsonNode agentNode) {
+    if (agentNode == null || agentNode.isNull()) {
       return null;
     }
 
-    ChatModelProvider modelProvider = toChatModelProvider(schemaAgent.getModel());
+    String providerType;
+    com.fasterxml.jackson.databind.JsonNode providerConfigNode;
+    com.fasterxml.jackson.databind.JsonNode modelNode = agentNode.get("model");
+    if (modelNode != null && modelNode.isObject() && modelNode.size() > 0) {
+      var entry = modelNode.fields().next();
+      providerType = entry.getKey();
+      providerConfigNode = entry.getValue();
+    } else {
+      providerType = modelNode != null ? modelNode.asText() : null;
+      providerConfigNode = agentNode;
+    }
+    ChatModelProvider modelProvider = toChatModelProviderFromNode(providerConfigNode, providerType);
 
     AgentBuilder builder =
         io.casehub.api.model.ai.Agent.builder()
-            .systemPrompt(schemaAgent.getSystemPrompt())
+            .systemPrompt(
+                agentNode.has("systemPrompt") ? agentNode.get("systemPrompt").asText() : null)
             .model(modelProvider);
 
-    io.casehub.platform.api.expression.ExpressionEvaluator inputEval =
-        CaseDefinitionYamlMapper.resolveExpression(
-            rawAgentNode != null ? rawAgentNode.get("inputProjection") : null,
-            registry,
-            expressionLang);
-    if (inputEval != null) {
-      builder.inputTransformer(
-          input -> {
-            java.util.List<com.fasterxml.jackson.databind.JsonNode> result =
-                registry.transform(inputEval, input);
-            return result.isEmpty() ? input : result.get(0);
-          });
-    } else if (schemaAgent.getInputProjection() != null) {
-      builder.inputProjection(schemaAgent.getInputProjection());
+    if (agentNode.has("inputProjection")) {
+      builder.inputProjection(agentNode.get("inputProjection").asText());
     }
-
-    io.casehub.platform.api.expression.ExpressionEvaluator outputEval =
-        CaseDefinitionYamlMapper.resolveExpression(
-            rawAgentNode != null ? rawAgentNode.get("outputProjection") : null,
-            registry,
-            expressionLang);
-    if (outputEval != null) {
-      builder.outputTransformer(
-          output -> {
-            java.util.List<com.fasterxml.jackson.databind.JsonNode> result =
-                registry.transform(outputEval, output);
-            return result.isEmpty() ? output : result.get(0);
-          });
-    } else if (schemaAgent.getOutputProjection() != null) {
-      builder.outputProjection(schemaAgent.getOutputProjection());
+    if (agentNode.has("outputProjection")) {
+      builder.outputProjection(agentNode.get("outputProjection").asText());
     }
-
-    if (schemaAgent.getUserMessageTemplate() != null) {
-      builder.userMessage(schemaAgent.getUserMessageTemplate());
+    if (agentNode.has("userMessageTemplate")) {
+      builder.userMessage(agentNode.get("userMessageTemplate").asText());
     }
 
     return builder.build();
   }
 
-  private static ChatModelProvider toChatModelProvider(AgentModel model) {
-    if (model == null) {
-      throw new IllegalArgumentException("AgentModel is required");
+  private static ChatModelProvider toChatModelProviderFromNode(
+      com.fasterxml.jackson.databind.JsonNode node, String providerType) {
+    if (providerType == null) {
+      throw new IllegalArgumentException("agent 'model' field (provider type) is required");
     }
+    String modelName = node.has("modelName") ? node.get("modelName").asText() : null;
+    String apiKey = node.has("apiKey") ? node.get("apiKey").asText() : null;
+    Double temperature = node.has("temperature") ? node.get("temperature").asDouble() : null;
+    Double topP = node.has("topP") ? node.get("topP").asDouble() : null;
+    Integer maxTokens = node.has("maxTokens") ? node.get("maxTokens").asInt() : null;
+    String baseUrl = node.has("baseUrl") ? node.get("baseUrl").asText() : null;
 
-    if (model.getOpenai() != null) {
-      return toOpenAiProvider(model.getOpenai());
-    } else if (model.getOllama() != null) {
-      return toOllamaProvider(model.getOllama());
-    } else if (model.getAnthropic() != null) {
-      return toAnthropicProvider(model.getAnthropic());
-    } else if (model.getMistralAi() != null) {
-      return toMistralProvider(model.getMistralAi());
-    } else if (model.getGoogleAiGemini() != null) {
-      return toGoogleAiProvider(model.getGoogleAiGemini());
-    } else {
-      throw new IllegalArgumentException("No model provider configured in AgentModel");
-    }
-  }
-
-  private static ChatModelProvider toOpenAiProvider(OpenAiModel model) {
-    OpenAiChatModelProvider.Builder builder =
-        OpenAiChatModelProvider.builder().apiKey(model.getApiKey()).modelName(model.getModelName());
-
-    if (model.getBaseUrl() != null) {
-      builder.baseUrl(model.getBaseUrl());
-    }
-    if (model.getOrganizationId() != null) {
-      builder.organizationId(model.getOrganizationId());
-    }
-    if (model.getTemperature() != null) {
-      builder.temperature(model.getTemperature());
-    }
-    if (model.getTopP() != null) {
-      builder.topP(model.getTopP());
-    }
-    if (model.getMaxTokens() != null) {
-      builder.maxTokens(model.getMaxTokens());
-    }
-    if (model.getFrequencyPenalty() != null) {
-      builder.frequencyPenalty(model.getFrequencyPenalty());
-    }
-    if (model.getPresencePenalty() != null) {
-      builder.presencePenalty(model.getPresencePenalty());
-    }
-
-    return builder.build();
-  }
-
-  private static ChatModelProvider toOllamaProvider(OllamaModel model) {
-    OllamaChatModelProvider.Builder builder =
-        OllamaChatModelProvider.builder()
-            .baseUrl(model.getBaseUrl())
-            .modelName(model.getModelName());
-
-    if (model.getTemperature() != null) {
-      builder.temperature(model.getTemperature());
-    }
-    if (model.getTopP() != null) {
-      builder.topP(model.getTopP());
-    }
-    // Note: Ollama uses numPredict, not topK - topK is ignored
-
-    return builder.build();
-  }
-
-  private static ChatModelProvider toAnthropicProvider(AnthropicModel model) {
-    AnthropicChatModelProvider.Builder builder =
-        AnthropicChatModelProvider.builder()
-            .apiKey(model.getApiKey())
-            .modelName(model.getModelName());
-
-    if (model.getBaseUrl() != null) {
-      builder.baseUrl(model.getBaseUrl());
-    }
-    if (model.getVersion() != null) {
-      builder.version(model.getVersion());
-    }
-    if (model.getTemperature() != null) {
-      builder.temperature(model.getTemperature());
-    }
-    if (model.getTopP() != null) {
-      builder.topP(model.getTopP());
-    }
-    if (model.getTopK() != null) {
-      builder.topK(model.getTopK());
-    }
-    if (model.getMaxTokens() != null) {
-      builder.maxTokens(model.getMaxTokens());
-    }
-
-    return builder.build();
-  }
-
-  private static ChatModelProvider toMistralProvider(MistralAiModel model) {
-    MistralAiChatModelProvider.Builder builder =
-        MistralAiChatModelProvider.builder()
-            .apiKey(model.getApiKey())
-            .modelName(model.getModelName());
-
-    if (model.getBaseUrl() != null) {
-      builder.baseUrl(model.getBaseUrl());
-    }
-    if (model.getTemperature() != null) {
-      builder.temperature(model.getTemperature());
-    }
-    if (model.getTopP() != null) {
-      builder.topP(model.getTopP());
-    }
-    if (model.getMaxTokens() != null) {
-      builder.maxTokens(model.getMaxTokens());
-    }
-
-    return builder.build();
-  }
-
-  private static ChatModelProvider toGoogleAiProvider(GoogleAiGeminiModel model) {
-    GoogleAiGeminiChatModelProvider.Builder builder =
-        GoogleAiGeminiChatModelProvider.builder()
-            .apiKey(model.getApiKey())
-            .modelName(model.getModelName());
-
-    if (model.getTemperature() != null) {
-      builder.temperature(model.getTemperature());
-    }
-    if (model.getTopP() != null) {
-      builder.topP(model.getTopP());
-    }
-    // Note: Google AI Gemini doesn't support topK - topK is ignored
-    if (model.getMaxTokens() != null) {
-      builder.maxOutputTokens(model.getMaxTokens());
-    }
-
-    return builder.build();
+    return switch (providerType.toLowerCase()) {
+      case "openai" -> {
+        var b = OpenAiChatModelProvider.builder().apiKey(apiKey).modelName(modelName);
+        if (baseUrl != null) {
+          b.baseUrl(baseUrl);
+        }
+        if (temperature != null) {
+          b.temperature(temperature);
+        }
+        if (topP != null) {
+          b.topP(topP);
+        }
+        if (maxTokens != null) {
+          b.maxTokens(maxTokens);
+        }
+        if (node.has("organizationId")) {
+          b.organizationId(node.get("organizationId").asText());
+        }
+        yield b.build();
+      }
+      case "anthropic" -> {
+        var b = AnthropicChatModelProvider.builder().apiKey(apiKey).modelName(modelName);
+        if (baseUrl != null) {
+          b.baseUrl(baseUrl);
+        }
+        if (temperature != null) {
+          b.temperature(temperature);
+        }
+        if (topP != null) {
+          b.topP(topP);
+        }
+        if (maxTokens != null) {
+          b.maxTokens(maxTokens);
+        }
+        if (node.has("version")) {
+          b.version(node.get("version").asText());
+        }
+        if (node.has("topK")) {
+          b.topK(node.get("topK").asInt());
+        }
+        yield b.build();
+      }
+      case "ollama" -> {
+        var b = OllamaChatModelProvider.builder().baseUrl(baseUrl).modelName(modelName);
+        if (temperature != null) {
+          b.temperature(temperature);
+        }
+        if (topP != null) {
+          b.topP(topP);
+        }
+        yield b.build();
+      }
+      case "mistralai", "mistral" -> {
+        var b = MistralAiChatModelProvider.builder().apiKey(apiKey).modelName(modelName);
+        if (baseUrl != null) {
+          b.baseUrl(baseUrl);
+        }
+        if (temperature != null) {
+          b.temperature(temperature);
+        }
+        if (topP != null) {
+          b.topP(topP);
+        }
+        if (maxTokens != null) {
+          b.maxTokens(maxTokens);
+        }
+        yield b.build();
+      }
+      case "googleaigemini", "gemini" -> {
+        var b = GoogleAiGeminiChatModelProvider.builder().apiKey(apiKey).modelName(modelName);
+        if (temperature != null) {
+          b.temperature(temperature);
+        }
+        if (topP != null) {
+          b.topP(topP);
+        }
+        if (maxTokens != null) {
+          b.maxOutputTokens(maxTokens);
+        }
+        yield b.build();
+      }
+      default -> throw new IllegalArgumentException("Unknown model provider: " + providerType);
+    };
   }
 }

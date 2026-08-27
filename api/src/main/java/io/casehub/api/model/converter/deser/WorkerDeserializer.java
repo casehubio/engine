@@ -51,9 +51,29 @@ public class WorkerDeserializer extends StdDeserializer<Worker> {
     ExecutionPolicy executionPolicy = null;
     JsonNode epNode = node.get("executionPolicy");
     if (epNode != null && epNode.isObject()) {
-      JsonParser nested = epNode.traverse(ctxt.getParser().getCodec());
-      nested.nextToken();
-      executionPolicy = ctxt.readValue(nested, ExecutionPolicy.class);
+      Integer timeoutMs = epNode.has("timeoutMs") ? epNode.get("timeoutMs").asInt() : null;
+      io.casehub.platform.api.governance.RetryPolicy retries = null;
+      JsonNode retriesNode = epNode.get("retries");
+      if (retriesNode != null && retriesNode.isObject()) {
+        Integer maxAttempts =
+            retriesNode.has("maxAttempts") ? retriesNode.get("maxAttempts").asInt() : null;
+        Integer delayMs = retriesNode.has("delayMs") ? retriesNode.get("delayMs").asInt() : null;
+        io.casehub.platform.api.governance.BackoffStrategy backoff =
+            retriesNode.has("backoffStrategy")
+                ? io.casehub.platform.api.governance.BackoffStrategy.valueOf(
+                    retriesNode.get("backoffStrategy").asText())
+                : io.casehub.platform.api.governance.BackoffStrategy.FIXED;
+        Integer maxDelayMs =
+            retriesNode.has("maxDelayMs") ? retriesNode.get("maxDelayMs").asInt() : null;
+        retries =
+            new io.casehub.platform.api.governance.RetryPolicy(
+                maxAttempts, delayMs, backoff, maxDelayMs);
+      }
+      executionPolicy =
+          retries != null
+              ? new ExecutionPolicy(timeoutMs, retries)
+              : new ExecutionPolicy(
+                  timeoutMs, new io.casehub.platform.api.governance.RetryPolicy());
     }
 
     Worker.Builder builder = Worker.builder().name(name).capabilityNames(capabilities).noFunction();

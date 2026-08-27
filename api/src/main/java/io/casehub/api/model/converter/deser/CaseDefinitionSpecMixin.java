@@ -19,6 +19,7 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import io.casehub.api.model.AdaptationConfig;
 import io.casehub.api.model.ReflectionTriggerConfig;
 import io.casehub.api.model.cbr.CbrConfig;
+import io.casehub.api.spi.QuorumConfig;
 import io.casehub.engine.plan.monitoring.MonitoringConfig;
 
 public abstract class CaseDefinitionSpecMixin {
@@ -34,4 +35,7 @@ public abstract class CaseDefinitionSpecMixin {
 
   @JsonProperty("monitoring")
   abstract MonitoringConfig getMonitoringConfig();
+
+  @JsonProperty("quorum")
+  abstract QuorumConfig getDefaultQuorum();
 }

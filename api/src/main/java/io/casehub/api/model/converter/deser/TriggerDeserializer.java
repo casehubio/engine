@@ -23,7 +23,6 @@ import io.casehub.api.model.ContextChangeTrigger;
 import io.casehub.api.model.ScheduleTrigger;
 import io.casehub.api.model.ScopeActivatedTrigger;
 import io.casehub.api.model.Trigger;
-import io.casehub.api.model.evaluator.JQExpressionEvaluator;
 import io.casehub.platform.api.expression.ExpressionEvaluator;
 import java.io.IOException;
 
@@ -60,13 +59,14 @@ public class TriggerDeserializer extends StdDeserializer<Trigger> {
       case "contextChange" -> deserializeContextChange(value, ctxt);
       case "schedule" -> deserializeSchedule(value, ctxt);
       case "scopeActivated" -> new ScopeActivatedTrigger();
+      case "cloudEvent" -> deserializeCloudEvent(value, ctxt);
       default ->
           throw ctxt.weirdStringException(
               key,
               Trigger.class,
               "Unknown trigger type: '"
                   + key
-                  + "'. Valid types: contextChange, schedule, scopeActivated");
+                  + "'. Valid types: contextChange, schedule, scopeActivated, cloudEvent");
     };
   }
 
@@ -76,16 +76,13 @@ public class TriggerDeserializer extends StdDeserializer<Trigger> {
     String listenLayer = null;
     if (value != null && value.isObject()) {
       JsonNode filterNode = value.get("filter");
-      if (filterNode != null && filterNode.isTextual()) {
-        String defaultLang =
-            (String) ctxt.getAttribute(ExpressionEvaluatorDeserializer.EXPRESSION_LANG_KEY);
-        if (defaultLang == null || JQExpressionEvaluator.TYPE.equals(defaultLang)) {
-          filter = new JQExpressionEvaluator(filterNode.asText());
-        } else {
-          JsonParser nested = filterNode.traverse(ctxt.getParser().getCodec());
-          nested.nextToken();
-          filter = ctxt.readValue(nested, ExpressionEvaluator.class);
-        }
+      if (filterNode == null) {
+        filterNode = value.get("expression");
+      }
+      if (filterNode != null && !filterNode.isNull()) {
+        JsonParser nested = filterNode.traverse(ctxt.getParser().getCodec());
+        nested.nextToken();
+        filter = ctxt.readValue(nested, ExpressionEvaluator.class);
       }
       JsonNode listenLayerNode = value.get("listenLayer");
       if (listenLayerNode != null && listenLayerNode.isTextual()) {
@@ -93,6 +90,34 @@ public class TriggerDeserializer extends StdDeserializer<Trigger> {
       }
     }
     return new ContextChangeTrigger(filter, listenLayer);
+  }
+
+  private Trigger deserializeCloudEvent(JsonNode value, DeserializationContext ctxt)
+      throws IOException {
+    if (value == null) {
+      throw ctxt.weirdStringException("null", Trigger.class, "cloudEvent trigger value is null");
+    }
+    if (value.isTextual()) {
+      return new io.casehub.api.model.CloudEventTrigger(value.asText());
+    }
+    if (value.isObject()) {
+      String type = value.has("type") ? value.get("type").asText() : null;
+      String source = value.has("source") ? value.get("source").asText() : null;
+      String subject = value.has("subject") ? value.get("subject").asText() : null;
+      ExpressionEvaluator filter = null;
+      JsonNode filterNode = value.get("filter");
+      if (filterNode != null && !filterNode.isNull()) {
+        JsonParser nested = filterNode.traverse(ctxt.getParser().getCodec());
+        nested.nextToken();
+        filter = ctxt.readValue(nested, ExpressionEvaluator.class);
+      }
+      if (type == null) {
+        throw new IllegalArgumentException("cloudEvent trigger requires 'type' field");
+      }
+      return new io.casehub.api.model.CloudEventTrigger(type, source, subject, filter);
+    }
+    throw ctxt.weirdStringException(
+        value.toString(), Trigger.class, "cloudEvent must be a string or object");
   }
 
   private Trigger deserializeSchedule(JsonNode value, DeserializationContext ctxt)

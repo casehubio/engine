@@ -67,14 +67,14 @@ public class ExpressionEvaluatorDeserializer extends StdDeserializer<ExpressionE
   }
 
   private ExpressionEvaluator createExpression(String expression, String lang) {
+    if (registry != null) {
+      return registry.create(expression, lang);
+    }
     if (JQExpressionEvaluator.TYPE.equals(lang)) {
       return new JQExpressionEvaluator(expression);
     }
-    if (registry == null) {
-      throw new IllegalArgumentException(
-          "ExpressionEngineRegistry required for non-JQ language: " + lang);
-    }
-    return registry.create(expression, lang);
+    throw new IllegalArgumentException(
+        "ExpressionEngineRegistry required for non-JQ language: " + lang);
   }
 
   @Override

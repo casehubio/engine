@@ -21,6 +21,17 @@ public record JQExpressionEvaluator(String expression) implements ExpressionEval
 
   public static final String TYPE = "jq";
 
+  public static void validate(String expression) {
+    if (expression != null && !expression.isBlank()) {
+      try {
+        net.thisptr.jackson.jq.JsonQuery.compile(
+            expression, net.thisptr.jackson.jq.Versions.JQ_1_6);
+      } catch (net.thisptr.jackson.jq.exception.JsonQueryException e) {
+        throw new IllegalArgumentException("Invalid JQ expression: " + expression, e);
+      }
+    }
+  }
+
   @Override
   public String type() {
     return TYPE;

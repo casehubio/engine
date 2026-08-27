@@ -87,11 +87,7 @@ public class CaseCompletionDeserializer extends StdDeserializer<CaseCompletion> 
   private ExpressionEvaluator resolveExpression(JsonNode node, DeserializationContext ctxt)
       throws IOException {
     if (node.isTextual()) {
-      String defaultLang =
-          (String) ctxt.getAttribute(ExpressionEvaluatorDeserializer.EXPRESSION_LANG_KEY);
-      if (defaultLang == null || JQExpressionEvaluator.TYPE.equals(defaultLang)) {
-        return new JQExpressionEvaluator(node.asText());
-      }
+      return new JQExpressionEvaluator(node.asText());
     }
     JsonParser nested = node.traverse(ctxt.getParser().getCodec());
     nested.nextToken();
@@ -107,6 +103,14 @@ public class CaseCompletionDeserializer extends StdDeserializer<CaseCompletion> 
           "'doneWhen' is a reserved name and cannot be used as a goal kind");
     }
     if ("success".equals(kindValue) || "failure".equals(kindValue)) {
+      if (exprNode.has("status")) {
+        throw ctxt.weirdStringException(
+            kindValue,
+            GoalKind.class,
+            "Standard goal kind '"
+                + kindValue
+                + "' has a fixed terminal status — do not specify 'status' explicitly");
+      }
       return StandardGoalKind.fromValue(kindValue);
     }
     if (!exprNode.has("status")) {
