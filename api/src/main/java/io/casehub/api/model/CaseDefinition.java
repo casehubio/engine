@@ -106,6 +106,8 @@ public class CaseDefinition {
       "Inbound connector message to typed case signal mappings.")
   private List<InboundSignalMapping> inboundMappings = List.of();
 
+  private List<CompoundDeclaration> compounds;
+
   public CaseDefinition(String namespace, String name, String version) {
     this.namespace = namespace;
     this.name = name;
@@ -502,6 +504,14 @@ public class CaseDefinition {
     spec.setGoapActions(goapActions);
   }
 
+  public List<CompoundDeclaration> getCompounds() {
+    return compounds != null ? compounds : List.of();
+  }
+
+  public void setCompounds(List<CompoundDeclaration> compounds) {
+    this.compounds = compounds != null ? List.copyOf(compounds) : null;
+  }
+
   public Map<String, Set<String>> getGoalToEffectKeys() {
     return spec.getGoalToEffectKeys();
   }
@@ -577,6 +587,7 @@ public class CaseDefinition {
 
     private List<ChannelDeclaration> channels = new java.util.ArrayList<>();
     private List<io.casehub.engine.plan.goap.GoapAction> goapActions;
+    private List<CompoundDeclaration> compounds;
     private Map<String, Set<String>> goalToEffectKeys = new java.util.HashMap<>();
     private RecoveryPolicy recoveryPolicy;
 
@@ -930,6 +941,11 @@ public class CaseDefinition {
       return this;
     }
 
+    public Builder compounds(List<CompoundDeclaration> compounds) {
+      this.compounds = compounds;
+      return this;
+    }
+
     public Builder goalToEffectKey(String goalName, Set<String> effectKeys) {
       this.goalToEffectKeys.put(goalName, Set.copyOf(effectKeys));
       return this;
@@ -988,6 +1004,7 @@ public class CaseDefinition {
       caseHubDefinition.setAdaptationConfig(adaptationConfig);
       caseHubDefinition.setChannels(channels);
       caseHubDefinition.setGoapActions(this.goapActions);
+      caseHubDefinition.setCompounds(this.compounds);
       if (!this.goalToEffectKeys.isEmpty()) {
         caseHubDefinition.setGoalToEffectKeys(Map.copyOf(this.goalToEffectKeys));
       }

@@ -524,6 +524,20 @@ $defs:
               type: object
               additionalProperties:
                 type: boolean
+      actions:
+        type: array
+        description: >
+          GOAP action declarations via generated schema types. The GOAP planner
+          uses these to compute optimal action sequences toward goal states.
+        items:
+          $ref: "#/$defs/GoapActionDef"
+      compounds:
+        type: array
+        description: >
+          Compound task declarations for multi-phase orchestration. Each compound
+          groups bindings with completion semantics and dispatch mode.
+        items:
+          $ref: "#/$defs/CompoundDef"
       goalToEffectKeys:
         type: object
         description: Maps goal names to sets of GOAP effect keys for planning.
@@ -1223,6 +1237,71 @@ $defs:
       topK:
         type: integer
         minimum: 1
+  GoapActionDef:
+    type: object
+    description: >
+      A GOAP action declaration. Defines preconditions, effects, and cost.
+    required: [ name, preconditions, effects ]
+    unevaluatedProperties: false
+    properties:
+      name:
+        type: string
+        minLength: 1
+      capability:
+        type: string
+        minLength: 1
+      preconditions:
+        type: object
+        additionalProperties:
+          type: boolean
+      effects:
+        type: object
+        additionalProperties:
+          type: boolean
+      cost:
+        type: number
+        minimum: 0
+        default: 1.0
+      benefit:
+        type: number
+        minimum: 0
+        maximum: 1
+        default: 0
+      softPreconditions:
+        type: object
+        additionalProperties:
+          type: boolean
+  CompoundDef:
+    type: object
+    description: >
+      A compound task declaration for multi-phase orchestration.
+    required: [ name ]
+    unevaluatedProperties: false
+    properties:
+      name:
+        type: string
+        minLength: 1
+      completionSemantics:
+        type: string
+        default: "all"
+      dispatchMode:
+        type: string
+        enum: [ ORCHESTRATED, CHOREOGRAPHED ]
+        default: CHOREOGRAPHED
+      scopedBindings:
+        type: object
+        additionalProperties:
+          type: string
+          enum: [ PARTICIPANT, COMPANION ]
+      entryCondition:
+        type: string
+      exitCondition:
+        type: string
+      repeatable:
+        type: boolean
+        default: false
+      planningStrategy:
+        type: string
 type: object
 properties:
   dsl:
