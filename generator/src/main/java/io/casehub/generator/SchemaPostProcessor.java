@@ -865,14 +865,15 @@ final class SchemaPostProcessor {
     if (type == null) {
       return;
     }
-    ObjectNode prop = (ObjectNode) type.path("properties").path(field);
-    if (!prop.isMissingNode()) {
-      if (!prop.has("minimum")) {
-        prop.put("minimum", min);
-      }
-      if (!prop.has("maximum")) {
-        prop.put("maximum", max);
-      }
+    com.fasterxml.jackson.databind.JsonNode propNode = type.path("properties").path(field);
+    if (propNode.isMissingNode() || !(propNode instanceof ObjectNode prop)) {
+      return;
+    }
+    if (!prop.has("minimum")) {
+      prop.put("minimum", min);
+    }
+    if (!prop.has("maximum")) {
+      prop.put("maximum", max);
     }
   }
 
