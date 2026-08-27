@@ -951,7 +951,9 @@ public class WorkflowExecutionCompletedHandler {
       final CaseInstance caseInstance, final Worker worker) {
     final CaseDefinition definition =
         caseDefinitionRegistry.getCaseDefinition(caseInstance.getCaseMetaModel());
-    if (definition == null || definition.getBindings() == null || worker.capabilityNames() == null) {
+    if (definition == null
+        || definition.getBindings() == null
+        || worker.capabilityNames() == null) {
       return null;
     }
     for (final Binding binding : definition.getBindings()) {
