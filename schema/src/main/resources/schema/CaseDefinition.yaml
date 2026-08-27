@@ -125,12 +125,12 @@ $defs:
     properties:
       description:
         type: string
-      inputProjection:
+      inputSchema:
         type: string
       name:
         type: string
         title: CapabilityName
-      outputProjection:
+      outputSchema:
         type: string
       cognitiveDemand:
         type: object
@@ -152,6 +152,317 @@ $defs:
           \ override."
     additionalProperties:
       $ref: "#/$defs/GoalExpression"
+  CaseDefinitionSpec:
+    type: object
+    unevaluatedProperties: true
+    description: Case definition specification. unevaluatedProperties is true because
+      the spec is an extension point.
+    properties:
+      cbr:
+        $ref: "#/$defs/Cbr"
+      reflection:
+        type: object
+        unevaluatedProperties: false
+        description: Per-case reflection trigger configuration.
+        properties:
+          enabled:
+            type: boolean
+          importanceThreshold:
+            type: number
+            minimum: 0
+            maximum: 10
+          maxUnreflectedOutcomes:
+            type: integer
+            minimum: 1
+          maxSourceMemories:
+            type: integer
+            minimum: 1
+          importanceWeights:
+            type: object
+            additionalProperties:
+              type: number
+      monitoring:
+        type: object
+        unevaluatedProperties: false
+        description: Per-case expectation tracking configuration.
+        properties:
+          enabled:
+            type: boolean
+            default: true
+          perCompletionThreshold:
+            type: number
+            minimum: 0
+            maximum: 1
+            default: 0.5
+          windowSize:
+            type: integer
+            minimum: 1
+            default: 5
+      adaptation:
+        description: Per-case plan adaptation configuration. String preset or explicit
+          object.
+        oneOf:
+        - type: string
+          enum:
+          - adaptive
+          - conservative
+          - "off"
+          - progress
+        - type: object
+          unevaluatedProperties: false
+          properties:
+            trigger:
+              type: string
+            optimization:
+              type: string
+            revision:
+              type: string
+            threshold:
+              type: number
+              minimum: 0
+              maximum: 1
+            metaReasoner:
+              type: string
+            repair:
+              type: string
+            contingencyThreshold:
+              type: number
+              minimum: 0
+              maximum: 1
+      planningConstraints:
+        type: object
+        unevaluatedProperties: false
+        description: Per-case resource constraints for decomposition and pattern execution.
+        properties:
+          timeBudget:
+            type: string
+            description: ISO-8601 Duration (e.g. PT30M).
+          resourceLimit:
+            type: integer
+            minimum: 1
+          weights:
+            type: object
+            additionalProperties:
+              type: number
+          costBudgets:
+            type: object
+            additionalProperties:
+              type: integer
+      recoveryPolicy:
+        type: object
+        unevaluatedProperties: false
+        description: Per-case multi-level recovery configuration.
+        properties:
+          maxRetries:
+            type: integer
+            minimum: 0
+            default: 3
+          maxRerouteAttempts:
+            type: integer
+            minimum: 0
+            default: 3
+          classifierId:
+            type: string
+          revisionStrategyId:
+            type: string
+          replanStrategyId:
+            type: string
+          enabled:
+            type: boolean
+            default: true
+      portfolioConfig:
+        type: object
+        unevaluatedProperties: false
+        description: Cascading decomposition strategy configuration.
+        properties:
+          delegates:
+            type: array
+            items:
+              type: string
+          timeouts:
+            type: object
+            additionalProperties:
+              type: integer
+      memoryRetrieval:
+        type: object
+        unevaluatedProperties: false
+        description: Per-case memory retrieval configuration.
+        properties:
+          enabled:
+            type: boolean
+            default: true
+          maxMemories:
+            type: integer
+            minimum: 1
+          domains:
+            type: array
+            items:
+              type: string
+      goapActions:
+        type: array
+        description: GOAP action declarations for planning.
+        items:
+          type: object
+          unevaluatedProperties: false
+          required:
+          - name
+          - effects
+          properties:
+            name:
+              type: string
+              minLength: 1
+            preconditions:
+              type: object
+              additionalProperties:
+                type: boolean
+            effects:
+              type: object
+              additionalProperties:
+                type: boolean
+            cost:
+              type: number
+              minimum: 0
+              default: 1.0
+            benefit:
+              type: number
+              minimum: 0
+              default: 0
+            softPreconditions:
+              type: object
+              additionalProperties:
+                type: boolean
+      defaultQuorum:
+        type: object
+        unevaluatedProperties: false
+        description: Default M-of-N multi-party approval configuration for action
+          gates.
+        required:
+        - instances
+        - required
+        properties:
+          instances:
+            type: integer
+            minimum: 2
+          required:
+            type: integer
+            minimum: 1
+          onThresholdReached:
+            type: string
+            enum:
+            - KEEP
+            - CANCEL
+            default: KEEP
+          allowSameAssignee:
+            type: boolean
+            default: false
+      humanTaskContextConstraints:
+        type: array
+        description: Declarative rules for humanTask candidate filtering and scoring.
+        items:
+          type: object
+          unevaluatedProperties: false
+          required:
+          - when
+          - effect
+          properties:
+            when:
+              $ref: "#/$defs/ExpressionOrOverride"
+            effect:
+              type: object
+              unevaluatedProperties: false
+              properties:
+                preferGroups:
+                  type: array
+                  items:
+                    type: string
+                preferUsers:
+                  type: array
+                  items:
+                    type: string
+                excludeGroups:
+                  type: array
+                  items:
+                    type: string
+                excludeUsers:
+                  type: array
+                  items:
+                    type: string
+            weight:
+              type: number
+              minimum: 0
+              maximum: 1
+              default: 1.0
+      humanTaskWorkloadConstraint:
+        type: object
+        unevaluatedProperties: false
+        description: Workload-based constraints for humanTask candidate filtering.
+        properties:
+          maxActiveTaskCount:
+            type: integer
+            minimum: 1
+          loadBalanceWeight:
+            type: number
+            minimum: 0
+            maximum: 1
+      maxAdaptations:
+        type: integer
+        minimum: 1
+        description: "Maximum adaptation count per compound before Concede. Default:\
+          \ 5."
+      workerServiceAccountIds:
+        type: object
+        additionalProperties:
+          type: string
+        description: Map of worker name to service account ID for tenant-specific
+          endpoint resolution.
+      _codegenMistral:
+        description: Code generation directive — ensures MistralAiModel type is generated
+          by jsonschema2pojo. Not a user-facing property.
+        $ref: "#/$defs/MistralAiModel"
+      _codegenGoogleAi:
+        description: Code generation directive — ensures GoogleAiGeminiModel type
+          is generated by jsonschema2pojo. Not a user-facing property.
+        $ref: "#/$defs/GoogleAiGeminiModel"
+      _codegenAgentModel:
+        description: Code generation directive — ensures AgentModel type is generated
+          by jsonschema2pojo. Not a user-facing property.
+        $ref: "#/$defs/AgentModel"
+      _codegenAgent:
+        description: Code generation directive — ensures Agent type is generated by
+          jsonschema2pojo. Not a user-facing property.
+        $ref: "#/$defs/Agent"
+      _codegenOpenAi:
+        description: Code generation directive — ensures OpenAiModel type is generated
+          by jsonschema2pojo. Not a user-facing property.
+        $ref: "#/$defs/OpenAiModel"
+      _codegenAnthropic:
+        description: Code generation directive — ensures AnthropicModel type is generated
+          by jsonschema2pojo. Not a user-facing property.
+        $ref: "#/$defs/AnthropicModel"
+      _codegenOllama:
+        description: Code generation directive — ensures OllamaModel type is generated
+          by jsonschema2pojo. Not a user-facing property.
+        $ref: "#/$defs/OllamaModel"
+  CompoundDeclaration:
+    type: object
+    properties:
+      completionSemantics:
+        type: string
+      dispatchMode:
+        type: string
+      entryCondition:
+        $ref: "#/$defs/ExpressionOrOverride"
+      exitCondition:
+        $ref: "#/$defs/ExpressionOrOverride"
+      name:
+        type: string
+      planningStrategy:
+        type: string
+      repeatable:
+        type: boolean
+      scopedBindings:
+        $ref: "#/$defs/Map(String,Participation)"
+    unevaluatedProperties: false
   Goal:
     type: object
     properties:
@@ -402,409 +713,6 @@ $defs:
           oneOf:
           - type: string
           - $ref: "#/$defs/GoalExpression"
-  CaseDefinitionSpec:
-    type: object
-    unevaluatedProperties: true
-    description: Case definition specification. unevaluatedProperties is true because
-      the spec is an extension point.
-    properties:
-      agentRouting:
-        type: string
-        description: Agent routing strategy ID. Selects which worker instance handles
-          a task.
-      authorization:
-        $ref: "#/$defs/Authorization"
-        description: ACL grants created when a case of this type is started.
-      bindings:
-        description: Bindings connect trigger conditions to worker capabilities.
-        type: array
-        items:
-          $ref: "#/$defs/Binding"
-      candidateMatching:
-        type: string
-        description: "Candidate matching strategy ID. Built-in: \"exact\", \"subsumption\"\
-          ."
-      capabilities:
-        description: Capabilities define what Workers can do — declared competences
-          with input/output contracts.
-        type: array
-        items:
-          $ref: "#/$defs/Capability"
-      channels:
-        description: Typed streaming channels for worker-to-worker data flow.
-        type: array
-        items:
-          type: object
-          required:
-          - name
-          - recordType
-          unevaluatedProperties: false
-          properties:
-            name:
-              type: string
-              minLength: 1
-            recordType:
-              type: string
-              minLength: 1
-            transport:
-              type: string
-              default: in-memory
-            scope:
-              type: string
-              enum:
-              - COMPOUND
-              - CASE
-              default: CASE
-      completion:
-        $ref: "#/$defs/CaseCompletion"
-        description: Defines when a Case is terminally completed or failed based on
-          Goal satisfaction.
-      decompositionStrategy:
-        type: string
-        description: "HTN decomposition strategy ID. Default: \"identity\"."
-      defaultQuorum:
-        type: object
-        unevaluatedProperties: false
-        description: Default M-of-N multi-party approval configuration for action
-          gates.
-        required:
-        - instances
-        - required
-        properties:
-          instances:
-            type: integer
-            minimum: 2
-          required:
-            type: integer
-            minimum: 1
-          onThresholdReached:
-            type: string
-            enum:
-            - KEEP
-            - CANCEL
-            default: KEEP
-          allowSameAssignee:
-            type: boolean
-            default: false
-      goals:
-        description: Desired end-states expressed as predicates over the CaseContext.
-        type: array
-        items:
-          $ref: "#/$defs/Goal"
-      goapActions:
-        type: array
-        description: GOAP action declarations for planning.
-        items:
-          type: object
-          unevaluatedProperties: false
-          required:
-          - name
-          - effects
-          properties:
-            name:
-              type: string
-              minLength: 1
-            preconditions:
-              type: object
-              additionalProperties:
-                type: boolean
-            effects:
-              type: object
-              additionalProperties:
-                type: boolean
-            cost:
-              type: number
-              minimum: 0
-              default: 1.0
-            benefit:
-              type: number
-              minimum: 0
-              default: 0
-            softPreconditions:
-              type: object
-              additionalProperties:
-                type: boolean
-      actions:
-        type: array
-        description: >
-          GOAP action declarations via generated schema types. The GOAP planner
-          uses these to compute optimal action sequences toward goal states.
-        items:
-          $ref: "#/$defs/GoapActionDef"
-      compounds:
-        type: array
-        description: >
-          Compound task declarations for multi-phase orchestration. Each compound
-          groups bindings with completion semantics and dispatch mode.
-        items:
-          $ref: "#/$defs/CompoundDef"
-      goalToEffectKeys:
-        type: object
-        description: Maps goal names to sets of GOAP effect keys for planning.
-        additionalProperties:
-          type: array
-          items:
-            type: string
-      humanTaskContextConstraints:
-        type: array
-        description: Declarative rules for humanTask candidate filtering and scoring.
-        items:
-          type: object
-          unevaluatedProperties: false
-          required:
-          - when
-          - effect
-          properties:
-            when:
-              $ref: "#/$defs/ExpressionOrOverride"
-            effect:
-              type: object
-              unevaluatedProperties: false
-              properties:
-                preferGroups:
-                  type: array
-                  items:
-                    type: string
-                preferUsers:
-                  type: array
-                  items:
-                    type: string
-                excludeGroups:
-                  type: array
-                  items:
-                    type: string
-                excludeUsers:
-                  type: array
-                  items:
-                    type: string
-            weight:
-              type: number
-              minimum: 0
-              maximum: 1
-              default: 1.0
-      humanTaskRouting:
-        type: string
-        description: HumanTask routing strategy ID. Enriches candidate sets with historical
-          data.
-      humanTaskWorkloadConstraint:
-        type: object
-        unevaluatedProperties: false
-        description: Workload-based constraints for humanTask candidate filtering.
-        properties:
-          maxActiveTaskCount:
-            type: integer
-            minimum: 1
-          loadBalanceWeight:
-            type: number
-            minimum: 0
-            maximum: 1
-      implementationRouting:
-        type: string
-        description: Implementation routing strategy ID. Selects which binding(s)
-          handle a capability.
-      maxAdaptations:
-        type: integer
-        minimum: 1
-        description: "Maximum adaptation count per compound before Concede. Default:\
-          \ 5."
-      maxDecompositionDepth:
-        type: integer
-        description: "Maximum nesting depth for dynamic decomposition. Default: 3."
-        minimum: 1
-        maximum: 10
-      memoryRetrieval:
-        type: object
-        unevaluatedProperties: false
-        description: Per-case memory retrieval configuration.
-        properties:
-          enabled:
-            type: boolean
-            default: true
-          maxMemories:
-            type: integer
-            minimum: 1
-          domains:
-            type: array
-            items:
-              type: string
-      milestones:
-        description: Observable progress markers derived from CaseContext.
-        type: array
-        items:
-          $ref: "#/$defs/Milestone"
-      planningConstraints:
-        type: object
-        unevaluatedProperties: false
-        description: Per-case resource constraints for decomposition and pattern execution.
-        properties:
-          timeBudget:
-            type: string
-            description: ISO-8601 Duration (e.g. PT30M).
-          resourceLimit:
-            type: integer
-            minimum: 1
-          weights:
-            type: object
-            additionalProperties:
-              type: number
-          costBudgets:
-            type: object
-            additionalProperties:
-              type: integer
-      planningStrategy:
-        type: string
-        description: "Planning strategy ID. Built-in: \"default\" (choreography),\
-          \ \"sequential\"."
-      portfolioConfig:
-        type: object
-        unevaluatedProperties: false
-        description: Cascading decomposition strategy configuration.
-        properties:
-          delegates:
-            type: array
-            items:
-              type: string
-          timeouts:
-            type: object
-            additionalProperties:
-              type: integer
-      recoveryPolicy:
-        type: object
-        unevaluatedProperties: false
-        description: Per-case multi-level recovery configuration.
-        properties:
-          maxRetries:
-            type: integer
-            minimum: 0
-            default: 3
-          maxRerouteAttempts:
-            type: integer
-            minimum: 0
-            default: 3
-          classifierId:
-            type: string
-          revisionStrategyId:
-            type: string
-          replanStrategyId:
-            type: string
-          enabled:
-            type: boolean
-            default: true
-      routingSignalWeights:
-        type: object
-        additionalProperties:
-          type: number
-      workerServiceAccountIds:
-        type: object
-        additionalProperties:
-          type: string
-        description: Map of worker name to service account ID for tenant-specific
-          endpoint resolution.
-      workers:
-        description: "Autonomous participants that observe CaseContext, make local\
-          \ decisions, and perform work."
-        type: array
-        items:
-          $ref: "#/$defs/Worker"
-      cbr:
-        $ref: "#/$defs/Cbr"
-      reflection:
-        type: object
-        unevaluatedProperties: false
-        description: Per-case reflection trigger configuration.
-        properties:
-          enabled:
-            type: boolean
-          importanceThreshold:
-            type: number
-            minimum: 0
-            maximum: 10
-          maxUnreflectedOutcomes:
-            type: integer
-            minimum: 1
-          maxSourceMemories:
-            type: integer
-            minimum: 1
-          importanceWeights:
-            type: object
-            additionalProperties:
-              type: number
-      monitoring:
-        type: object
-        unevaluatedProperties: false
-        description: Per-case expectation tracking configuration.
-        properties:
-          enabled:
-            type: boolean
-            default: true
-          perCompletionThreshold:
-            type: number
-            minimum: 0
-            maximum: 1
-            default: 0.5
-          windowSize:
-            type: integer
-            minimum: 1
-            default: 5
-      adaptation:
-        description: Per-case plan adaptation configuration. String preset or explicit
-          object.
-        oneOf:
-        - type: string
-          enum:
-          - adaptive
-          - conservative
-          - "off"
-          - progress
-        - type: object
-          unevaluatedProperties: false
-          properties:
-            trigger:
-              type: string
-            optimization:
-              type: string
-            revision:
-              type: string
-            threshold:
-              type: number
-              minimum: 0
-              maximum: 1
-            metaReasoner:
-              type: string
-            repair:
-              type: string
-            contingencyThreshold:
-              type: number
-              minimum: 0
-              maximum: 1
-      _codegenOllama:
-        description: Code generation directive — ensures OllamaModel type is generated
-          by jsonschema2pojo. Not a user-facing property.
-        $ref: "#/$defs/OllamaModel"
-      _codegenAnthropic:
-        description: Code generation directive — ensures AnthropicModel type is generated
-          by jsonschema2pojo. Not a user-facing property.
-        $ref: "#/$defs/AnthropicModel"
-      _codegenOpenAi:
-        description: Code generation directive — ensures OpenAiModel type is generated
-          by jsonschema2pojo. Not a user-facing property.
-        $ref: "#/$defs/OpenAiModel"
-      _codegenAgent:
-        description: Code generation directive — ensures Agent type is generated by
-          jsonschema2pojo. Not a user-facing property.
-        $ref: "#/$defs/Agent"
-      _codegenAgentModel:
-        description: Code generation directive — ensures AgentModel type is generated
-          by jsonschema2pojo. Not a user-facing property.
-        $ref: "#/$defs/AgentModel"
-      _codegenGoogleAi:
-        description: Code generation directive — ensures GoogleAiGeminiModel type
-          is generated by jsonschema2pojo. Not a user-facing property.
-        $ref: "#/$defs/GoogleAiGeminiModel"
-      _codegenMistral:
-        description: Code generation directive — ensures MistralAiModel type is generated
-          by jsonschema2pojo. Not a user-facing property.
-        $ref: "#/$defs/MistralAiModel"
   HumanTask:
     type: object
     unevaluatedProperties: false
@@ -1104,20 +1012,21 @@ $defs:
         $ref: "#/$defs/MistralAiModel"
       googleAiGemini:
         $ref: "#/$defs/GoogleAiGeminiModel"
-  MistralAiModel:
+  OllamaModel:
     type: object
     unevaluatedProperties: false
     required:
+    - baseUrl
     - modelName
     properties:
-      apiKey:
+      baseUrl:
         type: string
       modelName:
         type: string
       temperature:
         type: number
         minimum: 0.0
-        maximum: 1.0
+        maximum: 2.0
       maxTokens:
         type: integer
         minimum: 1
@@ -1125,9 +1034,10 @@ $defs:
         type: number
         minimum: 0.0
         maximum: 1.0
-      baseUrl:
-        type: string
-  GoogleAiGeminiModel:
+      topK:
+        type: integer
+        minimum: 1
+  AnthropicModel:
     type: object
     unevaluatedProperties: false
     required:
@@ -1136,6 +1046,8 @@ $defs:
       apiKey:
         type: string
       modelName:
+        type: string
+      version:
         type: string
       temperature:
         type: number
@@ -1151,6 +1063,8 @@ $defs:
       topK:
         type: integer
         minimum: 1
+      baseUrl:
+        type: string
   OpenAiModel:
     type: object
     unevaluatedProperties: false
@@ -1184,7 +1098,7 @@ $defs:
         type: string
       baseUrl:
         type: string
-  AnthropicModel:
+  GoogleAiGeminiModel:
     type: object
     unevaluatedProperties: false
     required:
@@ -1194,8 +1108,6 @@ $defs:
         type: string
       modelName:
         type: string
-      version:
-        type: string
       temperature:
         type: number
         minimum: 0.0
@@ -1210,23 +1122,20 @@ $defs:
       topK:
         type: integer
         minimum: 1
-      baseUrl:
-        type: string
-  OllamaModel:
+  MistralAiModel:
     type: object
     unevaluatedProperties: false
     required:
-    - baseUrl
     - modelName
     properties:
-      baseUrl:
+      apiKey:
         type: string
       modelName:
         type: string
       temperature:
         type: number
         minimum: 0.0
-        maximum: 2.0
+        maximum: 1.0
       maxTokens:
         type: integer
         minimum: 1
@@ -1234,76 +1143,14 @@ $defs:
         type: number
         minimum: 0.0
         maximum: 1.0
-      topK:
-        type: integer
-        minimum: 1
-  GoapActionDef:
-    type: object
-    description: >
-      A GOAP action declaration. Defines preconditions, effects, and cost.
-    required: [ name, preconditions, effects ]
-    unevaluatedProperties: false
-    properties:
-      name:
-        type: string
-        minLength: 1
-      capability:
-        type: string
-        minLength: 1
-      preconditions:
-        type: object
-        additionalProperties:
-          type: boolean
-      effects:
-        type: object
-        additionalProperties:
-          type: boolean
-      cost:
-        type: number
-        minimum: 0
-        default: 1.0
-      benefit:
-        type: number
-        minimum: 0
-        maximum: 1
-        default: 0
-      softPreconditions:
-        type: object
-        additionalProperties:
-          type: boolean
-  CompoundDef:
-    type: object
-    description: >
-      A compound task declaration for multi-phase orchestration.
-    required: [ name ]
-    unevaluatedProperties: false
-    properties:
-      name:
-        type: string
-        minLength: 1
-      completionSemantics:
-        type: string
-        default: "all"
-      dispatchMode:
-        type: string
-        enum: [ ORCHESTRATED, CHOREOGRAPHED ]
-        default: CHOREOGRAPHED
-      scopedBindings:
-        type: object
-        additionalProperties:
-          type: string
-          enum: [ PARTICIPANT, COMPANION ]
-      entryCondition:
-        type: string
-      exitCondition:
-        type: string
-      repeatable:
-        type: boolean
-        default: false
-      planningStrategy:
+      baseUrl:
         type: string
 type: object
 properties:
+  contextType:
+    type: string
+    description: "Fully qualified class name for the typed context bridge. Enables\
+      \ typed POJO context instead of Map<String, Object>."
   dsl:
     type: string
     description: The version of the DSL used by the CaseHub.
@@ -1313,6 +1160,10 @@ properties:
     pattern: "^(0|[1-9]\\d*)\\.(0|[1-9]\\d*)\\.(0|[1-9]\\d*)(?:-((?:0|[1-9]\\d*|\\\
       d*[a-zA-Z-][0-9a-zA-Z-]*)(?:\\.(?:0|[1-9]\\d*|\\d*[a-zA-Z-][0-9a-zA-Z-]*))*))?(?:\\\
       +([0-9a-zA-Z-]+(?:\\.[0-9a-zA-Z-]+)*))?$"
+  expressionLang:
+    type: string
+    description: "Default expression language for this definition. Default: \"jq\"\
+      ."
   inboundMappings:
     description: Inbound connector message to typed case signal mappings.
     type: array
@@ -1418,17 +1269,6 @@ properties:
             type: integer
             default: 10
             minimum: 1
-  expressionLang:
-    type: string
-    title: ExpressionLang
-    minLength: 1
-    maxLength: 64
-    default: jq
-  contextType:
-    type: string
-    title: ContextType
-    minLength: 1
-    maxLength: 512
   layers:
     type: array
     items:
