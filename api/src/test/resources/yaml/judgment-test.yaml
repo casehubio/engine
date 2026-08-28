@@ -1,0 +1,23 @@
+spec:
+  bindings:
+    - name: risk-judgment
+      judgment:
+        prompt: "Assess the risk"
+        inputMapping: ".transaction"
+        outputMapping: ".riskAssessment"
+        expiresIn: PT1H
+        evidenceRequirements:
+          - riskScore
+          - rationale
+      on:
+        contextChange: ".transaction != null"
+    - name: dynamic-judgment
+      judgment:
+        promptExpression: ".context.question"
+      on:
+        contextChange: ".needsJudgment == true"
+    - name: simple-judgment
+      judgment:
+        prompt: "Is this correct?"
+      on:
+        contextChange: ".pending == true"
