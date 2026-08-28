@@ -37,35 +37,35 @@ import java.util.UUID;
  * {@code WorkerResult.reasoning()}. Stored in {@code WorkerDecisionEntry.domainData} for
  * tamper-evident Merkle chain inclusion (EU AI Act Art.12). Null when no reasoning was provided.
  *
- * @param caseId           the case instance UUID
- * @param tenancyId        the tenant that owns this case
- * @param workerId         the worker name from the case definition (e.g. {@code "sar-drafting-agent-v1"})
- * @param capabilityTag    the capability name exercised; null if not determinable
- * @param traceId          OTel trace ID captured synchronously before fireAsync()
+ * @param caseId the case instance UUID
+ * @param tenancyId the tenant that owns this case
+ * @param workerId the worker name from the case definition (e.g. {@code "sar-drafting-agent-v1"})
+ * @param capabilityTag the capability name exercised; null if not determinable
+ * @param traceId OTel trace ID captured synchronously before fireAsync()
  * @param selectionContext routing rationale; null when not available
- * @param reasoning        worker reasoning trace; null when not provided
+ * @param reasoning worker reasoning trace; null when not provided
  */
 public record WorkerDecisionEvent(
-        UUID caseId,
-        String tenancyId,
-        String workerId,
-        String capabilityTag,
-        String traceId,
-        SelectionContext selectionContext,
-        String reasoning) {
+    UUID caseId,
+    String tenancyId,
+    String workerId,
+    String capabilityTag,
+    String traceId,
+    SelectionContext selectionContext,
+    String reasoning) {
 
-    public WorkerDecisionEvent(
-            UUID caseId, String tenancyId, String workerId, String capabilityTag, String traceId) {
-        this(caseId, tenancyId, workerId, capabilityTag, traceId, null, null);
-    }
+  public WorkerDecisionEvent(
+      UUID caseId, String tenancyId, String workerId, String capabilityTag, String traceId) {
+    this(caseId, tenancyId, workerId, capabilityTag, traceId, null, null);
+  }
 
-    public WorkerDecisionEvent(
-            UUID caseId,
-            String tenancyId,
-            String workerId,
-            String capabilityTag,
-            String traceId,
-            SelectionContext selectionContext) {
-        this(caseId, tenancyId, workerId, capabilityTag, traceId, selectionContext, null);
-    }
+  public WorkerDecisionEvent(
+      UUID caseId,
+      String tenancyId,
+      String workerId,
+      String capabilityTag,
+      String traceId,
+      SelectionContext selectionContext) {
+    this(caseId, tenancyId, workerId, capabilityTag, traceId, selectionContext, null);
+  }
 }

@@ -86,7 +86,7 @@ When `event.gateRequired().quorum() != null`:
 
 Add gate routing before existing PlanItem routing:
 - Parse `callerRef` from the group event (echoed from parent WorkItem)
-- If `GateCallerRef`: route to a new `ActionGateCompletionApplier.applyGroupCompletion(GateCallerRef, GroupStatus, String tenancyId)` method
+- If `GateRef`: route to a new `ActionGateCompletionApplier.applyGroupCompletion(GateCallerRef, GroupStatus, String tenancyId)` method
 
 The existing `apply(GateCallerRef, WorkItemStatus, WorkItemRef, String)` on `ActionGateCompletionApplier` handles single-approver gates. Group events carry `GroupStatus` (not `WorkItemStatus`) and have no individual `WorkItemRef`, so a separate method is needed:
 

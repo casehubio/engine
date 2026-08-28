@@ -25,6 +25,7 @@ import io.casehub.api.model.Binding;
 import io.casehub.api.model.CapabilityTarget;
 import io.casehub.api.model.ExecutionMode;
 import io.casehub.api.model.HumanTaskTarget;
+import io.casehub.api.model.JudgmentTarget;
 import io.casehub.api.model.LifecycleScope;
 import io.casehub.api.model.OnThresholdReached;
 import io.casehub.api.model.OutcomeAction;
@@ -188,6 +189,8 @@ public class BindingDeserializer extends StdDeserializer<Binding> {
       builder.subCase(deserializeSubCase(node.get("subCase"), codec, ctxt));
     } else if (node.has("humanTask")) {
       builder.humanTask(deserializeHumanTask(node.get("humanTask"), bindingName, codec, ctxt));
+    } else if (node.has("judgment")) {
+      builder.judgment(deserializeJudgment(node.get("judgment"), bindingName));
     } else if (node.has("signal")) {
       @SuppressWarnings("unchecked")
       Map<String, Object> payload =
@@ -348,6 +351,57 @@ public class BindingDeserializer extends StdDeserializer<Binding> {
     } catch (IllegalStateException e) {
       throw new IllegalArgumentException("Binding '" + bindingName + "' " + e.getMessage(), e);
     }
+  }
+
+  private JudgmentTarget deserializeJudgment(JsonNode node, String bindingName) {
+    JudgmentTarget.Builder b = JudgmentTarget.builder();
+    if (node.has("prompt")) {
+      b.prompt(node.get("prompt").asText());
+    }
+    if (node.has("promptExpression")) {
+      b.promptExpression(node.get("promptExpression").asText());
+    }
+    if (node.has("inputMapping")) {
+      b.inputMapping(node.get("inputMapping").asText());
+    }
+    if (node.has("outputMapping")) {
+      b.outputMapping(node.get("outputMapping").asText());
+    }
+    if (node.has("resolutionType")) {
+      try {
+        b.resolutionType(Class.forName(node.get("resolutionType").asText()));
+      } catch (ClassNotFoundException e) {
+        throw new IllegalArgumentException(
+            "Binding '"
+                + bindingName
+                + "' judgment has unknown resolutionType: "
+                + node.get("resolutionType").asText(),
+            e);
+      }
+    }
+    if (node.has("expiresIn")) {
+      String raw = node.get("expiresIn").asText();
+      try {
+        java.time.Duration d = java.time.Duration.parse(raw);
+        if (d.isZero() || d.isNegative()) {
+          throw new IllegalArgumentException(
+              "Binding '" + bindingName + "' judgment expiresIn must be positive, got: " + raw);
+        }
+        b.expiresIn(d);
+      } catch (java.time.format.DateTimeParseException e) {
+        throw new IllegalArgumentException(
+            "Binding '" + bindingName + "' judgment has invalid expiresIn: " + raw, e);
+      }
+    }
+    if (node.has("expiresInExpression")) {
+      b.expiresInExpression(node.get("expiresInExpression").asText());
+    }
+    if (node.has("evidenceRequirements")) {
+      java.util.List<String> reqs = new java.util.ArrayList<>();
+      node.get("evidenceRequirements").forEach(n -> reqs.add(n.asText()));
+      b.evidenceRequirements(reqs);
+    }
+    return b.build();
   }
 
   private ExpressionEvaluator readExpressionWithContext(

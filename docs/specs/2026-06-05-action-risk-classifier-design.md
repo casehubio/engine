@@ -725,7 +725,7 @@ Gate rejection path — fire `ActionGateRejectedEvent`; verify `actionGateReject
 - New: `ActionGateWorkItemHandler.java`
 - New: `ActionGateCompletionApplier.java`
 - New: `ActionGateCancelledHandler.java`
-- Changed: `CallerRef.java` → sealed `CallerRef` interface + `PlanItemCallerRef` + `GateCallerRef`
+- Changed: `CallerRef.java` → sealed `CallerRef` interface + `PlanItemRef` + `GateRef`
 - Changed: `WorkItemLifecycleAdapter.java` — gate routing before blackboard guard + call site updates
 - Changed: `HumanTaskScheduleHandler.java` — `CallerRef.encode()` → `PlanItemCallerRef.encode()`
 - Changed: `HumanTaskRecoveryService.java` — same

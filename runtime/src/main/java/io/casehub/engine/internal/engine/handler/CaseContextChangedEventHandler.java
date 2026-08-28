@@ -150,6 +150,10 @@ public class CaseContextChangedEventHandler {
 
   @Inject jakarta.enterprise.inject.Instance<HumanTaskScheduler> humanTaskScheduler;
 
+  @Inject
+  jakarta.enterprise.inject.Instance<io.casehub.engine.common.spi.JudgmentScheduler>
+      judgmentScheduler;
+
   @RunOnVirtualThread
   @ConsumeEvent(value = EventBusAddresses.CONTEXT_CHANGED)
   public void onCaseStateContextChangedEventHandler(final CaseContextChangedEvent event) {
@@ -375,6 +379,8 @@ public class CaseContextChangedEventHandler {
       case HumanTaskTarget ht ->
           publishHumanTaskSchedule(
               caseInstance, caseDefinition, binding, ht, experiences, activationSnapshot);
+      case io.casehub.api.model.JudgmentTarget jt ->
+          publishJudgmentSchedule(caseInstance, caseDefinition, binding, jt);
       case io.casehub.api.model.SignalTarget st ->
           eventBus.publish(
               EventBusAddresses.CONTEXT_SIGNAL,
@@ -812,6 +818,63 @@ public class CaseContextChangedEventHandler {
           caseInstance.getUuid(),
           binding.getName());
     }
+  }
+
+  private void publishJudgmentSchedule(
+      final CaseInstance caseInstance,
+      final CaseDefinition caseDefinition,
+      final Binding binding,
+      final io.casehub.api.model.JudgmentTarget target) {
+    if (!judgmentScheduler.isResolvable()) {
+      LOG.warnf(
+          "No JudgmentScheduler on classpath — skipping judgment binding '%s' caseId=%s",
+          binding.getName(), caseInstance.getUuid());
+      return;
+    }
+
+    Map<String, Object> inputData = Map.of();
+    if (target.inputMapping() != null) {
+      JsonNode caseContext =
+          caseInstance
+              .getCaseContext()
+              .layer(io.casehub.api.context.ContextLayer.WORKING)
+              .asJsonNode();
+      inputData = transformAsMap(target.inputMapping(), caseContext);
+    }
+
+    String resolvedPrompt = target.prompt();
+    if (target.promptExpression() != null) {
+      resolvedPrompt = resolveStringExpression(caseInstance, target.promptExpression(), "prompt");
+    }
+
+    java.time.Instant expiresAtDeadline = null;
+    if (target.expiresIn() != null) {
+      expiresAtDeadline = java.time.Instant.now().plus(target.expiresIn());
+    } else if (target.expiresInExpression() != null) {
+      String raw = resolveStringExpression(caseInstance, target.expiresInExpression(), "expiresIn");
+      if (raw != null) {
+        expiresAtDeadline = java.time.Instant.parse(raw);
+      }
+    }
+
+    String resolutionTypeName =
+        target.resolutionType() != null ? target.resolutionType().getName() : null;
+
+    judgmentScheduler
+        .get()
+        .schedule(
+            new io.casehub.engine.common.spi.JudgmentScheduleRequest(
+                caseInstance.getUuid(),
+                caseInstance.tenancyId,
+                binding.getName(),
+                target,
+                inputData,
+                resolutionTypeName,
+                expiresAtDeadline));
+
+    LOG.infof(
+        "Judgment yield dispatched: caseId=%s binding=%s",
+        caseInstance.getUuid(), binding.getName());
   }
 
   private Set<String> resolveCandidateSet(
