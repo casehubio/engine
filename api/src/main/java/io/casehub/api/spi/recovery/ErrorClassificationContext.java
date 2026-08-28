@@ -16,7 +16,6 @@
 package io.casehub.api.spi.recovery;
 
 import io.casehub.api.model.CaseDefinition;
-import io.casehub.worker.api.FailureClass;
 import io.casehub.worker.api.WorkerOutcome;
 import java.util.UUID;
 
@@ -27,6 +26,5 @@ public record ErrorClassificationContext(
     String workerName,
     String capabilityName,
     WorkerOutcome<?> outcome,
-    FailureClass hint,
     int attemptCount,
     CaseDefinition definition) {}

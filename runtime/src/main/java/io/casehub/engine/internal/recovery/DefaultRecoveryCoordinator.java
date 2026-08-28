@@ -331,7 +331,6 @@ public class DefaultRecoveryCoordinator implements RecoveryCoordinator {
         ctx.workerName(),
         ctx.capabilityName(),
         ctx.outcome(),
-        ctx.hint(),
         ctx.attemptCount(),
         def);
   }
