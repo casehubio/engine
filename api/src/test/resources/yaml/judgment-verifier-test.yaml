@@ -1,0 +1,10 @@
+spec:
+  bindings:
+    - name: verified-judgment
+      judgment:
+        prompt: "Assess the risk"
+        verifierStrategy: evidence-presence
+        evidenceRequirements:
+          - riskScore
+      on:
+        contextChange: ".needsJudgment == true"
