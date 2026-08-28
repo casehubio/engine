@@ -158,7 +158,6 @@ public class ActionGateRejectedHandler {
             gate.workerId(),
             gate.capabilityName(),
             null,
-            io.casehub.worker.api.FailureClass.REASONING,
             1,
             null);
     if (recoveryCoordinator.handleFailure(recoveryCtx)) {

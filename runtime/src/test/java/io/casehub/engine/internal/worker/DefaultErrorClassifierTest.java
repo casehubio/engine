@@ -19,7 +19,6 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import io.casehub.api.model.RecoveryLevel;
 import io.casehub.api.spi.recovery.ErrorClassificationContext;
-import io.casehub.worker.api.FailureClass;
 import io.casehub.worker.api.WorkerOutcome;
 import java.util.UUID;
 import org.junit.jupiter.api.Test;
@@ -29,74 +28,56 @@ class DefaultErrorClassifierTest {
   private final DefaultErrorClassifier classifier = new DefaultErrorClassifier();
 
   @Test
-  void attemptCountAboveThresholdReturnsReasoningRegardlessOfHint() {
-    var ctx = contextWith(FailureClass.TRANSIENT, new WorkerOutcome.Expired<>("timeout"), 4);
+  void attemptCountAboveThresholdReturnsReasoning() {
+    var ctx = contextWith(new WorkerOutcome.Expired<>("timeout"), 4);
     assertThat(classifier.classify(ctx)).isEqualTo(RecoveryLevel.REASONING);
   }
 
   @Test
-  void transientHintReturnsTransient() {
-    var ctx = contextWith(FailureClass.TRANSIENT, new WorkerOutcome.Failed<>("err"), 1);
-    assertThat(classifier.classify(ctx)).isEqualTo(RecoveryLevel.TRANSIENT);
-  }
-
-  @Test
-  void reasoningHintReturnsReasoning() {
-    var ctx = contextWith(FailureClass.REASONING, new WorkerOutcome.Failed<>("err"), 1);
-    assertThat(classifier.classify(ctx)).isEqualTo(RecoveryLevel.REASONING);
-  }
-
-  @Test
-  void fundamentalHintReturnsFundamental() {
-    var ctx = contextWith(FailureClass.FUNDAMENTAL, new WorkerOutcome.Failed<>("err"), 1);
-    assertThat(classifier.classify(ctx)).isEqualTo(RecoveryLevel.FUNDAMENTAL);
-  }
-
-  @Test
-  void expiredWithNoHintReturnsTransient() {
-    var ctx = contextWith(null, new WorkerOutcome.Expired<>("timeout"), 1);
+  void expiredReturnsTransient() {
+    var ctx = contextWith(new WorkerOutcome.Expired<>("timeout"), 1);
     assertThat(classifier.classify(ctx)).isEqualTo(RecoveryLevel.TRANSIENT);
   }
 
   @Test
   void declinedWithNoHintReturnsReasoning() {
-    var ctx = contextWith(null, new WorkerOutcome.Declined<>("not suitable"), 1);
+    var ctx = contextWith(new WorkerOutcome.Declined<>("not suitable"), 1);
     assertThat(classifier.classify(ctx)).isEqualTo(RecoveryLevel.REASONING);
   }
 
   @Test
   void failedWithTimeoutPatternReturnsTransient() {
-    var ctx = contextWith(null, new WorkerOutcome.Failed<>("Connection timeout after 30s"), 1);
+    var ctx = contextWith(new WorkerOutcome.Failed<>("Connection timeout after 30s"), 1);
     assertThat(classifier.classify(ctx)).isEqualTo(RecoveryLevel.TRANSIENT);
   }
 
   @Test
   void failedWithConnectionRefusedReturnsTransient() {
-    var ctx = contextWith(null, new WorkerOutcome.Failed<>("connection refused"), 1);
+    var ctx = contextWith(new WorkerOutcome.Failed<>("connection refused"), 1);
     assertThat(classifier.classify(ctx)).isEqualTo(RecoveryLevel.TRANSIENT);
   }
 
   @Test
   void failedWith503ReturnsTransient() {
-    var ctx = contextWith(null, new WorkerOutcome.Failed<>("HTTP 503 Service Unavailable"), 1);
+    var ctx = contextWith(new WorkerOutcome.Failed<>("HTTP 503 Service Unavailable"), 1);
     assertThat(classifier.classify(ctx)).isEqualTo(RecoveryLevel.TRANSIENT);
   }
 
   @Test
   void failedWith429ReturnsTransient() {
-    var ctx = contextWith(null, new WorkerOutcome.Failed<>("HTTP 429 Too Many Requests"), 1);
+    var ctx = contextWith(new WorkerOutcome.Failed<>("HTTP 429 Too Many Requests"), 1);
     assertThat(classifier.classify(ctx)).isEqualTo(RecoveryLevel.TRANSIENT);
   }
 
   @Test
   void failedWithUnknownReasonReturnsReasoning() {
-    var ctx = contextWith(null, new WorkerOutcome.Failed<>("invalid input format"), 1);
+    var ctx = contextWith(new WorkerOutcome.Failed<>("invalid input format"), 1);
     assertThat(classifier.classify(ctx)).isEqualTo(RecoveryLevel.REASONING);
   }
 
   @Test
   void failedWithNullReasonReturnsReasoning() {
-    var ctx = contextWith(null, new WorkerOutcome.Failed<>(null), 1);
+    var ctx = contextWith(new WorkerOutcome.Failed<>(null), 1);
     assertThat(classifier.classify(ctx)).isEqualTo(RecoveryLevel.REASONING);
   }
 
@@ -110,7 +91,7 @@ class DefaultErrorClassifierTest {
     var def =
         definitionWithSideEffect(
             "binding-1", io.casehub.api.model.SideEffectClassification.NON_IDEMPOTENT);
-    var ctx = contextWithDefinition(null, new WorkerOutcome.Expired<>("timeout"), 1, def);
+    var ctx = contextWithDefinition(new WorkerOutcome.Expired<>("timeout"), 1, def);
     assertThat(classifier.classify(ctx)).isEqualTo(RecoveryLevel.REASONING);
   }
 
@@ -119,7 +100,7 @@ class DefaultErrorClassifierTest {
     var def =
         definitionWithSideEffect(
             "binding-1", io.casehub.api.model.SideEffectClassification.IDEMPOTENT);
-    var ctx = contextWithDefinition(null, new WorkerOutcome.Expired<>("timeout"), 1, def);
+    var ctx = contextWithDefinition(new WorkerOutcome.Expired<>("timeout"), 1, def);
     assertThat(classifier.classify(ctx)).isEqualTo(RecoveryLevel.TRANSIENT);
   }
 
@@ -128,7 +109,7 @@ class DefaultErrorClassifierTest {
     var def =
         definitionWithSideEffect(
             "binding-1", io.casehub.api.model.SideEffectClassification.UNKNOWN);
-    var ctx = contextWithDefinition(null, new WorkerOutcome.Expired<>("timeout"), 1, def);
+    var ctx = contextWithDefinition(new WorkerOutcome.Expired<>("timeout"), 1, def);
     assertThat(classifier.classify(ctx)).isEqualTo(RecoveryLevel.TRANSIENT);
   }
 
@@ -137,12 +118,7 @@ class DefaultErrorClassifierTest {
     var def =
         definitionWithSideEffect(
             "binding-1", io.casehub.api.model.SideEffectClassification.NON_IDEMPOTENT);
-    var ctx =
-        contextWithDefinition(
-            io.casehub.worker.api.FailureClass.REASONING,
-            new WorkerOutcome.Failed<>("err"),
-            1,
-            def);
+    var ctx = contextWithDefinition(new WorkerOutcome.Failed<>("err"), 1, def);
     assertThat(classifier.classify(ctx)).isEqualTo(RecoveryLevel.REASONING);
   }
 
@@ -164,10 +140,7 @@ class DefaultErrorClassifierTest {
   }
 
   private ErrorClassificationContext contextWithDefinition(
-      FailureClass hint,
-      WorkerOutcome<?> outcome,
-      int attemptCount,
-      io.casehub.api.model.CaseDefinition def) {
+      WorkerOutcome<?> outcome, int attemptCount, io.casehub.api.model.CaseDefinition def) {
     return new ErrorClassificationContext(
         UUID.randomUUID(),
         "tenant-1",
@@ -175,13 +148,11 @@ class DefaultErrorClassifierTest {
         "worker-1",
         "capability-1",
         outcome,
-        hint,
         attemptCount,
         def);
   }
 
-  private ErrorClassificationContext contextWith(
-      FailureClass hint, WorkerOutcome<?> outcome, int attemptCount) {
+  private ErrorClassificationContext contextWith(WorkerOutcome<?> outcome, int attemptCount) {
     return new ErrorClassificationContext(
         UUID.randomUUID(),
         "tenant-1",
@@ -189,7 +160,6 @@ class DefaultErrorClassifierTest {
         "worker-1",
         "capability-1",
         outcome,
-        hint,
         attemptCount,
         null);
   }

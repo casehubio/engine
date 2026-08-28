@@ -631,8 +631,6 @@ public class WorkflowExecutionCompletedHandler {
     eventLogRepository.append(eventLog, caseInstance.tenancyId);
 
     if (disposition == OutcomeDisposition.EXHAUSTED) {
-      io.casehub.worker.api.FailureClass hint =
-          event.outcome() instanceof WorkerOutcome.Failed<?> f ? f.hint() : null;
       var recoveryCtx =
           new io.casehub.engine.common.spi.recovery.RecoveryContext(
               caseInstance.getUuid(),
@@ -641,7 +639,6 @@ public class WorkflowExecutionCompletedHandler {
               worker.name(),
               capabilityName,
               event.outcome(),
-              hint,
               attempts,
               null);
       if (recoveryCoordinator.handleFailure(recoveryCtx)) {

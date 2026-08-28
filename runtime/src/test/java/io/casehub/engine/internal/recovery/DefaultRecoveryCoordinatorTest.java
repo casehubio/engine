@@ -199,7 +199,6 @@ class DefaultRecoveryCoordinatorTest {
             "worker-1",
             "capability-1",
             new WorkerOutcome.Expired<>("timeout"),
-            null,
             3,
             UUID.randomUUID());
     setupRecoveryEnabledWithSkipExpired(ctx);
@@ -266,7 +265,6 @@ class DefaultRecoveryCoordinatorTest {
         "worker-1",
         "capability-1",
         new WorkerOutcome.Failed<>("reasoning error"),
-        null,
         3,
         UUID.randomUUID());
   }

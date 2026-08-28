@@ -33,17 +33,7 @@ public class DefaultErrorClassifier implements ErrorClassifier {
     if (context.attemptCount() >= ESCALATION_THRESHOLD) {
       return RecoveryLevel.REASONING;
     }
-    RecoveryLevel level;
-    if (context.hint() != null) {
-      level =
-          switch (context.hint()) {
-            case TRANSIENT -> RecoveryLevel.TRANSIENT;
-            case REASONING -> RecoveryLevel.REASONING;
-            case FUNDAMENTAL -> RecoveryLevel.FUNDAMENTAL;
-          };
-    } else {
-      level = classifyByOutcome(context.outcome());
-    }
+    RecoveryLevel level = classifyByOutcome(context.outcome());
     if (level == RecoveryLevel.TRANSIENT && isNonIdempotent(context)) {
       return RecoveryLevel.REASONING;
     }

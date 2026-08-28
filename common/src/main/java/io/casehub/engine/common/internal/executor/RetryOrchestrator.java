@@ -117,7 +117,6 @@ public class RetryOrchestrator {
                 taskData.workerId(),
                 null,
                 null,
-                null,
                 (int) failureCount,
                 null);
 

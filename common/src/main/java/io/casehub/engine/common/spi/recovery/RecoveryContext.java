@@ -15,7 +15,6 @@
  */
 package io.casehub.engine.common.spi.recovery;
 
-import io.casehub.worker.api.FailureClass;
 import io.casehub.worker.api.WorkerOutcome;
 import java.util.UUID;
 
@@ -26,6 +25,5 @@ public record RecoveryContext(
     String workerName,
     String capabilityName,
     WorkerOutcome<?> outcome,
-    FailureClass hint,
     int attemptCount,
     UUID planItemId) {}
