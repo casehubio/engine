@@ -401,6 +401,9 @@ public class BindingDeserializer extends StdDeserializer<Binding> {
       node.get("evidenceRequirements").forEach(n -> reqs.add(n.asText()));
       b.evidenceRequirements(reqs);
     }
+    if (node.has("verifierStrategy")) {
+      b.verifierStrategy(node.get("verifierStrategy").asText());
+    }
     return b.build();
   }
 

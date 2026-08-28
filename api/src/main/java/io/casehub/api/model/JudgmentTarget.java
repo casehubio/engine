@@ -39,6 +39,7 @@ public final class JudgmentTarget implements BindingTarget {
   private final Duration expiresIn;
   private final ExpressionEvaluator expiresInExpression;
   private final List<String> evidenceRequirements;
+  private final String verifierStrategy;
 
   private JudgmentTarget(Builder builder) {
     this.prompt = builder.prompt;
@@ -52,6 +53,7 @@ public final class JudgmentTarget implements BindingTarget {
         builder.evidenceRequirements != null
             ? List.copyOf(builder.evidenceRequirements)
             : List.of();
+    this.verifierStrategy = builder.verifierStrategy;
   }
 
   public static Builder builder() {
@@ -90,6 +92,10 @@ public final class JudgmentTarget implements BindingTarget {
     return evidenceRequirements;
   }
 
+  public String verifierStrategy() {
+    return verifierStrategy;
+  }
+
   public static final class Builder {
 
     private String prompt;
@@ -100,6 +106,7 @@ public final class JudgmentTarget implements BindingTarget {
     private Duration expiresIn;
     private ExpressionEvaluator expiresInExpression;
     private List<String> evidenceRequirements;
+    private String verifierStrategy;
 
     public Builder prompt(String prompt) {
       this.prompt = prompt;
@@ -158,6 +165,11 @@ public final class JudgmentTarget implements BindingTarget {
 
     public Builder evidenceRequirements(List<String> reqs) {
       this.evidenceRequirements = reqs;
+      return this;
+    }
+
+    public Builder verifierStrategy(String strategyId) {
+      this.verifierStrategy = strategyId;
       return this;
     }
 
