@@ -98,8 +98,18 @@ class AgentExperienceRecorderTest {
     when(reflInstance.get()).thenReturn(orchestrator);
 
     GoalFormationEvaluator goalFormationEvaluator = mock(GoalFormationEvaluator.class);
+    Instance caseMemoryStoreInstance = mock(Instance.class);
+    when(caseMemoryStoreInstance.isResolvable()).thenReturn(false);
+    Instance meterRegistryInstance = mock(Instance.class);
+    when(meterRegistryInstance.isResolvable()).thenReturn(false);
     recorder =
-        new AgentExperienceRecorder(expInstance, reflInstance, registry, goalFormationEvaluator);
+        new AgentExperienceRecorder(
+            expInstance,
+            reflInstance,
+            registry,
+            goalFormationEvaluator,
+            caseMemoryStoreInstance,
+            meterRegistryInstance);
   }
 
   @Test
@@ -200,8 +210,18 @@ class AgentExperienceRecorderTest {
     when(reflInstance.isResolvable()).thenReturn(false);
 
     GoalFormationEvaluator goalFormationEvaluator = mock(GoalFormationEvaluator.class);
+    Instance caseMemoryStore = mock(Instance.class);
+    when(caseMemoryStore.isResolvable()).thenReturn(false);
+    Instance meterRegistry = mock(Instance.class);
+    when(meterRegistry.isResolvable()).thenReturn(false);
     var noopRecorder =
-        new AgentExperienceRecorder(unavailable, reflInstance, registry, goalFormationEvaluator);
+        new AgentExperienceRecorder(
+            unavailable,
+            reflInstance,
+            registry,
+            goalFormationEvaluator,
+            caseMemoryStore,
+            meterRegistry);
     noopRecorder.record(createInstance(), "agent-1", "cap", new WorkerOutcome.Success<>(null), "b");
     assertThat(recorded).isEmpty();
   }

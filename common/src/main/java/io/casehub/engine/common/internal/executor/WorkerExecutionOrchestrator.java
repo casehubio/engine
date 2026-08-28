@@ -267,7 +267,7 @@ public class WorkerExecutionOrchestrator {
       output = bridgeResolver.extractOutput(bridge, typedInput);
     }
     if (output != null && !output.equals(workerResult.output())) {
-      var replaced = new WorkerResult(output, workerResult.outcome());
+      var replaced = new WorkerResult(output, workerResult.outcome(), workerResult.reasoning());
       workerResult = replaced;
     }
 
@@ -298,7 +298,13 @@ public class WorkerExecutionOrchestrator {
         if (output != null && !output.isEmpty()) {
           eventBus.publish(
               EventBusAddresses.SCOPED_WORKER_OUTPUT,
-              new ScopedWorkerOutputEvent(instance, worker.name(), output, bindingName, signalId));
+              new ScopedWorkerOutputEvent(
+                  instance,
+                  worker.name(),
+                  output,
+                  bindingName,
+                  signalId,
+                  workerResult.reasoning()));
         }
         LOG.debugf("Scoped worker %s returned Success — interim output published", bindingName);
         return;
@@ -316,7 +322,10 @@ public class WorkerExecutionOrchestrator {
             bindingName,
             workerResult.outcome(),
             signalId,
-            protocolMetadata));
+            null,
+            null,
+            protocolMetadata,
+            workerResult.reasoning()));
   }
 
   private static List<RetrievedExperience> deserializeExperiences(EventLog eventLog) {

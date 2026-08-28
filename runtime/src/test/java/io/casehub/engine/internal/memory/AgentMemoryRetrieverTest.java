@@ -53,7 +53,7 @@ class AgentMemoryRetrieverTest {
   @Test
   void returnsEmptyWhenDisabled() {
     var def = CaseDefinition.builder().namespace("ns").name("test").version("1.0").build();
-    var result = retriever.retrieve("agent-1", "tenant-1", "analysis", def);
+    var result = retriever.retrieve("agent-1", "tenant-1", null, "analysis", def);
     assertThat(result).isEmpty();
   }
 
@@ -80,7 +80,7 @@ class AgentMemoryRetrieverTest {
                 new MemoryRetrievalConfig(true, 10, Set.of("experience", "reflection")))
             .build();
 
-    var result = retriever.retrieve("agent-1", "tenant-1", "analysis", def);
+    var result = retriever.retrieve("agent-1", "tenant-1", null, "analysis", def);
     assertThat(result).hasSize(2);
     assertThat(result.stream().map(RetrievedMemory::domain))
         .containsExactlyInAnyOrder("experience", "reflection");
@@ -102,7 +102,7 @@ class AgentMemoryRetrieverTest {
             .memoryRetrieval(new MemoryRetrievalConfig(true, 5, Set.of("experience")))
             .build();
 
-    var result = retriever.retrieve("agent-1", "tenant-1", "cap", def);
+    var result = retriever.retrieve("agent-1", "tenant-1", null, "cap", def);
     assertThat(result).hasSize(5);
   }
 
@@ -136,7 +136,7 @@ class AgentMemoryRetrieverTest {
             .memoryRetrieval(new MemoryRetrievalConfig(true, 6, Set.of("experience", "reflection")))
             .build();
 
-    var result = retriever.retrieve("agent-1", "tenant-1", "cap", def);
+    var result = retriever.retrieve("agent-1", "tenant-1", null, "cap", def);
     assertThat(result).hasSize(6);
     assertThat(result.get(0).domain()).isNotEqualTo(result.get(1).domain());
   }
@@ -156,7 +156,7 @@ class AgentMemoryRetrieverTest {
             .memoryRetrieval(MemoryRetrievalConfig.defaults())
             .build();
 
-    var result = noopRetriever.retrieve("agent-1", "tenant-1", "cap", def);
+    var result = noopRetriever.retrieve("agent-1", "tenant-1", null, "cap", def);
     assertThat(result).isEmpty();
   }
 
@@ -172,7 +172,50 @@ class AgentMemoryRetrieverTest {
             .memoryRetrieval(new MemoryRetrievalConfig(true, 10, Set.of("experience")))
             .build();
 
-    var result = retriever.retrieve("agent-1", "tenant-1", "cap", def);
+    var result = retriever.retrieve("agent-1", "tenant-1", null, "cap", def);
+    assertThat(result).isEmpty();
+  }
+
+  @Test
+  void retrievesCaseScopedDomainsWhenConfigured() {
+    var caseMem = memory("case-1", "prior reasoning from this case", "worker-reasoning");
+    java.util.UUID caseId = java.util.UUID.fromString("00000000-0000-0000-0000-000000000099");
+
+    when(store.query(any(MemoryQuery.class)))
+        .thenAnswer(
+            inv -> {
+              MemoryQuery q = inv.getArgument(0);
+              if (q.domain().name().equals("worker-reasoning")) return List.of(caseMem);
+              return List.of();
+            });
+
+    var def =
+        CaseDefinition.builder()
+            .namespace("ns")
+            .name("test")
+            .version("1.0")
+            .memoryRetrieval(
+                new MemoryRetrievalConfig(true, 10, Set.of(), Set.of("worker-reasoning"), 5))
+            .build();
+
+    var result = retriever.retrieve("agent-1", "tenant-1", caseId, "security-review", def);
+    assertThat(result).hasSize(1);
+    assertThat(result.get(0).domain()).isEqualTo("worker-reasoning");
+    assertThat(result.get(0).text()).isEqualTo("prior reasoning from this case");
+  }
+
+  @Test
+  void caseScopedDomainsSkippedWhenNoCaseId() {
+    var def =
+        CaseDefinition.builder()
+            .namespace("ns")
+            .name("test")
+            .version("1.0")
+            .memoryRetrieval(
+                new MemoryRetrievalConfig(true, 10, Set.of(), Set.of("worker-reasoning"), 5))
+            .build();
+
+    var result = retriever.retrieve("agent-1", "tenant-1", null, "security-review", def);
     assertThat(result).isEmpty();
   }
 

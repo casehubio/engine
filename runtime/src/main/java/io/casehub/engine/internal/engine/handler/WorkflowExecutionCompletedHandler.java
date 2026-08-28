@@ -152,6 +152,18 @@ public class WorkflowExecutionCompletedHandler {
         }
       }
 
+      // Reasoning storage — outcome-independent, before the outcome fork.
+      if (event.reasoning() != null) {
+        String capTag = extractCapabilityTag(caseInstance, worker, event.bindingName());
+        agentExperienceRecorder.storeReasoning(
+            caseInstance,
+            worker.name(),
+            capTag,
+            event.outcome(),
+            event.reasoning(),
+            event.bindingName());
+      }
+
       // Outcome fork: non-success outcomes route to the semantic failure path.
       // Completed is treated like Success — it signals lifecycle scope completion.
       if (!(event.outcome() instanceof WorkerOutcome.Success)
@@ -241,7 +253,8 @@ public class WorkflowExecutionCompletedHandler {
               event.idempotency(),
               now,
               diff,
-              event.protocolMetadata());
+              event.protocolMetadata(),
+              event.reasoning());
 
       // Expectation validation — synchronous, before CONTEXT_CHANGED
       final CaseDefinition definition =
@@ -582,7 +595,7 @@ public class WorkflowExecutionCompletedHandler {
     eventLog.setStreamType(EventStreamType.CASE);
     eventLog.setTimestamp(now);
     eventLog.setEventType(eventType);
-    eventLog.setMetadata(
+    ObjectNode failureMetadata =
         OBJECT_MAPPER
             .createObjectNode()
             .put("bindingName", bindingName)
@@ -591,7 +604,11 @@ public class WorkflowExecutionCompletedHandler {
             .put(
                 "disposition",
                 action == OutcomeAction.FAULT ? "FAULT" : exhausted ? "EXHAUSTED" : "REROUTE")
-            .put("failureCategory", category.categoryName()));
+            .put("failureCategory", category.categoryName());
+    if (event.reasoning() != null) {
+      failureMetadata.put("reasoning", event.reasoning());
+    }
+    eventLog.setMetadata(failureMetadata);
 
     final OutcomeDisposition disposition =
         action == OutcomeAction.FAULT
@@ -719,7 +736,14 @@ public class WorkflowExecutionCompletedHandler {
 
     final EventLog gateEventLog =
         buildGateEventLog(
-            caseInstance, worker, rawOutput, plannedAction, gate, event.idempotency(), now);
+            caseInstance,
+            worker,
+            rawOutput,
+            plannedAction,
+            gate,
+            event.idempotency(),
+            now,
+            event.reasoning());
 
     eventLogRepository.append(gateEventLog, caseInstance.tenancyId);
 
@@ -769,7 +793,8 @@ public class WorkflowExecutionCompletedHandler {
       final PlannedAction plannedAction,
       final RiskDecision.GateRequired gate,
       final String idempotency,
-      final Instant timestamp) {
+      final Instant timestamp,
+      final String reasoning) {
     final EventLog eventLog = new EventLog();
     eventLog.setCaseId(caseInstance.getUuid());
     eventLog.setWorkerId(worker.name());
@@ -793,7 +818,11 @@ public class WorkflowExecutionCompletedHandler {
     }
     payload.set("gateRequired", gateNode);
     eventLog.setPayload(payload);
-    eventLog.setMetadata(OBJECT_MAPPER.createObjectNode().put("inputDataHash", idempotency));
+    ObjectNode gateMetadata = OBJECT_MAPPER.createObjectNode().put("inputDataHash", idempotency);
+    if (reasoning != null) {
+      gateMetadata.put("reasoning", reasoning);
+    }
+    eventLog.setMetadata(gateMetadata);
     return eventLog;
   }
 
@@ -804,7 +833,8 @@ public class WorkflowExecutionCompletedHandler {
       String idempotency,
       Instant timestamp,
       JsonNode contextDiff,
-      Map<String, Object> protocolMetadata) {
+      Map<String, Object> protocolMetadata,
+      String reasoning) {
     EventLog eventLog = new EventLog();
     eventLog.setCaseId(caseInstance.getUuid());
     eventLog.setWorkerId(worker.name());
@@ -812,12 +842,15 @@ public class WorkflowExecutionCompletedHandler {
     eventLog.setTimestamp(timestamp);
     eventLog.setEventType(CaseHubEventType.WORKER_EXECUTION_COMPLETED);
     eventLog.setPayload(OBJECT_MAPPER.valueToTree(output == null ? Map.of() : output));
-    eventLog.setMetadata(buildMetadata(idempotency, contextDiff, protocolMetadata));
+    eventLog.setMetadata(buildMetadata(idempotency, contextDiff, protocolMetadata, reasoning));
     return eventLog;
   }
 
   private JsonNode buildMetadata(
-      String idempotency, JsonNode contextDiff, Map<String, Object> protocolMetadata) {
+      String idempotency,
+      JsonNode contextDiff,
+      Map<String, Object> protocolMetadata,
+      String reasoning) {
     ObjectNode metadata = OBJECT_MAPPER.createObjectNode();
     metadata.put("inputDataHash", idempotency);
     if (contextDiff != null) {
@@ -830,6 +863,9 @@ public class WorkflowExecutionCompletedHandler {
     }
     if (protocolMetadata != null && !protocolMetadata.isEmpty()) {
       protocolMetadata.forEach((key, value) -> metadata.set(key, OBJECT_MAPPER.valueToTree(value)));
+    }
+    if (reasoning != null) {
+      metadata.put("reasoning", reasoning);
     }
     return metadata;
   }

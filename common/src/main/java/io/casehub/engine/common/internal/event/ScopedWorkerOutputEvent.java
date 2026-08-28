@@ -24,4 +24,15 @@ public record ScopedWorkerOutputEvent(
     String workerName,
     Map<String, Object> output,
     String bindingName,
-    UUID signalId) {}
+    UUID signalId,
+    String reasoning) {
+
+  public ScopedWorkerOutputEvent(
+      CaseInstance caseInstance,
+      String workerName,
+      Map<String, Object> output,
+      String bindingName,
+      UUID signalId) {
+    this(caseInstance, workerName, output, bindingName, signalId, null);
+  }
+}

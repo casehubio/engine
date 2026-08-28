@@ -38,6 +38,8 @@ import java.util.UUID;
  * @param executorRef Nullable {@link io.casehub.api.model.ExecutorRef} containing executor
  *     identity. Threaded through from WorkerScheduleEvent for richer executor tracking. Refs
  *     engine#702.
+ * @param reasoning Optional reasoning trace from the worker, stored to the worker-reasoning memory
+ *     domain for future context retrieval. Null when the worker did not emit reasoning.
  */
 public record WorkflowExecutionCompleted(
     CaseInstance caseInstance,
@@ -49,7 +51,8 @@ public record WorkflowExecutionCompleted(
     UUID signalId,
     String workerCredentialToken,
     io.casehub.api.model.ExecutorRef executorRef,
-    Map<String, Object> protocolMetadata) {
+    Map<String, Object> protocolMetadata,
+    String reasoning) {
 
   /** Convenience constructor for non-awaiting worker completions (no protocol metadata). */
   public WorkflowExecutionCompleted(
@@ -69,7 +72,8 @@ public record WorkflowExecutionCompleted(
         null,
         null,
         null,
-        Map.of());
+        Map.of(),
+        null);
   }
 
   /** Convenience constructor with signalId but no credential token. */
@@ -91,7 +95,8 @@ public record WorkflowExecutionCompleted(
         signalId,
         null,
         null,
-        Map.of());
+        Map.of(),
+        null);
   }
 
   /** Convenience constructor with signalId and protocol metadata. */
@@ -114,7 +119,8 @@ public record WorkflowExecutionCompleted(
         signalId,
         null,
         null,
-        protocolMetadata);
+        protocolMetadata,
+        null);
   }
 
   /** Convenience constructor for the gate-re-fire path. */
@@ -134,6 +140,7 @@ public record WorkflowExecutionCompleted(
         null,
         null,
         null,
-        Map.of());
+        Map.of(),
+        null);
   }
 }
