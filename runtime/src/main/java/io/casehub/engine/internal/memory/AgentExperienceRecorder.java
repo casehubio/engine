@@ -19,14 +19,20 @@ import io.casehub.api.model.ReflectionTriggerConfig;
 import io.casehub.engine.common.internal.model.CaseInstance;
 import io.casehub.engine.common.spi.CaseDefinitionRegistry;
 import io.casehub.engine.internal.routing.GoalFormationEvaluator;
+import io.casehub.neocortex.memory.CaseMemoryStore;
+import io.casehub.neocortex.memory.MemoryDomain;
+import io.casehub.neocortex.memory.MemoryInput;
 import io.casehub.neocortex.memory.experience.ExperienceRecorder;
 import io.casehub.neocortex.memory.experience.Outcome;
 import io.casehub.neocortex.memory.reflection.ReflectionOrchestrator;
 import io.casehub.worker.api.WorkerOutcome;
+import io.micrometer.core.instrument.Counter;
+import io.micrometer.core.instrument.MeterRegistry;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.enterprise.inject.Instance;
 import jakarta.inject.Inject;
 import java.time.Instant;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
@@ -38,23 +44,38 @@ public class AgentExperienceRecorder {
 
   private static final Logger LOG = Logger.getLogger(AgentExperienceRecorder.class);
 
+  private static final MemoryDomain WORKER_REASONING_DOMAIN = new MemoryDomain("worker-reasoning");
+  private static final int DEFAULT_MAX_REASONING_LENGTH = 4096;
+  private static final String TRUNCATION_MARKER = "\n[...truncated...]\n";
+
   private final Instance<ExperienceRecorder> experienceRecorder;
   private final Instance<ReflectionOrchestrator> reflectionOrchestrator;
   private final CaseDefinitionRegistry caseDefinitionRegistry;
   private final GoalFormationEvaluator goalFormationEvaluator;
+  private final Instance<CaseMemoryStore> caseMemoryStore;
+  private final Instance<MeterRegistry> meterRegistry;
   private final ConcurrentHashMap<String, ReflectionState> reflectionStates =
       new ConcurrentHashMap<>();
+
+  @org.eclipse.microprofile.config.inject.ConfigProperty(
+      name = "casehub.reasoning.enabled",
+      defaultValue = "true")
+  boolean reasoningEnabled;
 
   @Inject
   public AgentExperienceRecorder(
       Instance<ExperienceRecorder> experienceRecorder,
       Instance<ReflectionOrchestrator> reflectionOrchestrator,
       CaseDefinitionRegistry caseDefinitionRegistry,
-      GoalFormationEvaluator goalFormationEvaluator) {
+      GoalFormationEvaluator goalFormationEvaluator,
+      Instance<CaseMemoryStore> caseMemoryStore,
+      Instance<MeterRegistry> meterRegistry) {
     this.experienceRecorder = experienceRecorder;
     this.reflectionOrchestrator = reflectionOrchestrator;
     this.caseDefinitionRegistry = caseDefinitionRegistry;
     this.goalFormationEvaluator = goalFormationEvaluator;
+    this.caseMemoryStore = caseMemoryStore;
+    this.meterRegistry = meterRegistry;
   }
 
   public void record(
@@ -90,6 +111,84 @@ public class AgentExperienceRecorder {
     }
 
     evaluateReflectionTrigger(caseInstance, workerName, importance, config);
+  }
+
+  public void storeReasoning(
+      CaseInstance caseInstance,
+      String workerName,
+      String capabilityName,
+      WorkerOutcome<?> outcome,
+      String reasoning,
+      String bindingName) {
+
+    if (!reasoningEnabled
+        || !caseMemoryStore.isResolvable()
+        || reasoning == null
+        || reasoning.isBlank()) {
+      return;
+    }
+
+    String truncated = truncateReasoning(reasoning);
+    String outcomeKind = outcomeKindName(outcome);
+    HashMap<String, String> attributes = new HashMap<>();
+    attributes.put("workerName", workerName);
+    if (capabilityName != null) {
+      attributes.put("capability", capabilityName);
+    }
+    attributes.put("bindingName", bindingName);
+    attributes.put("outcome", outcomeKind);
+    if (truncated.length() < reasoning.length()) {
+      attributes.put("truncated", "true");
+    }
+
+    ReflectionTriggerConfig config = lookupConfig(caseInstance);
+    double importance = resolveImportance(outcome, config);
+
+    MemoryInput input =
+        new MemoryInput(
+            "case:" + caseInstance.getUuid(),
+            WORKER_REASONING_DOMAIN,
+            caseInstance.tenancyId,
+            caseInstance.getUuid().toString(),
+            truncated,
+            Map.copyOf(attributes),
+            importance);
+
+    CaseMemoryStore store = caseMemoryStore.get();
+    Thread.startVirtualThread(
+        () -> {
+          try {
+            store.store(input);
+          } catch (Exception e) {
+            LOG.warnf(
+                e,
+                "Reasoning trace storage failed for case=%s worker=%s — non-critical",
+                caseInstance.getUuid(),
+                workerName);
+            if (meterRegistry.isResolvable()) {
+              Counter.builder("casehub.reasoning.storage.failures")
+                  .tag("worker", workerName)
+                  .register(meterRegistry.get())
+                  .increment();
+            }
+          }
+        });
+  }
+
+  String truncateReasoning(String reasoning) {
+    if (reasoning.length() <= DEFAULT_MAX_REASONING_LENGTH) {
+      return reasoning;
+    }
+    int headLen = DEFAULT_MAX_REASONING_LENGTH / 3;
+    if (headLen > 0 && Character.isHighSurrogate(reasoning.charAt(headLen - 1))) {
+      headLen--;
+    }
+    int tailLen = DEFAULT_MAX_REASONING_LENGTH - headLen - TRUNCATION_MARKER.length();
+    int tailStart = reasoning.length() - tailLen;
+    if (tailStart < reasoning.length() && Character.isLowSurrogate(reasoning.charAt(tailStart))) {
+      tailStart++;
+    }
+    return reasoning.substring(0, headLen) + TRUNCATION_MARKER + reasoning.substring(tailStart);
   }
 
   private ReflectionTriggerConfig lookupConfig(CaseInstance caseInstance) {
@@ -169,7 +268,7 @@ public class AgentExperienceRecorder {
     };
   }
 
-  private static String outcomeKindName(WorkerOutcome<?> outcome) {
+  static String outcomeKindName(WorkerOutcome<?> outcome) {
     return switch (outcome) {
       case WorkerOutcome.Success<?> s -> "SUCCESS";
       case WorkerOutcome.Completed<?> c -> "COMPLETED";

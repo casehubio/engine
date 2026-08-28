@@ -27,7 +27,10 @@ import io.casehub.engine.common.internal.event.EventBusAddresses;
 import io.casehub.engine.common.internal.event.ScopedWorkerOutputEvent;
 import io.casehub.engine.common.internal.history.EventLog;
 import io.casehub.engine.common.internal.model.CaseInstance;
+import io.casehub.engine.common.spi.CaseDefinitionRegistry;
 import io.casehub.engine.common.spi.EventLogRepository;
+import io.casehub.engine.internal.memory.AgentExperienceRecorder;
+import io.casehub.worker.api.WorkerOutcome;
 import io.quarkus.vertx.ConsumeEvent;
 import io.smallrye.common.annotation.RunOnVirtualThread;
 import io.vertx.mutiny.core.eventbus.EventBus;
@@ -46,6 +49,8 @@ public class ScopedWorkerOutputHandler {
   @Inject ContextOutputApplier contextOutputApplier;
   @Inject EventLogRepository eventLogRepository;
   @Inject EventBus eventBus;
+  @Inject AgentExperienceRecorder agentExperienceRecorder;
+  @Inject CaseDefinitionRegistry caseDefinitionRegistry;
 
   @ConsumeEvent(value = EventBusAddresses.SCOPED_WORKER_OUTPUT)
   @RunOnVirtualThread
@@ -61,6 +66,25 @@ public class ScopedWorkerOutputHandler {
         return;
       }
 
+      if (event.reasoning() != null) {
+        try {
+          String capabilityTag = extractCapabilityTag(caseInstance, event.bindingName());
+          agentExperienceRecorder.storeReasoning(
+              caseInstance,
+              event.workerName(),
+              capabilityTag,
+              new WorkerOutcome.Success<>(null),
+              event.reasoning(),
+              event.bindingName());
+        } catch (Exception e) {
+          LOG.warnf(
+              e,
+              "Failed to store reasoning for caseId=%s worker=%s — continuing",
+              caseInstance.getUuid(),
+              event.workerName());
+        }
+      }
+
       JsonNode diff = contextOutputApplier.apply(caseInstance, event.output(), event.bindingName());
       if (diff == null) {
         return;
@@ -68,7 +92,12 @@ public class ScopedWorkerOutputHandler {
 
       EventLog eventLog =
           buildEventLog(
-              caseInstance, event.workerName(), event.output(), event.bindingName(), diff);
+              caseInstance,
+              event.workerName(),
+              event.output(),
+              event.bindingName(),
+              diff,
+              event.reasoning());
       eventLogRepository.append(eventLog, caseInstance.tenancyId);
 
       eventBus.publish(
@@ -89,7 +118,8 @@ public class ScopedWorkerOutputHandler {
       String workerName,
       Map<String, Object> output,
       String bindingName,
-      JsonNode contextDiff) {
+      JsonNode contextDiff,
+      String reasoning) {
     EventLog eventLog = new EventLog();
     eventLog.setCaseId(caseInstance.getUuid());
     eventLog.setWorkerId(workerName);
@@ -110,7 +140,15 @@ public class ScopedWorkerOutputHandler {
         metadata.set("producedKeys", keys);
       }
     }
+    if (reasoning != null) {
+      metadata.put("reasoning", reasoning);
+    }
     eventLog.setMetadata(metadata);
     return eventLog;
+  }
+
+  private String extractCapabilityTag(CaseInstance caseInstance, String bindingName) {
+    return CapabilityTagHelper.extractCapabilityTag(
+        caseDefinitionRegistry.getCaseDefinition(caseInstance.getCaseMetaModel()), bindingName);
   }
 }
