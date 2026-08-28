@@ -80,4 +80,16 @@ class CaseDefinitionYamlMapperJudgmentTest {
     assertThat(target.evidenceRequirements()).isEmpty();
     assertThat(target.expiresIn()).isNull();
   }
+
+  @Test
+  void judgmentBinding_verifierStrategy_parsedFromYaml() {
+    CaseDefinition def = loadDefinition("judgment-verifier-test.yaml");
+    Binding binding =
+        def.getBindings().stream()
+            .filter(b -> b.getName().equals("verified-judgment"))
+            .findFirst()
+            .orElseThrow();
+    JudgmentTarget target = (JudgmentTarget) binding.target();
+    assertThat(target.verifierStrategy()).isEqualTo("evidence-presence");
+  }
 }
