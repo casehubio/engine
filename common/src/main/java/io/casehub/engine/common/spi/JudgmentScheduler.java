@@ -13,21 +13,18 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.casehub.api.model;
+package io.casehub.engine.common.spi;
 
 /**
- * Sealed discriminator for what a {@link Binding} targets.
+ * SPI for scheduling judgment yield requests from engine bindings.
  *
- * <p>Permits: {@link CapabilityTarget}, {@link SubCaseTarget}, {@link HumanTaskTarget}, {@link
- * ExtensionTarget}.
+ * <p>Symmetric with {@link HumanTaskScheduler} and {@link ActionGateScheduler}. Discovered via
+ * {@code Instance<JudgmentScheduler>} in the engine runtime — when no implementation is on the
+ * classpath, judgment bindings are silently skipped.
  *
- * <p>All dispatch sites use exhaustive switch pattern matching (Java 21), which provides
- * compile-time guarantee that all sealed permits are handled.
+ * <p>Refs engine#996, engine#994.
  */
-public sealed interface BindingTarget
-    permits CapabilityTarget,
-        SubCaseTarget,
-        HumanTaskTarget,
-        JudgmentTarget,
-        SignalTarget,
-        ExtensionTarget {}
+public interface JudgmentScheduler {
+
+  void schedule(JudgmentScheduleRequest request);
+}

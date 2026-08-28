@@ -13,21 +13,23 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.casehub.api.model;
+package io.casehub.engine.internal.worker;
 
-/**
- * Sealed discriminator for what a {@link Binding} targets.
- *
- * <p>Permits: {@link CapabilityTarget}, {@link SubCaseTarget}, {@link HumanTaskTarget}, {@link
- * ExtensionTarget}.
- *
- * <p>All dispatch sites use exhaustive switch pattern matching (Java 21), which provides
- * compile-time guarantee that all sealed permits are handled.
- */
-public sealed interface BindingTarget
-    permits CapabilityTarget,
-        SubCaseTarget,
-        HumanTaskTarget,
-        JudgmentTarget,
-        SignalTarget,
-        ExtensionTarget {}
+import io.casehub.api.model.JudgmentTarget;
+import io.casehub.engine.common.spi.JudgmentScheduleRequest;
+import java.util.Map;
+import java.util.UUID;
+import org.junit.jupiter.api.Test;
+
+class NoOpJudgmentSchedulerTest {
+
+  @Test
+  void schedule_doesNotThrow() {
+    var scheduler = new NoOpJudgmentScheduler();
+    var target = JudgmentTarget.builder().prompt("test").build();
+    var request =
+        new JudgmentScheduleRequest(
+            UUID.randomUUID(), "tenant-1", "binding-1", target, Map.of(), null, null);
+    scheduler.schedule(request);
+  }
+}

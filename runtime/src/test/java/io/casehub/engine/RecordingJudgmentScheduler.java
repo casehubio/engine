@@ -13,21 +13,21 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.casehub.api.model;
+package io.casehub.engine;
 
-/**
- * Sealed discriminator for what a {@link Binding} targets.
- *
- * <p>Permits: {@link CapabilityTarget}, {@link SubCaseTarget}, {@link HumanTaskTarget}, {@link
- * ExtensionTarget}.
- *
- * <p>All dispatch sites use exhaustive switch pattern matching (Java 21), which provides
- * compile-time guarantee that all sealed permits are handled.
- */
-public sealed interface BindingTarget
-    permits CapabilityTarget,
-        SubCaseTarget,
-        HumanTaskTarget,
-        JudgmentTarget,
-        SignalTarget,
-        ExtensionTarget {}
+import io.casehub.engine.common.spi.JudgmentScheduleRequest;
+import io.casehub.engine.common.spi.JudgmentScheduler;
+import jakarta.enterprise.context.ApplicationScoped;
+import java.util.concurrent.CopyOnWriteArrayList;
+
+@ApplicationScoped
+public class RecordingJudgmentScheduler implements JudgmentScheduler {
+
+  public static final CopyOnWriteArrayList<JudgmentScheduleRequest> events =
+      new CopyOnWriteArrayList<>();
+
+  @Override
+  public void schedule(JudgmentScheduleRequest request) {
+    events.add(request);
+  }
+}

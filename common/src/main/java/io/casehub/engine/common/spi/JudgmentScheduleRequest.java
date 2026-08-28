@@ -13,21 +13,19 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.casehub.api.model;
+package io.casehub.engine.common.spi;
 
-/**
- * Sealed discriminator for what a {@link Binding} targets.
- *
- * <p>Permits: {@link CapabilityTarget}, {@link SubCaseTarget}, {@link HumanTaskTarget}, {@link
- * ExtensionTarget}.
- *
- * <p>All dispatch sites use exhaustive switch pattern matching (Java 21), which provides
- * compile-time guarantee that all sealed permits are handled.
- */
-public sealed interface BindingTarget
-    permits CapabilityTarget,
-        SubCaseTarget,
-        HumanTaskTarget,
-        JudgmentTarget,
-        SignalTarget,
-        ExtensionTarget {}
+import io.casehub.api.model.JudgmentTarget;
+import java.time.Instant;
+import java.util.Map;
+import java.util.UUID;
+import org.jspecify.annotations.Nullable;
+
+public record JudgmentScheduleRequest(
+    UUID caseId,
+    String tenancyId,
+    String bindingName,
+    JudgmentTarget target,
+    Map<String, Object> inputData,
+    @Nullable String resolutionTypeName,
+    @Nullable Instant expiresAtDeadline) {}
