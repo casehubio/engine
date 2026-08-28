@@ -111,4 +111,10 @@ public final class EventBusAddresses {
   public static final String EXPECTATION_VIOLATED = "casehub.expectation.violated";
 
   public static final String REACT_CYCLE = "casehub.react.cycle";
+
+  // --- Judgment yield lifecycle ---
+
+  public static final String JUDGMENT_COMPLETED = "casehub.judgment.completed";
+
+  public static final String JUDGMENT_EXPIRED = "casehub.judgment.expired";
 }

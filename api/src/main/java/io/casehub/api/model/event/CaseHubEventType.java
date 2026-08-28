@@ -89,4 +89,9 @@ public enum CaseHubEventType {
   RECOVERY_REPLAN, // recovery coordinator escalated failure to Level 3 (full replan)
 
   REACT_CYCLE, // one reason-act-observe cycle within a ReAct worker execution
+
+  JUDGMENT_YIELDED, // caller-agnostic judgment request dispatched via JudgmentScheduler
+  JUDGMENT_RESPONDED, // judgment response received from caller (decision + evidence)
+  JUDGMENT_VERIFIED, // judgment response verified (placeholder — blocks/qhorus wiring)
+  JUDGMENT_ESCALATED, // judgment escalated to different caller (placeholder — blocks/qhorus wiring)
 }
