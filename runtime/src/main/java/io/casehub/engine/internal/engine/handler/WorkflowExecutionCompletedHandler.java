@@ -308,7 +308,9 @@ public class WorkflowExecutionCompletedHandler {
                   caseInstance.tenancyId,
                   worker.name(),
                   extractCapabilityTag(caseInstance, worker, bindingName),
-                  traceId))
+                  traceId,
+                  null,
+                  event.reasoning()))
           .whenComplete(
               (v, t) -> {
                 if (t != null) {

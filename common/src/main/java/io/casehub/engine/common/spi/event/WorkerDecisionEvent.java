@@ -33,32 +33,39 @@ import java.util.UUID;
  * the selection, the chosen candidate, and alternatives considered. Null when routing information
  * is not captured (e.g. single-candidate paths, legacy call sites).
  *
- * @param caseId the case instance UUID
- * @param tenancyId the tenant that owns this case
- * @param workerId the worker name from the case definition (e.g. {@code "sar-drafting-agent-v1"})
- * @param capabilityTag the capability name exercised; null if not determinable
- * @param traceId OTel trace ID captured synchronously before fireAsync()
+ * <p>The {@code reasoning} carries the worker's reasoning trace when the worker provided one via
+ * {@code WorkerResult.reasoning()}. Stored in {@code WorkerDecisionEntry.domainData} for
+ * tamper-evident Merkle chain inclusion (EU AI Act Art.12). Null when no reasoning was provided.
+ *
+ * @param caseId           the case instance UUID
+ * @param tenancyId        the tenant that owns this case
+ * @param workerId         the worker name from the case definition (e.g. {@code "sar-drafting-agent-v1"})
+ * @param capabilityTag    the capability name exercised; null if not determinable
+ * @param traceId          OTel trace ID captured synchronously before fireAsync()
  * @param selectionContext routing rationale; null when not available
+ * @param reasoning        worker reasoning trace; null when not provided
  */
 public record WorkerDecisionEvent(
-    UUID caseId,
-    String tenancyId,
-    String workerId,
-    String capabilityTag,
-    String traceId,
-    SelectionContext selectionContext) {
+        UUID caseId,
+        String tenancyId,
+        String workerId,
+        String capabilityTag,
+        String traceId,
+        SelectionContext selectionContext,
+        String reasoning) {
 
-  /**
-   * Backward-compatible constructor for call sites without routing context.
-   *
-   * @param caseId the case instance UUID
-   * @param tenancyId the tenant that owns this case
-   * @param workerId the worker name
-   * @param capabilityTag the capability name exercised
-   * @param traceId OTel trace ID
-   */
-  public WorkerDecisionEvent(
-      UUID caseId, String tenancyId, String workerId, String capabilityTag, String traceId) {
-    this(caseId, tenancyId, workerId, capabilityTag, traceId, null);
-  }
+    public WorkerDecisionEvent(
+            UUID caseId, String tenancyId, String workerId, String capabilityTag, String traceId) {
+        this(caseId, tenancyId, workerId, capabilityTag, traceId, null, null);
+    }
+
+    public WorkerDecisionEvent(
+            UUID caseId,
+            String tenancyId,
+            String workerId,
+            String capabilityTag,
+            String traceId,
+            SelectionContext selectionContext) {
+        this(caseId, tenancyId, workerId, capabilityTag, traceId, selectionContext, null);
+    }
 }
