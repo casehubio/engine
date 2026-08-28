@@ -50,6 +50,8 @@ import org.jboss.logging.Logger;
 public class WorkerDecisionEventCapture {
 
   private static final Logger LOG = Logger.getLogger(WorkerDecisionEventCapture.class);
+  private static final int MAX_REASONING_LENGTH = 4096;
+  private static final String TRUNCATION_MARKER = "\n[...truncated...]\n";
 
   @Inject LedgerEntryRepository ledgerRepo;
 
@@ -107,10 +109,34 @@ public class WorkerDecisionEventCapture {
       }
     }
 
+    if (event.reasoning() != null && !event.reasoning().isBlank()) {
+      entry.domainData = java.util.Map.of("reasoning", truncateReasoning(event.reasoning()));
+    }
+
     ledgerRepo.save(entry, event.tenancyId());
 
     LOG.debugf(
-        "Worker decision entry written: caseId=%s workerId=%s capability=%s seq=%d",
-        event.caseId(), event.workerId(), event.capabilityTag(), seq);
+        "Worker decision entry written: caseId=%s workerId=%s capability=%s seq=%d reasoning=%s",
+        event.caseId(),
+        event.workerId(),
+        event.capabilityTag(),
+        seq,
+        event.reasoning() != null ? "present" : "absent");
+  }
+
+  private static String truncateReasoning(String reasoning) {
+    if (reasoning.length() <= MAX_REASONING_LENGTH) {
+      return reasoning;
+    }
+    int headLen = MAX_REASONING_LENGTH / 3;
+    if (headLen > 0 && Character.isHighSurrogate(reasoning.charAt(headLen - 1))) {
+      headLen--;
+    }
+    int tailLen = MAX_REASONING_LENGTH - headLen - TRUNCATION_MARKER.length();
+    int tailStart = reasoning.length() - tailLen;
+    if (tailStart < reasoning.length() && Character.isLowSurrogate(reasoning.charAt(tailStart))) {
+      tailStart++;
+    }
+    return reasoning.substring(0, headLen) + TRUNCATION_MARKER + reasoning.substring(tailStart);
   }
 }

@@ -159,4 +159,100 @@ class WorkerDecisionEventCaptureTest {
               assertThat(entries.get(0).sequenceNumber).isEqualTo(1);
             });
   }
+
+  @Test
+  void reasoning_populatesDomainData_whenPresent() {
+    final UUID caseId = UUID.randomUUID();
+
+    workerDecisionEvents.fireAsync(
+        new WorkerDecisionEvent(
+            caseId,
+            "test-tenant",
+            "analyst-v1",
+            "analysis",
+            "trace-r1",
+            null,
+            "I chose approach A because the risk indicators were above threshold"));
+
+    Awaitility.await()
+        .atMost(5, TimeUnit.SECONDS)
+        .untilAsserted(
+            () -> {
+              final List<WorkerDecisionEntry> entries =
+                  repository.findWorkerDecisionsByCaseId(caseId);
+              assertThat(entries).hasSize(1);
+              final WorkerDecisionEntry entry = entries.get(0);
+              assertThat(entry.domainData).isNotNull();
+              assertThat(entry.domainData).containsKey("reasoning");
+              assertThat(entry.domainData.get("reasoning"))
+                  .isEqualTo("I chose approach A because the risk indicators were above threshold");
+            });
+  }
+
+  @Test
+  void reasoning_absent_domainDataNull() {
+    final UUID caseId = UUID.randomUUID();
+
+    workerDecisionEvents.fireAsync(
+        new WorkerDecisionEvent(caseId, "test-tenant", "worker-no-reasoning", "cap-x", "trace-nr"));
+
+    Awaitility.await()
+        .atMost(5, TimeUnit.SECONDS)
+        .untilAsserted(
+            () -> {
+              final List<WorkerDecisionEntry> entries =
+                  repository.findWorkerDecisionsByCaseId(caseId);
+              assertThat(entries).hasSize(1);
+              assertThat(entries.get(0).domainData).isNull();
+            });
+  }
+
+  @Test
+  void reasoning_truncated_whenExceedsLimit() {
+    final UUID caseId = UUID.randomUUID();
+    final String longReasoning = "x".repeat(5000);
+
+    workerDecisionEvents.fireAsync(
+        new WorkerDecisionEvent(
+            caseId, "test-tenant", "verbose-worker", "cap-v", "trace-trunc", null, longReasoning));
+
+    Awaitility.await()
+        .atMost(5, TimeUnit.SECONDS)
+        .untilAsserted(
+            () -> {
+              final List<WorkerDecisionEntry> entries =
+                  repository.findWorkerDecisionsByCaseId(caseId);
+              assertThat(entries).hasSize(1);
+              final String stored = (String) entries.get(0).domainData.get("reasoning");
+              assertThat(stored).isNotNull();
+              assertThat(stored.length()).isLessThanOrEqualTo(4096);
+              assertThat(stored).contains("[...truncated...]");
+            });
+  }
+
+  @Test
+  void reasoning_inDomainData_includedInCanonicalBytes() {
+    final WorkerDecisionEntry entry = new WorkerDecisionEntry();
+    entry.caseId = UUID.randomUUID();
+    entry.subjectId = entry.caseId;
+    entry.workerId = "test-worker";
+    entry.capabilityTag = "test-cap";
+    entry.tenancyId = "test-tenant";
+    entry.sequenceNumber = 1;
+    entry.entryType = LedgerEntryType.EVENT;
+    entry.actorId = "test-worker";
+    entry.actorType = ActorType.SYSTEM;
+    entry.actorRole = "WORKER";
+    entry.occurredAt = java.time.Instant.now();
+
+    byte[] withoutReasoning = entry.canonicalBytes();
+
+    entry.domainData = java.util.Map.of("reasoning", "I chose A because threshold exceeded");
+
+    byte[] withReasoning = entry.canonicalBytes();
+
+    assertThat(withReasoning).isNotEqualTo(withoutReasoning);
+    assertThat(new String(withReasoning, java.nio.charset.StandardCharsets.UTF_8))
+        .contains("reasoning");
+  }
 }
