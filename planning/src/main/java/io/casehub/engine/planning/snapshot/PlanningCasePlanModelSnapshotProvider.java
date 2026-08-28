@@ -19,6 +19,7 @@ import io.casehub.api.model.BindingTarget;
 import io.casehub.api.model.CapabilityTarget;
 import io.casehub.api.model.ExtensionTarget;
 import io.casehub.api.model.HumanTaskTarget;
+import io.casehub.api.model.JudgmentTarget;
 import io.casehub.api.model.SignalTarget;
 import io.casehub.api.model.SubCaseTarget;
 import io.casehub.api.model.TaskStatus;
@@ -179,6 +180,7 @@ public class PlanningCasePlanModelSnapshotProvider implements CasePlanModelSnaps
       case HumanTaskTarget h -> "HUMAN";
       case SubCaseTarget s -> "COMPOSED";
       case SignalTarget sg -> "WORKER";
+      case JudgmentTarget jt -> "HUMAN";
       case ExtensionTarget e -> "EXTERNAL";
     };
   }

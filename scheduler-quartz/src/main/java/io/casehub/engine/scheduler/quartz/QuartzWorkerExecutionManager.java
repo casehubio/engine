@@ -377,6 +377,9 @@ public class QuartzWorkerExecutionManager implements WorkerExecutionManager {
               "Schedule-triggered binding '"
                   + binding.getName()
                   + "' — use SchedulerService for SignalTarget");
+      case io.casehub.api.model.JudgmentTarget ignored ->
+          throw new IllegalStateException(
+              "Schedule-triggered binding '" + binding.getName() + "' must target a Capability");
       case ExtensionTarget ignored ->
           throw new IllegalStateException(
               "Schedule-triggered binding '" + binding.getName() + "' must target a Capability");
