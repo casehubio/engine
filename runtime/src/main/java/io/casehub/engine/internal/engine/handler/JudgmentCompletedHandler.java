@@ -26,6 +26,7 @@ import io.casehub.api.model.event.EventStreamType;
 import io.casehub.engine.common.internal.event.CaseContextChangedEvent;
 import io.casehub.engine.common.internal.event.EventBusAddresses;
 import io.casehub.engine.common.internal.event.JudgmentCompletedEvent;
+import io.casehub.engine.common.internal.event.JudgmentEscalatedEvent;
 import io.casehub.engine.common.internal.history.EventLog;
 import io.casehub.engine.common.internal.model.CaseInstance;
 import io.casehub.engine.common.spi.CaseDefinitionRegistry;
@@ -51,6 +52,7 @@ public class JudgmentCompletedHandler {
   @Inject CaseDefinitionRegistry caseDefinitionRegistry;
   @Inject EventLogRepository eventLogRepository;
   @Inject EventBus eventBus;
+  @Inject io.casehub.platform.api.routing.StrategyResolver strategyResolver;
 
   @ConsumeEvent(value = EventBusAddresses.JUDGMENT_COMPLETED)
   @RunOnVirtualThread
@@ -82,13 +84,85 @@ public class JudgmentCompletedHandler {
             .filter(b -> b.getName().equals(event.bindingName()))
             .findFirst()
             .orElse(null);
-    if (binding != null
-        && binding.target() instanceof JudgmentTarget jt
-        && jt.outputMapping() != null) {
-      Map<String, Object> responseData = new HashMap<>();
-      responseData.put("decision", event.response().decision());
-      responseData.put("evidence", event.response().evidence());
-      instance.getCaseContext().set(event.bindingName(), responseData);
+
+    if (binding != null && binding.target() instanceof JudgmentTarget jt) {
+      if (jt.verifierStrategy() != null) {
+        io.casehub.api.spi.judgment.JudgmentVerifier verifier =
+            strategyResolver.resolve(
+                io.casehub.api.spi.judgment.JudgmentVerifier.class, jt.verifierStrategy());
+        io.casehub.api.spi.judgment.VerificationContext verificationCtx =
+            new io.casehub.api.spi.judgment.VerificationContext(
+                event.caseId(),
+                instance.tenancyId,
+                event.bindingName(),
+                jt,
+                Map.of(),
+                def,
+                event.response().decision(),
+                event.response().evidence(),
+                event.response().callerId(),
+                event.response().callerType());
+        io.casehub.api.spi.judgment.VerificationResult result = verifier.verify(verificationCtx);
+        writeVerifiedEventLog(instance, event, jt.verifierStrategy(), result);
+        switch (result) {
+          case io.casehub.api.spi.judgment.VerificationResult.Accepted a -> {}
+          case io.casehub.api.spi.judgment.VerificationResult.InsufficientEvidence ie -> {
+            eventBus.publish(
+                EventBusAddresses.JUDGMENT_ESCALATED,
+                new JudgmentEscalatedEvent(
+                    event.caseId(),
+                    event.bindingName(),
+                    instance.tenancyId,
+                    event.response(),
+                    result));
+            LOG.infof(
+                "Judgment verification failed (insufficient evidence): caseId=%s binding=%s",
+                event.caseId(), event.bindingName());
+            return;
+          }
+          case io.casehub.api.spi.judgment.VerificationResult.TrustTooLow ttl -> {
+            eventBus.publish(
+                EventBusAddresses.JUDGMENT_ESCALATED,
+                new JudgmentEscalatedEvent(
+                    event.caseId(),
+                    event.bindingName(),
+                    instance.tenancyId,
+                    event.response(),
+                    result));
+            LOG.infof(
+                "Judgment verification failed (trust too low): caseId=%s binding=%s",
+                event.caseId(), event.bindingName());
+            return;
+          }
+          case io.casehub.api.spi.judgment.VerificationResult.Rejected r -> {
+            instance
+                .getCaseContext()
+                .set(
+                    "_diagnostics." + event.bindingName() + ".verificationRejected",
+                    Map.of(
+                        "reason",
+                        r.reason(),
+                        "callerId",
+                        event.response().callerId() != null
+                            ? event.response().callerId()
+                            : "unknown"));
+            eventBus.publish(
+                EventBusAddresses.CONTEXT_CHANGED,
+                new CaseContextChangedEvent(instance, instance.getCaseContext(), "working"));
+            LOG.infof(
+                "Judgment verification rejected: caseId=%s binding=%s reason=%s",
+                event.caseId(), event.bindingName(), r.reason());
+            return;
+          }
+        }
+      }
+
+      if (jt.outputMapping() != null) {
+        Map<String, Object> responseData = new HashMap<>();
+        responseData.put("decision", event.response().decision());
+        responseData.put("evidence", event.response().evidence());
+        instance.getCaseContext().set(event.bindingName(), responseData);
+      }
     }
 
     writeRespondedEventLog(instance, event);
@@ -100,6 +174,42 @@ public class JudgmentCompletedHandler {
     LOG.infof(
         "Judgment response applied: caseId=%s binding=%s decision=%s",
         event.caseId(), event.bindingName(), event.response().decision());
+  }
+
+  private void writeVerifiedEventLog(
+      CaseInstance instance,
+      JudgmentCompletedEvent event,
+      String verifierStrategy,
+      io.casehub.api.spi.judgment.VerificationResult result) {
+    final EventLog log = new EventLog();
+    log.setCaseId(instance.getUuid());
+    log.setStreamType(EventStreamType.CASE);
+    log.setTimestamp(Instant.now());
+    log.setEventType(CaseHubEventType.JUDGMENT_VERIFIED);
+    ObjectNode metadata = MAPPER.createObjectNode();
+    metadata.put("bindingName", event.bindingName());
+    metadata.put("verifierStrategy", verifierStrategy);
+    String resultType =
+        switch (result) {
+          case io.casehub.api.spi.judgment.VerificationResult.Accepted a -> "ACCEPTED";
+          case io.casehub.api.spi.judgment.VerificationResult.InsufficientEvidence ie ->
+              "INSUFFICIENT_EVIDENCE";
+          case io.casehub.api.spi.judgment.VerificationResult.TrustTooLow ttl -> "TRUST_TOO_LOW";
+          case io.casehub.api.spi.judgment.VerificationResult.Rejected r -> "REJECTED";
+        };
+    metadata.put("result", resultType);
+    if (result instanceof io.casehub.api.spi.judgment.VerificationResult.InsufficientEvidence ie) {
+      metadata.put("feedback", ie.feedback());
+      metadata.set("missingKeys", MAPPER.valueToTree(ie.missingKeys()));
+    }
+    if (result instanceof io.casehub.api.spi.judgment.VerificationResult.Rejected r) {
+      metadata.put("feedback", r.reason());
+    }
+    if (event.response().callerId() != null) metadata.put("callerId", event.response().callerId());
+    if (event.response().callerType() != null)
+      metadata.put("callerType", event.response().callerType());
+    log.setMetadata(metadata);
+    eventLogRepository.append(log, instance.tenancyId);
   }
 
   private void writeRespondedEventLog(CaseInstance instance, JudgmentCompletedEvent event) {
