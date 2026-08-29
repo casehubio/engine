@@ -22,7 +22,6 @@ import io.casehub.api.context.ContextBridge;
 import io.casehub.api.model.Binding;
 import io.casehub.api.model.CaseDefinition;
 import io.casehub.api.model.ConflictResolver;
-import io.casehub.api.model.HumanTaskTarget;
 import io.casehub.api.model.TaskStatus;
 import io.casehub.api.model.evaluator.JQExpressionEvaluator;
 import io.casehub.engine.common.internal.context.BridgeResolver;
@@ -216,13 +215,13 @@ public class PlanItemCompletionApplier {
     if (instance.getCaseContext() == null || item.getTarget() == null) {
       return;
     }
-    if (!(item.getTarget() instanceof HumanTaskTarget ht)) {
+    if (!(item.getTarget() instanceof io.casehub.api.model.JudgmentTarget jt)) {
       return;
     }
-    if (ht.outputMapping() == null) {
+    if (jt.outputMapping() == null) {
       return;
     }
-    ExpressionEvaluator evaluator = ht.outputMapping();
+    ExpressionEvaluator evaluator = jt.outputMapping();
     if (!(evaluator instanceof JQExpressionEvaluator jq)) {
       LOG.warnf(
           "Unsupported outputMapping evaluator type '%s' for PlanItem %s — skipping",

@@ -51,34 +51,29 @@ class BindingTest {
   }
 
   @Test
-  void builder_humanTaskTarget_storedAsTarget() {
-    HumanTaskTarget ht = HumanTaskTarget.template("irb-72h-review").build();
-    Binding b =
-        Binding.builder().name("b").humanTask(ht).on(new ContextChangeTrigger(".x")).build();
+  void builder_judgmentTarget_storedAsTarget() {
+    JudgmentTarget jt = JudgmentTarget.builder().prompt("Review").build();
+    Binding b = Binding.builder().name("b").judgment(jt).on(new ContextChangeTrigger(".x")).build();
 
-    assertThat(b.target()).isInstanceOf(HumanTaskTarget.class);
-    assertThat(b.target()).isSameAs(ht);
+    assertThat(b.target()).isInstanceOf(JudgmentTarget.class);
+    assertThat(b.target()).isSameAs(jt);
   }
 
   @Test
   void target_sealedHierarchy_allPermitsReachable() {
-    // Java 17 doesn't support exhaustive switch pattern matching (Java 21+).
-    // Prove sealed hierarchy is complete: each permit type is assignable from BindingTarget,
-    // and only these four types exist (compiler enforces no unknown subtypes).
     Capability cap = Capability.builder().name("c").inputSchema("{}").outputSchema("{}").build();
     SubCase sc = SubCase.builder().namespace("n").name("c").version("1").build();
-    HumanTaskTarget ht = HumanTaskTarget.template("t1").build();
+    JudgmentTarget jt = JudgmentTarget.builder().prompt("Review").build();
 
     BindingTarget capTarget = new CapabilityTarget(cap);
     BindingTarget scTarget = new SubCaseTarget(sc);
-    BindingTarget htTarget = ht;
+    BindingTarget jtTarget = jt;
 
     assertThat(capTarget).isInstanceOf(CapabilityTarget.class);
     assertThat(scTarget).isInstanceOf(SubCaseTarget.class);
-    assertThat(htTarget).isInstanceOf(HumanTaskTarget.class);
-    // ExtensionTarget is a non-sealed interface: any class implementing it is a BindingTarget
+    assertThat(jtTarget).isInstanceOf(JudgmentTarget.class);
     assertThat(new ExtensionTarget() {}).isInstanceOf(BindingTarget.class);
-    assertThat(CapabilityTarget.class.isSealed()).isFalse(); // record, not sealed itself
+    assertThat(CapabilityTarget.class.isSealed()).isFalse();
   }
 
   @Test

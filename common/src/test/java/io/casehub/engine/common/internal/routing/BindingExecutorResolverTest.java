@@ -21,7 +21,6 @@ import io.casehub.api.model.Binding;
 import io.casehub.api.model.CaseDefinition;
 import io.casehub.api.model.ContextChangeTrigger;
 import io.casehub.api.model.ExecutorRef;
-import io.casehub.api.model.HumanTaskTarget;
 import io.casehub.worker.api.Capability;
 import io.casehub.worker.api.Worker;
 import org.junit.jupiter.api.Test;
@@ -81,7 +80,7 @@ class BindingExecutorResolverTest {
     var binding =
         Binding.builder()
             .name("review")
-            .humanTask(HumanTaskTarget.inline().title("Review").build())
+            .judgment(io.casehub.api.model.JudgmentTarget.builder().prompt("Review").build())
             .on(new ContextChangeTrigger(".needsReview == true"))
             .build();
     var definition = CaseDefinition.builder().namespace("test").name("test").version("1.0").build();

@@ -13,19 +13,14 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.casehub.engine.internal.worker;
+package io.casehub.api.model;
 
-import io.casehub.engine.common.spi.JudgmentScheduleRequest;
-import io.casehub.engine.common.spi.JudgmentScheduler;
-import io.quarkus.arc.DefaultBean;
-import jakarta.enterprise.context.ApplicationScoped;
-
-@DefaultBean
-@ApplicationScoped
-public class NoOpJudgmentScheduler implements JudgmentScheduler {
-
-  @Override
-  public void schedule(JudgmentScheduleRequest request) {
-    // intentional no-op — no judgment routing configured
-  }
-}
+/**
+ * Sealed interface for caller-type-specific routing hints on {@link JudgmentTarget}.
+ *
+ * <p>Separates WHO should answer a yield from WHAT is being asked (yield semantics on
+ * JudgmentTarget) and HOW the answer is verified (verifier/escalator on JudgmentTarget).
+ *
+ * <p>Refs engine#995, engine#994.
+ */
+public sealed interface RoutingConfig permits HumanRoutingConfig {}

@@ -13,23 +13,22 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.casehub.engine.internal.worker;
+package io.casehub.api.model;
 
-import io.casehub.api.model.JudgmentTarget;
-import io.casehub.engine.common.spi.JudgmentScheduleRequest;
-import java.util.Map;
-import java.util.UUID;
-import org.junit.jupiter.api.Test;
+import io.casehub.api.spi.routing.CandidateSetSpec;
+import org.jspecify.annotations.Nullable;
 
-class NoOpJudgmentSchedulerTest {
-
-  @Test
-  void schedule_doesNotThrow() {
-    var scheduler = new NoOpJudgmentScheduler();
-    var target = JudgmentTarget.builder().prompt("test").build();
-    var request =
-        new JudgmentScheduleRequest(
-            UUID.randomUUID(), "tenant-1", "binding-1", target, Map.of(), null, null);
-    scheduler.schedule(request);
-  }
-}
+/**
+ * Routing configuration for human callers — carried on {@link JudgmentTarget#routingConfig()}.
+ *
+ * <p>These fields are consumed by the scheduler layer to create WorkItems.
+ *
+ * <p>Refs engine#995.
+ */
+public record HumanRoutingConfig(
+    @Nullable String templateRef,
+    @Nullable CandidateSetSpec candidateGroups,
+    @Nullable CandidateSetSpec candidateUsers,
+    @Nullable Integer claimDeadlineHours,
+    @Nullable Class<?> payloadType)
+    implements RoutingConfig {}

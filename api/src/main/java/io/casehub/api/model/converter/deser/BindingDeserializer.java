@@ -24,6 +24,7 @@ import com.fasterxml.jackson.databind.deser.std.StdDeserializer;
 import io.casehub.api.model.Binding;
 import io.casehub.api.model.CapabilityTarget;
 import io.casehub.api.model.ExecutionMode;
+import io.casehub.api.model.HumanRoutingConfig;
 import io.casehub.api.model.HumanTaskTarget;
 import io.casehub.api.model.JudgmentTarget;
 import io.casehub.api.model.LifecycleScope;
@@ -188,7 +189,7 @@ public class BindingDeserializer extends StdDeserializer<Binding> {
     } else if (node.has("subCase")) {
       builder.subCase(deserializeSubCase(node.get("subCase"), codec, ctxt));
     } else if (node.has("humanTask")) {
-      builder.humanTask(deserializeHumanTask(node.get("humanTask"), bindingName, codec, ctxt));
+      builder.judgment(deserializeHumanJudgment(node.get("humanTask"), bindingName, codec, ctxt));
     } else if (node.has("judgment")) {
       builder.judgment(deserializeJudgment(node.get("judgment"), bindingName));
     } else if (node.has("signal")) {
@@ -353,6 +354,120 @@ public class BindingDeserializer extends StdDeserializer<Binding> {
     }
   }
 
+  private JudgmentTarget deserializeHumanJudgment(
+      JsonNode node, String bindingName, ObjectCodec codec, DeserializationContext ctxt)
+      throws IOException {
+    JudgmentTarget.Builder jb = JudgmentTarget.builder();
+
+    if (node.has("title")) {
+      jb.title(node.get("title").asText());
+    }
+    if (node.has("titleExpression")) {
+      jb.titleExpression(
+          readExpressionWithContext(
+              node.get("titleExpression"), "titleExpression", bindingName, codec, ctxt));
+    }
+    if (!node.has("title") && !node.has("titleExpression") && !node.has("templateRef")) {
+      jb.prompt(bindingName);
+    } else if (node.has("title")) {
+      jb.prompt(node.get("title").asText());
+    } else {
+      jb.prompt(bindingName);
+    }
+    if (node.has("expiresIn")) {
+      String raw = node.get("expiresIn").asText();
+      jb.expiresIn(java.time.Duration.parse(raw));
+    }
+    if (node.has("expiresInExpression")) {
+      jb.expiresInExpression(
+          readExpressionWithContext(
+              node.get("expiresInExpression"), "expiresInExpression", bindingName, codec, ctxt));
+    }
+    if (node.has("expiresAtExpression")) {
+      jb.expiresAtExpression(
+          readExpressionWithContext(
+              node.get("expiresAtExpression"), "expiresAtExpression", bindingName, codec, ctxt));
+    }
+    if (node.has("priority")) {
+      jb.priority(node.get("priority").asText());
+    }
+    if (node.has("inputMapping")) {
+      jb.inputMapping(readValue(node.get("inputMapping"), ExpressionEvaluator.class, codec, ctxt));
+    }
+    if (node.has("outputMapping")) {
+      jb.outputMapping(
+          readValue(node.get("outputMapping"), ExpressionEvaluator.class, codec, ctxt));
+    }
+    if (node.has("scope")) {
+      jb.scope(node.get("scope").asText());
+    }
+    if (node.has("scopeExpression")) {
+      jb.scopeExpression(
+          readValue(node.get("scopeExpression"), ExpressionEvaluator.class, codec, ctxt));
+    }
+    if (node.has("outcomes")) {
+      Set<String> outcomes = new LinkedHashSet<>();
+      node.get("outcomes").forEach(n -> outcomes.add(n.asText()));
+      jb.outcomes(outcomes);
+    }
+    if (node.has("resolutionType")) {
+      try {
+        jb.resolutionType(Class.forName(node.get("resolutionType").asText()));
+      } catch (ClassNotFoundException e) {
+        throw new IllegalArgumentException(
+            "humanTask resolutionType class not found: " + node.get("resolutionType").asText(), e);
+      }
+    }
+
+    io.casehub.api.spi.routing.CandidateSetSpec candidateGroups = null;
+    io.casehub.api.spi.routing.CandidateSetSpec candidateUsers = null;
+    if (node.has("candidateGroups")) {
+      JsonNode cg = node.get("candidateGroups");
+      if (cg.isArray()) {
+        Set<String> groups = new LinkedHashSet<>();
+        cg.forEach(n -> groups.add(n.asText()));
+        candidateGroups =
+            new io.casehub.api.spi.routing.CandidateSetSpec.Inline(
+                io.casehub.api.spi.routing.StaticSetStrategy.of(groups));
+      } else if (cg.isTextual()) {
+        candidateGroups =
+            new io.casehub.api.spi.routing.CandidateSetSpec.Inline(
+                new io.casehub.api.spi.routing.JqCandidateSetStrategy(cg.asText()));
+      }
+    }
+    if (node.has("candidateUsers")) {
+      JsonNode cu = node.get("candidateUsers");
+      if (cu.isArray()) {
+        Set<String> users = new LinkedHashSet<>();
+        cu.forEach(n -> users.add(n.asText()));
+        candidateUsers =
+            new io.casehub.api.spi.routing.CandidateSetSpec.Inline(
+                io.casehub.api.spi.routing.StaticSetStrategy.of(users));
+      } else if (cu.isTextual()) {
+        candidateUsers =
+            new io.casehub.api.spi.routing.CandidateSetSpec.Inline(
+                new io.casehub.api.spi.routing.JqCandidateSetStrategy(cu.asText()));
+      }
+    }
+    String templateRef = node.has("templateRef") ? node.get("templateRef").asText() : null;
+    Integer claimDeadlineHours =
+        node.has("claimDeadlineHours") ? node.get("claimDeadlineHours").asInt() : null;
+    Class<?> payloadType = null;
+    if (node.has("payloadType")) {
+      try {
+        payloadType = Class.forName(node.get("payloadType").asText());
+      } catch (ClassNotFoundException e) {
+        throw new IllegalArgumentException(
+            "humanTask payloadType class not found: " + node.get("payloadType").asText(), e);
+      }
+    }
+
+    jb.human(
+        new HumanRoutingConfig(
+            templateRef, candidateGroups, candidateUsers, claimDeadlineHours, payloadType));
+    return jb.build();
+  }
+
   private JudgmentTarget deserializeJudgment(JsonNode node, String bindingName) {
     JudgmentTarget.Builder b = JudgmentTarget.builder();
     if (node.has("prompt")) {
@@ -403,6 +518,86 @@ public class BindingDeserializer extends StdDeserializer<Binding> {
     }
     if (node.has("verifierStrategy")) {
       b.verifierStrategy(node.get("verifierStrategy").asText());
+    }
+    if (node.has("escalatorStrategy")) {
+      b.escalatorStrategy(node.get("escalatorStrategy").asText());
+    }
+    if (node.has("trustThreshold")) {
+      b.trustThreshold(node.get("trustThreshold").asText());
+    }
+    if (node.has("title")) {
+      b.title(node.get("title").asText());
+    }
+    if (node.has("titleExpression")) {
+      b.titleExpression(node.get("titleExpression").asText());
+    }
+    if (node.has("outcomes")) {
+      java.util.Set<String> outcomes = new java.util.LinkedHashSet<>();
+      node.get("outcomes").forEach(n -> outcomes.add(n.asText()));
+      b.outcomes(outcomes);
+    }
+    if (node.has("scope")) {
+      b.scope(node.get("scope").asText());
+    }
+    if (node.has("scopeExpression")) {
+      b.scopeExpression(node.get("scopeExpression").asText());
+    }
+    if (node.has("priority")) {
+      b.priority(node.get("priority").asText());
+    }
+    if (node.has("expiresAtExpression")) {
+      b.expiresAtExpression(node.get("expiresAtExpression").asText());
+    }
+    if (node.has("human")) {
+      JsonNode humanNode = node.get("human");
+      io.casehub.api.spi.routing.CandidateSetSpec cg = null;
+      io.casehub.api.spi.routing.CandidateSetSpec cu = null;
+      if (humanNode.has("candidateGroups")) {
+        JsonNode cgn = humanNode.get("candidateGroups");
+        if (cgn.isArray()) {
+          java.util.Set<String> groups = new java.util.LinkedHashSet<>();
+          cgn.forEach(n -> groups.add(n.asText()));
+          cg =
+              new io.casehub.api.spi.routing.CandidateSetSpec.Inline(
+                  io.casehub.api.spi.routing.StaticSetStrategy.of(groups));
+        } else if (cgn.isTextual()) {
+          cg =
+              new io.casehub.api.spi.routing.CandidateSetSpec.Inline(
+                  new io.casehub.api.spi.routing.JqCandidateSetStrategy(cgn.asText()));
+        }
+      }
+      if (humanNode.has("candidateUsers")) {
+        JsonNode cun = humanNode.get("candidateUsers");
+        if (cun.isArray()) {
+          java.util.Set<String> users = new java.util.LinkedHashSet<>();
+          cun.forEach(n -> users.add(n.asText()));
+          cu =
+              new io.casehub.api.spi.routing.CandidateSetSpec.Inline(
+                  io.casehub.api.spi.routing.StaticSetStrategy.of(users));
+        } else if (cun.isTextual()) {
+          cu =
+              new io.casehub.api.spi.routing.CandidateSetSpec.Inline(
+                  new io.casehub.api.spi.routing.JqCandidateSetStrategy(cun.asText()));
+        }
+      }
+      String templateRef =
+          humanNode.has("templateRef") ? humanNode.get("templateRef").asText() : null;
+      Integer claimDeadlineHours =
+          humanNode.has("claimDeadlineHours") ? humanNode.get("claimDeadlineHours").asInt() : null;
+      Class<?> payloadType = null;
+      if (humanNode.has("payloadType")) {
+        try {
+          payloadType = Class.forName(humanNode.get("payloadType").asText());
+        } catch (ClassNotFoundException e) {
+          throw new IllegalArgumentException(
+              "Binding '"
+                  + bindingName
+                  + "' judgment human payloadType not found: "
+                  + humanNode.get("payloadType").asText(),
+              e);
+        }
+      }
+      b.human(new HumanRoutingConfig(templateRef, cg, cu, claimDeadlineHours, payloadType));
     }
     return b.build();
   }

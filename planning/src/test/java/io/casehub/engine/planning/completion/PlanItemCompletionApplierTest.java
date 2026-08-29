@@ -27,7 +27,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import io.casehub.api.context.CaseContext;
 import io.casehub.api.context.ContextLayer;
 import io.casehub.api.context.WritableLayer;
-import io.casehub.api.model.HumanTaskTarget;
+import io.casehub.api.model.JudgmentTarget;
 import io.casehub.api.model.TaskStatus;
 import io.casehub.engine.common.internal.context.BridgeResolver;
 import io.casehub.engine.common.internal.event.CaseContextChangedEvent;
@@ -210,8 +210,9 @@ class PlanItemCompletionApplierTest {
 
   @Test
   void null_resolution_evaluates_outputMapping_against_empty_object() {
-    HumanTaskTarget target =
-        HumanTaskTarget.inline()
+    JudgmentTarget target =
+        JudgmentTarget.builder()
+            .prompt("Resolve ticket")
             .title("Resolve ticket")
             .outputMapping("{ status: \"RESOLVED\" }")
             .build();
