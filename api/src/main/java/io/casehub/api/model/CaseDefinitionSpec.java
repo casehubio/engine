@@ -96,6 +96,9 @@ public class CaseDefinitionSpec {
   @JsonPropertyDescription("Maximum adaptation count per compound before Concede. Default: 5.")
   private Integer maxAdaptations;
 
+  @JsonPropertyDescription("Maximum escalation count per judgment yield before Fault. Default: 3.")
+  private Integer maxEscalations;
+
   @JsonPropertyDescription("Case-Based Reasoning retrieval configuration.")
   private CbrConfig cbrConfig;
 
@@ -257,6 +260,14 @@ public class CaseDefinitionSpec {
 
   public void setMaxAdaptations(Integer maxAdaptations) {
     this.maxAdaptations = maxAdaptations;
+  }
+
+  public Integer getMaxEscalations() {
+    return maxEscalations;
+  }
+
+  public void setMaxEscalations(Integer maxEscalations) {
+    this.maxEscalations = maxEscalations;
   }
 
   public CbrConfig getCbrConfig() {
