@@ -28,6 +28,7 @@ import io.casehub.engine.common.internal.event.CaseStatusChanged;
 import io.casehub.engine.common.internal.jq.JQEvaluator;
 import io.casehub.engine.common.internal.model.CaseInstance;
 import io.casehub.engine.internal.context.CaseContextImpl;
+import io.casehub.neocortex.cognitive.Confidence;
 import io.casehub.neocortex.memory.EraseRequest;
 import io.casehub.neocortex.memory.MemoryDomain;
 import io.casehub.neocortex.memory.cbr.CbrCase;
@@ -237,7 +238,7 @@ class CbrRetrievalCachingTest {
             problem,
             solution,
             "COMPLETED",
-            0.95,
+            Confidence.inferred(0.95, java.time.Instant.now()),
             Map.of("f1", FeatureValue.string("v1")),
             List.of(trace),
             null,
