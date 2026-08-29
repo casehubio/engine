@@ -223,7 +223,8 @@ class CbrCaseRetainObserverTest {
             capBinding("cap-bind", "cap1"),
             Binding.builder()
                 .name("ht-bind")
-                .judgment(JudgmentTarget.builder().prompt("Review task").title("Review task").build())
+                .judgment(
+                    JudgmentTarget.builder().prompt("Review task").title("Review task").build())
                 .on(new io.casehub.api.model.ContextChangeTrigger("true"))
                 .build()));
     planItemStore.items =
