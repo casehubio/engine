@@ -38,7 +38,7 @@ import java.util.Set;
  * <p>Both modes support {@code inputMapping} (context → task payload) and {@code outputMapping}
  * (task resolution → context update). Mapping strings are treated as JQ expressions.
  */
-public final class HumanTaskTarget implements BindingTarget {
+public final class HumanTaskTarget {
 
   private final String templateRef;
   private final String title;

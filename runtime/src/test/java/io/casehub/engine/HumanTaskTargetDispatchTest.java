@@ -22,7 +22,10 @@ import io.casehub.api.engine.CaseHub;
 import io.casehub.api.model.Binding;
 import io.casehub.api.model.CaseDefinition;
 import io.casehub.api.model.ContextChangeTrigger;
-import io.casehub.api.model.HumanTaskTarget;
+import io.casehub.api.model.HumanRoutingConfig;
+import io.casehub.api.model.JudgmentTarget;
+import io.casehub.api.spi.routing.CandidateSetSpec;
+import io.casehub.api.spi.routing.JqCandidateSetStrategy;
 import io.casehub.engine.common.spi.HumanTaskScheduleRequest;
 import io.quarkus.test.junit.QuarkusTest;
 import jakarta.enterprise.context.ApplicationScoped;
@@ -145,9 +148,11 @@ class HumanTaskTargetDispatchTest {
 
     @Override
     public CaseDefinition getDefinition() {
-      HumanTaskTarget target =
-          HumanTaskTarget.template("irb-review-template")
+      JudgmentTarget target =
+          JudgmentTarget.builder()
+              .prompt("IRB review required")
               .inputMapping("{ applicantId: .applicantId }")
+              .human(new HumanRoutingConfig("irb-review-template", null, null, null, null))
               .build();
 
       return CaseDefinition.builder()
@@ -157,7 +162,7 @@ class HumanTaskTargetDispatchTest {
           .bindings(
               Binding.builder()
                   .name("review-binding")
-                  .humanTask(target)
+                  .judgment(target)
                   .on(new ContextChangeTrigger(".stage == \"review\""))
                   .build())
           .build();
@@ -169,10 +174,13 @@ class HumanTaskTargetDispatchTest {
   static class DynamicGroupsCaseBean extends CaseHub {
     @Override
     public CaseDefinition getDefinition() {
-      HumanTaskTarget target =
-          HumanTaskTarget.inline()
+      JudgmentTarget target =
+          JudgmentTarget.builder()
+              .prompt("IRB Review")
               .title("IRB Review")
-              .candidateGroupsExpression(".irb.candidateGroups")
+              .human(new HumanRoutingConfig(null,
+                  new CandidateSetSpec.Inline(new JqCandidateSetStrategy(".irb.candidateGroups")),
+                  null, null, null))
               .build();
 
       return CaseDefinition.builder()
@@ -182,7 +190,7 @@ class HumanTaskTargetDispatchTest {
           .bindings(
               Binding.builder()
                   .name("review-binding")
-                  .humanTask(target)
+                  .judgment(target)
                   .on(new ContextChangeTrigger(".stage == \"review\""))
                   .build())
           .build();
@@ -194,10 +202,13 @@ class HumanTaskTargetDispatchTest {
   static class BadGroupsCaseBean extends CaseHub {
     @Override
     public CaseDefinition getDefinition() {
-      HumanTaskTarget target =
-          HumanTaskTarget.inline()
+      JudgmentTarget target =
+          JudgmentTarget.builder()
+              .prompt("Bad Groups")
               .title("Bad Groups")
-              .candidateGroupsExpression(".routing")
+              .human(new HumanRoutingConfig(null,
+                  new CandidateSetSpec.Inline(new JqCandidateSetStrategy(".routing")),
+                  null, null, null))
               .build();
 
       return CaseDefinition.builder()
@@ -207,7 +218,7 @@ class HumanTaskTargetDispatchTest {
           .bindings(
               Binding.builder()
                   .name("bad-binding")
-                  .humanTask(target)
+                  .judgment(target)
                   .on(new ContextChangeTrigger(".stage == \"review\""))
                   .build())
           .build();
@@ -219,11 +230,14 @@ class HumanTaskTargetDispatchTest {
   static class ConjunctionFailCaseBean extends CaseHub {
     @Override
     public CaseDefinition getDefinition() {
-      HumanTaskTarget target =
-          HumanTaskTarget.inline()
+      JudgmentTarget target =
+          JudgmentTarget.builder()
+              .prompt("Conjunction")
               .title("Conjunction")
-              .candidateGroupsExpression(".groups")
-              .candidateUsersExpression(".users")
+              .human(new HumanRoutingConfig(null,
+                  new CandidateSetSpec.Inline(new JqCandidateSetStrategy(".groups")),
+                  new CandidateSetSpec.Inline(new JqCandidateSetStrategy(".users")),
+                  null, null))
               .build();
 
       return CaseDefinition.builder()
@@ -233,7 +247,7 @@ class HumanTaskTargetDispatchTest {
           .bindings(
               Binding.builder()
                   .name("conjunction-binding")
-                  .humanTask(target)
+                  .judgment(target)
                   .on(new ContextChangeTrigger(".stage == \"review\""))
                   .build())
           .build();
@@ -244,12 +258,14 @@ class HumanTaskTargetDispatchTest {
   static class DynamicFieldsCaseBean extends CaseHub {
     @Override
     public CaseDefinition getDefinition() {
-      HumanTaskTarget target =
-          HumanTaskTarget.inline()
+      JudgmentTarget target =
+          JudgmentTarget.builder()
+              .prompt("IRB Review")
               .title("IRB Review")
               .titleExpression("\"IRB Review — \" + .protocol.id")
               .scopeExpression(".trial.site.code")
               .expiresInExpression(".trial.regulatoryDeadlineDuration")
+              .human(new HumanRoutingConfig(null, null, null, null, null))
               .build();
 
       return CaseDefinition.builder()
@@ -259,7 +275,7 @@ class HumanTaskTargetDispatchTest {
           .bindings(
               Binding.builder()
                   .name("dynamic-fields-binding")
-                  .humanTask(target)
+                  .judgment(target)
                   .on(new ContextChangeTrigger(".stage == \"review\""))
                   .build())
           .build();
