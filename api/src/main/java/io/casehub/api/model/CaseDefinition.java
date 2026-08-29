@@ -314,6 +314,14 @@ public class CaseDefinition {
     spec.setMaxAdaptations(maxAdaptations);
   }
 
+  public Integer getMaxEscalations() {
+    return spec.getMaxEscalations();
+  }
+
+  public void setMaxEscalations(Integer maxEscalations) {
+    spec.setMaxEscalations(maxEscalations);
+  }
+
   public Set<Path> getTypes() {
     return types;
   }
@@ -561,6 +569,7 @@ public class CaseDefinition {
     private String decompositionStrategy;
     private Integer maxDecompositionDepth;
     private Integer maxAdaptations;
+    private Integer maxEscalations;
 
     private Set<Path> types = new LinkedHashSet<>();
     private Set<Path> labels = new LinkedHashSet<>();
@@ -783,6 +792,11 @@ public class CaseDefinition {
       return this;
     }
 
+    public Builder maxEscalations(Integer maxEscalations) {
+      this.maxEscalations = maxEscalations;
+      return this;
+    }
+
     public Builder type(Path type) {
       this.types.add(type);
       return this;
@@ -994,6 +1008,7 @@ public class CaseDefinition {
       caseHubDefinition.setDecompositionStrategy(decompositionStrategy);
       caseHubDefinition.setMaxDecompositionDepth(maxDecompositionDepth);
       caseHubDefinition.setMaxAdaptations(maxAdaptations);
+      caseHubDefinition.setMaxEscalations(maxEscalations);
       caseHubDefinition.setTypes(types);
       caseHubDefinition.setLabels(labels);
       caseHubDefinition.setCbrConfig(cbrConfig);
