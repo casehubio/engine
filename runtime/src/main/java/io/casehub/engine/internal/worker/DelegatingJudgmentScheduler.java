@@ -22,11 +22,11 @@ import io.casehub.engine.common.spi.HumanTaskScheduleRequest;
 import io.casehub.engine.common.spi.HumanTaskScheduler;
 import io.casehub.engine.common.spi.JudgmentScheduleRequest;
 import io.casehub.engine.common.spi.JudgmentScheduler;
-import org.jboss.logging.Logger;
 import io.quarkus.arc.DefaultBean;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.enterprise.inject.Instance;
 import jakarta.inject.Inject;
+import org.jboss.logging.Logger;
 
 @DefaultBean
 @ApplicationScoped
