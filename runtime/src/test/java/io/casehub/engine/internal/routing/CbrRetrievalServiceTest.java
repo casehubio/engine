@@ -29,6 +29,7 @@ import io.casehub.api.spi.routing.RetrievedExperience;
 import io.casehub.engine.common.internal.jq.JQEvaluator;
 import io.casehub.engine.common.internal.model.CaseInstance;
 import io.casehub.engine.internal.context.CaseContextImpl;
+import io.casehub.neocortex.cognitive.Confidence;
 import io.casehub.neocortex.memory.EraseRequest;
 import io.casehub.neocortex.memory.MemoryDomain;
 import io.casehub.neocortex.memory.cbr.AdaptationAction;
@@ -200,7 +201,7 @@ class CbrRetrievalServiceTest {
             "problem1",
             "solution1",
             "COMPLETED",
-            0.95,
+            Confidence.inferred(0.95, java.time.Instant.now()),
             Map.of("f1", FeatureValue.string("v1")),
             List.of(planTrace),
             null,
@@ -271,7 +272,7 @@ class CbrRetrievalServiceTest {
             "problem1",
             "solution1",
             "COMPLETED",
-            0.9,
+            Confidence.inferred(0.9, java.time.Instant.now()),
             Map.of("f1", FeatureValue.string("v1")),
             null,
             null);
@@ -292,7 +293,7 @@ class CbrRetrievalServiceTest {
             "problem1",
             "solution1",
             "COMPLETED",
-            0.8,
+            Confidence.inferred(0.8, java.time.Instant.now()),
             Map.of("f1", FeatureValue.string("v1")),
             null,
             null);
@@ -332,7 +333,7 @@ class CbrRetrievalServiceTest {
             "problem1",
             "solution1",
             "COMPLETED",
-            0.95,
+            Confidence.inferred(0.95, java.time.Instant.now()),
             Map.of("f1", FeatureValue.string("v1")),
             List.of(pt),
             null,
@@ -387,7 +388,7 @@ class CbrRetrievalServiceTest {
             "problem1",
             "solution1",
             "COMPLETED",
-            0.95,
+            Confidence.inferred(0.95, java.time.Instant.now()),
             Map.of("f1", FeatureValue.string("v1")),
             List.of(pt),
             null,
@@ -416,7 +417,7 @@ class CbrRetrievalServiceTest {
             "problem1",
             "solution1",
             "COMPLETED",
-            0.9,
+            Confidence.inferred(0.9, java.time.Instant.now()),
             Map.of("f1", FeatureValue.string("v1")),
             List.of(new PlanTrace("b1", "c1", "w1", "SUCCESS", 0, Map.of(), null)),
             null,
@@ -438,7 +439,7 @@ class CbrRetrievalServiceTest {
             "problem1",
             "solution1",
             "COMPLETED",
-            0.9,
+            Confidence.inferred(0.9, java.time.Instant.now()),
             Map.of("f1", FeatureValue.string("v1")),
             List.of(
                 new PlanTrace("b1", "c1", "w1", "SUCCESS", 0, Map.of(), null),
@@ -482,7 +483,7 @@ class CbrRetrievalServiceTest {
             "problem1",
             "solution1",
             "COMPLETED",
-            0.9,
+            Confidence.inferred(0.9, java.time.Instant.now()),
             Map.of("f1", FeatureValue.string("v1")),
             null,
             null);
@@ -504,7 +505,7 @@ class CbrRetrievalServiceTest {
             "problem1",
             "solution1",
             "COMPLETED",
-            0.9,
+            Confidence.inferred(0.9, java.time.Instant.now()),
             Map.of("f1", FeatureValue.string("v1")),
             List.of(pt),
             null,
@@ -543,7 +544,7 @@ class CbrRetrievalServiceTest {
             "problem1",
             "solution1",
             "COMPLETED",
-            0.95,
+            Confidence.inferred(0.95, java.time.Instant.now()),
             Map.of("f1", FeatureValue.string("v1")),
             List.of(planTrace),
             null,
@@ -570,7 +571,7 @@ class CbrRetrievalServiceTest {
             "problem1",
             "solution1",
             "COMPLETED",
-            0.95,
+            Confidence.inferred(0.95, java.time.Instant.now()),
             Map.of("f1", FeatureValue.string("v1")),
             List.of(planTrace),
             null,

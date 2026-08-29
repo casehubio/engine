@@ -315,7 +315,7 @@ public class CbrRetrievalService {
         c.problem(),
         c.solution(),
         c.outcome(),
-        c.confidence(),
+        c.confidence() != null ? c.confidence().value() : null,
         scored.score(),
         new LinkedHashMap<>(c.features()),
         trace,
