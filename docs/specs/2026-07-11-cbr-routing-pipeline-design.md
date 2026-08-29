@@ -132,7 +132,7 @@ Update `CaseStatusChangedHandler.fireOutcomeObservers()` to pass `caseInstance.t
    - `solution` → synthesized plan summary: "{binding}→{worker}({outcome})" per trace entry,
      joined with ", " (e.g., "assignAgent→worker-1(SUCCESS), reviewCase→worker-2(FAILURE)")
    - `outcome` → `event.outcomeLabel()` (terminal status: "COMPLETED", "FAULTED", "CANCELLED")
-   - `confidence` → null
+   - `origin` → null
    - `features` → from step 4
    - `planTrace` → from step 7
 9. Call `cbrStore.store()`:

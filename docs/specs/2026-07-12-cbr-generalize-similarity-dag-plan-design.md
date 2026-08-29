@@ -73,7 +73,7 @@ private <C extends CbrCase> RetrievedExperience mapScoredCase(ScoredCbrCase<C> s
 }
 ```
 
-`planTrace` is empty (`List.of()`) for non-plan case types. This is intentionally correct — non-plan types have no plan trace data, and routing strategies that don't use plan traces simply ignore the field. All other `RetrievedExperience` fields (`problem`, `solution`, `outcome`, `confidence`, `similarityScore`, `features`) are universal across all `CbrCase` implementations. If future case types require type-specific data beyond the common fields, sealed `RetrievedExperience` subtypes can be introduced at that point.
+`planTrace` is empty (`List.of()`) for non-plan case types. This is intentionally correct — non-plan types have no plan trace data, and routing strategies that don't use plan traces simply ignore the field. All other `RetrievedExperience` fields (`problem`, `solution`, `outcome`, `origin`, `similarityScore`, `features`) are universal across all `CbrCase` implementations. If future case types require type-specific data beyond the common fields, sealed `RetrievedExperience` subtypes can be introduced at that point.
 
 **Callers unchanged** — `CaseContextChangedEventHandler` and `DefaultWorkOrchestrator` still call the 2-arg overload.
 

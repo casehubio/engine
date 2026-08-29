@@ -23,7 +23,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import io.casehub.api.model.Binding;
 import io.casehub.api.model.CapabilityTarget;
 import io.casehub.api.model.ContextChangeTrigger;
-import io.casehub.api.model.HumanTaskTarget;
+import io.casehub.api.model.JudgmentTarget;
 import io.casehub.api.model.OutcomeAction;
 import io.casehub.api.model.SignalTarget;
 import io.casehub.api.model.SubCase;
@@ -68,9 +68,10 @@ class BindingDeserializerTest {
         """;
     Binding result = mapper.readValue(json, Binding.class);
     assertEquals("review", result.getName());
-    assertInstanceOf(HumanTaskTarget.class, result.target());
-    HumanTaskTarget ht = (HumanTaskTarget) result.target();
-    assertNotNull(ht.candidateGroups());
+    assertInstanceOf(JudgmentTarget.class, result.target());
+    JudgmentTarget ht = (JudgmentTarget) result.target();
+    assertNotNull(ht.routingConfig());
+    assertInstanceOf(io.casehub.api.model.HumanRoutingConfig.class, ht.routingConfig());
   }
 
   @Test

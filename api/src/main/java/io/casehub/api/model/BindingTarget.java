@@ -25,9 +25,4 @@ package io.casehub.api.model;
  * compile-time guarantee that all sealed permits are handled.
  */
 public sealed interface BindingTarget
-    permits CapabilityTarget,
-        SubCaseTarget,
-        HumanTaskTarget,
-        JudgmentTarget,
-        SignalTarget,
-        ExtensionTarget {}
+    permits CapabilityTarget, SubCaseTarget, JudgmentTarget, SignalTarget, ExtensionTarget {}

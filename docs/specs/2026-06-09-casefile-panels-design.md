@@ -223,7 +223,7 @@ episodic:
 ]
 ```
 
-`attributes` keys follow `MemoryAttributeKeys` conventions (`outcome`, `confidence`, `actor-id`, `actor-role`, `valid-from`, `valid-until`) but are not constrained to them.
+`attributes` keys follow `MemoryAttributeKeys` conventions (`outcome`, `origin`, `actor-id`, `actor-role`, `valid-from`, `valid-until`) but are not constrained to them.
 
 JQ access patterns for workers:
 ```

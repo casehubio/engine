@@ -331,12 +331,6 @@ public class Binding {
       return this;
     }
 
-    /** Sets a {@link HumanTaskTarget} directly. */
-    public Builder humanTask(HumanTaskTarget humanTask) {
-      this.target = humanTask;
-      return this;
-    }
-
     /** Sets a {@link JudgmentTarget} directly. */
     public Builder judgment(JudgmentTarget judgment) {
       this.target = judgment;

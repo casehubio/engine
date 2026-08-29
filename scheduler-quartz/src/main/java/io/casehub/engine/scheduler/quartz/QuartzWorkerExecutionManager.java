@@ -22,7 +22,6 @@ import static org.quartz.TriggerBuilder.newTrigger;
 import io.casehub.api.model.Binding;
 import io.casehub.api.model.CapabilityTarget;
 import io.casehub.api.model.ExtensionTarget;
-import io.casehub.api.model.HumanTaskTarget;
 import io.casehub.api.model.ScheduleTrigger;
 import io.casehub.api.model.SubCaseTarget;
 import io.casehub.engine.common.internal.executor.WorkerFunctionHandler;
@@ -367,9 +366,6 @@ public class QuartzWorkerExecutionManager implements WorkerExecutionManager {
     switch (binding.target()) {
       case CapabilityTarget ct -> data.put("capabilityName", ct.capability().name());
       case SubCaseTarget ignored ->
-          throw new IllegalStateException(
-              "Schedule-triggered binding '" + binding.getName() + "' must target a Capability");
-      case HumanTaskTarget ignored ->
           throw new IllegalStateException(
               "Schedule-triggered binding '" + binding.getName() + "' must target a Capability");
       case io.casehub.api.model.SignalTarget ignored ->

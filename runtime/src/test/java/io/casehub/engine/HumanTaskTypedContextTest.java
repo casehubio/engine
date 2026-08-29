@@ -22,7 +22,8 @@ import io.casehub.api.engine.CaseHub;
 import io.casehub.api.model.Binding;
 import io.casehub.api.model.CaseDefinition;
 import io.casehub.api.model.ContextChangeTrigger;
-import io.casehub.api.model.HumanTaskTarget;
+import io.casehub.api.model.HumanRoutingConfig;
+import io.casehub.api.model.JudgmentTarget;
 import io.casehub.engine.common.spi.HumanTaskScheduleRequest;
 import io.quarkus.test.junit.QuarkusTest;
 import jakarta.enterprise.context.ApplicationScoped;
@@ -93,13 +94,14 @@ class HumanTaskTypedContextTest {
   static class TypedPayloadCaseBean extends CaseHub {
     @Override
     public CaseDefinition getDefinition() {
-      HumanTaskTarget target =
-          HumanTaskTarget.inline()
+      JudgmentTarget target =
+          JudgmentTarget.builder()
+              .prompt("Typed Review")
               .title("Typed Review")
-              .payloadType(PayloadPojo.class)
               .resolutionType(ResolutionPojo.class)
               .inputMapping("{ amount: .amount, currency: .currency }")
               .outputMapping(".decision")
+              .human(new HumanRoutingConfig(null, null, null, null, PayloadPojo.class))
               .build();
 
       return CaseDefinition.builder()
@@ -109,7 +111,7 @@ class HumanTaskTypedContextTest {
           .bindings(
               Binding.builder()
                   .name("typed-review")
-                  .humanTask(target)
+                  .judgment(target)
                   .on(new ContextChangeTrigger(".stage == \"review\""))
                   .build())
           .build();
@@ -120,12 +122,13 @@ class HumanTaskTypedContextTest {
   static class MismatchedPayloadCaseBean extends CaseHub {
     @Override
     public CaseDefinition getDefinition() {
-      HumanTaskTarget target =
-          HumanTaskTarget.inline()
+      JudgmentTarget target =
+          JudgmentTarget.builder()
+              .prompt("Mismatched Review")
               .title("Mismatched Review")
-              .payloadType(PayloadPojo.class)
               .inputMapping("{ amount: .amount, currency: .currency }")
               .outputMapping(".x")
+              .human(new HumanRoutingConfig(null, null, null, null, PayloadPojo.class))
               .build();
 
       return CaseDefinition.builder()
@@ -135,7 +138,7 @@ class HumanTaskTypedContextTest {
           .bindings(
               Binding.builder()
                   .name("mismatched-review")
-                  .humanTask(target)
+                  .judgment(target)
                   .on(new ContextChangeTrigger(".stage == \"review\""))
                   .build())
           .build();

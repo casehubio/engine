@@ -25,7 +25,7 @@ import io.casehub.api.model.Binding;
 import io.casehub.api.model.CapabilityTarget;
 import io.casehub.api.model.CaseDefinition;
 import io.casehub.api.model.ExecutorRef;
-import io.casehub.api.model.HumanTaskTarget;
+import io.casehub.api.model.JudgmentTarget;
 import io.casehub.api.model.TaskStatus;
 import io.casehub.engine.planning.plan.DefaultCasePlanModel;
 import io.casehub.engine.planning.plan.PlanItem;
@@ -427,7 +427,9 @@ class BindingGatingTest {
   void free_floating_humanTask_duplicate_dispatch_prevention() {
     Binding b = mock(Binding.class);
     when(b.getName()).thenReturn("assign-specialist");
-    when(b.target()).thenReturn(HumanTaskTarget.inline().title("Resolve ticket").build());
+    when(b.target())
+        .thenReturn(
+            JudgmentTarget.builder().prompt("Resolve ticket").title("Resolve ticket").build());
 
     List<Binding> firstResult = loopControl.select(ctx, List.of(b));
     assertThat(firstResult.stream().map(Binding::getName))
@@ -448,7 +450,9 @@ class BindingGatingTest {
   void concurrent_select_for_same_humanTask_produces_single_dispatch() throws Exception {
     Binding b = mock(Binding.class);
     when(b.getName()).thenReturn("assign-specialist");
-    when(b.target()).thenReturn(HumanTaskTarget.inline().title("Resolve ticket").build());
+    when(b.target())
+        .thenReturn(
+            JudgmentTarget.builder().prompt("Resolve ticket").title("Resolve ticket").build());
 
     int threads = 10;
     java.util.concurrent.CyclicBarrier barrier = new java.util.concurrent.CyclicBarrier(threads);
@@ -490,7 +494,7 @@ class BindingGatingTest {
 
     Binding b = mock(Binding.class);
     when(b.getName()).thenReturn("ht-b");
-    when(b.target()).thenReturn(HumanTaskTarget.inline().title("Review").build());
+    when(b.target()).thenReturn(JudgmentTarget.builder().prompt("Review").title("Review").build());
 
     List<Binding> firstResult = loopControl.select(ctx, List.of(b));
     assertThat(firstResult.stream().map(Binding::getName))
