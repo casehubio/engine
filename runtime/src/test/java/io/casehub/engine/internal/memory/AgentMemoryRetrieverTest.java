@@ -229,6 +229,6 @@ class AgentMemoryRetrieverTest {
         text,
         Map.of(),
         Instant.now(),
-        0.5);
+        io.casehub.neocortex.cognitive.Confidence.inferred(0.5, Instant.now()));
   }
 }
