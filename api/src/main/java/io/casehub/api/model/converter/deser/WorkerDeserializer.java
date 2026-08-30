@@ -47,6 +47,7 @@ public class WorkerDeserializer extends StdDeserializer<Worker> {
     }
 
     String description = node.has("description") ? node.get("description").asText() : null;
+    String definitionRef = node.has("definitionRef") ? node.get("definitionRef").asText() : null;
 
     ExecutionPolicy executionPolicy = null;
     JsonNode epNode = node.get("executionPolicy");
@@ -82,6 +83,9 @@ public class WorkerDeserializer extends StdDeserializer<Worker> {
     }
     if (executionPolicy != null) {
       builder.executionPolicy(executionPolicy);
+    }
+    if (definitionRef != null) {
+      builder.definitionRef(definitionRef);
     }
     return builder.build();
   }

@@ -3358,4 +3358,94 @@ class CaseDefinitionYamlMapperTest {
     assertThat(action.cost()).isEqualTo(1.0);
     assertThat(action.effects()).containsEntry("scanned", true);
   }
+
+  @Test
+  void parsesDefinitionRefOnWorkers() throws Exception {
+    InputStream is =
+        getClass().getClassLoader().getResourceAsStream("yaml/definition-ref-test.yaml");
+    CaseDefinition def = CaseDefinitionYamlMapper.load(is);
+    var workers = def.getWorkers();
+    assertThat(workers).hasSize(3);
+
+    var external =
+        workers.stream().filter(w -> "external-worker".equals(w.name())).findFirst().orElseThrow();
+    assertThat(external.definitionRef()).isEqualTo("workflows/research.yaml");
+
+    var inline =
+        workers.stream().filter(w -> "inline-worker".equals(w.name())).findFirst().orElseThrow();
+    assertThat(inline.definitionRef()).isEqualTo("#analysis-flow");
+
+    var plain =
+        workers.stream().filter(w -> "plain-worker".equals(w.name())).findFirst().orElseThrow();
+    assertThat(plain.definitionRef()).isNull();
+  }
+
+  @Test
+  void parsesDefinitionsBlock() throws Exception {
+    InputStream is =
+        getClass().getClassLoader().getResourceAsStream("yaml/definition-ref-test.yaml");
+    CaseDefinition def = CaseDefinitionYamlMapper.load(is);
+    assertThat(def.getDefinitions()).isNotNull();
+    assertThat(def.getDefinitions()).containsKey("analysis-flow");
+    com.fasterxml.jackson.databind.JsonNode flow = def.getDefinitions().get("analysis-flow");
+    assertThat(flow.has("do")).isTrue();
+  }
+
+  @Test
+  void definitionsBlockAbsentReturnsEmptyMap() throws Exception {
+    String yaml =
+        """
+                      namespace: test
+                      name: NoDefinitions
+                      version: 1.0.0
+                      spec:
+                        capabilities: []
+                        workers: []
+                        bindings: []
+                      """;
+    InputStream is =
+        new java.io.ByteArrayInputStream(yaml.getBytes(java.nio.charset.StandardCharsets.UTF_8));
+    CaseDefinition def = CaseDefinitionYamlMapper.load(is);
+    assertThat(def.getDefinitions()).isNotNull();
+    assertThat(def.getDefinitions()).isEmpty();
+  }
+
+  @Test
+  void fullDrillDownChainParsesCorrectly() throws Exception {
+    InputStream is =
+        getClass().getClassLoader().getResourceAsStream("yaml/drill-down-chain-test.yaml");
+    CaseDefinition def = CaseDefinitionYamlMapper.load(is);
+
+    var triage =
+        def.getWorkers().stream()
+            .filter(w -> "triage-bot".equals(w.name()))
+            .findFirst()
+            .orElseThrow();
+    assertThat(triage.definitionRef()).isEqualTo("cases/triage.yaml");
+
+    var investigation =
+        def.getWorkers().stream()
+            .filter(w -> "investigation-flow".equals(w.name()))
+            .findFirst()
+            .orElseThrow();
+    assertThat(investigation.definitionRef()).isEqualTo("#investigation");
+
+    assertThat(def.getDefinitions()).isNotEmpty();
+    com.fasterxml.jackson.databind.JsonNode investigationDef =
+        def.getDefinitions().get("investigation");
+    assertThat(investigationDef).isNotNull();
+    assertThat(investigationDef.has("do")).isTrue();
+
+    com.fasterxml.jackson.databind.JsonNode doBlock = investigationDef.get("do");
+    assertThat(doBlock.isArray()).isTrue();
+    assertThat(doBlock.size()).isEqualTo(2);
+
+    com.fasterxml.jackson.databind.JsonNode collectStep = doBlock.get(0).get("collect-evidence");
+    assertThat(collectStep.get("with").get("definitionRef").asText())
+        .isEqualTo("cases/evidence.yaml");
+
+    com.fasterxml.jackson.databind.JsonNode analyseStep = doBlock.get(1).get("analyse");
+    assertThat(analyseStep.get("with").get("definitionRef").asText())
+        .isEqualTo("workflows/forensics.yaml");
+  }
 }

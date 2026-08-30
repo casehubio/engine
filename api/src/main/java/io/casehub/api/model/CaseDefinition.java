@@ -71,6 +71,12 @@ public class CaseDefinition {
   private List<String> layerNames;
 
   private Map<String, AgentDescriptor> agentDescriptors = Map.of();
+
+  @com.fasterxml.jackson.annotation.JsonPropertyDescription(
+      "Inline definition namespace for definitionRef '#name' references. Opaque content for UI consumption.")
+  private java.util.Map<String, com.fasterxml.jackson.databind.JsonNode> definitions =
+      java.util.Map.of();
+
   private final CaseDefinitionSpec spec;
 
   @com.fasterxml.jackson.annotation.JsonPropertyDescription(
@@ -206,6 +212,15 @@ public class CaseDefinition {
 
   public void setSemanticData(Map<String, Object> semanticData) {
     this.semanticData = semanticData;
+  }
+
+  public java.util.Map<String, com.fasterxml.jackson.databind.JsonNode> getDefinitions() {
+    return definitions;
+  }
+
+  public void setDefinitions(
+      java.util.Map<String, com.fasterxml.jackson.databind.JsonNode> definitions) {
+    this.definitions = definitions != null ? java.util.Map.copyOf(definitions) : java.util.Map.of();
   }
 
   public EpisodicMemoryConfig getEpisodicMemoryConfig() {

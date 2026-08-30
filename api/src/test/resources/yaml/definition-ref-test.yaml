@@ -1,0 +1,30 @@
+dsl: "0.1"
+version: "1.0.0"
+name: DefinitionRefTest
+namespace: test
+spec:
+  capabilities:
+    - name: analyse
+      inputProjection: "."
+  workers:
+    - name: external-worker
+      capabilities: [analyse]
+      definitionRef: workflows/research.yaml
+    - name: inline-worker
+      capabilities: [analyse]
+      definitionRef: '#analysis-flow'
+    - name: plain-worker
+      capabilities: [analyse]
+  bindings:
+    - name: trigger
+      capability: analyse
+      on:
+        contextChange:
+          filter: '.ready == true'
+
+definitions:
+  analysis-flow:
+    do:
+      - classify:
+          set:
+            category: analysed

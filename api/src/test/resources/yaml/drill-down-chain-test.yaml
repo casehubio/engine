@@ -1,0 +1,37 @@
+dsl: "0.1"
+version: "1.0.0"
+name: Incident Response
+namespace: security
+spec:
+  capabilities:
+    - name: triage
+      inputProjection: "."
+    - name: investigate
+      inputProjection: "."
+  workers:
+    - name: triage-bot
+      capabilities: [triage]
+      definitionRef: cases/triage.yaml
+    - name: investigation-flow
+      capabilities: [investigate]
+      definitionRef: '#investigation'
+  bindings:
+    - name: on-incident
+      capability: triage
+      on:
+        contextChange:
+          filter: '.incident != null'
+
+definitions:
+  investigation:
+    do:
+      - collect-evidence:
+          call: casehub:dispatch
+          with:
+            capability: evidence-collection
+            definitionRef: cases/evidence.yaml
+      - analyse:
+          call: casehub:dispatch
+          with:
+            capability: forensics
+            definitionRef: workflows/forensics.yaml

@@ -119,6 +119,20 @@ class CasehubCallableTaskBuilderTest {
 
   // ---- helpers --------------------------------------------------------
 
+  @Test
+  void definitionRef_in_with_block_passes_through_as_args() {
+    final CallFunction task = new CallFunction();
+    task.setCall("casehub:dispatch");
+    final FunctionArguments args = new FunctionArguments();
+    args.setAdditionalProperty("capability", "forensics");
+    args.setAdditionalProperty("definitionRef", "cases/forensics-case.yaml");
+    task.setWith(args);
+
+    assertThat(task.getWith().getAdditionalProperties())
+        .containsEntry("definitionRef", "cases/forensics-case.yaml")
+        .containsEntry("capability", "forensics");
+  }
+
   private static CallFunction dispatchTask(final String callName, final String capability) {
     final CallFunction task = new CallFunction();
     task.setCall(callName);

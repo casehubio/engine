@@ -64,4 +64,19 @@ class WorkerDeserializerTest {
     Worker result = mapper.readValue(json, Worker.class);
     assertNotNull(result.executionPolicy());
   }
+
+  @Test
+  void workerWithDefinitionRef_deserializes() throws Exception {
+    String json =
+        "{\"name\": \"w\", \"capabilities\": [\"c\"], \"definitionRef\": \"workflows/research.yaml\"}";
+    Worker result = mapper.readValue(json, Worker.class);
+    assertEquals("workflows/research.yaml", result.definitionRef());
+  }
+
+  @Test
+  void workerWithoutDefinitionRef_hasNull() throws Exception {
+    String json = "{\"name\": \"w\", \"capabilities\": [\"c\"]}";
+    Worker result = mapper.readValue(json, Worker.class);
+    assertEquals(null, result.definitionRef());
+  }
 }
