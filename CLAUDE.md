@@ -1155,6 +1155,22 @@ Bridges inbound connector messages from `casehub-connectors` to typed case signa
 
 **BridgeResolver integration — deferred resolution:** `BridgeResolver.initialise()` passes DataRef through (stored as reference in EventLog). `BridgeResolver.serialise()` passes DataRef through as reference JSON. `BridgeResolver.deserialise()` intercepts `$dataRef` and resolves via `DataRefRegistry` — runs only on Quartz worker threads (safe for blocking I/O). Known limitation: no caching across repeated resolutions of the same DataRef.
 
+## Judgment Foundation Types
+
+`CallerConfig` (`api/spi/judgment/`) — sealed interface declaring who can fulfill a judgment. Four permits: `Human(candidateGroups, minimumTrustLevel)`, `Llm(modelId)`, `A2A(endpoint, skill)`, `Any()`. Used by `JudgmentTarget` for initial caller type and by `EscalationDecision.Escalate` for escalation target. `Human.candidateGroups` defensively copied. Convenience constructors omit nullable fields. Refs engine#1009.
+
+`EvidenceType` (`api/spi/judgment/`) — enum: `ATTESTATION`, `DOCUMENT`, `SIGNATURE`, `REASONING`, `METRIC`, `EXTERNAL_REFERENCE`. Classification of evidence provided with judgment responses. Refs engine#1009.
+
+`EvidenceRequirement` (`api/spi/judgment/`) — record `(key, type, required)`. Declares what evidence a judgment response must include. Factories: `required(key, type)`, `optional(key, type)`. Two-arg constructor defaults to `required=true`. Refs engine#1009.
+
+`Evidence` (`api/spi/judgment/`) — record `(key, type, value)`. A single piece of typed evidence provided with a judgment response. Factory: `Evidence.of(key, type, value)`. Refs engine#1009.
+
+`CallerIdentity` (`api/spi/judgment/`) — record `(callerId, callerType)`, both nullable. Wraps raw identity strings. Factories: `of(callerId, callerType)`, `anonymous()`. Refs engine#1009.
+
+`VerificationContext` enrichments — gains `callerIdentity` (nullable `CallerIdentity`), `typedEvidence` (`List<Evidence>`), `responseTime` (nullable `Duration`). Backward-compatible 10-arg constructor auto-creates `CallerIdentity` from raw fields. Refs engine#1009.
+
+`EscalationContext` enrichments — same three fields as VerificationContext. Backward-compatible 12-arg constructor auto-creates `CallerIdentity`. Refs engine#1009.
+
 ## Writing Style Guide
 
 **The writing style guide at `~/claude-workspace/writing-styles/blog-technical.md` is mandatory for all blog and diary entries.** Load it in full before drafting. Complete the pre-draft voice classification (I / we / Claude-named) before generating any prose. Do not show a draft without verifying it against the style guide.
