@@ -53,6 +53,7 @@ public class JudgmentCompletedHandler {
   @Inject EventLogRepository eventLogRepository;
   @Inject EventBus eventBus;
   @Inject io.casehub.platform.api.routing.StrategyResolver strategyResolver;
+  @Inject io.casehub.engine.common.internal.judgment.JudgmentNodeExecutor judgmentNodeExecutor;
 
   @ConsumeEvent(value = EventBusAddresses.JUDGMENT_COMPLETED)
   @RunOnVirtualThread
@@ -149,6 +150,11 @@ public class JudgmentCompletedHandler {
             eventBus.publish(
                 EventBusAddresses.CONTEXT_CHANGED,
                 new CaseContextChangedEvent(instance, instance.getCaseContext(), "working"));
+            judgmentNodeExecutor.enqueue(
+                event.caseId(),
+                event.bindingName(),
+                new io.casehub.engine.common.spi.JudgmentNodeResult.Faulted(
+                    "Verification rejected: " + r.reason()));
             LOG.infof(
                 "Judgment verification rejected: caseId=%s binding=%s reason=%s",
                 event.caseId(), event.bindingName(), r.reason());
@@ -170,6 +176,11 @@ public class JudgmentCompletedHandler {
     eventBus.publish(
         EventBusAddresses.CONTEXT_CHANGED,
         new CaseContextChangedEvent(instance, instance.getCaseContext(), "working"));
+
+    judgmentNodeExecutor.enqueue(
+        event.caseId(),
+        event.bindingName(),
+        new io.casehub.engine.common.spi.JudgmentNodeResult.Completed(event.response()));
 
     LOG.infof(
         "Judgment response applied: caseId=%s binding=%s decision=%s",
@@ -205,9 +216,12 @@ public class JudgmentCompletedHandler {
     if (result instanceof io.casehub.api.spi.judgment.VerificationResult.Rejected r) {
       metadata.put("feedback", r.reason());
     }
-    if (event.response().callerId() != null) metadata.put("callerId", event.response().callerId());
-    if (event.response().callerType() != null)
+    if (event.response().callerId() != null) {
+      metadata.put("callerId", event.response().callerId());
+    }
+    if (event.response().callerType() != null) {
       metadata.put("callerType", event.response().callerType());
+    }
     log.setMetadata(metadata);
     eventLogRepository.append(log, instance.tenancyId);
   }
@@ -222,9 +236,12 @@ public class JudgmentCompletedHandler {
     metadata.put("bindingName", event.bindingName());
     metadata.put("decision", event.response().decision());
     metadata.set("evidence", MAPPER.valueToTree(event.response().evidence()));
-    if (event.response().callerId() != null) metadata.put("callerId", event.response().callerId());
-    if (event.response().callerType() != null)
+    if (event.response().callerId() != null) {
+      metadata.put("callerId", event.response().callerId());
+    }
+    if (event.response().callerType() != null) {
       metadata.put("callerType", event.response().callerType());
+    }
     log.setMetadata(metadata);
     eventLogRepository.append(log, instance.tenancyId);
   }
