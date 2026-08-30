@@ -81,4 +81,28 @@ class CallerRefParserTest {
     assertThat(parsed.caseId()).isEqualTo(CASE_ID);
     assertThat(parsed.gateId()).isEqualTo(99L);
   }
+
+  @Test
+  void encodeJudgment_produces_correct_format() {
+    String ref = CallerRefParser.encodeJudgment(CASE_ID, "review-binding");
+    assertThat(ref).isEqualTo("case:550e8400-e29b-41d4-a716-446655440000/judgment:review-binding");
+  }
+
+  @Test
+  void parse_judgment_ref() {
+    var ref =
+        CallerRefParser.parse("case:550e8400-e29b-41d4-a716-446655440000/judgment:review-binding");
+    assertThat(ref).isInstanceOf(CallerRefParser.JudgmentRef.class);
+    var jr = (CallerRefParser.JudgmentRef) ref;
+    assertThat(jr.caseId()).isEqualTo(CASE_ID);
+    assertThat(jr.bindingName()).isEqualTo("review-binding");
+  }
+
+  @Test
+  void roundtrip_judgment() {
+    String encoded = CallerRefParser.encodeJudgment(CASE_ID, "risk-assessment");
+    var parsed = (CallerRefParser.JudgmentRef) CallerRefParser.parse(encoded);
+    assertThat(parsed.caseId()).isEqualTo(CASE_ID);
+    assertThat(parsed.bindingName()).isEqualTo("risk-assessment");
+  }
 }

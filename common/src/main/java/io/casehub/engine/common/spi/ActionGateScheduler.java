@@ -18,10 +18,10 @@ package io.casehub.engine.common.spi;
 /**
  * SPI for scheduling action gate work items from engine bindings.
  *
- * <p>Symmetric with {@link HumanTaskScheduler}. Discovered via {@code
- * Instance<ActionGateScheduler>} in the engine runtime — when no implementation is on the
- * classpath, action gates are silently skipped.
+ * @deprecated Use {@link JudgmentScheduler} with {@link JudgmentPayload.GatePayload} instead. Refs
+ *     engine#1010.
  */
+@Deprecated(forRemoval = true)
 public interface ActionGateScheduler {
 
   void schedule(ActionGateScheduleRequest request);

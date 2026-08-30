@@ -951,9 +951,21 @@ Optional CloudEvent bridge for distributed HumanTask and ActionGate dispatch. Ac
 - `PlanItemCompletionApplier` — `@ApplicationScoped`. Full PlanItem completion: lookup via `BlackboardRegistry`, resolution validation via `BridgeResolver`, status transition, JQ output mapping with `ConflictResolver`, CDI event publishing (`PlanItemStateChangedEvent`, `PlanItemObsoleteEvent`), `CONTEXT_CHANGED`. Accepts `TaskStatus` — callers map from external types.
 - `GateCompletionApplier` — `@ApplicationScoped`. Routes `TaskStatus` to event bus addresses: COMPLETED→`ACTION_GATE_APPROVED`, REJECTED/CANCELLED→`ACTION_GATE_REJECTED`, FAULTED→`ACTION_GATE_EXPIRED`.
 
-**CallerRef encoding** (`common/spi/CallerRefParser`): PlanItem `case:{caseId}/pi:{planItemId}`, Gate `case:{caseId}/gate:{gateId}`. Sealed `CallerRef` with `PlanItemRef` and `GateRef` permits.
+**CallerRef encoding** (`common/spi/CallerRefParser`): PlanItem `case:{caseId}/pi:{planItemId}`, Gate `case:{caseId}/gate:{gateId}`, Judgment `case:{caseId}/judgment:{bindingName}`. Sealed `CallerRef` with `PlanItemRef`, `GateRef`, and `JudgmentRef` permits. Refs engine#994, engine#1010.
 
-**ActionGateScheduler SPI** (`common/spi/`): `ActionGateScheduler.schedule(ActionGateScheduleRequest)`. Symmetric with `HumanTaskScheduler`. `NoOpActionGateScheduler` (`@DefaultBean`, runtime). `WorkflowExecutionCompletedHandler.handleGate()` uses `Instance<ActionGateScheduler>` instead of event bus publish.
+**ActionGateScheduler SPI** (`common/spi/`): `@Deprecated(forRemoval = true)`. Use `JudgmentScheduler` with `JudgmentPayload.GatePayload` instead. `NoOpActionGateScheduler` (`@DefaultBean`, runtime). Refs engine#1010.
+
+## Unified Judgment Scheduling
+
+`JudgmentScheduler` (`common/spi/`) — unified scheduling SPI for both judgment bindings and action gates. `schedule(JudgmentRequest)`. `JudgmentRequest` carries `caseId`, `tenancyId`, `bindingName`, and sealed `JudgmentPayload`. Refs engine#1010.
+
+**JudgmentPayload** (`common/spi/`) — sealed: `BindingPayload(target, inputData, resolutionTypeName, expiresAtDeadline)` | `GatePayload(gateId, plannedAction, gateRequired, resolvedCandidateGroups, resolutionTypeName, deferredOutput)`.
+
+**Implementations:**
+- `NoOpJudgmentScheduler` (`@DefaultBean @ApplicationScoped`, runtime) — intentional no-op.
+- `CloudEventJudgmentScheduler` (`@ApplicationScoped`, work-cloudevent) — dispatches on payload type: BindingPayload → judgment CloudEvent with prompt/evidence, GatePayload → gate approval CloudEvent (logic from deprecated `CloudEventActionGateScheduler`).
+
+**Deprecated types (forRemoval):** `JudgmentScheduleRequest` (replaced by `JudgmentRequest`), `ActionGateScheduler`, `ActionGateScheduleRequest`, `CloudEventActionGateScheduler`. `HumanTaskTarget` and `HumanTaskScheduler` also deprecated — use `JudgmentTarget` and `JudgmentScheduler`.
 
 **Compile dependencies:** `casehub-engine-common`, `casehub-engine-planning`, `casehub-work-api`, `io.cloudevents:cloudevents-core`, `quarkus-arc`, `quarkus-vertx`.
 

@@ -19,5 +19,6 @@ public enum TargetType {
   HUMAN_TASK,
   CAPABILITY,
   SUB_CASE,
-  EXTENSION
+  EXTENSION,
+  JUDGMENT
 }

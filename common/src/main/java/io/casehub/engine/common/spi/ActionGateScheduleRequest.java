@@ -21,6 +21,10 @@ import java.util.Set;
 import java.util.UUID;
 import org.jspecify.annotations.Nullable;
 
+/**
+ * @deprecated Use {@link JudgmentRequest} with {@link JudgmentPayload.GatePayload} instead.
+ */
+@Deprecated(forRemoval = true)
 public record ActionGateScheduleRequest(
     UUID caseId,
     String tenancyId,

@@ -24,6 +24,8 @@ public final class CallerRefParser {
   private static final Pattern PI_PATTERN = Pattern.compile("^case:([0-9a-fA-F-]{36})/pi:(.+)$");
   private static final Pattern GATE_PATTERN =
       Pattern.compile("^case:([0-9a-fA-F-]{36})/gate:(\\d+)$");
+  private static final Pattern JUDGMENT_PATTERN =
+      Pattern.compile("^case:([0-9a-fA-F-]{36})/judgment:(.+)$");
 
   private CallerRefParser() {}
 
@@ -33,6 +35,10 @@ public final class CallerRefParser {
 
   public static String encodeGate(UUID caseId, long gateId) {
     return "case:" + caseId + "/gate:" + gateId;
+  }
+
+  public static String encodeJudgment(UUID caseId, String bindingName) {
+    return "case:" + caseId + "/judgment:" + bindingName;
   }
 
   public static CallerRef parse(String raw) {
@@ -55,14 +61,24 @@ public final class CallerRefParser {
         return null;
       }
     }
+    Matcher judgment = JUDGMENT_PATTERN.matcher(raw);
+    if (judgment.matches()) {
+      try {
+        return new JudgmentRef(UUID.fromString(judgment.group(1)), judgment.group(2));
+      } catch (IllegalArgumentException e) {
+        return null;
+      }
+    }
     return null;
   }
 
-  public sealed interface CallerRef permits PlanItemRef, GateRef {
+  public sealed interface CallerRef permits PlanItemRef, GateRef, JudgmentRef {
     UUID caseId();
   }
 
   public record PlanItemRef(UUID caseId, String planItemId) implements CallerRef {}
 
   public record GateRef(UUID caseId, long gateId) implements CallerRef {}
+
+  public record JudgmentRef(UUID caseId, String bindingName) implements CallerRef {}
 }
