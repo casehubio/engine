@@ -17,10 +17,17 @@ package io.casehub.api.spi.judgment;
 
 import io.casehub.api.model.CaseDefinition;
 import io.casehub.api.model.JudgmentTarget;
+import java.time.Duration;
+import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 import org.jspecify.annotations.Nullable;
 
+/**
+ * Context for post-verification escalation of judgment yields.
+ *
+ * <p>Refs engine#999, engine#994, engine#1009.
+ */
 public record EscalationContext(
     UUID caseId,
     String tenancyId,
@@ -33,4 +40,40 @@ public record EscalationContext(
     VerificationResult verificationResult,
     int escalationCount,
     int maxEscalations,
-    CaseDefinition definition) {}
+    CaseDefinition definition,
+    @Nullable CallerIdentity callerIdentity,
+    List<Evidence> typedEvidence,
+    @Nullable Duration responseTime) {
+
+  /** Backward-compatible 12-arg constructor. */
+  public EscalationContext(
+      UUID caseId,
+      String tenancyId,
+      String bindingName,
+      JudgmentTarget target,
+      String decision,
+      Map<String, Object> evidence,
+      @Nullable String callerId,
+      @Nullable String callerType,
+      VerificationResult verificationResult,
+      int escalationCount,
+      int maxEscalations,
+      CaseDefinition definition) {
+    this(
+        caseId,
+        tenancyId,
+        bindingName,
+        target,
+        decision,
+        evidence,
+        callerId,
+        callerType,
+        verificationResult,
+        escalationCount,
+        maxEscalations,
+        definition,
+        callerId != null || callerType != null ? CallerIdentity.of(callerId, callerType) : null,
+        List.of(),
+        null);
+  }
+}

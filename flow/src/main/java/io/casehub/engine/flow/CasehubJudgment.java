@@ -22,79 +22,75 @@ import io.casehub.engine.common.spi.JudgmentScheduleRequest;
 import jakarta.annotation.PostConstruct;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
-import org.jboss.logging.Logger;
-
 import java.time.Duration;
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
+import org.jboss.logging.Logger;
 
 @ApplicationScoped
 public class CasehubJudgment {
 
-    private static final Logger   LOG             = Logger.getLogger(CasehubJudgment.class);
-    private static final Duration DEFAULT_TIMEOUT = Duration.ofHours(4);
+  private static final Logger LOG = Logger.getLogger(CasehubJudgment.class);
+  private static final Duration DEFAULT_TIMEOUT = Duration.ofHours(4);
 
-    @Inject
-    FlowExecutionRegistry                                executionRegistry;
-    @Inject
-    CallableDispatchRegistry                             dispatchRegistry;
-    @Inject
-    JudgmentNodeExecutor                                 judgmentNodeExecutor;
-    @Inject
-    io.casehub.engine.common.spi.cache.CaseInstanceCache caseInstanceCache;
+  @Inject FlowExecutionRegistry executionRegistry;
+  @Inject CallableDispatchRegistry dispatchRegistry;
+  @Inject JudgmentNodeExecutor judgmentNodeExecutor;
+  @Inject io.casehub.engine.common.spi.cache.CaseInstanceCache caseInstanceCache;
 
-    private final java.util.concurrent.ExecutorService virtualThreads =
-            java.util.concurrent.Executors.newVirtualThreadPerTaskExecutor();
+  private final java.util.concurrent.ExecutorService virtualThreads =
+      java.util.concurrent.Executors.newVirtualThreadPerTaskExecutor();
 
-    @PostConstruct
-    void register() {
-        dispatchRegistry.register("casehub:judgment", this::dispatch);
+  @PostConstruct
+  void register() {
+    dispatchRegistry.register("casehub:judgment", this::dispatch);
+  }
+
+  @SuppressWarnings("unchecked")
+  CompletableFuture<Map<String, Object>> dispatch(
+      String workflowInstanceId, Map<String, Object> args) {
+    String prompt = (String) args.get("prompt");
+    if (prompt == null) {
+      throw new IllegalArgumentException(
+          "casehub:judgment step is missing required 'prompt' argument");
+    }
+    String bindingName = (String) args.get("binding");
+    if (bindingName == null) {
+      throw new IllegalArgumentException(
+          "casehub:judgment step is missing required 'binding' argument");
     }
 
-    @SuppressWarnings("unchecked")
-    CompletableFuture<Map<String, Object>> dispatch(
-            String workflowInstanceId, Map<String, Object> args) {
-        String prompt = (String) args.get("prompt");
-        if (prompt == null) {
-            throw new IllegalArgumentException(
-                    "casehub:judgment step is missing required 'prompt' argument");
-        }
-        String bindingName = (String) args.get("binding");
-        if (bindingName == null) {
-            throw new IllegalArgumentException(
-                    "casehub:judgment step is missing required 'binding' argument");
-        }
-
-        FlowExecution execution = executionRegistry.get(workflowInstanceId);
-        io.casehub.engine.common.internal.model.CaseInstance instance =
-                caseInstanceCache.get(execution.caseId());
-        if (instance == null) {
-            throw new IllegalStateException(
-                    "CaseInstance not found for caseId=" + execution.caseId()
-                    + " — cannot dispatch casehub:judgment");
-        }
-
-        Duration timeout =
-                args.containsKey("timeoutSeconds")
-                ? Duration.ofSeconds(((Number) args.get("timeoutSeconds")).longValue())
-                : DEFAULT_TIMEOUT;
-
-        JudgmentTarget target = JudgmentTarget.builder().prompt(prompt).build();
-
-        Map<String, Object> inputData =
-                args.containsKey("input") ? (Map<String, Object>) args.get("input") : Map.of();
-
-        JudgmentScheduleRequest request =
-                new JudgmentScheduleRequest(
-                        execution.caseId(), instance.tenancyId, bindingName, target, inputData, null, null);
-
-        return CompletableFuture.supplyAsync(
-                () -> {
-                    JudgmentResponse response = judgmentNodeExecutor.execute(request, timeout);
-                    return Map.of(
-                            "decision", (Object) response.decision(),
-                            "evidence", (Object) response.evidence());
-                },
-                virtualThreads);
+    FlowExecution execution = executionRegistry.get(workflowInstanceId);
+    io.casehub.engine.common.internal.model.CaseInstance instance =
+        caseInstanceCache.get(execution.caseId());
+    if (instance == null) {
+      throw new IllegalStateException(
+          "CaseInstance not found for caseId="
+              + execution.caseId()
+              + " — cannot dispatch casehub:judgment");
     }
+
+    Duration timeout =
+        args.containsKey("timeoutSeconds")
+            ? Duration.ofSeconds(((Number) args.get("timeoutSeconds")).longValue())
+            : DEFAULT_TIMEOUT;
+
+    JudgmentTarget target = JudgmentTarget.builder().prompt(prompt).build();
+
+    Map<String, Object> inputData =
+        args.containsKey("input") ? (Map<String, Object>) args.get("input") : Map.of();
+
+    JudgmentScheduleRequest request =
+        new JudgmentScheduleRequest(
+            execution.caseId(), instance.tenancyId, bindingName, target, inputData, null, null);
+
+    return CompletableFuture.supplyAsync(
+        () -> {
+          JudgmentResponse response = judgmentNodeExecutor.execute(request, timeout);
+          return Map.of(
+              "decision", (Object) response.decision(),
+              "evidence", (Object) response.evidence());
+        },
+        virtualThreads);
+  }
 }

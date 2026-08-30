@@ -17,10 +17,17 @@ package io.casehub.api.spi.judgment;
 
 import io.casehub.api.model.CaseDefinition;
 import io.casehub.api.model.JudgmentTarget;
+import java.time.Duration;
+import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 import org.jspecify.annotations.Nullable;
 
+/**
+ * Context for post-response verification of judgment yields.
+ *
+ * <p>Refs engine#997, engine#994, engine#1009.
+ */
 public record VerificationContext(
     UUID caseId,
     String tenancyId,
@@ -31,4 +38,36 @@ public record VerificationContext(
     String decision,
     Map<String, Object> evidence,
     @Nullable String callerId,
-    @Nullable String callerType) {}
+    @Nullable String callerType,
+    @Nullable CallerIdentity callerIdentity,
+    List<Evidence> typedEvidence,
+    @Nullable Duration responseTime) {
+
+  /** Backward-compatible 10-arg constructor. */
+  public VerificationContext(
+      UUID caseId,
+      String tenancyId,
+      String bindingName,
+      JudgmentTarget target,
+      Map<String, Object> inputData,
+      @Nullable CaseDefinition definition,
+      String decision,
+      Map<String, Object> evidence,
+      @Nullable String callerId,
+      @Nullable String callerType) {
+    this(
+        caseId,
+        tenancyId,
+        bindingName,
+        target,
+        inputData,
+        definition,
+        decision,
+        evidence,
+        callerId,
+        callerType,
+        callerId != null || callerType != null ? CallerIdentity.of(callerId, callerType) : null,
+        List.of(),
+        null);
+  }
+}
