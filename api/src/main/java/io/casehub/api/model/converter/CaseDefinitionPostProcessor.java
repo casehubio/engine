@@ -67,6 +67,7 @@ public final class CaseDefinitionPostProcessor {
     applyWorkerFunctions(def, rawNode);
     applyGoapShorthand(def, rawNode);
     applyAgentDescriptors(def, rawNode);
+    applyDefinitions(def, rawNode);
   }
 
   // ---- contextType --------------------------------------------------------
@@ -170,6 +171,7 @@ public final class CaseDefinitionPostProcessor {
                 .function(function)
                 .executionPolicy(existing.executionPolicy())
                 .description(existing.description())
+                .definitionRef(existing.definitionRef())
                 .build();
         builtWorkers.put(workerName, updated);
       }
@@ -211,6 +213,7 @@ public final class CaseDefinitionPostProcessor {
                   .function(sequenceFunc)
                   .executionPolicy(existing.executionPolicy())
                   .description(existing.description())
+                  .definitionRef(existing.definitionRef())
                   .build();
           builtWorkers.put(seqWorkerName, updated);
         }
@@ -347,6 +350,16 @@ public final class CaseDefinitionPostProcessor {
     if (!descriptors.isEmpty()) {
       def.setAgentDescriptors(descriptors);
     }
+  }
+
+  private static void applyDefinitions(CaseDefinition def, JsonNode rawNode) {
+    JsonNode defsNode = rawNode.get("definitions");
+    if (defsNode == null || !defsNode.isObject()) {
+      return;
+    }
+    java.util.Map<String, JsonNode> definitions = new java.util.LinkedHashMap<>();
+    defsNode.fields().forEachRemaining(entry -> definitions.put(entry.getKey(), entry.getValue()));
+    def.setDefinitions(definitions);
   }
 
   static AgentDescriptor buildAgentDescriptor(JsonNode node, String workerName) {

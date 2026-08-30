@@ -153,4 +153,15 @@ public class Worker {
   public void setOutputType(String outputType) {
     this.outputType = outputType;
   }
+
+    private String definitionRef;
+
+    public String getDefinitionRef() {
+        return definitionRef;
+    }
+
+    public void setDefinitionRef(String definitionRef) {
+        this.definitionRef = definitionRef;
+    }
+
 }
