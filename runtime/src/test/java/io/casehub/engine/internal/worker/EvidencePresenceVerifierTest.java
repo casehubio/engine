@@ -18,6 +18,8 @@ package io.casehub.engine.internal.worker;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.casehub.api.model.JudgmentTarget;
+import io.casehub.api.spi.judgment.Evidence;
+import io.casehub.api.spi.judgment.EvidenceType;
 import io.casehub.api.spi.judgment.VerificationContext;
 import io.casehub.api.spi.judgment.VerificationResult;
 import java.util.List;
@@ -45,7 +47,9 @@ class EvidencePresenceVerifierTest {
             Map.of(),
             null,
             "approve",
-            Map.of("riskScore", 0.8, "rationale", "low risk"),
+            List.of(
+                Evidence.of("riskScore", EvidenceType.METRIC, "0.8"),
+                Evidence.of("rationale", EvidenceType.REASONING, "low risk")),
             null,
             null);
     assertThat(verifier.verify(ctx)).isInstanceOf(VerificationResult.Accepted.class);
@@ -67,7 +71,7 @@ class EvidencePresenceVerifierTest {
             Map.of(),
             null,
             "approve",
-            Map.of("riskScore", 0.8),
+            List.of(Evidence.of("riskScore", EvidenceType.METRIC, "0.8")),
             null,
             null);
     var result = verifier.verify(ctx);
@@ -81,7 +85,7 @@ class EvidencePresenceVerifierTest {
     var target = JudgmentTarget.builder().prompt("test").build();
     var ctx =
         new VerificationContext(
-            UUID.randomUUID(), "t", "b", target, Map.of(), null, "approve", Map.of(), null, null);
+            UUID.randomUUID(), "t", "b", target, Map.of(), null, "approve", List.of(), null, null);
     assertThat(verifier.verify(ctx)).isInstanceOf(VerificationResult.Accepted.class);
   }
 

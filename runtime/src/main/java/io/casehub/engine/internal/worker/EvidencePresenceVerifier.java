@@ -15,11 +15,14 @@
  */
 package io.casehub.engine.internal.worker;
 
+import io.casehub.api.spi.judgment.Evidence;
 import io.casehub.api.spi.judgment.JudgmentVerifier;
 import io.casehub.api.spi.judgment.VerificationContext;
 import io.casehub.api.spi.judgment.VerificationResult;
 import jakarta.enterprise.context.ApplicationScoped;
 import java.util.List;
+import java.util.Set;
+import java.util.stream.Collectors;
 
 @ApplicationScoped
 public class EvidencePresenceVerifier implements JudgmentVerifier {
@@ -28,8 +31,9 @@ public class EvidencePresenceVerifier implements JudgmentVerifier {
   public VerificationResult verify(VerificationContext context) {
     List<String> required = context.target().evidenceRequirements();
     if (required.isEmpty()) return new VerificationResult.Accepted();
-    List<String> missing =
-        required.stream().filter(key -> !context.evidence().containsKey(key)).toList();
+    Set<String> presentNames =
+        context.evidence().stream().map(Evidence::name).collect(Collectors.toSet());
+    List<String> missing = required.stream().filter(key -> !presentNames.contains(key)).toList();
     if (missing.isEmpty()) return new VerificationResult.Accepted();
     return new VerificationResult.InsufficientEvidence(
         "Missing required evidence keys: " + missing, missing);

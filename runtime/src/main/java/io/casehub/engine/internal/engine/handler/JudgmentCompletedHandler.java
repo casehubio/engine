@@ -39,6 +39,7 @@ import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
 import java.time.Instant;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import org.jboss.logging.Logger;
 
@@ -91,6 +92,11 @@ public class JudgmentCompletedHandler {
         io.casehub.api.spi.judgment.JudgmentVerifier verifier =
             strategyResolver.resolve(
                 io.casehub.api.spi.judgment.JudgmentVerifier.class, jt.verifierStrategy());
+        var callerIdentity =
+            event.response().callerId() != null && event.response().callerType() != null
+                ? io.casehub.api.spi.judgment.CallerIdentity.of(
+                    event.response().callerId(), event.response().callerType())
+                : null;
         io.casehub.api.spi.judgment.VerificationContext verificationCtx =
             new io.casehub.api.spi.judgment.VerificationContext(
                 event.caseId(),
@@ -100,9 +106,9 @@ public class JudgmentCompletedHandler {
                 Map.of(),
                 def,
                 event.response().decision(),
-                event.response().evidence(),
-                event.response().callerId(),
-                event.response().callerType());
+                toTypedEvidence(event.response().evidence()),
+                callerIdentity,
+                null);
         io.casehub.api.spi.judgment.VerificationResult result = verifier.verify(verificationCtx);
         writeVerifiedEventLog(instance, event, jt.verifierStrategy(), result);
         switch (result) {
@@ -250,5 +256,18 @@ public class JudgmentCompletedHandler {
     return state == CaseStatus.COMPLETED
         || state == CaseStatus.FAULTED
         || state == CaseStatus.CANCELLED;
+  }
+
+  private static List<io.casehub.api.spi.judgment.Evidence> toTypedEvidence(
+      Map<String, Object> raw) {
+    if (raw == null || raw.isEmpty()) return List.of();
+    return raw.entrySet().stream()
+        .map(
+            e ->
+                io.casehub.api.spi.judgment.Evidence.of(
+                    e.getKey(),
+                    io.casehub.api.spi.judgment.EvidenceType.ATTESTATION,
+                    String.valueOf(e.getValue())))
+        .toList();
   }
 }

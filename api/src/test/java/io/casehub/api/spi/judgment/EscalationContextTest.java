@@ -20,7 +20,6 @@ import static org.junit.jupiter.api.Assertions.*;
 import io.casehub.api.model.JudgmentTarget;
 import java.time.Duration;
 import java.util.List;
-import java.util.Map;
 import java.util.UUID;
 import org.junit.jupiter.api.Test;
 
@@ -30,34 +29,7 @@ class EscalationContextTest {
       JudgmentTarget.builder().prompt("Assess risk").build();
 
   @Test
-  void backwardCompatible12ArgConstructor() {
-    var ctx =
-        new EscalationContext(
-            UUID.randomUUID(),
-            "tenant-1",
-            "risk-binding",
-            TARGET,
-            "approve",
-            Map.of("evidence_key", "value"),
-            "user-42",
-            "human",
-            new VerificationResult.InsufficientEvidence("missing docs", List.of("docs")),
-            2,
-            5,
-            null);
-
-    assertEquals("user-42", ctx.callerId());
-    assertEquals("human", ctx.callerType());
-    assertNotNull(ctx.callerIdentity());
-    assertEquals("user-42", ctx.callerIdentity().callerId());
-    assertEquals(List.of(), ctx.typedEvidence());
-    assertNull(ctx.responseTime());
-    assertEquals(2, ctx.escalationCount());
-    assertEquals(5, ctx.maxEscalations());
-  }
-
-  @Test
-  void fullConstructorWithEnrichedFields() {
+  void fullConstructor() {
     var identity = CallerIdentity.of("llm-1", "llm");
     var evidence = List.of(Evidence.of("reasoning", EvidenceType.REASONING, "Because X"));
     var responseTime = Duration.ofMillis(450);
@@ -69,19 +41,40 @@ class EscalationContextTest {
             "binding",
             TARGET,
             "reject",
-            Map.of(),
-            "llm-1",
-            "llm",
+            evidence,
             new VerificationResult.TrustTooLow("high", "medium"),
             1,
             3,
             null,
             identity,
-            evidence,
             responseTime);
 
     assertEquals(identity, ctx.callerIdentity());
-    assertEquals(1, ctx.typedEvidence().size());
+    assertEquals(1, ctx.evidence().size());
     assertEquals(Duration.ofMillis(450), ctx.responseTime());
+    assertEquals(1, ctx.escalationCount());
+    assertEquals(3, ctx.maxEscalations());
+  }
+
+  @Test
+  void nullOptionalFields() {
+    var ctx =
+        new EscalationContext(
+            UUID.randomUUID(),
+            "tenant-1",
+            "binding",
+            TARGET,
+            "approve",
+            List.of(),
+            new VerificationResult.InsufficientEvidence("missing docs", List.of("docs")),
+            2,
+            5,
+            null,
+            null,
+            null);
+
+    assertNull(ctx.callerIdentity());
+    assertNull(ctx.responseTime());
+    assertEquals(2, ctx.escalationCount());
   }
 }

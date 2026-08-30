@@ -37,7 +37,10 @@ import java.util.Set;
  *
  * <p>Both modes support {@code inputMapping} (context → task payload) and {@code outputMapping}
  * (task resolution → context update). Mapping strings are treated as JQ expressions.
+ *
+ * @deprecated Use {@link JudgmentTarget} instead.
  */
+@Deprecated(forRemoval = true)
 public final class HumanTaskTarget {
 
   private final String templateRef;

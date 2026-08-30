@@ -45,10 +45,29 @@ class EvidenceTypesTest {
 
   @Test
   void evidenceFactory() {
-    var ev = Evidence.of("confidence_score", EvidenceType.METRIC, 0.95);
-    assertEquals("confidence_score", ev.key());
+    var ev = Evidence.of("confidence_score", EvidenceType.METRIC, "0.95");
+    assertEquals("confidence_score", ev.name());
     assertEquals(EvidenceType.METRIC, ev.type());
-    assertEquals(0.95, ev.value());
+    assertEquals("0.95", ev.content());
+    assertNull(ev.ref());
+  }
+
+  @Test
+  void evidenceWithRef() {
+    var ev =
+        new Evidence("doc", EvidenceType.DOCUMENT, "report text", "https://example.com/report");
+    assertEquals("doc", ev.name());
+    assertEquals("report text", ev.content());
+    assertEquals("https://example.com/report", ev.ref());
+  }
+
+  @Test
+  void evidenceRequiredFieldsRejectNull() {
+    assertThrows(
+        NullPointerException.class, () -> new Evidence(null, EvidenceType.METRIC, "val", null));
+    assertThrows(NullPointerException.class, () -> new Evidence("key", null, "val", null));
+    assertThrows(
+        NullPointerException.class, () -> new Evidence("key", EvidenceType.METRIC, null, null));
   }
 
   @Test

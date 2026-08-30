@@ -26,19 +26,20 @@ class CallerIdentityTest {
     var id = CallerIdentity.of("user-42", "human");
     assertEquals("user-42", id.callerId());
     assertEquals("human", id.callerType());
+    assertNull(id.trustScore());
   }
 
   @Test
-  void anonymousFactory() {
-    var id = CallerIdentity.anonymous();
-    assertNull(id.callerId());
-    assertNull(id.callerType());
+  void ofFactoryWithTrustScore() {
+    var id = CallerIdentity.of("agent-1", "a2a", 0.85);
+    assertEquals("agent-1", id.callerId());
+    assertEquals("a2a", id.callerType());
+    assertEquals(0.85, id.trustScore());
   }
 
   @Test
-  void nullableFields() {
-    var id = CallerIdentity.of(null, "llm");
-    assertNull(id.callerId());
-    assertEquals("llm", id.callerType());
+  void requiredFieldsRejectNull() {
+    assertThrows(NullPointerException.class, () -> new CallerIdentity(null, "human", null));
+    assertThrows(NullPointerException.class, () -> new CallerIdentity("user-1", null, null));
   }
 }

@@ -23,7 +23,6 @@ import io.casehub.api.spi.judgment.EscalationContext;
 import io.casehub.api.spi.judgment.EscalationDecision;
 import io.casehub.api.spi.judgment.VerificationResult;
 import java.util.List;
-import java.util.Map;
 import java.util.UUID;
 import org.junit.jupiter.api.Test;
 
@@ -55,7 +54,6 @@ class DefaultJudgmentEscalatorTest {
     assertInstanceOf(EscalationDecision.Escalate.class, decision);
     var esc = (EscalationDecision.Escalate) decision;
     assertInstanceOf(CallerConfig.Human.class, esc.newCallerConfig());
-    assertEquals("high", ((CallerConfig.Human) esc.newCallerConfig()).minimumTrustLevel());
     assertTrue(esc.reason().contains("Trust level too low"));
   }
 
@@ -94,12 +92,12 @@ class DefaultJudgmentEscalatorTest {
         "review-binding",
         JudgmentTarget.builder().prompt("Review this").build(),
         "approve",
-        Map.of(),
-        "user-1",
-        "human",
+        List.of(),
         result,
         escalationCount,
         maxEscalations,
+        null,
+        null,
         null);
   }
 }

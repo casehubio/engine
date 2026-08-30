@@ -47,6 +47,8 @@ import java.util.UUID;
 import org.jboss.logging.Logger;
 
 @ApplicationScoped
+@Deprecated(forRemoval = true)
+@SuppressWarnings("removal")
 public class CloudEventHumanTaskScheduler implements HumanTaskScheduler {
 
   private static final Logger LOG = Logger.getLogger(CloudEventHumanTaskScheduler.class);

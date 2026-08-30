@@ -15,15 +15,24 @@
  */
 package io.casehub.api.spi.judgment;
 
-/**
- * A single piece of typed evidence provided with a judgment response. Pairs a key with its evidence
- * type and value.
- *
- * <p>Refs engine#1009, engine#994.
- */
-public record Evidence(String key, EvidenceType type, Object value) {
+import java.util.Objects;
+import org.jspecify.annotations.Nullable;
 
-  public static Evidence of(String key, EvidenceType type, Object value) {
-    return new Evidence(key, type, value);
+/**
+ * A single piece of typed evidence provided with a judgment response. Carries a name, evidence
+ * type, string content, and an optional external reference.
+ *
+ * <p>Refs engine#1012, engine#1009, engine#994.
+ */
+public record Evidence(String name, EvidenceType type, String content, @Nullable String ref) {
+
+  public Evidence {
+    Objects.requireNonNull(name, "name required");
+    Objects.requireNonNull(type, "type required");
+    Objects.requireNonNull(content, "content required");
+  }
+
+  public static Evidence of(String name, EvidenceType type, String content) {
+    return new Evidence(name, type, content, null);
   }
 }

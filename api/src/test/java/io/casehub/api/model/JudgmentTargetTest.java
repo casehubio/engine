@@ -84,4 +84,16 @@ class JudgmentTargetTest {
     var target = JudgmentTarget.builder().prompt("question").build();
     assertThat(target.evidenceRequirements()).isEmpty();
   }
+
+  @Test
+  void maxEscalationAttempts_defaultsTo3() {
+    var target = JudgmentTarget.builder().prompt("test").build();
+    assertThat(target.maxEscalationAttempts()).isEqualTo(3);
+  }
+
+  @Test
+  void maxEscalationAttempts_custom() {
+    var target = JudgmentTarget.builder().prompt("test").maxEscalationAttempts(10).build();
+    assertThat(target.maxEscalationAttempts()).isEqualTo(10);
+  }
 }

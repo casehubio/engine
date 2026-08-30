@@ -15,21 +15,27 @@
  */
 package io.casehub.api.spi.judgment;
 
+import java.util.Objects;
 import org.jspecify.annotations.Nullable;
 
 /**
- * Identity of the caller who responded to a judgment request. Wraps the raw callerId and callerType
- * strings into a structured record.
+ * Identity of the caller who responded to a judgment request. Both callerId and callerType are
+ * required — if no caller identity is known, the field is null at the container level.
  *
- * <p>Refs engine#1009, engine#994.
+ * <p>Refs engine#1012, engine#1009, engine#994.
  */
-public record CallerIdentity(@Nullable String callerId, @Nullable String callerType) {
+public record CallerIdentity(String callerId, String callerType, @Nullable Double trustScore) {
 
-  public static CallerIdentity of(@Nullable String callerId, @Nullable String callerType) {
-    return new CallerIdentity(callerId, callerType);
+  public CallerIdentity {
+    Objects.requireNonNull(callerId, "callerId required");
+    Objects.requireNonNull(callerType, "callerType required");
   }
 
-  public static CallerIdentity anonymous() {
-    return new CallerIdentity(null, null);
+  public static CallerIdentity of(String callerId, String callerType) {
+    return new CallerIdentity(callerId, callerType, null);
+  }
+
+  public static CallerIdentity of(String callerId, String callerType, @Nullable Double trustScore) {
+    return new CallerIdentity(callerId, callerType, trustScore);
   }
 }

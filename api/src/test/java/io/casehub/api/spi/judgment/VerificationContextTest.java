@@ -30,53 +30,11 @@ class VerificationContextTest {
       JudgmentTarget.builder().prompt("Review this").build();
 
   @Test
-  void backwardCompatible10ArgConstructor() {
-    var ctx =
-        new VerificationContext(
-            UUID.randomUUID(),
-            "tenant-1",
-            "review-binding",
-            TARGET,
-            Map.of(),
-            null,
-            "approve",
-            Map.of("key", "value"),
-            "user-1",
-            "human");
-
-    assertEquals("user-1", ctx.callerId());
-    assertEquals("human", ctx.callerType());
-    assertNotNull(ctx.callerIdentity());
-    assertEquals("user-1", ctx.callerIdentity().callerId());
-    assertEquals("human", ctx.callerIdentity().callerType());
-    assertEquals(List.of(), ctx.typedEvidence());
-    assertNull(ctx.responseTime());
-  }
-
-  @Test
-  void backwardCompatibleNullCallerOmitsIdentity() {
-    var ctx =
-        new VerificationContext(
-            UUID.randomUUID(),
-            "tenant-1",
-            "binding",
-            TARGET,
-            Map.of(),
-            null,
-            "approve",
-            Map.of(),
-            null,
-            null);
-
-    assertNull(ctx.callerIdentity());
-  }
-
-  @Test
-  void fullConstructorWithEnrichedFields() {
+  void fullConstructor() {
     var identity = CallerIdentity.of("agent-7", "a2a");
     var evidence =
         List.of(
-            Evidence.of("score", EvidenceType.METRIC, 0.95),
+            Evidence.of("score", EvidenceType.METRIC, "0.95"),
             Evidence.of("report", EvidenceType.DOCUMENT, "full report text"));
     var responseTime = Duration.ofSeconds(3);
 
@@ -89,15 +47,33 @@ class VerificationContextTest {
             Map.of(),
             null,
             "approve",
-            Map.of(),
-            "agent-7",
-            "a2a",
-            identity,
             evidence,
+            identity,
             responseTime);
 
     assertEquals(identity, ctx.callerIdentity());
-    assertEquals(2, ctx.typedEvidence().size());
+    assertEquals(2, ctx.evidence().size());
+    assertEquals("score", ctx.evidence().get(0).name());
     assertEquals(Duration.ofSeconds(3), ctx.responseTime());
+  }
+
+  @Test
+  void nullCallerIdentityAndResponseTime() {
+    var ctx =
+        new VerificationContext(
+            UUID.randomUUID(),
+            "tenant-1",
+            "binding",
+            TARGET,
+            Map.of(),
+            null,
+            "approve",
+            List.of(),
+            null,
+            null);
+
+    assertNull(ctx.callerIdentity());
+    assertNull(ctx.responseTime());
+    assertTrue(ctx.evidence().isEmpty());
   }
 }

@@ -29,6 +29,8 @@ import io.smallrye.common.annotation.RunOnVirtualThread;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
 import java.time.Instant;
+import java.util.List;
+import java.util.Map;
 import org.jboss.logging.Logger;
 
 @ApplicationScoped
@@ -66,6 +68,11 @@ public class JudgmentEscalationHandler {
     io.casehub.api.spi.judgment.JudgmentEscalator escalator =
         strategyResolver.resolve(io.casehub.api.spi.judgment.JudgmentEscalator.class, escalatorId);
 
+    var callerIdentity =
+        event.originalResponse().callerId() != null && event.originalResponse().callerType() != null
+            ? io.casehub.api.spi.judgment.CallerIdentity.of(
+                event.originalResponse().callerId(), event.originalResponse().callerType())
+            : null;
     io.casehub.api.spi.judgment.EscalationContext ctx =
         new io.casehub.api.spi.judgment.EscalationContext(
             event.caseId(),
@@ -73,13 +80,13 @@ public class JudgmentEscalationHandler {
             event.bindingName(),
             target,
             event.originalResponse().decision(),
-            event.originalResponse().evidence(),
-            event.originalResponse().callerId(),
-            event.originalResponse().callerType(),
+            toTypedEvidence(event.originalResponse().evidence()),
             event.result(),
             escalationCount,
             maxEscalations,
-            definition);
+            definition,
+            callerIdentity,
+            null);
 
     io.casehub.api.spi.judgment.EscalationDecision decision = escalator.escalate(ctx);
 
@@ -197,5 +204,18 @@ public class JudgmentEscalationHandler {
         .filter(b -> b.getName().equals(bindingName))
         .findFirst()
         .orElse(null);
+  }
+
+  private static List<io.casehub.api.spi.judgment.Evidence> toTypedEvidence(
+      Map<String, Object> raw) {
+    if (raw == null || raw.isEmpty()) return List.of();
+    return raw.entrySet().stream()
+        .map(
+            e ->
+                io.casehub.api.spi.judgment.Evidence.of(
+                    e.getKey(),
+                    io.casehub.api.spi.judgment.EvidenceType.ATTESTATION,
+                    String.valueOf(e.getValue())))
+        .toList();
   }
 }
