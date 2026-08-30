@@ -18,13 +18,38 @@ package io.casehub.engine.common.spi;
 /**
  * SPI for scheduling judgment yield requests from engine bindings.
  *
- * <p>Symmetric with {@link HumanTaskScheduler} and {@link ActionGateScheduler}. Discovered via
- * {@code Instance<JudgmentScheduler>} in the engine runtime — when no implementation is on the
- * classpath, judgment bindings are silently skipped.
+ * <p>Supports both the legacy {@link JudgmentScheduleRequest} path and the unified {@link
+ * JudgmentRequest} path. New implementations should override {@link #schedule(JudgmentRequest)}.
  *
- * <p>Refs engine#996, engine#994.
+ * <p>Refs engine#996, engine#994, engine#1010.
  */
 public interface JudgmentScheduler {
 
+  /**
+   * @deprecated Use {@link #schedule(JudgmentRequest)} instead.
+   */
+  @Deprecated(forRemoval = true)
   void schedule(JudgmentScheduleRequest request);
+
+  default void schedule(JudgmentRequest request) {
+    if (request.payload() instanceof JudgmentPayload.BindingPayload bp) {
+      schedule(
+          new JudgmentScheduleRequest(
+              request.caseId(),
+              request.tenancyId(),
+              request.bindingName(),
+              bp.target(),
+              bp.inputData(),
+              bp.resolutionTypeName(),
+              bp.expiresAtDeadline(),
+              bp.caseBudgetDeadline(),
+              bp.resolvedTitle(),
+              bp.resolvedScope(),
+              bp.resolvedCandidateGroups(),
+              bp.resolvedCandidateUsers(),
+              bp.payloadTypeName(),
+              bp.experiences(),
+              bp.candidateScores()));
+    }
+  }
 }

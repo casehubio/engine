@@ -24,6 +24,10 @@ import java.util.Set;
 import java.util.UUID;
 import org.jspecify.annotations.Nullable;
 
+/**
+ * @deprecated Use {@link JudgmentRequest} with {@link JudgmentPayload.BindingPayload} instead.
+ */
+@Deprecated(forRemoval = true)
 public record JudgmentScheduleRequest(
     UUID caseId,
     String tenancyId,

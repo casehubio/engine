@@ -21,6 +21,8 @@ import io.casehub.api.model.TaskStatus;
 import io.casehub.engine.common.spi.CallerRefParser;
 import io.casehub.engine.planning.completion.GateCompletionApplier;
 import io.casehub.engine.planning.completion.PlanItemCompletionApplier;
+import io.casehub.engine.planning.plan.PlanItem;
+import io.casehub.engine.planning.registry.BlackboardRegistry;
 import io.casehub.work.api.WorkCloudEventTypes;
 import io.cloudevents.CloudEvent;
 import jakarta.enterprise.context.ApplicationScoped;
@@ -36,6 +38,7 @@ public class WorkItemLifecycleCloudEventConsumer {
 
   @Inject PlanItemCompletionApplier planItemApplier;
   @Inject GateCompletionApplier gateApplier;
+  @Inject BlackboardRegistry blackboardRegistry;
 
   public void onLifecycleCloudEvent(@ObservesAsync CloudEvent ce) {
     String type = ce.getType();
@@ -82,6 +85,8 @@ public class WorkItemLifecycleCloudEventConsumer {
       case CallerRefParser.PlanItemRef pi ->
           handlePlanItem(pi, type, resolution, resolutionTypeName);
       case CallerRefParser.GateRef gate -> handleGate(gate, tenancyId, type, resolution, actorId);
+      case CallerRefParser.JudgmentRef jr ->
+          handleJudgment(jr, tenancyId, type, resolution, resolutionTypeName, actorId);
     }
   }
 
@@ -118,6 +123,33 @@ public class WorkItemLifecycleCloudEventConsumer {
     }
 
     gateApplier.apply(gate.caseId(), tenancyId, gate.gateId(), status, resolution, actorId);
+  }
+
+  private void handleJudgment(
+      CallerRefParser.JudgmentRef jr,
+      String tenancyId,
+      String ceType,
+      String resolution,
+      String resolutionTypeName,
+      String actorId) {
+
+    TaskStatus status = mapToTaskStatus(ceType);
+    if (status == null) {
+      return;
+    }
+
+    PlanItem item =
+        blackboardRegistry
+            .get(jr.caseId())
+            .flatMap(plan -> plan.getPlanItemByBindingName(jr.bindingName()))
+            .orElse(null);
+    if (item == null) {
+      LOG.warnf(
+          "PlanItem for judgment binding '%s' not found in case %s", jr.bindingName(), jr.caseId());
+      return;
+    }
+
+    planItemApplier.apply(jr.caseId(), item.id(), status, resolution, resolutionTypeName);
   }
 
   private static TaskStatus mapToTaskStatus(String ceType) {

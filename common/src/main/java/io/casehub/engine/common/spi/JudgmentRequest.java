@@ -15,21 +15,13 @@
  */
 package io.casehub.engine.common.spi;
 
-import io.casehub.api.spi.RiskDecision;
-import io.casehub.worker.api.PlannedAction;
-import java.util.Set;
 import java.util.UUID;
-import org.jspecify.annotations.Nullable;
 
 /**
- * @deprecated Use {@link JudgmentRequest} with {@link JudgmentPayload.GatePayload} instead.
+ * Unified scheduling request for both judgment bindings and action gates. Replaces the separate
+ * {@link JudgmentScheduleRequest} and {@link ActionGateScheduleRequest} types.
+ *
+ * <p>Refs engine#1010, engine#994.
  */
-@Deprecated(forRemoval = true)
-public record ActionGateScheduleRequest(
-    UUID caseId,
-    String tenancyId,
-    long gateId,
-    PlannedAction plannedAction,
-    RiskDecision.GateRequired gateRequired,
-    Set<String> resolvedCandidateGroups,
-    @Nullable String resolutionTypeName) {}
+public record JudgmentRequest(
+    UUID caseId, String tenancyId, String bindingName, JudgmentPayload payload) {}
