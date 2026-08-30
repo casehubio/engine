@@ -99,18 +99,18 @@ public class JudgmentEscalationHandler {
             event.bindingName(),
             new io.casehub.engine.common.spi.JudgmentNodeResult.ReYielded());
       }
-      case io.casehub.api.spi.judgment.EscalationDecision.RouteHigher rh -> {
+      case io.casehub.api.spi.judgment.EscalationDecision.Escalate esc -> {
         LOG.infof(
-            "Judgment route higher: caseId=%s binding=%s minimumTrust=%s",
-            event.caseId(), event.bindingName(), rh.minimumTrustLevel());
+            "Judgment escalate: caseId=%s binding=%s reason=%s callerConfig=%s",
+            event.caseId(), event.bindingName(), esc.reason(), esc.newCallerConfig());
         eventBus.publish(
             EventBusAddresses.JUDGMENT_RE_DISPATCH,
             new io.casehub.engine.common.internal.event.JudgmentReDispatchEvent(
                 event.caseId(),
                 event.tenancyId(),
                 event.bindingName(),
-                null,
-                rh.minimumTrustLevel()));
+                esc.reason(),
+                esc.newCallerConfig()));
         judgmentNodeExecutor.enqueue(
             event.caseId(),
             event.bindingName(),
@@ -163,7 +163,7 @@ public class JudgmentEscalationHandler {
     String decisionType =
         switch (decision) {
           case io.casehub.api.spi.judgment.EscalationDecision.ReYield ry -> "re-yield";
-          case io.casehub.api.spi.judgment.EscalationDecision.RouteHigher rh -> "route-higher";
+          case io.casehub.api.spi.judgment.EscalationDecision.Escalate esc -> "escalate";
           case io.casehub.api.spi.judgment.EscalationDecision.Fault f -> "fault";
         };
     metadata.put("decision", decisionType);

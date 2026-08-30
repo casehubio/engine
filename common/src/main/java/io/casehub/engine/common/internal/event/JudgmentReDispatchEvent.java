@@ -15,19 +15,20 @@
  */
 package io.casehub.engine.common.internal.event;
 
+import io.casehub.api.spi.judgment.CallerConfig;
 import java.util.UUID;
 import org.jspecify.annotations.Nullable;
 
 /**
  * Published by {@code JudgmentEscalationHandler} when the escalation decision is ReYield or
- * RouteHigher. Consumed by the planning module to transition the PlanItem DELEGATED → DISPATCHING
- * and re-schedule the judgment request.
+ * Escalate. Consumed by the planning module to transition the PlanItem DELEGATED → DISPATCHING and
+ * re-schedule the judgment request.
  *
- * <p>Refs engine#1000, engine#999.
+ * <p>Refs engine#1000, engine#999, engine#1011.
  */
 public record JudgmentReDispatchEvent(
     UUID caseId,
     String tenancyId,
     String bindingName,
     @Nullable String feedback,
-    @Nullable String minimumTrustLevel) {}
+    @Nullable CallerConfig newCallerConfig) {}

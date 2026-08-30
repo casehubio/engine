@@ -22,6 +22,6 @@ public interface JudgmentEscalator extends NamedStrategy {
 
   @Override
   default String id() {
-    return "fault";
+    return "default";
   }
 }
