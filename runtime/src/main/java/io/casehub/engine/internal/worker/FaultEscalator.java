@@ -18,10 +18,12 @@ package io.casehub.engine.internal.worker;
 import io.casehub.api.spi.judgment.EscalationContext;
 import io.casehub.api.spi.judgment.EscalationDecision;
 import io.casehub.api.spi.judgment.JudgmentEscalator;
-import io.quarkus.arc.DefaultBean;
 import jakarta.enterprise.context.ApplicationScoped;
 
-@DefaultBean
+/**
+ * Conservative escalation strategy — always faults. Use when no recovery is desired. Replaced by
+ * {@link DefaultJudgmentEscalator} as the default. Refs engine#1011.
+ */
 @ApplicationScoped
 public class FaultEscalator implements JudgmentEscalator {
 

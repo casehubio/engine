@@ -41,7 +41,7 @@ import org.jboss.logging.Logger;
 /**
  * Manages PlanItem state transitions for judgment escalation decisions.
  *
- * <p>On re-dispatch (ReYield/RouteHigher): transitions PlanItem DELEGATED → DISPATCHING, then
+ * <p>On re-dispatch (ReYield/Escalate): transitions PlanItem DELEGATED → DISPATCHING, then
  * re-schedules via {@link JudgmentScheduler}. On fault: marks PlanItem FAULTED.
  *
  * <p>Refs engine#1000, engine#999.
@@ -180,8 +180,8 @@ public class JudgmentPlanItemHandler {
                   null));
 
       LOG.infof(
-          "Judgment re-dispatched: caseId=%s binding=%s feedback=%s trustLevel=%s",
-          event.caseId(), event.bindingName(), event.feedback(), event.minimumTrustLevel());
+          "Judgment re-dispatched: caseId=%s binding=%s feedback=%s callerConfig=%s",
+          event.caseId(), event.bindingName(), event.feedback(), event.newCallerConfig());
     } catch (Exception e) {
       LOG.errorf(
           e,

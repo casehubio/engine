@@ -15,10 +15,11 @@
  */
 package io.casehub.api.spi.judgment;
 
+/** Sealed decision type returned by {@link JudgmentEscalator}. Refs engine#1011, engine#994. */
 public sealed interface EscalationDecision {
   record ReYield(String feedback) implements EscalationDecision {}
 
-  record RouteHigher(String minimumTrustLevel) implements EscalationDecision {}
+  record Escalate(CallerConfig newCallerConfig, String reason) implements EscalationDecision {}
 
   record Fault(String reason) implements EscalationDecision {}
 }
