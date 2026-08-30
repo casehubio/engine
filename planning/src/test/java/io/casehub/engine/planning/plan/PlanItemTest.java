@@ -219,6 +219,30 @@ class PlanItemTest {
   }
 
   @Test
+  void tryMarkReDispatching_from_delegated_succeeds() {
+    PlanItem item = PlanItem.create("binding-a", ExecutorRef.of("unknown"), 0);
+    assertThat(item.tryMarkDispatching()).isTrue();
+    item.markDelegated();
+    assertThat(item.tryMarkReDispatching()).isTrue();
+    assertThat(item.getStatus()).isEqualTo(TaskStatus.DISPATCHING);
+  }
+
+  @Test
+  void tryMarkReDispatching_from_pending_fails() {
+    PlanItem item = PlanItem.create("binding-a", ExecutorRef.of("unknown"), 0);
+    assertThat(item.tryMarkReDispatching()).isFalse();
+    assertThat(item.getStatus()).isEqualTo(TaskStatus.PENDING);
+  }
+
+  @Test
+  void tryMarkReDispatching_from_running_fails() {
+    PlanItem item = PlanItem.create("binding-a", ExecutorRef.of("worker-a"), 0);
+    item.markRunning();
+    assertThat(item.tryMarkReDispatching()).isFalse();
+    assertThat(item.getStatus()).isEqualTo(TaskStatus.RUNNING);
+  }
+
+  @Test
   void markCompleted_from_delegated_succeeds() {
     PlanItem item = PlanItem.create("binding-a", ExecutorRef.of("unknown"), 0);
     assertThat(item.tryMarkDispatching()).isTrue();

@@ -119,4 +119,7 @@ public final class EventBusAddresses {
   public static final String JUDGMENT_EXPIRED = "casehub.judgment.expired";
 
   public static final String JUDGMENT_ESCALATED = "casehub.judgment.escalated";
+  public static final String JUDGMENT_RE_DISPATCH = "casehub.judgment.redispatch";
+
+  public static final String JUDGMENT_FAULT = "casehub.judgment.fault";
 }
