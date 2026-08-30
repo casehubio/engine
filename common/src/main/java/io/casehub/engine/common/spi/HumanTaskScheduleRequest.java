@@ -23,6 +23,7 @@ import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
 
+@Deprecated(forRemoval = true)
 public record HumanTaskScheduleRequest(
     UUID caseId,
     String tenancyId,

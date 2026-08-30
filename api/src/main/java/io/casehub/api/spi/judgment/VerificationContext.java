@@ -26,7 +26,7 @@ import org.jspecify.annotations.Nullable;
 /**
  * Context for post-response verification of judgment yields.
  *
- * <p>Refs engine#997, engine#994, engine#1009.
+ * <p>Refs engine#1012, engine#997, engine#994.
  */
 public record VerificationContext(
     UUID caseId,
@@ -36,38 +36,6 @@ public record VerificationContext(
     Map<String, Object> inputData,
     @Nullable CaseDefinition definition,
     String decision,
-    Map<String, Object> evidence,
-    @Nullable String callerId,
-    @Nullable String callerType,
+    List<Evidence> evidence,
     @Nullable CallerIdentity callerIdentity,
-    List<Evidence> typedEvidence,
-    @Nullable Duration responseTime) {
-
-  /** Backward-compatible 10-arg constructor. */
-  public VerificationContext(
-      UUID caseId,
-      String tenancyId,
-      String bindingName,
-      JudgmentTarget target,
-      Map<String, Object> inputData,
-      @Nullable CaseDefinition definition,
-      String decision,
-      Map<String, Object> evidence,
-      @Nullable String callerId,
-      @Nullable String callerType) {
-    this(
-        caseId,
-        tenancyId,
-        bindingName,
-        target,
-        inputData,
-        definition,
-        decision,
-        evidence,
-        callerId,
-        callerType,
-        callerId != null || callerType != null ? CallerIdentity.of(callerId, callerType) : null,
-        List.of(),
-        null);
-  }
-}
+    @Nullable Duration responseTime) {}

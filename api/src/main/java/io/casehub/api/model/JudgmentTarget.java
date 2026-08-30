@@ -51,6 +51,7 @@ public final class JudgmentTarget implements BindingTarget {
   private final String escalatorStrategy;
   private final String trustThreshold;
   private final RoutingConfig routingConfig;
+  private final int maxEscalationAttempts;
 
   private JudgmentTarget(Builder builder) {
     this.prompt = builder.prompt;
@@ -75,6 +76,7 @@ public final class JudgmentTarget implements BindingTarget {
     this.escalatorStrategy = builder.escalatorStrategy;
     this.trustThreshold = builder.trustThreshold;
     this.routingConfig = builder.routingConfig;
+    this.maxEscalationAttempts = builder.maxEscalationAttempts;
   }
 
   public static Builder builder() {
@@ -157,6 +159,10 @@ public final class JudgmentTarget implements BindingTarget {
     return routingConfig;
   }
 
+  public int maxEscalationAttempts() {
+    return maxEscalationAttempts;
+  }
+
   public static final class Builder {
 
     private String prompt;
@@ -178,6 +184,7 @@ public final class JudgmentTarget implements BindingTarget {
     private String escalatorStrategy;
     private String trustThreshold;
     private RoutingConfig routingConfig;
+    private int maxEscalationAttempts = 3;
 
     public Builder prompt(String prompt) {
       this.prompt = prompt;
@@ -301,6 +308,11 @@ public final class JudgmentTarget implements BindingTarget {
 
     public Builder trustThreshold(String threshold) {
       this.trustThreshold = threshold;
+      return this;
+    }
+
+    public Builder maxEscalationAttempts(int max) {
+      this.maxEscalationAttempts = max;
       return this;
     }
 

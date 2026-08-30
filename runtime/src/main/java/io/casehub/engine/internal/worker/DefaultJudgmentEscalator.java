@@ -22,7 +22,6 @@ import io.casehub.api.spi.judgment.JudgmentEscalator;
 import io.casehub.api.spi.judgment.VerificationResult;
 import io.quarkus.arc.DefaultBean;
 import jakarta.enterprise.context.ApplicationScoped;
-import java.util.List;
 
 /**
  * Heuristic escalation strategy. Replaces {@link FaultEscalator} as the default.
@@ -51,7 +50,7 @@ public class DefaultJudgmentEscalator implements JudgmentEscalator {
           new EscalationDecision.ReYield(ie.feedback());
       case VerificationResult.TrustTooLow ttl ->
           new EscalationDecision.Escalate(
-              new CallerConfig.Human(List.of(), ttl.requiredLevel()),
+              CallerConfig.human(),
               "Trust level too low — escalating to human with minimum trust: "
                   + ttl.requiredLevel());
       case VerificationResult.Rejected r ->

@@ -22,7 +22,6 @@ import io.casehub.api.model.JudgmentTarget;
 import io.casehub.api.spi.judgment.EscalationContext;
 import io.casehub.api.spi.judgment.EscalationDecision;
 import io.casehub.api.spi.judgment.VerificationResult;
-import java.util.Map;
 import java.util.UUID;
 import org.junit.jupiter.api.Test;
 
@@ -56,13 +55,13 @@ class FaultEscalatorTest {
         "review-binding",
         JudgmentTarget.builder().prompt("test").build(),
         "reject",
-        Map.of(),
-        null,
-        null,
+        java.util.List.of(),
         new VerificationResult.InsufficientEvidence(
             "missing rationale", java.util.List.of("rationale")),
         escalationCount,
         maxEscalations,
-        CaseDefinition.builder().namespace("test").name("test-case").version("1.0.0").build());
+        CaseDefinition.builder().namespace("test").name("test-case").version("1.0.0").build(),
+        null,
+        null);
   }
 }

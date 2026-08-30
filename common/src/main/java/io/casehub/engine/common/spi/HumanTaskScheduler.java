@@ -21,7 +21,10 @@ package io.casehub.engine.common.spi;
  * <p>Implemented by the work engine-adapter module. Discovered via {@code
  * Instance<HumanTaskScheduler>} in the engine runtime — when no implementation is on the classpath,
  * human task bindings are silently skipped.
+ *
+ * @deprecated Use {@link JudgmentScheduler} instead.
  */
+@Deprecated(forRemoval = true)
 public interface HumanTaskScheduler {
 
   void schedule(HumanTaskScheduleRequest request);

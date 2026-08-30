@@ -1173,19 +1173,25 @@ Bridges inbound connector messages from `casehub-connectors` to typed case signa
 
 ## Judgment Foundation Types
 
-`CallerConfig` (`api/spi/judgment/`) — sealed interface declaring who can fulfill a judgment. Four permits: `Human(candidateGroups, minimumTrustLevel)`, `Llm(modelId)`, `A2A(endpoint, skill)`, `Any()`. Used by `JudgmentTarget` for initial caller type and by `EscalationDecision.Escalate` for escalation target. `Human.candidateGroups` defensively copied. Convenience constructors omit nullable fields. Refs engine#1009.
+`CallerConfig` (`api/spi/judgment/`) — sealed interface declaring who can fulfill a judgment. Four permits: `Human(candidateGroups, candidateUsers, title, titleExpression, outcomes, claimDeadlineHours, scope, scopeExpression, priority, templateRef, payloadType, quorum)`, `Llm(modelId, modelName, systemPrompt)`, `A2A(endpoint, skill, streaming)`, `Any()`. Used by `JudgmentTarget` for initial caller type and by `EscalationDecision.Escalate` for escalation target. `Human` fields are all `@Nullable` — escalation may only need a subset. `Human.outcomes` defensively copied via `Set.copyOf()`. `CallerConfig.human()` static convenience factory returns all-null Human (use for escalation default). `Llm()` no-arg constructor returns all-null. `A2A` convenience constructors: 1-arg (endpoint only, streaming=false), 2-arg (endpoint+skill, streaming=false). `Human.candidateGroups`/`candidateUsers` use `CandidateSetSpec` (not `List<String>`) for dynamic evaluation support. Refs engine#1012, engine#1009.
 
 `EvidenceType` (`api/spi/judgment/`) — enum: `ATTESTATION`, `DOCUMENT`, `SIGNATURE`, `REASONING`, `METRIC`, `EXTERNAL_REFERENCE`. Classification of evidence provided with judgment responses. Refs engine#1009.
 
 `EvidenceRequirement` (`api/spi/judgment/`) — record `(key, type, required)`. Declares what evidence a judgment response must include. Factories: `required(key, type)`, `optional(key, type)`. Two-arg constructor defaults to `required=true`. Refs engine#1009.
 
-`Evidence` (`api/spi/judgment/`) — record `(key, type, value)`. A single piece of typed evidence provided with a judgment response. Factory: `Evidence.of(key, type, value)`. Refs engine#1009.
+`Evidence` (`api/spi/judgment/`) — record `(name, type, content, ref)`. `name` (String, required), `type` (EvidenceType, required), `content` (String, required), `ref` (@Nullable String, external reference). Factory: `Evidence.of(name, type, content)` (ref defaults to null). Refs engine#1012, engine#1009.
 
-`CallerIdentity` (`api/spi/judgment/`) — record `(callerId, callerType)`, both nullable. Wraps raw identity strings. Factories: `of(callerId, callerType)`, `anonymous()`. Refs engine#1009.
+`CallerIdentity` (`api/spi/judgment/`) — record `(callerId, callerType, trustScore)`. `callerId` (String, required), `callerType` (String, required), `trustScore` (@Nullable Double). If no caller identity is known, the field is null at the container level — no `anonymous()` factory. Factories: `of(callerId, callerType)` (trustScore null), `of(callerId, callerType, trustScore)`. Refs engine#1012, engine#1009.
 
-`VerificationContext` enrichments — gains `callerIdentity` (nullable `CallerIdentity`), `typedEvidence` (`List<Evidence>`), `responseTime` (nullable `Duration`). Backward-compatible 10-arg constructor auto-creates `CallerIdentity` from raw fields. Refs engine#1009.
+`VerificationContext` (`api/spi/judgment/`) — record `(caseId, tenancyId, bindingName, target, inputData, definition, decision, evidence, callerIdentity, responseTime)`. `evidence` is `List<Evidence>` (not `Map<String, Object>`). `callerIdentity` is `@Nullable CallerIdentity`. No raw `callerId`/`callerType` string fields. No backward-compat constructors. Refs engine#1012, engine#1009.
 
-`EscalationContext` enrichments — same three fields as VerificationContext. Backward-compatible 12-arg constructor auto-creates `CallerIdentity`. Refs engine#1009.
+`EscalationContext` (`api/spi/judgment/`) — record `(caseId, tenancyId, bindingName, target, decision, evidence, verificationResult, escalationCount, maxEscalations, definition, callerIdentity, responseTime)`. Same cleanup as VerificationContext — `List<Evidence>`, no raw strings, no backward-compat constructors. Refs engine#1012, engine#1009.
+
+`JudgmentTarget` gains `maxEscalationAttempts` (int, default 3 in Builder). Per-target escalation budget — different judgment bindings may need different limits. Builder: `.maxEscalationAttempts(int)`. Refs engine#1012.
+
+`@Deprecated(forRemoval = true)`: `HumanTaskTarget`, `HumanTaskScheduler`, `HumanTaskScheduleRequest`, `CloudEventHumanTaskScheduler`. Use `JudgmentTarget` and `JudgmentScheduler` instead. Refs engine#1012.
+
+`DelegatingJudgmentScheduler` deleted — replaced by `NoOpJudgmentScheduler` (`@DefaultBean`) + `CloudEventJudgmentScheduler`. Refs engine#1012.
 
 ## Writing Style Guide
 

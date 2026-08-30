@@ -20,6 +20,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import io.casehub.api.model.JudgmentTarget;
 import io.casehub.api.spi.judgment.VerificationContext;
 import io.casehub.api.spi.judgment.VerificationResult;
+import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 import org.junit.jupiter.api.Test;
@@ -32,7 +33,7 @@ class AcceptAllVerifierTest {
     var target = JudgmentTarget.builder().prompt("test").build();
     var ctx =
         new VerificationContext(
-            UUID.randomUUID(), "t", "b", target, Map.of(), null, "approve", Map.of(), null, null);
+            UUID.randomUUID(), "t", "b", target, Map.of(), null, "approve", List.of(), null, null);
     assertThat(verifier.verify(ctx)).isInstanceOf(VerificationResult.Accepted.class);
   }
 
