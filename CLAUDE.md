@@ -6,6 +6,8 @@
 
 **Type:** java
 
+**DSL parity:** YAML and Java are peer representations — see [DSL Style Guide](https://raw.githubusercontent.com/casehubio/parent/main/docs/DSL-STYLE-GUIDE.md) §YAML/Java Parity Principle
+
 ---
 
 ## Work Tracking
