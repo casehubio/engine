@@ -208,6 +208,10 @@ public class PlanItem implements Comparable<PlanItem>, TaskDescriptor {
     return status.compareAndSet(TaskStatus.DISPATCHING, TaskStatus.PENDING);
   }
 
+  public boolean tryMarkReDispatching() {
+    return status.compareAndSet(TaskStatus.DELEGATED, TaskStatus.DISPATCHING);
+  }
+
   public boolean tryMarkEscalated() {
     while (true) {
       TaskStatus current = status.get();
