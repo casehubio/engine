@@ -131,8 +131,7 @@ import org.jboss.logging.Logger;
 
 /**
  * Converts YAML records to the {@link CaseDefinition} domain model. Replaces both {@link
- * io.casehub.api.model.converter.deser.CaseDefinitionDeserializer} and {@link
- * CaseDefinitionPostProcessor}.
+ * the previous hand-coded deserializers and post-processor.
  */
 public final class YamlCaseDefinitionConverter {
 

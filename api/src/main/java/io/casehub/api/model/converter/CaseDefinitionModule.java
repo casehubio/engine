@@ -18,25 +18,19 @@ package io.casehub.api.model.converter;
 import com.fasterxml.jackson.databind.module.SimpleModule;
 import io.casehub.api.engine.ExpressionEngineRegistry;
 import io.casehub.api.model.AdaptationConfig;
-import io.casehub.api.model.Binding;
 import io.casehub.api.model.CaseCompletion;
-import io.casehub.api.model.CaseDefinition;
 import io.casehub.api.model.GoalExpression;
 import io.casehub.api.model.SubCaseMapping;
 import io.casehub.api.model.Trigger;
 import io.casehub.api.model.cbr.CbrConfig;
 import io.casehub.api.model.converter.deser.AdaptationConfigDeserializer;
-import io.casehub.api.model.converter.deser.BindingDeserializer;
 import io.casehub.api.model.converter.deser.CaseCompletionDeserializer;
-import io.casehub.api.model.converter.deser.CaseDefinitionDeserializer;
 import io.casehub.api.model.converter.deser.CbrConfigDeserializer;
 import io.casehub.api.model.converter.deser.ExpressionEvaluatorDeserializer;
 import io.casehub.api.model.converter.deser.GoalExpressionDeserializer;
 import io.casehub.api.model.converter.deser.SubCaseMappingDeserializer;
 import io.casehub.api.model.converter.deser.TriggerDeserializer;
-import io.casehub.api.model.converter.deser.WorkerDeserializer;
 import io.casehub.platform.api.expression.ExpressionEvaluator;
-import io.casehub.worker.api.Worker;
 
 public class CaseDefinitionModule extends SimpleModule {
 
@@ -47,24 +41,7 @@ public class CaseDefinitionModule extends SimpleModule {
     addDeserializer(CaseCompletion.class, new CaseCompletionDeserializer());
     addDeserializer(Trigger.class, new TriggerDeserializer());
     addDeserializer(SubCaseMapping.class, new SubCaseMappingDeserializer());
-    addDeserializer(Worker.class, new WorkerDeserializer());
-    addDeserializer(Binding.class, new BindingDeserializer());
-    addDeserializer(CaseDefinition.class, new CaseDefinitionDeserializer());
     addDeserializer(AdaptationConfig.class, new AdaptationConfigDeserializer());
     addDeserializer(CbrConfig.class, new CbrConfigDeserializer());
-  }
-
-  @Override
-  public void setupModule(SetupContext context) {
-    super.setupModule(context);
-    context.setMixInAnnotations(
-        io.casehub.api.model.CaseDefinitionSpec.class,
-        io.casehub.api.model.converter.deser.CaseDefinitionSpecMixin.class);
-    context.setMixInAnnotations(
-        io.casehub.api.model.CaseDefinition.class,
-        io.casehub.api.model.converter.deser.CaseDefinitionMixin.class);
-    context.setMixInAnnotations(
-        io.casehub.engine.plan.goap.GoapAction.class,
-        io.casehub.api.model.converter.deser.GoapActionMixin.class);
   }
 }

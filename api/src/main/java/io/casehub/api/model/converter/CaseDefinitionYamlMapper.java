@@ -33,7 +33,7 @@ import org.jboss.logging.Logger;
  *
  * <p>Reads YAML CaseDefinition files and deserializes directly to API models via {@link
  * CaseDefinitionModule}. Post-processing of worker functions and GOAP shorthands is handled by
- * {@link CaseDefinitionPostProcessor}.
+ * {@link YamlCaseDefinitionConverter}.
  *
  * <p>Use {@link #load(InputStream, ObjectMapper, ExpressionEngineRegistry,
  * WorkerFunctionProviderRegistry)} in CDI contexts. Use {@link #load(InputStream)} for non-CDI
