@@ -63,7 +63,8 @@ public record YamlCaseSpec(
     @JsonAlias("goapActions") List<YamlGoapAction> actions,
     List<YamlContextLayer> layers,
     List<YamlWorker> workers,
-    List<YamlBinding> bindings) {
+    List<YamlBinding> bindings,
+    YamlDecomposition decomposition) {
 
   public YamlCaseSpec {
     if (capabilities == null) {
