@@ -16,12 +16,15 @@
 package io.casehub.api.model.converter.yaml;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
-import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
-import io.casehub.api.model.converter.deser.ExpressionEvaluatorDeserializer;
 import io.casehub.platform.api.expression.ExpressionEvaluator;
+import java.util.List;
 
 @JsonIgnoreProperties(ignoreUnknown = true)
-public record YamlLabelRule(
-    String name,
-    @JsonDeserialize(using = ExpressionEvaluatorDeserializer.class) ExpressionEvaluator when,
-    YamlLabelAction actions) {}
+public record YamlLabelRule(String name, ExpressionEvaluator when, List<YamlLabelAction> actions) {
+
+  public YamlLabelRule {
+    if (actions == null) {
+      actions = List.of();
+    }
+  }
+}

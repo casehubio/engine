@@ -16,10 +16,11 @@
 package io.casehub.api.model.converter.yaml;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+import com.fasterxml.jackson.databind.JsonNode;
 
 @JsonIgnoreProperties(ignoreUnknown = true)
 public record YamlAgent(
-    String model,
+    JsonNode model,
     String modelName,
     String systemPrompt,
     String inputSchema,

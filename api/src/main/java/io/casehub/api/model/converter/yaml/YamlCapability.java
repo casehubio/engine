@@ -15,17 +15,21 @@
  */
 package io.casehub.api.model.converter.yaml;
 
+import com.fasterxml.jackson.annotation.JsonAlias;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import java.util.Map;
 
 @JsonIgnoreProperties(ignoreUnknown = true)
 public record YamlCapability(
     String name,
-    String inputProjection,
-    String outputProjection,
+    String description,
+    @JsonAlias("inputSchema") String inputProjection,
+    @JsonAlias("outputSchema") String outputProjection,
     Map<String, Double> cognitiveDemand) {
 
   public YamlCapability {
-    if (cognitiveDemand == null) cognitiveDemand = Map.of();
+    if (cognitiveDemand == null) {
+      cognitiveDemand = Map.of();
+    }
   }
 }

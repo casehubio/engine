@@ -26,11 +26,22 @@ public record YamlGoapAction(
     Map<String, Boolean> preconditions,
     Map<String, Boolean> effects,
     Double cost,
+    Double benefit,
+    Map<String, Boolean> softPreconditions,
     List<String> softDependency) {
 
   public YamlGoapAction {
-    if (preconditions == null) preconditions = Map.of();
-    if (effects == null) effects = Map.of();
-    if (softDependency == null) softDependency = List.of();
+    if (preconditions == null) {
+      preconditions = Map.of();
+    }
+    if (effects == null) {
+      effects = Map.of();
+    }
+    if (softPreconditions == null) {
+      softPreconditions = Map.of();
+    }
+    if (softDependency == null) {
+      softDependency = List.of();
+    }
   }
 }

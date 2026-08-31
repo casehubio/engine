@@ -26,7 +26,7 @@ import java.io.IOException;
 
 public class ExpressionEvaluatorDeserializer extends StdDeserializer<ExpressionEvaluator> {
 
-  static final String EXPRESSION_LANG_KEY = "casehub.expressionLang";
+  public static final String EXPRESSION_LANG_KEY = "casehub.expressionLang";
   private final ExpressionEngineRegistry registry;
 
   public ExpressionEvaluatorDeserializer(ExpressionEngineRegistry registry) {
