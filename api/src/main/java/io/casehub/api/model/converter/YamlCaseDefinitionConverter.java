@@ -130,7 +130,7 @@ import net.thisptr.jackson.jq.exception.JsonQueryException;
 import org.jboss.logging.Logger;
 
 /**
- * Converts YAML records to the {@link CaseDefinition} domain model. Replaces both {@link
+ * Converts YAML records to the {@link CaseDefinition} domain model. Replaces
  * the previous hand-coded deserializers and post-processor.
  */
 public final class YamlCaseDefinitionConverter {
