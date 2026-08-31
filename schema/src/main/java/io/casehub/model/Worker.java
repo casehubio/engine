@@ -154,14 +154,13 @@ public class Worker {
     this.outputType = outputType;
   }
 
-    private String definitionRef;
+  private String definitionRef;
 
-    public String getDefinitionRef() {
-        return definitionRef;
-    }
+  public String getDefinitionRef() {
+    return definitionRef;
+  }
 
-    public void setDefinitionRef(String definitionRef) {
-        this.definitionRef = definitionRef;
-    }
-
+  public void setDefinitionRef(String definitionRef) {
+    this.definitionRef = definitionRef;
+  }
 }

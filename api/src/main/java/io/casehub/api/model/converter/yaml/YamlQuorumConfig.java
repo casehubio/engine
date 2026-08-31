@@ -19,7 +19,4 @@ import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 
 @JsonIgnoreProperties(ignoreUnknown = true)
 public record YamlQuorumConfig(
-    Integer instances,
-    Integer requiredCount,
-    String onThresholdReached,
-    Boolean allowSameAssignee) {}
+    Integer instances, Integer required, String onThresholdReached, Boolean allowSameAssignee) {}

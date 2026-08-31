@@ -16,21 +16,7 @@
 package io.casehub.api.model.converter.yaml;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
-import com.fasterxml.jackson.databind.JsonNode;
 
 @JsonIgnoreProperties(ignoreUnknown = true)
-public record YamlAgent(
-    JsonNode model,
-    String modelName,
-    String systemPrompt,
-    String inputSchema,
-    String outputSchema,
-    String responseSchema,
-    String baseUrl,
-    String organizationId,
-    Double temperature,
-    Double topP,
-    Integer maxTokens,
-    Double frequencyPenalty,
-    Double presencePenalty,
-    String version) {}
+public record YamlRetryPolicy(
+    Integer maxAttempts, Integer delayMs, String backoffStrategy, Integer maxDelayMs) {}

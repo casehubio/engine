@@ -15,20 +15,42 @@
  */
 package io.casehub.api.model.converter.yaml;
 
+import com.fasterxml.jackson.annotation.JsonAlias;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.databind.JsonNode;
 import java.util.List;
+import java.util.Set;
 
 @JsonIgnoreProperties(ignoreUnknown = true)
 public record YamlJudgmentTarget(
     String prompt,
+    String promptExpression,
+    String inputMapping,
+    String outputMapping,
+    String resolutionType,
+    String expiresIn,
+    String expiresInExpression,
+    String expiresAtExpression,
+    List<String> evidenceRequirements,
     String verifierStrategy,
+    @JsonAlias("escalatorStrategy") String escalationStrategy,
+    String trustThreshold,
+    String title,
+    String titleExpression,
+    Set<String> outcomes,
+    String scope,
+    String scopeExpression,
+    String priority,
+    JsonNode human,
     JsonNode callerConfig,
-    List<YamlEvidenceRequirement> evidenceRequirements,
-    String escalationStrategy,
     Integer maxEscalationAttempts) {
 
   public YamlJudgmentTarget {
-    if (evidenceRequirements == null) evidenceRequirements = List.of();
+    if (evidenceRequirements == null) {
+      evidenceRequirements = List.of();
+    }
+    if (outcomes == null) {
+      outcomes = Set.of();
+    }
   }
 }

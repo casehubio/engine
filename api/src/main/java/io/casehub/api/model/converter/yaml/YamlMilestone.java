@@ -15,14 +15,16 @@
  */
 package io.casehub.api.model.converter.yaml;
 
+import com.fasterxml.jackson.annotation.JsonAlias;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
-import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
-import io.casehub.api.model.converter.deser.ExpressionEvaluatorDeserializer;
 import io.casehub.platform.api.expression.ExpressionEvaluator;
 
 @JsonIgnoreProperties(ignoreUnknown = true)
 public record YamlMilestone(
     String name,
     String description,
-    @JsonDeserialize(using = ExpressionEvaluatorDeserializer.class) ExpressionEvaluator when,
+    @JsonAlias({"condition", "completionCriteria"}) ExpressionEvaluator when,
+    ExpressionEvaluator entryCriteria,
+    String slaDuration,
+    String slaStartFrom,
     YamlSla sla) {}

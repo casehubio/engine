@@ -16,14 +16,12 @@
 package io.casehub.api.model.converter.yaml;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
-import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
-import io.casehub.api.model.converter.deser.ExpressionEvaluatorDeserializer;
 import io.casehub.platform.api.expression.ExpressionEvaluator;
 
 @JsonIgnoreProperties(ignoreUnknown = true)
 public record YamlInboundMapping(
     String signal,
     String connectorType,
-    @JsonDeserialize(using = ExpressionEvaluatorDeserializer.class) ExpressionEvaluator correlation,
-    @JsonDeserialize(using = ExpressionEvaluatorDeserializer.class) ExpressionEvaluator payload,
+    ExpressionEvaluator correlation,
+    ExpressionEvaluator payload,
     String correlationResolver) {}

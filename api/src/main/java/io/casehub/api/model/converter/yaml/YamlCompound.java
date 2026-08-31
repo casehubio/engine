@@ -16,8 +16,6 @@
 package io.casehub.api.model.converter.yaml;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
-import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
-import io.casehub.api.model.converter.deser.ExpressionEvaluatorDeserializer;
 import io.casehub.platform.api.expression.ExpressionEvaluator;
 import java.util.List;
 import java.util.Map;
@@ -29,10 +27,8 @@ public record YamlCompound(
     String dispatchMode,
     List<String> children,
     Map<String, String> scopedBindings,
-    @JsonDeserialize(using = ExpressionEvaluatorDeserializer.class)
-        ExpressionEvaluator entryCondition,
-    @JsonDeserialize(using = ExpressionEvaluatorDeserializer.class)
-        ExpressionEvaluator exitCondition,
+    ExpressionEvaluator entryCondition,
+    ExpressionEvaluator exitCondition,
     Boolean repeatable,
     Integer mofnRequired,
     String planningStrategy) {

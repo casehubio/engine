@@ -17,8 +17,6 @@ package io.casehub.api.model.converter.yaml;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
-import io.casehub.api.model.converter.deser.ExpressionEvaluatorDeserializer;
 import io.casehub.platform.api.expression.ExpressionEvaluator;
 import java.util.Set;
 
@@ -26,24 +24,18 @@ import java.util.Set;
 public record YamlHumanTaskTarget(
     String templateRef,
     String title,
-    @JsonDeserialize(using = ExpressionEvaluatorDeserializer.class)
-        ExpressionEvaluator titleExpression,
+    ExpressionEvaluator titleExpression,
     JsonNode candidateGroups,
     JsonNode candidateUsers,
     String expiresIn,
-    @JsonDeserialize(using = ExpressionEvaluatorDeserializer.class)
-        ExpressionEvaluator expiresInExpression,
-    @JsonDeserialize(using = ExpressionEvaluatorDeserializer.class)
-        ExpressionEvaluator expiresAtExpression,
+    ExpressionEvaluator expiresInExpression,
+    ExpressionEvaluator expiresAtExpression,
     Integer claimDeadlineHours,
     String priority,
-    @JsonDeserialize(using = ExpressionEvaluatorDeserializer.class)
-        ExpressionEvaluator inputMapping,
-    @JsonDeserialize(using = ExpressionEvaluatorDeserializer.class)
-        ExpressionEvaluator outputMapping,
+    ExpressionEvaluator inputMapping,
+    ExpressionEvaluator outputMapping,
     String scope,
-    @JsonDeserialize(using = ExpressionEvaluatorDeserializer.class)
-        ExpressionEvaluator scopeExpression,
+    ExpressionEvaluator scopeExpression,
     Set<String> outcomes,
     String payloadType,
     String resolutionType,

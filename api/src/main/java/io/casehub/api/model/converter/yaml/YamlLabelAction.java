@@ -16,13 +16,6 @@
 package io.casehub.api.model.converter.yaml;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
-import java.util.List;
 
 @JsonIgnoreProperties(ignoreUnknown = true)
-public record YamlLabelAction(List<String> add, List<String> remove) {
-
-  public YamlLabelAction {
-    if (add == null) add = List.of();
-    if (remove == null) remove = List.of();
-  }
-}
+public record YamlLabelAction(String add, String remove) {}

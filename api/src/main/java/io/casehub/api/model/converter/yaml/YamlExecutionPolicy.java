@@ -18,10 +18,4 @@ package io.casehub.api.model.converter.yaml;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 
 @JsonIgnoreProperties(ignoreUnknown = true)
-public record YamlExecutionPolicy(
-    Integer maxRetries,
-    String backoffStrategy,
-    Long initialDelayMs,
-    Long maxDelayMs,
-    Double backoffMultiplier,
-    Long timeoutMs) {}
+public record YamlExecutionPolicy(Integer timeoutMs, YamlRetryPolicy retries) {}

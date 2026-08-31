@@ -142,10 +142,12 @@ public final class CaseDefinitionYamlMapper {
             .disable(
                 com.fasterxml.jackson.databind.DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES);
     moduleMapper.addHandler(UnknownPropertyWarningHandler.INSTANCE);
-    final CaseDefinition def = moduleMapper.convertValue(processedNode, CaseDefinition.class);
-    new CaseDefinitionPostProcessor(providerRegistry != null ? providerRegistry : EMPTY_PROVIDERS)
-        .apply(def, rawNode);
-    return def;
+    final io.casehub.api.model.converter.yaml.YamlCaseDefinition yaml =
+        deserializeYaml(processedNode, moduleMapper);
+    return YamlCaseDefinitionConverter.convert(
+        yaml,
+        registry != null ? registry : JQ_ONLY,
+        providerRegistry != null ? providerRegistry : EMPTY_PROVIDERS);
   }
 
   /**
@@ -174,10 +176,12 @@ public final class CaseDefinitionYamlMapper {
             .disable(
                 com.fasterxml.jackson.databind.DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES);
     moduleMapper.addHandler(UnknownPropertyWarningHandler.INSTANCE);
-    final CaseDefinition def = moduleMapper.convertValue(processedNode, CaseDefinition.class);
-    new CaseDefinitionPostProcessor(providerRegistry != null ? providerRegistry : EMPTY_PROVIDERS)
-        .apply(def, mergedNode);
-    return def;
+    final io.casehub.api.model.converter.yaml.YamlCaseDefinition yaml =
+        deserializeYaml(processedNode, moduleMapper);
+    return YamlCaseDefinitionConverter.convert(
+        yaml,
+        registry != null ? registry : JQ_ONLY,
+        providerRegistry != null ? providerRegistry : EMPTY_PROVIDERS);
   }
 
   /**
@@ -218,6 +222,38 @@ public final class CaseDefinitionYamlMapper {
     throw new IllegalArgumentException(
         "Expression must be a string or single-key map {lang: expr}, got "
             + node.getNodeType().name());
+  }
+
+  private static io.casehub.api.model.converter.yaml.YamlCaseDefinition deserializeYaml(
+      JsonNode node, ObjectMapper moduleMapper) {
+    String expressionLang = resolveExpressionLang(node);
+    com.fasterxml.jackson.databind.ObjectReader reader =
+        moduleMapper.readerFor(io.casehub.api.model.converter.yaml.YamlCaseDefinition.class);
+    if (expressionLang != null) {
+      reader =
+          reader.withAttribute(
+              io.casehub.api.model.converter.deser.ExpressionEvaluatorDeserializer
+                  .EXPRESSION_LANG_KEY,
+              expressionLang);
+    }
+    try {
+      return reader.readValue(node);
+    } catch (java.io.IOException e) {
+      if (e.getCause() instanceof IllegalArgumentException iae) {
+        throw iae;
+      }
+      throw new IllegalArgumentException("Failed to deserialize YAML CaseDefinition", e);
+    }
+  }
+
+  private static String resolveExpressionLang(JsonNode node) {
+    if (node.has("expressionLang") && !node.get("expressionLang").isNull()) {
+      return node.get("expressionLang").asText();
+    }
+    if (node.has("contextType") && !node.get("contextType").isNull()) {
+      return "mvel";
+    }
+    return null;
   }
 
   private static JsonNode flattenExpressionOverrides(JsonNode node, ObjectMapper mapper) {
