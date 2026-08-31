@@ -135,6 +135,7 @@ public final class CaseDefinitionYamlMapper {
     final byte[] bytes = yamlStream.readAllBytes();
     final JsonNode rawNode = objectMapper.readTree(bytes);
     final JsonNode processedNode = flattenExpressionOverrides(rawNode, objectMapper);
+    final JsonNode expandedNode = expandForEach(processedNode, objectMapper);
     final com.fasterxml.jackson.databind.ObjectMapper moduleMapper =
         objectMapper
             .copy()
@@ -143,7 +144,50 @@ public final class CaseDefinitionYamlMapper {
                 com.fasterxml.jackson.databind.DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES);
     moduleMapper.addHandler(UnknownPropertyWarningHandler.INSTANCE);
     final io.casehub.api.model.converter.yaml.YamlCaseDefinition yaml =
-        deserializeYaml(processedNode, moduleMapper);
+        deserializeYaml(expandedNode, moduleMapper);
+    return YamlCaseDefinitionConverter.convert(
+        yaml,
+        registry != null ? registry : JQ_ONLY,
+        providerRegistry != null ? providerRegistry : EMPTY_PROVIDERS);
+  }
+
+  /**
+   * Loads a CaseDefinition with variable resolution. Variables like {@code ${env.X}} and {@code
+   * ${config.X}} are resolved before Jackson deserialization. The {@code each} prefix is deferred —
+   * it is resolved during forEach expansion.
+   *
+   * @param yamlStream InputStream containing YAML CaseDefinition
+   * @param objectMapper ObjectMapper configured for YAML
+   * @param registry ExpressionEngineRegistry for creating evaluators
+   * @param providerRegistry WorkerFunctionProviderRegistry for SDK-dependent worker construction
+   * @param variableSources prefix-keyed variable sources (e.g., "env" → System::getenv)
+   * @return API model CaseDefinition
+   * @throws IOException if reading or parsing fails
+   */
+  public static CaseDefinition load(
+      final InputStream yamlStream,
+      final ObjectMapper objectMapper,
+      final ExpressionEngineRegistry registry,
+      final WorkerFunctionProviderRegistry providerRegistry,
+      final java.util.Map<String, io.casehub.yaml.core.resolver.VariableSource> variableSources)
+      throws IOException {
+    if (yamlStream == null) {
+      throw new IllegalArgumentException("InputStream cannot be null");
+    }
+    final byte[] bytes = yamlStream.readAllBytes();
+    final JsonNode rawNode = objectMapper.readTree(bytes);
+    final JsonNode processedNode = flattenExpressionOverrides(rawNode, objectMapper);
+    final JsonNode resolvedNode = resolveVariables(processedNode, objectMapper, variableSources);
+    final JsonNode expandedNode = expandForEach(resolvedNode, objectMapper);
+    final com.fasterxml.jackson.databind.ObjectMapper moduleMapper =
+        objectMapper
+            .copy()
+            .registerModule(new CaseDefinitionModule(registry != null ? registry : JQ_ONLY))
+            .disable(
+                com.fasterxml.jackson.databind.DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES);
+    moduleMapper.addHandler(UnknownPropertyWarningHandler.INSTANCE);
+    final io.casehub.api.model.converter.yaml.YamlCaseDefinition yaml =
+        deserializeYaml(expandedNode, moduleMapper);
     return YamlCaseDefinitionConverter.convert(
         yaml,
         registry != null ? registry : JQ_ONLY,
@@ -169,6 +213,7 @@ public final class CaseDefinitionYamlMapper {
       throw new IllegalArgumentException("JsonNode cannot be null");
     }
     final JsonNode processedNode = flattenExpressionOverrides(mergedNode, objectMapper);
+    final JsonNode expandedNode = expandForEach(processedNode, objectMapper);
     final com.fasterxml.jackson.databind.ObjectMapper moduleMapper =
         objectMapper
             .copy()
@@ -177,7 +222,7 @@ public final class CaseDefinitionYamlMapper {
                 com.fasterxml.jackson.databind.DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES);
     moduleMapper.addHandler(UnknownPropertyWarningHandler.INSTANCE);
     final io.casehub.api.model.converter.yaml.YamlCaseDefinition yaml =
-        deserializeYaml(processedNode, moduleMapper);
+        deserializeYaml(expandedNode, moduleMapper);
     return YamlCaseDefinitionConverter.convert(
         yaml,
         registry != null ? registry : JQ_ONLY,
@@ -283,6 +328,107 @@ public final class CaseDefinitionYamlMapper {
       }
     }
     return copy;
+  }
+
+  @SuppressWarnings("unchecked")
+  private static JsonNode resolveVariables(
+      JsonNode node,
+      ObjectMapper mapper,
+      java.util.Map<String, io.casehub.yaml.core.resolver.VariableSource> sources) {
+    if (sources == null || sources.isEmpty()) {
+      return node;
+    }
+    io.casehub.yaml.core.resolver.VariableResolver resolver =
+        new io.casehub.yaml.core.resolver.VariableResolver(sources, java.util.Set.of("each"));
+    Object raw = mapper.convertValue(node, Object.class);
+    Object resolved = resolver.resolve(raw);
+    return mapper.valueToTree(resolved);
+  }
+
+  private static JsonNode expandForEach(JsonNode node, ObjectMapper mapper) {
+    JsonNode iterationsNode = node.get("iterations");
+    if (iterationsNode == null || !iterationsNode.isObject() || iterationsNode.isEmpty()) {
+      return node;
+    }
+
+    java.util.Map<String, io.casehub.yaml.core.foreach.IterationGroup> groups =
+        new java.util.LinkedHashMap<>();
+    iterationsNode
+        .fields()
+        .forEachRemaining(
+            entry -> {
+              JsonNode group = entry.getValue();
+              java.util.List<String> in = new java.util.ArrayList<>();
+              if (group.has("in") && group.get("in").isArray()) {
+                group.get("in").forEach(v -> in.add(v.asText()));
+              }
+              String as = group.has("as") ? group.get("as").asText() : entry.getKey();
+              groups.put(entry.getKey(), new io.casehub.yaml.core.foreach.IterationGroup(as, in));
+            });
+
+    io.casehub.yaml.core.resolver.VariableResolver resolver =
+        new io.casehub.yaml.core.resolver.VariableResolver(java.util.Map.of(), java.util.Set.of());
+
+    com.fasterxml.jackson.databind.node.ObjectNode result = mapper.valueToTree(node);
+
+    io.casehub.api.model.converter.yaml.JsonNodeForEachAdapter workerAdapter =
+        new io.casehub.api.model.converter.yaml.JsonNodeForEachAdapter(mapper, "forEach", null);
+    io.casehub.api.model.converter.yaml.JsonNodeForEachAdapter bindingAdapter =
+        new io.casehub.api.model.converter.yaml.JsonNodeForEachAdapter(mapper, "forEach", null);
+
+    expandArray(result, "workers", groups, resolver, workerAdapter, mapper);
+    expandArray(result, "bindings", groups, resolver, bindingAdapter, mapper);
+
+    if (result.has("spec") && result.get("spec").isObject()) {
+      com.fasterxml.jackson.databind.node.ObjectNode spec =
+          (com.fasterxml.jackson.databind.node.ObjectNode) result.get("spec");
+      expandArray(spec, "workers", groups, resolver, workerAdapter, mapper);
+      expandArray(spec, "bindings", groups, resolver, bindingAdapter, mapper);
+    }
+
+    return result;
+  }
+
+  private static void expandArray(
+      com.fasterxml.jackson.databind.node.ObjectNode parent,
+      String fieldName,
+      java.util.Map<String, io.casehub.yaml.core.foreach.IterationGroup> groups,
+      io.casehub.yaml.core.resolver.VariableResolver resolver,
+      io.casehub.api.model.converter.yaml.JsonNodeForEachAdapter adapter,
+      ObjectMapper mapper) {
+    JsonNode arrayNode = parent.get(fieldName);
+    if (arrayNode == null || !arrayNode.isArray() || arrayNode.isEmpty()) {
+      return;
+    }
+
+    boolean hasForEach = false;
+    for (JsonNode element : arrayNode) {
+      if (element.has("forEach")) {
+        hasForEach = true;
+        break;
+      }
+    }
+    if (!hasForEach) {
+      return;
+    }
+
+    java.util.LinkedHashMap<String, JsonNode> elements = new java.util.LinkedHashMap<>();
+    for (JsonNode element : arrayNode) {
+      String id = adapter.getId(element);
+      if (id == null) {
+        throw new IllegalArgumentException(
+            "Element in '" + fieldName + "' array missing 'name' field");
+      }
+      elements.put(id, element);
+    }
+
+    io.casehub.yaml.core.foreach.ExpansionResult<JsonNode> result =
+        io.casehub.yaml.core.foreach.ForEachExpander.expand(
+            elements, groups, resolver, adapter, 1000);
+
+    com.fasterxml.jackson.databind.node.ArrayNode expanded = mapper.createArrayNode();
+    result.elements().forEach(expanded::add);
+    parent.set(fieldName, expanded);
   }
 
   /**
