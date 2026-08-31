@@ -77,7 +77,134 @@ public class CaseDefinition {
   private java.util.Map<String, com.fasterxml.jackson.databind.JsonNode> definitions =
       java.util.Map.of();
 
-  private final CaseDefinitionSpec spec;
+  @com.fasterxml.jackson.annotation.JsonPropertyDescription(
+      "Capabilities define what Workers can do — declared competences with input/output contracts.")
+  private final List<Capability> capabilities;
+
+  @com.fasterxml.jackson.annotation.JsonPropertyDescription(
+      "Autonomous participants that observe CaseContext, make local decisions, and perform work.")
+  private final List<Worker> workers;
+
+  @com.fasterxml.jackson.annotation.JsonPropertyDescription(
+      "Bindings connect trigger conditions to worker capabilities.")
+  private final List<Binding> bindings;
+
+  @com.fasterxml.jackson.annotation.JsonPropertyDescription(
+      "Observable progress markers derived from CaseContext.")
+  private final List<Milestone> milestones;
+
+  @com.fasterxml.jackson.annotation.JsonPropertyDescription(
+      "Desired end-states expressed as predicates over the CaseContext.")
+  private final List<Goal> goals;
+
+  @com.fasterxml.jackson.annotation.JsonPropertyDescription(
+      "Defines when a Case is terminally completed or failed based on Goal satisfaction.")
+  private CaseCompletion completion;
+
+  @com.fasterxml.jackson.annotation.JsonPropertyDescription(
+      "Planning strategy ID. Built-in: \"default\" (choreography), \"sequential\".")
+  private String planningStrategy;
+
+  @com.fasterxml.jackson.annotation.JsonPropertyDescription(
+      "Agent routing strategy ID. Selects which worker instance handles a task.")
+  private String agentRouting;
+
+  @com.fasterxml.jackson.annotation.JsonPropertyDescription(
+      "Implementation routing strategy ID. Selects which binding(s) handle a capability.")
+  private String implementationRouting;
+
+  @com.fasterxml.jackson.annotation.JsonPropertyDescription(
+      "HumanTask routing strategy ID. Enriches candidate sets with historical data.")
+  private String humanTaskRouting;
+
+  @com.fasterxml.jackson.annotation.JsonPropertyDescription(
+      "Declarative rules for humanTask candidate filtering and scoring.")
+  private List<io.casehub.api.model.routing.ContextConstraint> humanTaskContextConstraints =
+      List.of();
+
+  @com.fasterxml.jackson.annotation.JsonPropertyDescription(
+      "Workload-based humanTask candidate constraint.")
+  private io.casehub.api.model.routing.WorkloadConstraint humanTaskWorkloadConstraint;
+
+  @com.fasterxml.jackson.annotation.JsonPropertyDescription(
+      "Candidate matching strategy ID. Built-in: \"exact\", \"subsumption\".")
+  private String candidateMatching;
+
+  @com.fasterxml.jackson.annotation.JsonPropertyDescription(
+      "HTN decomposition strategy ID. Default: \"identity\".")
+  private String decompositionStrategy;
+
+  @com.fasterxml.jackson.annotation.JsonPropertyDescription(
+      "Maximum nesting depth for dynamic decomposition. Default: 3.")
+  private Integer maxDecompositionDepth;
+
+  @com.fasterxml.jackson.annotation.JsonPropertyDescription(
+      "Maximum adaptation count per compound before Concede. Default: 5.")
+  private Integer maxAdaptations;
+
+  @com.fasterxml.jackson.annotation.JsonPropertyDescription(
+      "Maximum escalation count per judgment yield before Fault. Default: 3.")
+  private Integer maxEscalations;
+
+  @com.fasterxml.jackson.annotation.JsonPropertyDescription(
+      "Case-Based Reasoning retrieval configuration.")
+  private io.casehub.api.model.cbr.CbrConfig cbrConfig;
+
+  @com.fasterxml.jackson.annotation.JsonPropertyDescription(
+      "Per-signal-provider weight configuration for composable agent routing.")
+  private Map<String, Double> routingSignalWeights;
+
+  private Map<String, CognitiveDemand> cognitiveDemands = Map.of();
+
+  @com.fasterxml.jackson.annotation.JsonPropertyDescription(
+      "ACL grants created when a case of this type is started.")
+  private Map<io.casehub.platform.api.acl.AclAction, List<String>> authorization;
+
+  @com.fasterxml.jackson.annotation.JsonPropertyDescription(
+      "Map of worker name to service account ID for tenant-specific endpoint resolution.")
+  private Map<String, String> workerServiceAccountIds;
+
+  @com.fasterxml.jackson.annotation.JsonPropertyDescription(
+      "Default M-of-N multi-party approval configuration for action gates.")
+  private io.casehub.api.spi.QuorumConfig defaultQuorum;
+
+  @com.fasterxml.jackson.annotation.JsonPropertyDescription(
+      "Per-case reflection trigger configuration.")
+  private ReflectionTriggerConfig reflectionTrigger;
+
+  @com.fasterxml.jackson.annotation.JsonPropertyDescription(
+      "Per-case memory retrieval configuration.")
+  private MemoryRetrievalConfig memoryRetrieval;
+
+  @com.fasterxml.jackson.annotation.JsonPropertyDescription(
+      "Per-case plan adaptation configuration.")
+  private AdaptationConfig adaptationConfig;
+
+  @com.fasterxml.jackson.annotation.JsonPropertyDescription(
+      "Per-case resource constraints for decomposition and pattern execution.")
+  private io.casehub.engine.plan.PlanningConstraints planningConstraints;
+
+  @com.fasterxml.jackson.annotation.JsonPropertyDescription(
+      "Per-case expectation tracking configuration.")
+  private io.casehub.engine.plan.monitoring.MonitoringConfig monitoringConfig;
+
+  @com.fasterxml.jackson.annotation.JsonPropertyDescription(
+      "Cascading decomposition strategy configuration.")
+  private io.casehub.engine.plan.PortfolioConfig portfolioConfig;
+
+  @com.fasterxml.jackson.annotation.JsonPropertyDescription(
+      "Typed streaming channels for worker-to-worker data flow.")
+  private List<ChannelDeclaration> channels = List.of();
+
+  @com.fasterxml.jackson.annotation.JsonPropertyDescription(
+      "GOAP action declarations for planning.")
+  private List<io.casehub.engine.plan.goap.GoapAction> goapActions;
+
+  private Map<String, Set<String>> goalToEffectKeys;
+
+  @com.fasterxml.jackson.annotation.JsonPropertyDescription(
+      "Per-case multi-level recovery configuration.")
+  private RecoveryPolicy recoveryPolicy;
 
   @com.fasterxml.jackson.annotation.JsonPropertyDescription(
       "Behavioral type classifications — hierarchical path strings via Path.parse().")
@@ -118,15 +245,15 @@ public class CaseDefinition {
     this.namespace = namespace;
     this.name = name;
     this.version = version;
-    this.spec = new CaseDefinitionSpec();
+    this.capabilities = new java.util.ArrayList<>();
+    this.workers = new java.util.ArrayList<>();
+    this.bindings = new java.util.ArrayList<>();
+    this.milestones = new java.util.ArrayList<>();
+    this.goals = new java.util.ArrayList<>();
   }
 
   public String getVersion() {
     return version;
-  }
-
-  public CaseDefinitionSpec getSpec() {
-    return spec;
   }
 
   public String getDsl() {
@@ -170,19 +297,19 @@ public class CaseDefinition {
   }
 
   public List<Capability> getCapabilities() {
-    return spec.getCapabilities();
+    return capabilities;
   }
 
   public List<Worker> getWorkers() {
-    return spec.getWorkers();
+    return workers;
   }
 
   public List<Binding> getBindings() {
-    return spec.getBindings();
+    return bindings;
   }
 
   public java.util.List<Binding> findBindingsByCapability(String capabilityName) {
-    return spec.getBindings().stream()
+    return bindings.stream()
         .filter(
             b ->
                 b.target() instanceof CapabilityTarget ct
@@ -191,19 +318,19 @@ public class CaseDefinition {
   }
 
   public List<Milestone> getMilestones() {
-    return spec.getMilestones();
+    return milestones;
   }
 
   public List<Goal> getGoals() {
-    return spec.getGoals();
+    return goals;
   }
 
   public CaseCompletion getCompletion() {
-    return spec.getCompletion();
+    return completion;
   }
 
   public void setCompletion(CaseCompletion completion) {
-    spec.setCompletion(completion);
+    this.completion = completion;
   }
 
   public Map<String, Object> getSemanticData() {
@@ -248,93 +375,93 @@ public class CaseDefinition {
   }
 
   public String getPlanningStrategy() {
-    return spec.getPlanningStrategy();
+    return planningStrategy;
   }
 
   public void setPlanningStrategy(String planningStrategy) {
-    spec.setPlanningStrategy(planningStrategy);
+    this.planningStrategy = planningStrategy;
   }
 
   public String getAgentRouting() {
-    return spec.getAgentRouting();
+    return agentRouting;
   }
 
   public void setAgentRouting(String agentRouting) {
-    spec.setAgentRouting(agentRouting);
+    this.agentRouting = agentRouting;
   }
 
   public String getImplementationRouting() {
-    return spec.getImplementationRouting();
+    return implementationRouting;
   }
 
   public void setImplementationRouting(String implementationRouting) {
-    spec.setImplementationRouting(implementationRouting);
+    this.implementationRouting = implementationRouting;
   }
 
   public String getHumanTaskRouting() {
-    return spec.getHumanTaskRouting();
+    return humanTaskRouting;
   }
 
   public void setHumanTaskRouting(String humanTaskRouting) {
-    spec.setHumanTaskRouting(humanTaskRouting);
+    this.humanTaskRouting = humanTaskRouting;
   }
 
   public List<io.casehub.api.model.routing.ContextConstraint> getHumanTaskContextConstraints() {
-    return spec.getHumanTaskContextConstraints();
+    return humanTaskContextConstraints;
   }
 
   public void setHumanTaskContextConstraints(
       List<io.casehub.api.model.routing.ContextConstraint> constraints) {
-    spec.setHumanTaskContextConstraints(constraints);
+    this.humanTaskContextConstraints = constraints != null ? List.copyOf(constraints) : List.of();
   }
 
   public io.casehub.api.model.routing.WorkloadConstraint getHumanTaskWorkloadConstraint() {
-    return spec.getHumanTaskWorkloadConstraint();
+    return humanTaskWorkloadConstraint;
   }
 
   public void setHumanTaskWorkloadConstraint(
       io.casehub.api.model.routing.WorkloadConstraint constraint) {
-    spec.setHumanTaskWorkloadConstraint(constraint);
+    this.humanTaskWorkloadConstraint = constraint;
   }
 
   public String getCandidateMatching() {
-    return spec.getCandidateMatching();
+    return candidateMatching;
   }
 
   public void setCandidateMatching(String candidateMatching) {
-    spec.setCandidateMatching(candidateMatching);
+    this.candidateMatching = candidateMatching;
   }
 
   public String getDecompositionStrategy() {
-    return spec.getDecompositionStrategy();
+    return decompositionStrategy;
   }
 
   public void setDecompositionStrategy(String decompositionStrategy) {
-    spec.setDecompositionStrategy(decompositionStrategy);
+    this.decompositionStrategy = decompositionStrategy;
   }
 
   public Integer getMaxDecompositionDepth() {
-    return spec.getMaxDecompositionDepth();
+    return maxDecompositionDepth;
   }
 
   public void setMaxDecompositionDepth(Integer maxDecompositionDepth) {
-    spec.setMaxDecompositionDepth(maxDecompositionDepth);
+    this.maxDecompositionDepth = maxDecompositionDepth;
   }
 
   public Integer getMaxAdaptations() {
-    return spec.getMaxAdaptations();
+    return maxAdaptations;
   }
 
   public void setMaxAdaptations(Integer maxAdaptations) {
-    spec.setMaxAdaptations(maxAdaptations);
+    this.maxAdaptations = maxAdaptations;
   }
 
   public Integer getMaxEscalations() {
-    return spec.getMaxEscalations();
+    return maxEscalations;
   }
 
   public void setMaxEscalations(Integer maxEscalations) {
-    spec.setMaxEscalations(maxEscalations);
+    this.maxEscalations = maxEscalations;
   }
 
   public Set<Path> getTypes() {
@@ -354,11 +481,11 @@ public class CaseDefinition {
   }
 
   public CbrConfig getCbrConfig() {
-    return spec.getCbrConfig();
+    return cbrConfig;
   }
 
   public void setCbrConfig(CbrConfig cbrConfig) {
-    spec.setCbrConfig(cbrConfig);
+    this.cbrConfig = cbrConfig;
   }
 
   public io.casehub.api.context.ContextBridge<?> getDefaultWorkerBridge() {
@@ -418,113 +545,113 @@ public class CaseDefinition {
   }
 
   public Map<String, Double> getRoutingSignalWeights() {
-    return spec.getRoutingSignalWeights();
+    return routingSignalWeights;
   }
 
   public void setRoutingSignalWeights(Map<String, Double> routingSignalWeights) {
-    spec.setRoutingSignalWeights(routingSignalWeights);
+    this.routingSignalWeights = routingSignalWeights;
   }
 
   public CognitiveDemand getCognitiveDemand(String capabilityName) {
-    return spec.getCognitiveDemand(capabilityName);
+    return cognitiveDemands.get(capabilityName);
   }
 
   public void setCognitiveDemands(Map<String, CognitiveDemand> cognitiveDemands) {
-    spec.setCognitiveDemands(cognitiveDemands);
+    this.cognitiveDemands = cognitiveDemands != null ? cognitiveDemands : Map.of();
   }
 
   public Map<AclAction, List<String>> getAuthorization() {
-    return spec.getAuthorization();
+    return authorization;
   }
 
   public void setAuthorization(Map<AclAction, List<String>> authorization) {
-    spec.setAuthorization(authorization);
+    this.authorization = authorization;
   }
 
   public String getWorkerServiceAccountId(String workerName) {
-    return spec.getWorkerServiceAccountId(workerName);
+    return workerServiceAccountIds != null ? workerServiceAccountIds.get(workerName) : null;
   }
 
   public Map<String, String> getWorkerServiceAccountIds() {
-    return spec.getWorkerServiceAccountIds();
+    return workerServiceAccountIds;
   }
 
   public void setWorkerServiceAccountIds(Map<String, String> workerServiceAccountIds) {
-    spec.setWorkerServiceAccountIds(workerServiceAccountIds);
+    this.workerServiceAccountIds = workerServiceAccountIds;
   }
 
   public io.casehub.api.spi.QuorumConfig getDefaultQuorum() {
-    return spec.getDefaultQuorum();
+    return defaultQuorum;
   }
 
   public void setDefaultQuorum(io.casehub.api.spi.QuorumConfig defaultQuorum) {
-    spec.setDefaultQuorum(defaultQuorum);
+    this.defaultQuorum = defaultQuorum;
   }
 
   public ReflectionTriggerConfig getReflectionTrigger() {
-    return spec.getReflectionTrigger();
+    return reflectionTrigger;
   }
 
   public void setReflectionTrigger(ReflectionTriggerConfig reflectionTrigger) {
-    spec.setReflectionTrigger(reflectionTrigger);
+    this.reflectionTrigger = reflectionTrigger;
   }
 
   public MemoryRetrievalConfig getMemoryRetrieval() {
-    return spec.getMemoryRetrieval();
+    return memoryRetrieval;
   }
 
   public void setMemoryRetrieval(MemoryRetrievalConfig memoryRetrieval) {
-    spec.setMemoryRetrieval(memoryRetrieval);
+    this.memoryRetrieval = memoryRetrieval;
   }
 
   public AdaptationConfig getAdaptationConfig() {
-    return spec.getAdaptationConfig();
+    return adaptationConfig;
   }
 
   public void setAdaptationConfig(AdaptationConfig adaptationConfig) {
-    spec.setAdaptationConfig(adaptationConfig);
+    this.adaptationConfig = adaptationConfig;
   }
 
   public io.casehub.engine.plan.PlanningConstraints getPlanningConstraints() {
-    return spec.getPlanningConstraints();
+    return planningConstraints;
   }
 
   public void setPlanningConstraints(
       io.casehub.engine.plan.PlanningConstraints planningConstraints) {
-    spec.setPlanningConstraints(planningConstraints);
+    this.planningConstraints = planningConstraints;
   }
 
   public io.casehub.engine.plan.monitoring.MonitoringConfig getMonitoringConfig() {
-    return spec.getMonitoringConfig();
+    return monitoringConfig;
   }
 
   public void setMonitoringConfig(
       io.casehub.engine.plan.monitoring.MonitoringConfig monitoringConfig) {
-    spec.setMonitoringConfig(monitoringConfig);
+    this.monitoringConfig = monitoringConfig;
   }
 
   public io.casehub.engine.plan.PortfolioConfig getPortfolioConfig() {
-    return spec.getPortfolioConfig();
+    return portfolioConfig;
   }
 
   public void setPortfolioConfig(io.casehub.engine.plan.PortfolioConfig portfolioConfig) {
-    spec.setPortfolioConfig(portfolioConfig);
+    this.portfolioConfig = portfolioConfig;
   }
 
   public List<ChannelDeclaration> getChannels() {
-    return spec.getChannels();
+    return channels;
   }
 
   public void setChannels(List<ChannelDeclaration> channels) {
-    spec.setChannels(channels);
+    this.channels = channels != null ? channels : List.of();
   }
 
   public List<io.casehub.engine.plan.goap.GoapAction> getGoapActions() {
-    return spec.getGoapActions();
+    return goapActions;
   }
 
   public void setGoapActions(List<io.casehub.engine.plan.goap.GoapAction> goapActions) {
-    spec.setGoapActions(goapActions);
+    this.goapActions = goapActions;
   }
 
   public List<CompoundDeclaration> getCompounds() {
@@ -536,19 +663,19 @@ public class CaseDefinition {
   }
 
   public Map<String, Set<String>> getGoalToEffectKeys() {
-    return spec.getGoalToEffectKeys();
+    return goalToEffectKeys;
   }
 
   public void setGoalToEffectKeys(Map<String, Set<String>> goalToEffectKeys) {
-    spec.setGoalToEffectKeys(goalToEffectKeys);
+    this.goalToEffectKeys = goalToEffectKeys;
   }
 
   public RecoveryPolicy getRecoveryPolicy() {
-    return spec.getRecoveryPolicy();
+    return recoveryPolicy;
   }
 
   public void setRecoveryPolicy(RecoveryPolicy recoveryPolicy) {
-    spec.setRecoveryPolicy(recoveryPolicy);
+    this.recoveryPolicy = recoveryPolicy;
   }
 
   public static Builder builder() {
