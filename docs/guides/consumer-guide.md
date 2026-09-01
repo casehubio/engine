@@ -59,7 +59,7 @@ Cases are defined declaratively: namespace, name, version, capabilities, workers
 - `humanTask` — creates a WorkItem in casehub-work (inline or template mode). Supports `scope`, `inputMapping`/`outputMapping` (JQ), `candidateGroups`, `candidateUsers`, `expiresIn`, `outcomes`
 - `signal` — engine-internal context mutation. Writes a static payload to the case context and publishes `CONTEXT_CHANGED`. No worker dispatch. Use for case-level SLA deadlines, escalation flags, phase transitions. `LifecycleScope.BINDING` only
 
-**Binding fields:** `inputSchemaOverride` overrides the capability's default input schema for this binding only. `contextWrite` is a JQ expression whose result is merged into case context after the worker completes. `outcomePolicy` controls REROUTE vs FAULT behavior on worker DECLINED/FAILED/EXPIRED outcomes. `lifecycleScope` governs worker lifetime.
+**Binding fields:** `contextWrite` is a JQ expression whose result is merged into case context after the worker completes. `outcomePolicy` controls REROUTE vs FAULT behavior on worker DECLINED/FAILED/EXPIRED outcomes. `lifecycleScope` governs worker lifetime.
 
 **Trigger types:** `contextChange` (with optional `filter` and binding-level `when` guard), `schedule` (YAML: `every:` for one-shot ISO-8601 duration, `cron:` for periodic Quartz expression), `scopeActivated` (fires when a compound scope becomes ACTIVE).
 
