@@ -15,4 +15,17 @@
  */
 package io.casehub.codegen.record;
 
-public record FieldOverride(String type, String deserializer, String alias, String property) {}
+import java.util.List;
+
+public record FieldOverride(
+    String type,
+    String deserializer,
+    String alias,
+    String property,
+    String defaultValue,
+    List<String> aliases) {
+
+  public FieldOverride(String type, String deserializer, String alias, String property) {
+    this(type, deserializer, alias, property, null, null);
+  }
+}

@@ -15,4 +15,9 @@
  */
 package io.casehub.codegen.record;
 
-public record ExtraField(String name, String type) {}
+public record ExtraField(String name, String type, String defaultValue) {
+
+  public ExtraField(String name, String type) {
+    this(name, type, null);
+  }
+}

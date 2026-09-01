@@ -19,10 +19,19 @@ import java.util.List;
 import java.util.Map;
 
 public record TypeMapping(
-    String recordName, String source, Map<String, FieldOverride> fields, List<ExtraField> extra) {
+    String recordName,
+    String source,
+    Map<String, FieldOverride> fields,
+    List<ExtraField> extra,
+    String body) {
 
   public TypeMapping {
     if (fields == null) fields = Map.of();
     if (extra == null) extra = List.of();
+  }
+
+  public TypeMapping(
+      String recordName, String source, Map<String, FieldOverride> fields, List<ExtraField> extra) {
+    this(recordName, source, fields, extra, null);
   }
 }
