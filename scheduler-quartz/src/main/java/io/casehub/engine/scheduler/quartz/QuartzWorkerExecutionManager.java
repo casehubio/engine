@@ -379,6 +379,9 @@ public class QuartzWorkerExecutionManager implements WorkerExecutionManager {
       case ExtensionTarget ignored ->
           throw new IllegalStateException(
               "Schedule-triggered binding '" + binding.getName() + "' must target a Capability");
+      case io.casehub.api.model.HumanTaskTarget ignored ->
+          throw new IllegalStateException(
+              "Schedule-triggered binding '" + binding.getName() + "' must target a Capability");
     }
     data.put("workerName", worker.name());
     return data;

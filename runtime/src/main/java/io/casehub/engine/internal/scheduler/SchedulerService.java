@@ -125,6 +125,8 @@ public class SchedulerService {
             LOG.warnf("Schedule binding '%s' has Judgment target — skipping", binding.getName());
         case ExtensionTarget et ->
             LOG.warnf("Schedule binding '%s' has Extension target — skipping", binding.getName());
+        case io.casehub.api.model.HumanTaskTarget ignored ->
+            LOG.warnf("Schedule binding '%s' has HumanTask target — skipping", binding.getName());
       }
     }
   }
@@ -248,6 +250,9 @@ public class SchedulerService {
       case ExtensionTarget ignored ->
           throw new IllegalStateException(
               "createJobData called with non-CapabilityTarget binding '" + binding.getName() + "'");
+      case io.casehub.api.model.HumanTaskTarget ignored ->
+          throw new IllegalStateException(
+              "createJobData called with HumanTaskTarget binding '" + binding.getName() + "'");
     }
     data.put("workerName", worker.name());
     return data;
