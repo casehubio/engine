@@ -1,7 +1,7 @@
 package: io.casehub.api.model.converter.yaml
 
 skipPatterns:
-  - "_codegen"
+  - "_codegen*"
 
 imports:
   Trigger: io.casehub.api.model.Trigger
@@ -34,7 +34,6 @@ types:
       layers: { type: "List<YamlContextLayer>" }
       labelRules: { type: "List<YamlLabelRule>" }
       inboundMappings: { type: "List<YamlInboundMapping>" }
-      definitions: { type: "Map<String, JsonNode>" }
     extra:
       - { name: dsl, type: String }
       - { name: title, type: String }
@@ -43,18 +42,18 @@ types:
       - { name: contextType, type: String }
       - { name: workers, type: "List<YamlWorker>" }
       - { name: bindings, type: "List<YamlBinding>" }
+      - { name: definitions, type: "Map<String, JsonNode>" }
       - { name: iterations, type: "Map<String, YamlIterationGroup>" }
 
   # ── Spec ──
   CaseDefinitionSpec:
     record: YamlCaseSpec
     fields:
-      completion: { type: CaseCompletion, deserializer: CaseCompletionDeserializer }
-      cbrConfig: { type: CbrConfig, deserializer: CbrConfigDeserializer, alias: cbr }
-      adaptationConfig: { type: AdaptationConfig, deserializer: AdaptationConfigDeserializer, alias: adaptation }
-      reflectionTrigger: { type: YamlReflectionTriggerConfig, alias: reflection }
-      quorum: { type: YamlQuorumConfig }
-      actions: { type: "List<YamlGoapAction>", alias: goapActions }
+      cbr: { name: cbrConfig, type: CbrConfig, deserializer: CbrConfigDeserializer, alias: cbr }
+      adaptation: { name: adaptationConfig, type: AdaptationConfig, deserializer: AdaptationConfigDeserializer, alias: adaptation }
+      reflection: { name: reflectionTrigger, type: YamlReflectionTriggerConfig, alias: reflection }
+      defaultQuorum: { name: quorum, type: YamlQuorumConfig }
+      goapActions: { name: actions, type: "List<YamlGoapAction>", alias: goapActions }
       monitoring: { type: YamlMonitoringConfig }
       recoveryPolicy: { type: YamlRecoveryPolicy }
       memoryRetrieval: { type: YamlMemoryRetrievalConfig }
@@ -62,11 +61,26 @@ types:
       portfolioConfig: { type: YamlPortfolioConfig }
       humanTaskWorkloadConstraint: { type: YamlWorkloadConstraint }
       humanTaskContextConstraints: { type: "List<YamlContextConstraint>" }
-      cognitiveDemands: { type: "Map<String, YamlCognitiveDemand>" }
-      authorization: { type: "Map<String, List<String>>" }
-      compounds: { type: "List<YamlCompound>" }
-      channels: { type: "List<YamlChannel>" }
+      completion: { type: CaseCompletion, deserializer: CaseCompletionDeserializer }
     extra:
+      - { name: capabilities, type: "List<YamlCapability>" }
+      - { name: goals, type: "List<YamlGoal>" }
+      - { name: milestones, type: "List<YamlMilestone>" }
+      - { name: completion, type: CaseCompletion }
+      - { name: planningStrategy, type: String }
+      - { name: agentRouting, type: String }
+      - { name: implementationRouting, type: String }
+      - { name: humanTaskRouting, type: String }
+      - { name: candidateMatching, type: String }
+      - { name: decompositionStrategy, type: String }
+      - { name: maxDecompositionDepth, type: Integer }
+      - { name: maxEscalations, type: Integer }
+      - { name: routingSignalWeights, type: "Map<String, Double>" }
+      - { name: cognitiveDemands, type: "Map<String, YamlCognitiveDemand>" }
+      - { name: authorization, type: "Map<String, List<String>>" }
+      - { name: workerServiceAccountIds, type: "Map<String, String>" }
+      - { name: compounds, type: "List<YamlCompound>" }
+      - { name: channels, type: "List<YamlChannel>" }
       - { name: layers, type: "List<YamlContextLayer>" }
       - { name: workers, type: "List<YamlWorker>" }
       - { name: bindings, type: "List<YamlBinding>" }
@@ -420,8 +434,15 @@ types:
       - { name: skipRecovery, type: Boolean }
       - { name: skipRecoveryFor, type: "List<String>" }
 
-  YamlRecoveryPolicy:
+  RecoveryPolicy:
     record: YamlRecoveryPolicy
+    extra:
+      - { name: maxRetries, type: Integer }
+      - { name: maxRerouteAttempts, type: Integer }
+      - { name: classifierId, type: String }
+      - { name: revisionStrategyId, type: String }
+      - { name: replanStrategyId, type: String }
+      - { name: enabled, type: Boolean }
 
   YamlReflectionTriggerConfig:
     record: YamlReflectionTriggerConfig
