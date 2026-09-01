@@ -182,6 +182,7 @@ public class PlanningCasePlanModelSnapshotProvider implements CasePlanModelSnaps
       case SubCaseTarget s -> "COMPOSED";
       case SignalTarget sg -> "WORKER";
       case ExtensionTarget e -> "EXTERNAL";
+      case io.casehub.api.model.HumanTaskTarget h -> "HUMAN";
     };
   }
 }
