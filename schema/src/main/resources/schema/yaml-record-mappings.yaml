@@ -62,28 +62,13 @@ types:
       humanTaskWorkloadConstraint: { type: YamlWorkloadConstraint }
       humanTaskContextConstraints: { type: "List<YamlContextConstraint>" }
       completion: { type: CaseCompletion, deserializer: CaseCompletionDeserializer }
+      authorization: { type: "Map<String, List<String>>" }
+      channels: { type: "List<YamlChannel>" }
     extra:
-      - { name: capabilities, type: "List<YamlCapability>" }
-      - { name: goals, type: "List<YamlGoal>" }
-      - { name: milestones, type: "List<YamlMilestone>" }
-      - { name: completion, type: CaseCompletion }
-      - { name: planningStrategy, type: String }
-      - { name: agentRouting, type: String }
-      - { name: implementationRouting, type: String }
-      - { name: humanTaskRouting, type: String }
-      - { name: candidateMatching, type: String }
-      - { name: decompositionStrategy, type: String }
-      - { name: maxDecompositionDepth, type: Integer }
       - { name: maxEscalations, type: Integer }
-      - { name: routingSignalWeights, type: "Map<String, Double>" }
       - { name: cognitiveDemands, type: "Map<String, YamlCognitiveDemand>" }
-      - { name: authorization, type: "Map<String, List<String>>" }
-      - { name: workerServiceAccountIds, type: "Map<String, String>" }
       - { name: compounds, type: "List<YamlCompound>" }
-      - { name: channels, type: "List<YamlChannel>" }
       - { name: layers, type: "List<YamlContextLayer>" }
-      - { name: workers, type: "List<YamlWorker>" }
-      - { name: bindings, type: "List<YamlBinding>" }
       - { name: decomposition, type: YamlDecomposition }
 
   # ── Binding ──
