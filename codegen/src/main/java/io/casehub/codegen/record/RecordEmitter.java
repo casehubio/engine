@@ -111,11 +111,8 @@ public final class RecordEmitter {
       FieldOverride override = typeMapping.fields().get(field.name());
 
       String fieldName = field.name();
-      for (var entry : typeMapping.fields().entrySet()) {
-        if (entry.getValue() == override && override != null && !entry.getKey().equals(fieldName)) {
-          fieldName = entry.getKey();
-          break;
-        }
+      if (override != null && override.name() != null) {
+        fieldName = override.name();
       }
 
       String javaType;
@@ -134,7 +131,13 @@ public final class RecordEmitter {
       components.add(new ComponentInfo(fieldName, javaType, annotations, needsDef, defVal));
     }
 
+    Set<String> componentNames = new java.util.HashSet<>();
+    for (ComponentInfo c : components) {
+      componentNames.add(c.name());
+    }
+
     for (ExtraField extra : typeMapping.extra()) {
+      if (componentNames.contains(extra.name())) continue;
       FieldOverride override = typeMapping.fields().get(extra.name());
       String annotations =
           override != null ? buildAnnotations(extra.name(), extra.name(), override, mapping) : null;
