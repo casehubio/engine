@@ -15,7 +15,8 @@
  */
 package io.casehub.engine.common.spi;
 
-import static org.junit.jupiter.api.Assertions.*;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNull;
 
 import io.casehub.api.model.JudgmentTarget;
 import io.casehub.api.spi.RiskDecision;
