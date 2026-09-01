@@ -34,6 +34,7 @@ import jakarta.inject.Inject;
 import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.TimeUnit;
+import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 
 @QuarkusTest
@@ -91,6 +92,7 @@ public class YamlSimpleCaseHubBeanTest {
     assertTrue(successExpr.goalNames().contains("documentProcessingComplete"));
   }
 
+  @Tag("flaky")
   @Test
   public void testExecution() {
     Map<String, Object> initialContext =

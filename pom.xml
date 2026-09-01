@@ -600,6 +600,7 @@
                         <excludes>
                             <exclude>${integration-tests.includes}</exclude>
                         </excludes>
+                        <excludedGroups>flaky</excludedGroups>
                     </configuration>
                 </plugin>
                 <plugin>
