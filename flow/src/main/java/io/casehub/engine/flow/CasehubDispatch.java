@@ -17,6 +17,7 @@ package io.casehub.engine.flow;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ObjectNode;
+import io.casehub.api.context.PropagationContext;
 import io.casehub.api.model.WorkRequest;
 import io.casehub.api.model.WorkResult;
 import io.casehub.api.model.event.CaseHubEventType;
@@ -139,6 +140,13 @@ public class CasehubDispatch {
     if (result != null && result.output() != null && !result.output().isEmpty()) {
       meta.put("outputSummary", String.join(",", result.output().keySet()));
     }
+
+    final PropagationContext propagation = instance.getPropagationContext();
+    if (propagation != null) {
+      propagation.getAttribute("userId").ifPresent(uid -> meta.put("actorId", uid));
+      propagation.getAttribute("roles").ifPresent(roles -> meta.put("roles", roles));
+    }
+
     log.setMetadata(meta);
 
     try {
