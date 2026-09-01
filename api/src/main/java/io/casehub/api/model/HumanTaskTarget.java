@@ -41,7 +41,7 @@ import java.util.Set;
  * @deprecated Use {@link JudgmentTarget} instead.
  */
 @Deprecated(forRemoval = true)
-public final class HumanTaskTarget {
+public final class HumanTaskTarget implements BindingTarget {
 
   private final String templateRef;
   private final String title;
