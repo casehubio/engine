@@ -63,19 +63,37 @@ public final class MappingParser {
     JsonNode extraNode = node.path("extra");
     if (extraNode.isArray()) {
       for (JsonNode item : extraNode) {
-        extra.add(new ExtraField(item.path("name").asText(), item.path("type").asText()));
+        extra.add(parseExtraField(item));
       }
     }
 
-    return new TypeMapping(recordName, source, fields, extra);
+    String body = node.path("body").asText(null);
+    return new TypeMapping(recordName, source, fields, extra, body);
+  }
+
+  private static ExtraField parseExtraField(JsonNode item) {
+    return new ExtraField(
+        item.path("name").asText(), item.path("type").asText(), item.path("default").asText(null));
   }
 
   private static FieldOverride parseFieldOverride(JsonNode node) {
+    String alias = node.path("alias").asText(null);
+    List<String> aliases = null;
+    JsonNode aliasNode = node.path("alias");
+    if (aliasNode.isArray()) {
+      aliases = new ArrayList<>();
+      for (JsonNode a : aliasNode) {
+        aliases.add(a.asText());
+      }
+      alias = null;
+    }
     return new FieldOverride(
         node.path("type").asText(null),
         node.path("deserializer").asText(null),
-        node.path("alias").asText(null),
-        node.path("property").asText(null));
+        alias,
+        node.path("property").asText(null),
+        node.path("default").asText(null),
+        aliases);
   }
 
   private static List<String> readStringList(JsonNode node) {
