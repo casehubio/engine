@@ -381,6 +381,9 @@ public class CaseContextChangedEventHandler {
           LOG.warnf(
               "No handler for ExtensionTarget %s on binding '%s'",
               et.getClass().getName(), binding.getName());
+      case io.casehub.api.model.HumanTaskTarget ignored ->
+          LOG.warnf(
+              "Deprecated HumanTaskTarget on binding '%s' — use JudgmentTarget", binding.getName());
     }
   }
 
