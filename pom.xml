@@ -119,11 +119,13 @@
         <module>examples/typed-context</module>
         <module>examples/simple-case-annotated</module>
         <module>examples/goap-case-annotated</module>
+        <!-- temporarily excluded: casehub-work-annotations SNAPSHOT expired (work CI blocked)
         <module>examples/incident-response-annotated</module>
         <module>examples/search-rescue-annotated</module>
         <module>examples/aircraft-maintenance-annotated</module>
         <module>examples/warehouse-annotated</module>
         <module>examples/wildfire-response-annotated</module>
+        -->
         <module>annotations</module>
         <module>generator</module>
     </modules>
