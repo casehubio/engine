@@ -88,6 +88,7 @@ public final class MappingParser {
       alias = null;
     }
     return new FieldOverride(
+        node.path("name").asText(null),
         node.path("type").asText(null),
         node.path("deserializer").asText(null),
         alias,

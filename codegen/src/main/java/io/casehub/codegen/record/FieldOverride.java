@@ -18,6 +18,7 @@ package io.casehub.codegen.record;
 import java.util.List;
 
 public record FieldOverride(
+    String name,
     String type,
     String deserializer,
     String alias,
@@ -26,6 +27,6 @@ public record FieldOverride(
     List<String> aliases) {
 
   public FieldOverride(String type, String deserializer, String alias, String property) {
-    this(type, deserializer, alias, property, null, null);
+    this(null, type, deserializer, alias, property, null, null);
   }
 }
