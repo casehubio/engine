@@ -143,11 +143,6 @@ class QhorusActorStateContributorTest {
       public List<Commitment> findOpenByChannelId(final UUID channelId) {
         throw new UnsupportedOperationException();
       }
-
-      @Override
-      public List<Commitment> findByObligorInTenancy(final String obligor, final String tenancyId) {
-        throw new UnsupportedOperationException();
-      }
     };
   }
 
