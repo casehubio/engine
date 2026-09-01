@@ -109,8 +109,8 @@ types:
   Capability:
     record: YamlCapability
     fields:
-      inputSchema: { name: inputProjection, alias: inputSchema }
-      outputSchema: { name: outputProjection, alias: outputSchema }
+      inputProjection: { name: inputProjection, alias: inputSchema }
+      outputProjection: { name: outputProjection, alias: outputSchema }
       cognitiveDemand: { type: "Map<String, Double>" }
 
   # ── Goal ──
