@@ -24,6 +24,7 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+import io.casehub.api.context.PropagationContext;
 import io.casehub.api.model.WorkRequest;
 import io.casehub.api.model.WorkResult;
 import io.casehub.api.model.event.CaseHubEventType;
@@ -207,12 +208,231 @@ class CasehubDispatchTest {
     assertThat(reqCaptor.getValue().capability()).isEqualTo("generate-report");
   }
 
+  // ---- identity from PropagationContext --------------------------------
+
+  @Test
+  void dispatch_records_identity_from_propagation_context_in_event_metadata() throws Exception {
+    final String instanceId = "wf-identity";
+    final CaseInstance instance = mockInstanceWithIdentity("user-42", "admin,analyst");
+    stubRegistry(instanceId, instance);
+
+    when(orchestrator.submit(eq(instance), any(WorkRequest.class)))
+        .thenReturn(CompletableFuture.completedStage(WorkResult.completed("k", Map.of(), "w")));
+
+    dispatch.dispatch(instanceId, "analyze").get();
+
+    final ArgumentCaptor<EventLog> logCaptor = ArgumentCaptor.forClass(EventLog.class);
+    verify(eventLogRepository, org.mockito.Mockito.atLeastOnce())
+        .appendAndReturnId(logCaptor.capture(), any());
+
+    logCaptor
+        .getAllValues()
+        .forEach(
+            log -> {
+              assertThat(log.getMetadata().get("actorId").asText()).isEqualTo("user-42");
+              assertThat(log.getMetadata().get("roles").asText()).isEqualTo("admin,analyst");
+            });
+  }
+
+  @Test
+  void dispatch_handles_missing_propagation_context_gracefully() throws Exception {
+    final String instanceId = "wf-no-ctx";
+    final CaseInstance instance = mockInstance();
+    when(instance.getPropagationContext()).thenReturn(null);
+    stubRegistry(instanceId, instance);
+
+    when(orchestrator.submit(eq(instance), any(WorkRequest.class)))
+        .thenReturn(CompletableFuture.completedStage(WorkResult.completed("k", Map.of(), "w")));
+
+    dispatch.dispatch(instanceId, "analyze").get();
+
+    final ArgumentCaptor<EventLog> logCaptor = ArgumentCaptor.forClass(EventLog.class);
+    verify(eventLogRepository, org.mockito.Mockito.atLeastOnce())
+        .appendAndReturnId(logCaptor.capture(), any());
+
+    logCaptor
+        .getAllValues()
+        .forEach(
+            log -> {
+              assertThat(log.getMetadata().has("actorId")).isFalse();
+              assertThat(log.getMetadata().has("roles")).isFalse();
+            });
+  }
+
+  @Test
+  void identity_is_consistent_across_dispatched_and_completed_events() throws Exception {
+    final String instanceId = "wf-consistency";
+    final CaseInstance instance = mockInstanceWithIdentity("user-abc", "reviewer,approver");
+    stubRegistry(instanceId, instance);
+
+    when(orchestrator.submit(eq(instance), any(WorkRequest.class)))
+        .thenReturn(
+            CompletableFuture.completedStage(WorkResult.completed("k", Map.of("out", "val"), "w")));
+
+    dispatch.dispatch(instanceId, "review").get();
+
+    final ArgumentCaptor<EventLog> logCaptor = ArgumentCaptor.forClass(EventLog.class);
+    verify(eventLogRepository, org.mockito.Mockito.times(2))
+        .appendAndReturnId(logCaptor.capture(), any());
+
+    final List<EventLog> logs = logCaptor.getAllValues();
+    assertThat(logs.get(0).getEventType()).isEqualTo(CaseHubEventType.WORKFLOW_STEP_DISPATCHED);
+    assertThat(logs.get(1).getEventType()).isEqualTo(CaseHubEventType.WORKFLOW_STEP_COMPLETED);
+
+    for (final EventLog log : logs) {
+      assertThat(log.getMetadata().get("actorId").asText()).isEqualTo("user-abc");
+      assertThat(log.getMetadata().get("roles").asText()).isEqualTo("reviewer,approver");
+    }
+  }
+
+  @Test
+  void identity_is_recorded_in_failed_event_metadata() throws Exception {
+    final String instanceId = "wf-fail-id";
+    final CaseInstance instance = mockInstanceWithIdentity("user-fail", "operator");
+    stubRegistry(instanceId, instance);
+
+    final CompletableFuture<WorkResult> failed = new CompletableFuture<>();
+    failed.completeExceptionally(new RuntimeException("downstream error"));
+    when(orchestrator.submit(eq(instance), any(WorkRequest.class))).thenReturn(failed);
+
+    dispatch.dispatch(instanceId, "transform").exceptionally(e -> null).get();
+
+    final ArgumentCaptor<EventLog> logCaptor = ArgumentCaptor.forClass(EventLog.class);
+    verify(eventLogRepository, org.mockito.Mockito.times(2))
+        .appendAndReturnId(logCaptor.capture(), any());
+
+    final List<EventLog> logs = logCaptor.getAllValues();
+    assertThat(logs.get(1).getEventType()).isEqualTo(CaseHubEventType.WORKFLOW_STEP_FAILED);
+    assertThat(logs.get(1).getMetadata().get("actorId").asText()).isEqualTo("user-fail");
+    assertThat(logs.get(1).getMetadata().get("roles").asText()).isEqualTo("operator");
+  }
+
+  @Test
+  void partial_identity_records_only_available_attributes() throws Exception {
+    final String instanceId = "wf-partial";
+    final CaseInstance instance = mock(CaseInstance.class);
+    UUID caseId = UUID.randomUUID();
+    when(instance.getUuid()).thenReturn(caseId);
+    when(instance.getPropagationContext())
+        .thenReturn(PropagationContext.createRoot(Map.of("userId", "user-only")));
+    when(caseInstanceCache.get(caseId)).thenReturn(instance);
+    stubRegistry(instanceId, instance);
+
+    when(orchestrator.submit(eq(instance), any(WorkRequest.class)))
+        .thenReturn(CompletableFuture.completedStage(WorkResult.completed("k", Map.of(), "w")));
+
+    dispatch.dispatch(instanceId, "cap").get();
+
+    final ArgumentCaptor<EventLog> logCaptor = ArgumentCaptor.forClass(EventLog.class);
+    verify(eventLogRepository, org.mockito.Mockito.atLeastOnce())
+        .appendAndReturnId(logCaptor.capture(), any());
+
+    logCaptor
+        .getAllValues()
+        .forEach(
+            log -> {
+              assertThat(log.getMetadata().get("actorId").asText()).isEqualTo("user-only");
+              assertThat(log.getMetadata().has("roles")).isFalse();
+            });
+  }
+
+  @Test
+  void propagation_context_without_identity_attributes_produces_no_identity_metadata()
+      throws Exception {
+    final String instanceId = "wf-no-attrs";
+    final CaseInstance instance = mock(CaseInstance.class);
+    UUID caseId = UUID.randomUUID();
+    when(instance.getUuid()).thenReturn(caseId);
+    when(instance.getPropagationContext())
+        .thenReturn(PropagationContext.createRoot(Map.of("traceSource", "external")));
+    when(caseInstanceCache.get(caseId)).thenReturn(instance);
+    stubRegistry(instanceId, instance);
+
+    when(orchestrator.submit(eq(instance), any(WorkRequest.class)))
+        .thenReturn(CompletableFuture.completedStage(WorkResult.completed("k", Map.of(), "w")));
+
+    dispatch.dispatch(instanceId, "cap").get();
+
+    final ArgumentCaptor<EventLog> logCaptor = ArgumentCaptor.forClass(EventLog.class);
+    verify(eventLogRepository, org.mockito.Mockito.atLeastOnce())
+        .appendAndReturnId(logCaptor.capture(), any());
+
+    logCaptor
+        .getAllValues()
+        .forEach(
+            log -> {
+              assertThat(log.getMetadata().has("actorId")).isFalse();
+              assertThat(log.getMetadata().has("roles")).isFalse();
+              assertThat(log.getMetadata().has("capability")).isTrue();
+            });
+  }
+
+  @Test
+  void registered_handler_propagates_identity_through_dispatch_registry() throws Exception {
+    final String instanceId = "wf-handler-id";
+    final CaseInstance instance = mockInstanceWithIdentity("handler-user", "admin");
+    stubRegistry(instanceId, instance);
+
+    when(orchestrator.submit(eq(instance), any(WorkRequest.class)))
+        .thenReturn(CompletableFuture.completedStage(WorkResult.completed("k", Map.of(), "w")));
+
+    dispatchRegistry
+        .get("casehub:dispatch")
+        .dispatch(instanceId, Map.of("capability", "delegated-cap"))
+        .get();
+
+    final ArgumentCaptor<EventLog> logCaptor = ArgumentCaptor.forClass(EventLog.class);
+    verify(eventLogRepository, org.mockito.Mockito.atLeastOnce())
+        .appendAndReturnId(logCaptor.capture(), any());
+
+    logCaptor
+        .getAllValues()
+        .forEach(
+            log -> {
+              assertThat(log.getMetadata().get("actorId").asText()).isEqualTo("handler-user");
+              assertThat(log.getMetadata().get("roles").asText()).isEqualTo("admin");
+              assertThat(log.getMetadata().get("capability").asText()).isEqualTo("delegated-cap");
+            });
+  }
+
+  @Test
+  void identity_with_multiple_comma_separated_roles_preserved_verbatim() throws Exception {
+    final String instanceId = "wf-multi-role";
+    final String roles = "admin,analyst,reviewer,compliance-officer";
+    final CaseInstance instance = mockInstanceWithIdentity("multi-role-user", roles);
+    stubRegistry(instanceId, instance);
+
+    when(orchestrator.submit(eq(instance), any(WorkRequest.class)))
+        .thenReturn(CompletableFuture.completedStage(WorkResult.completed("k", Map.of(), "w")));
+
+    dispatch.dispatch(instanceId, "cap").get();
+
+    final ArgumentCaptor<EventLog> logCaptor = ArgumentCaptor.forClass(EventLog.class);
+    verify(eventLogRepository, org.mockito.Mockito.atLeastOnce())
+        .appendAndReturnId(logCaptor.capture(), any());
+
+    logCaptor
+        .getAllValues()
+        .forEach(log -> assertThat(log.getMetadata().get("roles").asText()).isEqualTo(roles));
+  }
+
   // ---- helpers --------------------------------------------------------
 
   private CaseInstance mockInstance() {
     final CaseInstance instance = mock(CaseInstance.class);
     UUID caseId = UUID.randomUUID();
     when(instance.getUuid()).thenReturn(caseId);
+    when(instance.getPropagationContext()).thenReturn(PropagationContext.createRoot());
+    when(caseInstanceCache.get(caseId)).thenReturn(instance);
+    return instance;
+  }
+
+  private CaseInstance mockInstanceWithIdentity(final String userId, final String roles) {
+    final CaseInstance instance = mock(CaseInstance.class);
+    UUID caseId = UUID.randomUUID();
+    when(instance.getUuid()).thenReturn(caseId);
+    when(instance.getPropagationContext())
+        .thenReturn(PropagationContext.createRoot(Map.of("userId", userId, "roles", roles)));
     when(caseInstanceCache.get(caseId)).thenReturn(instance);
     return instance;
   }
