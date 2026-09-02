@@ -19,7 +19,7 @@ thread-safe — `record()` may be called concurrently.
 
 ## Methods
 
-### `public abstract Uni<java.lang.Void> record(io.casehub.api.spi.routing.AgentRoutingContext context, java.lang.String workerId, java.lang.String bindingName, io.casehub.api.spi.routing.RoutingOutcome outcome, java.time.Duration executionDuration)`
+### `public abstract void record(io.casehub.api.spi.routing.AgentRoutingContext context, java.lang.String workerId, java.lang.String bindingName, io.casehub.api.spi.routing.RoutingOutcome outcome, java.time.Duration executionDuration)`
 
 Record a routing outcome.
 
@@ -35,7 +35,3 @@ outcomes record on the re-dispatch completion path as `SUCCESS`.
 - `outcome` (`io.casehub.api.spi.routing.RoutingOutcome`) — the routing outcome
 - `executionDuration` (`java.time.Duration`) — wall-clock duration of the worker execution; nullable when the engine
     does not track dispatch timestamps or for gate outcomes
-
-#### Returns
-
-a Uni completing when the record is persisted

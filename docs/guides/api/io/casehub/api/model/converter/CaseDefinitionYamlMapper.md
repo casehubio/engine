@@ -6,11 +6,12 @@
 
 Centralized YAML marshaller for CaseDefinition.
 
-<p>Reads YAML CaseDefinition files, deserializes to generated schema models (io.casehub.model.*),
-and converts to API models (io.casehub.api.model.*).
+<p>Reads YAML CaseDefinition files and deserializes directly to API models via `CaseDefinitionModule`. Post-processing of worker functions and GOAP shorthands is handled by
+`YamlCaseDefinitionConverter`.
 
-<p>Use ObjectMapper, ExpressionEngineRegistry) in CDI contexts. Use
-`.load(InputStream)` for non-CDI contexts (tests, tooling) — JQ only.
+<p>Use ObjectMapper, ExpressionEngineRegistry,
+WorkerFunctionProviderRegistry) in CDI contexts. Use `.load(InputStream)` for non-CDI
+contexts (tests, tooling) — JQ only.
 
 ## Fields
 
@@ -33,82 +34,60 @@ JQ-only registry for non-CDI contexts. Does not support custom expression langua
 
 ## Methods
 
-### `private static java.util.List<java.lang.String> castStringList(java.lang.String fieldName, java.util.List<?> raw)`
+### `private static io.casehub.api.model.converter.yaml.YamlCaseDefinition deserializeYaml(JsonNode node, ObjectMapper moduleMapper)`
 
 #### Parameters
 
+- `node` (`JsonNode`)
+- `moduleMapper` (`ObjectMapper`)
+
+### `private static void expandArray(com.fasterxml.jackson.databind.node.ObjectNode parent, java.lang.String fieldName, java.util.Map<java.lang.String,io.casehub.yaml.core.foreach.IterationGroup> groups, io.casehub.yaml.core.resolver.VariableResolver resolver, io.casehub.api.model.converter.yaml.JsonNodeForEachAdapter adapter, ObjectMapper mapper)`
+
+#### Parameters
+
+- `parent` (`com.fasterxml.jackson.databind.node.ObjectNode`)
 - `fieldName` (`java.lang.String`)
-- `raw` (`java.util.List<?>`)
+- `groups` (`java.util.Map<java.lang.String,io.casehub.yaml.core.foreach.IterationGroup>`)
+- `resolver` (`io.casehub.yaml.core.resolver.VariableResolver`)
+- `adapter` (`io.casehub.api.model.converter.yaml.JsonNodeForEachAdapter`)
+- `mapper` (`ObjectMapper`)
 
-### `private static CompiledExpression<java.util.Map<java.lang.String,java.lang.Object>,java.lang.Boolean> compileJqBoolean(java.lang.String expression)`
-
-#### Parameters
-
-- `expression` (`java.lang.String`)
-
-### `private static io.casehub.api.model.Binding convertBinding(io.casehub.model.Binding schemaBinding, java.util.Map<java.lang.String,Capability> capabilityMap, io.casehub.api.engine.ExpressionEngineRegistry registry, java.lang.String expressionLang)`
+### `private static JsonNode expandForEach(JsonNode node, ObjectMapper mapper)`
 
 #### Parameters
 
-- `schemaBinding` (`io.casehub.model.Binding`)
-- `capabilityMap` (`java.util.Map<java.lang.String,Capability>`)
-- `registry` (`io.casehub.api.engine.ExpressionEngineRegistry`)
-- `expressionLang` (`java.lang.String`)
+- `node` (`JsonNode`)
+- `mapper` (`ObjectMapper`)
 
-### `private static io.casehub.api.model.SubCaseCompletionStrategy convertCompletionStrategy(io.casehub.model.SubCase.CompletionStrategy schemaStrategy)`
+### `private static JsonNode expandModules(JsonNode node, ObjectMapper mapper)`
 
 #### Parameters
 
-- `schemaStrategy` (`io.casehub.model.SubCase.CompletionStrategy`)
+- `node` (`JsonNode`)
+- `mapper` (`ObjectMapper`)
 
-### `private static ExecutionPolicy convertExecutionPolicy(io.casehub.model.ExecutionPolicy schema)`
-
-#### Parameters
-
-- `schema` (`io.casehub.model.ExecutionPolicy`)
-
-### `private static io.casehub.api.model.GoalExpression convertGoalExpression(io.casehub.model.GoalExpression expr, java.util.Map<java.lang.String,io.casehub.api.model.Goal> goalMap)`
+### `private static JsonNode flattenExpressionOverrides(JsonNode node, ObjectMapper mapper)`
 
 #### Parameters
 
-- `expr` (`io.casehub.model.GoalExpression`)
-- `goalMap` (`java.util.Map<java.lang.String,io.casehub.api.model.Goal>`)
+- `node` (`JsonNode`)
+- `mapper` (`ObjectMapper`)
 
-### `private static io.casehub.api.model.HumanTaskTarget convertHumanTask(io.casehub.model.HumanTask schema)`
+### `public static io.casehub.api.model.CaseDefinition load(JsonNode mergedNode, ObjectMapper objectMapper, io.casehub.api.engine.ExpressionEngineRegistry registry, io.casehub.api.spi.WorkerFunctionProviderRegistry providerRegistry)`
 
-#### Parameters
-
-- `schema` (`io.casehub.model.HumanTask`)
-
-### `private static io.casehub.api.model.SubCase convertSubCase(io.casehub.model.SubCase schemaModel)`
+Loads a CaseDefinition from a pre-merged JsonNode. For use with the YAML overlay/merge pipeline
+where base and overlay documents have already been merged via YamlMerger.
 
 #### Parameters
 
-- `schemaModel` (`io.casehub.model.SubCase`)
-
-### `private static io.casehub.api.model.CaseDefinition convertToApiModel(io.casehub.model.CaseDefinition schema, JsonNode rawNode, ObjectMapper objectMapper, io.casehub.api.engine.ExpressionEngineRegistry registry, io.casehub.api.spi.WorkerFunctionProviderRegistry providerRegistry)`
-
-Converts generated schema model to API model.
-
-#### Parameters
-
-- `schema` (`io.casehub.model.CaseDefinition`) — generated CaseDefinition from YAML
-- `rawNode` (`JsonNode`) — raw YAML parsed as JsonNode (for free-form fields)
-- `objectMapper` (`ObjectMapper`) — ObjectMapper for converting JsonNode to Map
-- `registry` (`io.casehub.api.engine.ExpressionEngineRegistry`) — registry for creating ExpressionEvaluator instances from string expressions
-- `providerRegistry` (`io.casehub.api.spi.WorkerFunctionProviderRegistry`) — registry for SDK-dependent worker construction (flow, etc.)
+- `mergedNode` (`JsonNode`) — pre-merged JsonNode containing the complete case definition
+- `objectMapper` (`ObjectMapper`) — ObjectMapper for type conversion
+- `registry` (`io.casehub.api.engine.ExpressionEngineRegistry`) — ExpressionEngineRegistry (nullable — falls back to JQ-only)
+- `providerRegistry` (`io.casehub.api.spi.WorkerFunctionProviderRegistry`) — WorkerFunctionProviderRegistry (nullable — falls back to no-op)
 
 #### Returns
 
 API model CaseDefinition
-
-### `private static io.casehub.api.model.Trigger convertTrigger(io.casehub.model.Trigger schemaTrigger, io.casehub.api.engine.ExpressionEngineRegistry registry, java.lang.String expressionLang)`
-
-#### Parameters
-
-- `schemaTrigger` (`io.casehub.model.Trigger`)
-- `registry` (`io.casehub.api.engine.ExpressionEngineRegistry`)
-- `expressionLang` (`java.lang.String`)
 
 ### `public static io.casehub.api.model.CaseDefinition load(java.io.InputStream yamlStream)`
 
@@ -151,37 +130,58 @@ API model CaseDefinition
 
 - `IOException` — if reading or parsing fails
 
-### `private static io.casehub.api.spi.routing.CandidateSetSpec parseCandidateSet(java.lang.Object raw, java.lang.String fieldName)`
+### `public static io.casehub.api.model.CaseDefinition load(java.io.InputStream yamlStream, ObjectMapper objectMapper, io.casehub.api.engine.ExpressionEngineRegistry registry, io.casehub.api.spi.WorkerFunctionProviderRegistry providerRegistry, java.util.Map<java.lang.String,io.casehub.yaml.core.resolver.VariableSource> variableSources)`
+
+Loads a CaseDefinition with variable resolution. Variables like `${env.X`} and `${config.X`} are resolved before Jackson deserialization. The `each` prefix is deferred —
+it is resolved during forEach expansion.
 
 #### Parameters
 
-- `raw` (`java.lang.Object`)
-- `fieldName` (`java.lang.String`)
+- `yamlStream` (`java.io.InputStream`) — InputStream containing YAML CaseDefinition
+- `objectMapper` (`ObjectMapper`) — ObjectMapper configured for YAML
+- `registry` (`io.casehub.api.engine.ExpressionEngineRegistry`) — ExpressionEngineRegistry for creating evaluators
+- `providerRegistry` (`io.casehub.api.spi.WorkerFunctionProviderRegistry`) — WorkerFunctionProviderRegistry for SDK-dependent worker construction
+- `variableSources` (`java.util.Map<java.lang.String,io.casehub.yaml.core.resolver.VariableSource>`) — prefix-keyed variable sources (e.g., "env" → System::getenv)
 
-### `private static io.casehub.api.model.GoalExpression parseGoalElement(JsonNode element, java.util.Map<java.lang.String,io.casehub.api.model.Goal> goalMap)`
+#### Returns
+
+API model CaseDefinition
+
+#### Throws
+
+- `IOException` — if reading or parsing fails
+
+### `public static ExpressionEvaluator resolveExpression(JsonNode node, io.casehub.api.engine.ExpressionEngineRegistry registry, java.lang.String defaultLang)`
+
+Resolves a YAML expression node to an `ExpressionEvaluator`.
+
+<p>Accepts two forms:
+
+<ul>
+  <li>String: `".amount > 1000"` — uses `defaultLang`
+  <li>Single-key map: `{mvel: "transaction.amount > 1000"`} — language is the map key
+</ul>
 
 #### Parameters
 
-- `element` (`JsonNode`)
-- `goalMap` (`java.util.Map<java.lang.String,io.casehub.api.model.Goal>`)
+- `node` (`JsonNode`) — raw YAML node (null or NullNode returns null)
+- `registry` (`io.casehub.api.engine.ExpressionEngineRegistry`) — registry for creating evaluators
+- `defaultLang` (`java.lang.String`) — language to use when `node` is a plain string
 
-### `private static io.casehub.api.model.GoalExpression parseGoalExpressionFromNode(JsonNode node, java.util.Map<java.lang.String,io.casehub.api.model.Goal> goalMap)`
+#### Returns
+
+ExpressionEvaluator, or null if node is absent/null
+
+### `private static java.lang.String resolveExpressionLang(JsonNode node)`
 
 #### Parameters
 
 - `node` (`JsonNode`)
-- `goalMap` (`java.util.Map<java.lang.String,io.casehub.api.model.Goal>`)
 
-### `private static io.casehub.api.model.GoalKind resolveGoalKind(java.lang.String kindValue, JsonNode exprNode)`
-
-#### Parameters
-
-- `kindValue` (`java.lang.String`)
-- `exprNode` (`JsonNode`)
-
-### `private static void validateJqSyntax(java.lang.String expression, java.lang.String fieldName)`
+### `private static JsonNode resolveVariables(JsonNode node, ObjectMapper mapper, java.util.Map<java.lang.String,io.casehub.yaml.core.resolver.VariableSource> sources)`
 
 #### Parameters
 
-- `expression` (`java.lang.String`)
-- `fieldName` (`java.lang.String`)
+- `node` (`JsonNode`)
+- `mapper` (`ObjectMapper`)
+- `sources` (`java.util.Map<java.lang.String,io.casehub.yaml.core.resolver.VariableSource>`)

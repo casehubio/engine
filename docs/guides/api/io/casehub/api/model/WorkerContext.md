@@ -4,16 +4,6 @@
 
 **Kind:** `record`
 
-Context handed to a new worker at startup.
-
-<p>Built by `WorkerContextProvider` from CaseLedgerEntry history. Contains the task
-description, the case identifier, the channels open for the case, ordered summaries of prior
-workers, the propagation context for tracing, arbitrary backend-specific properties, and
-retrieved CBR experiences from similar past cases.
-
-<p>`channels`, `priorWorkers`, `properties`, and `experiences` default to
-empty collections when `null` is supplied and are always immutable.
-
 ## Fields
 
 ### `caseId` (`java.util.UUID`)
@@ -21,6 +11,10 @@ empty collections when `null` is supplied and are always immutable.
 ### `channels` (`java.util.List<io.casehub.api.model.CaseChannel>`)
 
 ### `experiences` (`java.util.List<io.casehub.api.spi.routing.RetrievedExperience>`)
+
+### `failureDiagnoses` (`java.util.List<io.casehub.api.model.FailureDiagnosis>`)
+
+### `memories` (`java.util.List<io.casehub.api.model.RetrievedMemory>`)
 
 ### `priorWorkers` (`java.util.List<io.casehub.api.model.WorkerSummary>`)
 
@@ -37,6 +31,10 @@ empty collections when `null` is supplied and are always immutable.
 ### `channels` (`java.util.List<io.casehub.api.model.CaseChannel>`)
 
 ### `experiences` (`java.util.List<io.casehub.api.spi.routing.RetrievedExperience>`)
+
+### `failureDiagnoses` (`java.util.List<io.casehub.api.model.FailureDiagnosis>`)
+
+### `memories` (`java.util.List<io.casehub.api.model.RetrievedMemory>`)
 
 ### `priorWorkers` (`java.util.List<io.casehub.api.model.WorkerSummary>`)
 
@@ -71,6 +69,33 @@ empty collections when `null` is supplied and are always immutable.
 - `properties` (`java.util.Map<java.lang.String,java.lang.Object>`)
 - `experiences` (`java.util.List<io.casehub.api.spi.routing.RetrievedExperience>`)
 
+### `public WorkerContext(java.lang.String taskDescription, java.util.UUID caseId, java.util.List<io.casehub.api.model.CaseChannel> channels, java.util.List<io.casehub.api.model.WorkerSummary> priorWorkers, io.casehub.api.context.PropagationContext propagationContext, java.util.Map<java.lang.String,java.lang.Object> properties, java.util.List<io.casehub.api.spi.routing.RetrievedExperience> experiences, java.util.List<io.casehub.api.model.RetrievedMemory> memories)`
+
+#### Parameters
+
+- `taskDescription` (`java.lang.String`)
+- `caseId` (`java.util.UUID`)
+- `channels` (`java.util.List<io.casehub.api.model.CaseChannel>`)
+- `priorWorkers` (`java.util.List<io.casehub.api.model.WorkerSummary>`)
+- `propagationContext` (`io.casehub.api.context.PropagationContext`)
+- `properties` (`java.util.Map<java.lang.String,java.lang.Object>`)
+- `experiences` (`java.util.List<io.casehub.api.spi.routing.RetrievedExperience>`)
+- `memories` (`java.util.List<io.casehub.api.model.RetrievedMemory>`)
+
+### `public WorkerContext(java.lang.String taskDescription, java.util.UUID caseId, java.util.List<io.casehub.api.model.CaseChannel> channels, java.util.List<io.casehub.api.model.WorkerSummary> priorWorkers, io.casehub.api.context.PropagationContext propagationContext, java.util.Map<java.lang.String,java.lang.Object> properties, java.util.List<io.casehub.api.spi.routing.RetrievedExperience> experiences, java.util.List<io.casehub.api.model.RetrievedMemory> memories, java.util.List<io.casehub.api.model.FailureDiagnosis> failureDiagnoses)`
+
+#### Parameters
+
+- `taskDescription` (`java.lang.String`)
+- `caseId` (`java.util.UUID`)
+- `channels` (`java.util.List<io.casehub.api.model.CaseChannel>`)
+- `priorWorkers` (`java.util.List<io.casehub.api.model.WorkerSummary>`)
+- `propagationContext` (`io.casehub.api.context.PropagationContext`)
+- `properties` (`java.util.Map<java.lang.String,java.lang.Object>`)
+- `experiences` (`java.util.List<io.casehub.api.spi.routing.RetrievedExperience>`)
+- `memories` (`java.util.List<io.casehub.api.model.RetrievedMemory>`)
+- `failureDiagnoses` (`java.util.List<io.casehub.api.model.FailureDiagnosis>`)
+
 ## Methods
 
 ### `public java.util.UUID caseId()`
@@ -85,7 +110,11 @@ empty collections when `null` is supplied and are always immutable.
 
 ### `public java.util.List<io.casehub.api.spi.routing.RetrievedExperience> experiences()`
 
+### `public java.util.List<io.casehub.api.model.FailureDiagnosis> failureDiagnoses()`
+
 ### `public final int hashCode()`
+
+### `public java.util.List<io.casehub.api.model.RetrievedMemory> memories()`
 
 ### `public java.util.List<io.casehub.api.model.WorkerSummary> priorWorkers()`
 

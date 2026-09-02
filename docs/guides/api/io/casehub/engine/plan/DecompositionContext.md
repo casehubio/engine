@@ -6,6 +6,8 @@
 
 ## Methods
 
+### `public default io.casehub.engine.plan.PlanningConstraints constraints()`
+
 ### `public abstract int depth()`
 
 ### `public abstract T state()`

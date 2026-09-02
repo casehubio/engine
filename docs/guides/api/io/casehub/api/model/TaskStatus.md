@@ -10,6 +10,8 @@ Shared lifecycle states for any coordination model's unit of work.
 
 <ul>
   <li>PENDING — work defined, not yet started
+  <li>DISPATCHING — transient: CAS lock during dispatch (never persisted)
+  <li>ESCALATED — transient: awaiting human routing oversight (never persisted)
   <li>RUNNING — actively executing
   <li>DELEGATED — control passed to external actor; waiting for completion signal
   <li>SUSPENDED — execution paused; slot occupied, resumes without re-dispatch
@@ -34,6 +36,10 @@ Shared lifecycle states for any coordination model's unit of work.
 ### `COMPLETED` (`io.casehub.api.model.TaskStatus`)
 
 ### `DELEGATED` (`io.casehub.api.model.TaskStatus`)
+
+### `DISPATCHING` (`io.casehub.api.model.TaskStatus`)
+
+### `ESCALATED` (`io.casehub.api.model.TaskStatus`)
 
 ### `FAULTED` (`io.casehub.api.model.TaskStatus`)
 

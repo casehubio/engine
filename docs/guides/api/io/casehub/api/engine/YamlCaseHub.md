@@ -10,9 +10,12 @@ Base class for YAML-backed CaseHub definitions.
 automatically; all registered expression languages are supported. Outside CDI (tests, tooling),
 the no-arg constructor path falls back to JQ-only parsing.
 
-<p>Subclasses that need to add programmatic workers (backed by CDI-injected services) override
-`.augment(CaseDefinition)` instead of `getDefinition()`. The hook is called once,
-inside the double-checked lock, between YAML loading and caching.
+<p>Supports YAML overlay composition: a base YAML is loaded first, then an optional overlay YAML
+is deep-merged on top via `YamlMerger`. The overlay can be specified explicitly via the
+two-arg constructor, or discovered by convention (`-overrides` suffix in the same
+directory). After merging, `.augment(CaseDefinition)` runs for programmatic modifications.
+
+<p>Resolution order: base YAML → overlay YAML (explicit or convention) → augment().
 
 ## Fields
 
@@ -21,6 +24,8 @@ inside the double-checked lock, between YAML loading and caching.
 ### `expressionEngineRegistry` (`io.casehub.api.engine.ExpressionEngineRegistry`)
 
 ### `objectMapper` (`ObjectMapper`)
+
+### `overlayPath` (`java.lang.String`)
 
 ### `path` (`java.lang.String`)
 
@@ -33,6 +38,13 @@ inside the double-checked lock, between YAML loading and caching.
 #### Parameters
 
 - `path` (`java.lang.String`)
+
+### `public YamlCaseHub(java.lang.String path, java.lang.String overlayPath)`
+
+#### Parameters
+
+- `path` (`java.lang.String`)
+- `overlayPath` (`java.lang.String`)
 
 ## Methods
 
@@ -48,4 +60,18 @@ fields are available. The default implementation is a no-op.
 
 - `definition` (`io.casehub.api.model.CaseDefinition`) — the loaded definition to augment
 
+### `static java.lang.String deriveConventionPath(java.lang.String basePath)`
+
+#### Parameters
+
+- `basePath` (`java.lang.String`)
+
 ### `public final io.casehub.api.model.CaseDefinition getDefinition()`
+
+### `private JsonNode loadYamlAsJsonNode(java.lang.String resourcePath)`
+
+#### Parameters
+
+- `resourcePath` (`java.lang.String`)
+
+### `private JsonNode resolveOverlay()`

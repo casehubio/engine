@@ -34,7 +34,31 @@
 
 ### `CASE_STATUS_CHANGED` (`io.casehub.api.model.event.CaseHubEventType`)
 
+### `CONSTRAINTS_INFEASIBLE` (`io.casehub.api.model.event.CaseHubEventType`)
+
+### `CONTEXT_SIGNAL_APPLIED` (`io.casehub.api.model.event.CaseHubEventType`)
+
+### `CONTINGENCY_ACTIVATED` (`io.casehub.api.model.event.CaseHubEventType`)
+
+### `GOAL_DECOMPOSED` (`io.casehub.api.model.event.CaseHubEventType`)
+
+### `GOAL_FORMED` (`io.casehub.api.model.event.CaseHubEventType`)
+
+### `GOAL_PROPOSED` (`io.casehub.api.model.event.CaseHubEventType`)
+
 ### `GOAL_REACHED` (`io.casehub.api.model.event.CaseHubEventType`)
+
+### `GOAL_REMOVED` (`io.casehub.api.model.event.CaseHubEventType`)
+
+### `GOAL_REVISED` (`io.casehub.api.model.event.CaseHubEventType`)
+
+### `JUDGMENT_ESCALATED` (`io.casehub.api.model.event.CaseHubEventType`)
+
+### `JUDGMENT_RESPONDED` (`io.casehub.api.model.event.CaseHubEventType`)
+
+### `JUDGMENT_VERIFIED` (`io.casehub.api.model.event.CaseHubEventType`)
+
+### `JUDGMENT_YIELDED` (`io.casehub.api.model.event.CaseHubEventType`)
 
 ### `MILESTONE_ACTIVATED` (`io.casehub.api.model.event.CaseHubEventType`)
 
@@ -49,6 +73,20 @@
 ### `ORCHESTRATION_ESCALATED` (`io.casehub.api.model.event.CaseHubEventType`)
 
 ### `ORCHESTRATION_STARTED` (`io.casehub.api.model.event.CaseHubEventType`)
+
+### `PATTERN_CHECKPOINT` (`io.casehub.api.model.event.CaseHubEventType`)
+
+### `PLAN_ADAPTED` (`io.casehub.api.model.event.CaseHubEventType`)
+
+### `PLAN_CONCEDED` (`io.casehub.api.model.event.CaseHubEventType`)
+
+### `PLAN_DEEPENED` (`io.casehub.api.model.event.CaseHubEventType`)
+
+### `REACT_CYCLE` (`io.casehub.api.model.event.CaseHubEventType`)
+
+### `RECOVERY_ESCALATED` (`io.casehub.api.model.event.CaseHubEventType`)
+
+### `RECOVERY_REPLAN` (`io.casehub.api.model.event.CaseHubEventType`)
 
 ### `SCOPED_WORKER_OUTPUT` (`io.casehub.api.model.event.CaseHubEventType`)
 

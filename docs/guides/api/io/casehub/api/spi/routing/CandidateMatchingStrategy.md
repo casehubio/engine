@@ -6,7 +6,7 @@
 
 ## Methods
 
-### `public abstract Uni<java.util.List<io.casehub.api.spi.routing.MatchedWorker>> match(io.casehub.api.spi.routing.CandidateMatchingContext context)`
+### `public abstract java.util.List<io.casehub.api.spi.routing.MatchedWorker> match(io.casehub.api.spi.routing.CandidateMatchingContext context)`
 
 #### Parameters
 
