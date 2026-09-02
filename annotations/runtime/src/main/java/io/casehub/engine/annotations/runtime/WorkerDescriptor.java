@@ -25,4 +25,7 @@ public record WorkerDescriptor(
     List<WorkerParamDescriptor> params,
     String returnTypeName,
     String effectKey,
-    String systemPrompt) {}
+    String systemPrompt,
+    String scope,
+    String participation,
+    String executionMode) {}

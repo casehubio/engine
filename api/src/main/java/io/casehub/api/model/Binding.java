@@ -354,6 +354,11 @@ public class Binding {
       return this;
     }
 
+    public Builder on(String contextChangeExpression) {
+      this.on = new ContextChangeTrigger(contextChangeExpression);
+      return this;
+    }
+
     public Builder when(ExpressionEvaluator when) {
       this.when = when;
       return this;

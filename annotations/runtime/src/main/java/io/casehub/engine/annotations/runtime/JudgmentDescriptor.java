@@ -15,11 +15,14 @@
  */
 package io.casehub.engine.annotations.runtime;
 
-public record BindingDescriptor(
-    String name,
-    String capabilityName,
+import java.util.List;
+
+public record JudgmentDescriptor(
+    String methodName,
+    List<String> candidateGroups,
+    List<String> candidateUsers,
+    String title,
+    List<String> outcomes,
     String triggerType,
     String triggerValue,
-    String when,
-    String conflictStrategy,
-    java.util.List<String> producedKeys) {}
+    String when) {}

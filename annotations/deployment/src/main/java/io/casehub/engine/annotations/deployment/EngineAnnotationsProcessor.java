@@ -77,6 +77,14 @@ public class EngineAnnotationsProcessor {
   private static final DotName CAPABILITY =
       DotName.createSimple("io.casehub.engine.annotations.Capability");
   private static final DotName COST = DotName.createSimple("io.casehub.engine.annotations.Cost");
+  private static final DotName COMPOUND =
+      DotName.createSimple("io.casehub.engine.annotations.Compound");
+  private static final DotName COMPOUNDS =
+      DotName.createSimple("io.casehub.engine.annotations.Compounds");
+  private static final DotName SUBCASE =
+      DotName.createSimple("io.casehub.engine.annotations.SubCase");
+  private static final DotName JUDGMENT =
+      DotName.createSimple("io.casehub.engine.annotations.Judgment");
 
   @BuildStep
   @Record(ExecutionTime.RUNTIME_INIT)
@@ -173,6 +181,41 @@ public class EngineAnnotationsProcessor {
     List<io.casehub.engine.annotations.runtime.CustomizerDescriptor> customizers =
         new ArrayList<>();
     List<String> standaloneCapabilities = new ArrayList<>();
+    List<io.casehub.engine.annotations.runtime.CompoundDescriptor> compoundDescriptors =
+        new ArrayList<>();
+    List<io.casehub.engine.annotations.runtime.SubCaseDescriptor> subCaseDescriptors =
+        new ArrayList<>();
+    List<io.casehub.engine.annotations.runtime.JudgmentDescriptor> judgmentDescriptors =
+        new ArrayList<>();
+
+    List<AnnotationInstance> compoundAnns = new ArrayList<>();
+    AnnotationInstance singleCompound = caseClass.annotation(COMPOUND);
+    if (singleCompound != null) compoundAnns.add(singleCompound);
+    AnnotationInstance compoundsContainer = caseClass.annotation(COMPOUNDS);
+    if (compoundsContainer != null) {
+      compoundAnns.clear();
+      for (AnnotationInstance nested : compoundsContainer.value().asNestedArray()) {
+        compoundAnns.add(nested);
+      }
+    }
+    for (AnnotationInstance ca : compoundAnns) {
+      String compName = ca.value("name").asString();
+      String[] workerNames = ca.value("workers").asStringArray();
+      String compSemantics = stringValueOrDefault(ca, index, "completionSemantics", "all");
+      String compDispatch = stringValueOrDefault(ca, index, "dispatchMode", "CHOREOGRAPHED");
+      String compParticipation = stringValueOrDefault(ca, index, "participation", "PARTICIPANT");
+      boolean compRepeatable = booleanValueOrDefault(ca, index, "repeatable", false);
+      String compStrategy = stringValueOrDefault(ca, index, "planningStrategy", "");
+      compoundDescriptors.add(
+          new io.casehub.engine.annotations.runtime.CompoundDescriptor(
+              compName,
+              List.of(workerNames),
+              compSemantics,
+              compDispatch,
+              compParticipation,
+              compRepeatable,
+              compStrategy.isEmpty() ? null : compStrategy));
+    }
 
     for (MethodInfo method : caseClass.methods()) {
       AnnotationInstance workerAnn = method.annotation(WORKER);
@@ -182,17 +225,21 @@ public class EngineAnnotationsProcessor {
 
         AnnotationInstance systemPromptAnn = method.annotation(SYSTEM_PROMPT);
         if (systemPromptAnn != null) {
+          var prev = workers.get(workers.size() - 1);
           workers.set(
               workers.size() - 1,
               new WorkerDescriptor(
-                  workers.get(workers.size() - 1).name(),
-                  workers.get(workers.size() - 1).capabilityName(),
-                  workers.get(workers.size() - 1).description(),
-                  workers.get(workers.size() - 1).methodName(),
-                  workers.get(workers.size() - 1).params(),
-                  workers.get(workers.size() - 1).returnTypeName(),
-                  workers.get(workers.size() - 1).effectKey(),
-                  systemPromptAnn.value().asString()));
+                  prev.name(),
+                  prev.capabilityName(),
+                  prev.description(),
+                  prev.methodName(),
+                  prev.params(),
+                  prev.returnTypeName(),
+                  prev.effectKey(),
+                  systemPromptAnn.value().asString(),
+                  prev.scope(),
+                  prev.participation(),
+                  prev.executionMode()));
         }
       }
 
@@ -224,6 +271,77 @@ public class EngineAnnotationsProcessor {
                 targetBinding.isEmpty() ? null : targetBinding,
                 caseClass.name().toString(),
                 paramTypes));
+      }
+
+      AnnotationInstance subCaseAnn = method.annotation(SUBCASE);
+      if (subCaseAnn != null) {
+        String scNamespace = stringValueOrDefault(subCaseAnn, index, "namespace", "");
+        String scName = subCaseAnn.value("name").asString();
+        String scVersion = stringValueOrDefault(subCaseAnn, index, "version", "");
+        String scInput = stringValueOrDefault(subCaseAnn, index, "inputMapping", ".");
+        String scOutput = stringValueOrDefault(subCaseAnn, index, "outputMapping", ".");
+        int scDepth =
+            subCaseAnn.valueWithDefault(index, "maxRecursionDepth") != null
+                ? subCaseAnn.valueWithDefault(index, "maxRecursionDepth").asInt()
+                : 0;
+        List<AnnotationInstance> scBindAnns = collectBindAnnotations(method);
+        String scTriggerType = "contextChange";
+        String scTriggerValue = "true";
+        String scWhen = null;
+        if (!scBindAnns.isEmpty()) {
+          AnnotationInstance scBind = scBindAnns.get(0);
+          String cc = stringValueOrDefault(scBind, index, "contextChange", "");
+          if (!cc.isEmpty()) {
+            scTriggerType = "contextChange";
+            scTriggerValue = cc;
+          }
+          String w = stringValueOrDefault(scBind, index, "when", "");
+          if (!w.isEmpty()) scWhen = w;
+        }
+        subCaseDescriptors.add(
+            new io.casehub.engine.annotations.runtime.SubCaseDescriptor(
+                method.name(),
+                scNamespace.isEmpty() ? null : scNamespace,
+                scName,
+                scVersion.isEmpty() ? null : scVersion,
+                scInput,
+                scOutput,
+                scDepth,
+                scTriggerType,
+                scTriggerValue,
+                scWhen));
+      }
+
+      AnnotationInstance judgmentAnn = method.annotation(JUDGMENT);
+      if (judgmentAnn != null) {
+        AnnotationValue jgGroups = judgmentAnn.value("candidateGroups");
+        AnnotationValue jgUsers = judgmentAnn.value("candidateUsers");
+        String jgTitle = stringValueOrDefault(judgmentAnn, index, "title", "");
+        AnnotationValue jgOutcomes = judgmentAnn.value("outcomes");
+        List<AnnotationInstance> jgBindAnns = collectBindAnnotations(method);
+        String jgTriggerType = "contextChange";
+        String jgTriggerValue = "true";
+        String jgWhen = null;
+        if (!jgBindAnns.isEmpty()) {
+          AnnotationInstance jgBind = jgBindAnns.get(0);
+          String cc = stringValueOrDefault(jgBind, index, "contextChange", "");
+          if (!cc.isEmpty()) {
+            jgTriggerType = "contextChange";
+            jgTriggerValue = cc;
+          }
+          String w = stringValueOrDefault(jgBind, index, "when", "");
+          if (!w.isEmpty()) jgWhen = w;
+        }
+        judgmentDescriptors.add(
+            new io.casehub.engine.annotations.runtime.JudgmentDescriptor(
+                method.name(),
+                jgGroups != null ? List.of(jgGroups.asStringArray()) : List.of(),
+                jgUsers != null ? List.of(jgUsers.asStringArray()) : List.of(),
+                jgTitle.isEmpty() ? null : jgTitle,
+                jgOutcomes != null ? List.of(jgOutcomes.asStringArray()) : List.of(),
+                jgTriggerType,
+                jgTriggerValue,
+                jgWhen));
       }
 
       AnnotationInstance capAnn = method.annotation(CAPABILITY);
@@ -292,7 +410,10 @@ public class EngineAnnotationsProcessor {
         goalToEffectKeys.isEmpty() ? null : goalToEffectKeys,
         completions.isEmpty() ? null : completions,
         customizers.isEmpty() ? null : customizers,
-        standaloneCapabilities.isEmpty() ? null : standaloneCapabilities);
+        standaloneCapabilities.isEmpty() ? null : standaloneCapabilities,
+        compoundDescriptors.isEmpty() ? null : compoundDescriptors,
+        subCaseDescriptors.isEmpty() ? null : subCaseDescriptors,
+        judgmentDescriptors.isEmpty() ? null : judgmentDescriptors);
   }
 
   private void processWorkerMethod(
@@ -332,6 +453,11 @@ public class EngineAnnotationsProcessor {
               : lowerCamelCase(returnType.name().local());
     }
 
+    String scope = stringValueOrDefault(workerAnn, index, "scope", "BINDING");
+    String participationVal =
+        stringValueOrDefault(workerAnn, index, "participation", "PARTICIPANT");
+    String executionModeVal = stringValueOrDefault(workerAnn, index, "executionMode", "TRANSIENT");
+
     workers.add(
         new WorkerDescriptor(
             method.name(),
@@ -341,7 +467,10 @@ public class EngineAnnotationsProcessor {
             params.isEmpty() ? null : params,
             returnTypeName,
             effectKey,
-            null));
+            null,
+            scope,
+            participationVal,
+            executionModeVal));
 
     List<AnnotationInstance> bindAnns = collectBindAnnotations(method);
     if (!bindAnns.isEmpty()) {
@@ -350,7 +479,8 @@ public class EngineAnnotationsProcessor {
       }
     } else if (planning == PlanningMode.GOAP || planning == PlanningMode.ADAPTIVE) {
       bindings.add(
-          new BindingDescriptor(method.name(), capabilityName, "contextChange", "true", null));
+          new BindingDescriptor(
+              method.name(), capabilityName, "contextChange", "true", null, null, null));
     }
 
     if (planning == PlanningMode.GOAP || planning == PlanningMode.ADAPTIVE) {
@@ -391,8 +521,21 @@ public class EngineAnnotationsProcessor {
       triggerValue = "true";
     }
 
+    String conflictStrategy = stringValueOrDefault(bindAnn, index, "conflictStrategy", "");
+    AnnotationValue producedKeysValue = bindAnn.value("producedKeys");
+    String[] producedKeysArr =
+        producedKeysValue != null ? producedKeysValue.asStringArray() : new String[0];
+    java.util.List<String> producedKeys =
+        producedKeysArr.length > 0 ? java.util.List.of(producedKeysArr) : null;
+
     return new BindingDescriptor(
-        method.name(), capabilityName, triggerType, triggerValue, when.isEmpty() ? null : when);
+        method.name(),
+        capabilityName,
+        triggerType,
+        triggerValue,
+        when.isEmpty() ? null : when,
+        conflictStrategy.isEmpty() ? null : conflictStrategy,
+        producedKeys);
   }
 
   private void processGoalMethod(

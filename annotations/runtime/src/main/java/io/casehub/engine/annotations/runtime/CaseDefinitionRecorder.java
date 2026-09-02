@@ -19,13 +19,18 @@ import io.casehub.api.model.Binding;
 import io.casehub.api.model.CaseDefinition;
 import io.casehub.api.model.CaseStatus;
 import io.casehub.api.model.ContextChangeTrigger;
+import io.casehub.api.model.ExecutionMode;
 import io.casehub.api.model.Goal;
 import io.casehub.api.model.GoalBasedCompletion;
 import io.casehub.api.model.GoalKind;
+import io.casehub.api.model.LifecycleScope;
 import io.casehub.api.model.Milestone;
+import io.casehub.api.model.Participation;
 import io.casehub.api.model.ScheduleTrigger;
 import io.casehub.api.model.ScopeActivatedTrigger;
 import io.casehub.api.model.StandardGoalKind;
+import io.casehub.api.model.SubCase;
+import io.casehub.api.model.SubCaseMapping;
 import io.casehub.engine.plan.goap.GoapAction;
 import io.casehub.worker.api.Capability;
 import io.casehub.worker.api.Worker;
@@ -33,6 +38,7 @@ import io.quarkus.runtime.annotations.Recorder;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import org.jboss.logging.Logger;
@@ -115,6 +121,11 @@ public class CaseDefinitionRecorder {
       workers.add(workerBuilder.build());
     }
 
+    Map<String, WorkerDescriptor> workerByName = new HashMap<>();
+    for (WorkerDescriptor wd : descriptor.workers()) {
+      workerByName.put(wd.name(), wd);
+    }
+
     List<Binding> bindings = new ArrayList<>();
     for (BindingDescriptor bd : descriptor.bindings()) {
       Capability cap = capabilityMap.get(bd.capabilityName());
@@ -135,6 +146,26 @@ public class CaseDefinitionRecorder {
 
       if (bd.when() != null && !bd.when().isEmpty()) {
         bindingBuilder.when(bd.when());
+      }
+
+      if (bd.conflictStrategy() != null) {
+        bindingBuilder.conflictResolverStrategy(bd.conflictStrategy());
+      }
+      if (bd.producedKeys() != null && !bd.producedKeys().isEmpty()) {
+        bindingBuilder.producedKeys(new HashSet<>(bd.producedKeys()));
+      }
+
+      WorkerDescriptor wd = workerByName.get(bd.name());
+      if (wd != null) {
+        if (wd.scope() != null && !"BINDING".equals(wd.scope())) {
+          bindingBuilder.lifecycleScope(LifecycleScope.valueOf(wd.scope()));
+        }
+        if (wd.participation() != null && !"PARTICIPANT".equals(wd.participation())) {
+          bindingBuilder.participation(Participation.valueOf(wd.participation()));
+        }
+        if (wd.executionMode() != null && !"TRANSIENT".equals(wd.executionMode())) {
+          bindingBuilder.executionMode(ExecutionMode.valueOf(wd.executionMode()));
+        }
       }
 
       bindings.add(bindingBuilder.build());
@@ -309,6 +340,69 @@ public class CaseDefinitionRecorder {
             LOG.warnf(e, "Failed to apply @Customize method '%s'", cd.methodName());
           }
         }
+      }
+    }
+
+    if (descriptor.compounds() != null) {
+      List<io.casehub.api.model.CompoundDeclaration> compoundDecls = new ArrayList<>();
+      for (CompoundDescriptor cd : descriptor.compounds()) {
+        Map<String, Participation> scopedBindings = new LinkedHashMap<>();
+        for (String workerName : cd.workers()) {
+          Participation p = Participation.valueOf(cd.participation());
+          scopedBindings.put(workerName, p);
+        }
+        compoundDecls.add(
+            io.casehub.api.model.CompoundDeclaration.builder(cd.name())
+                .completionSemantics(cd.completionSemantics())
+                .dispatchMode(cd.dispatchMode())
+                .scopedBindings(scopedBindings)
+                .repeatable(cd.repeatable())
+                .planningStrategy(cd.planningStrategy())
+                .build());
+      }
+      builder.compounds(compoundDecls);
+    }
+
+    if (descriptor.subCases() != null) {
+      for (SubCaseDescriptor sd : descriptor.subCases()) {
+        SubCase.Builder scBuilder =
+            SubCase.builder()
+                .namespace(sd.namespace())
+                .name(sd.name())
+                .inputMapping(SubCaseMapping.of(sd.inputMapping()))
+                .outputMapping(SubCaseMapping.of(sd.outputMapping()))
+                .maxRecursionDepth(sd.maxRecursionDepth());
+        if (sd.version() != null) scBuilder.version(sd.version());
+        SubCase subCase = scBuilder.build();
+
+        var bindingBuilder = Binding.builder().name(sd.methodName()).subCase(subCase);
+        switch (sd.triggerType()) {
+          case "contextChange" -> bindingBuilder.on(new ContextChangeTrigger(sd.triggerValue()));
+          case "cron" -> bindingBuilder.on(ScheduleTrigger.cron(sd.triggerValue()));
+          case "scopeActivated" -> bindingBuilder.on(new ScopeActivatedTrigger());
+          default -> bindingBuilder.on(new ContextChangeTrigger("true"));
+        }
+        if (sd.when() != null) bindingBuilder.when(sd.when());
+        builder.binding(bindingBuilder.build());
+      }
+    }
+
+    if (descriptor.judgments() != null) {
+      for (JudgmentDescriptor jd : descriptor.judgments()) {
+        io.casehub.api.model.JudgmentTarget.Builder jtb =
+            io.casehub.api.model.JudgmentTarget.builder();
+        if (jd.title() != null) jtb.title(jd.title());
+        if (!jd.outcomes().isEmpty()) jtb.outcomes(new HashSet<>(jd.outcomes()));
+
+        var bindingBuilder = Binding.builder().name(jd.methodName()).judgment(jtb.build());
+        switch (jd.triggerType()) {
+          case "contextChange" -> bindingBuilder.on(new ContextChangeTrigger(jd.triggerValue()));
+          case "cron" -> bindingBuilder.on(ScheduleTrigger.cron(jd.triggerValue()));
+          case "scopeActivated" -> bindingBuilder.on(new ScopeActivatedTrigger());
+          default -> bindingBuilder.on(new ContextChangeTrigger("true"));
+        }
+        if (jd.when() != null) bindingBuilder.when(jd.when());
+        builder.binding(bindingBuilder.build());
       }
     }
 

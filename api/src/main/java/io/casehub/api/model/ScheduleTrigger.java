@@ -23,7 +23,7 @@ import java.util.Objects;
  * delay-based one-shot scheduling. Use {@link Binding#getWhen()} to add conditions for conditional
  * execution.
  */
-public class ScheduleTrigger implements Trigger {
+public final class ScheduleTrigger implements Trigger {
 
   private final String cron;
   private final Duration delay;

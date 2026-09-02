@@ -15,11 +15,13 @@
  */
 package io.casehub.engine.annotations.runtime;
 
-public record BindingDescriptor(
+import java.util.List;
+
+public record CompoundDescriptor(
     String name,
-    String capabilityName,
-    String triggerType,
-    String triggerValue,
-    String when,
-    String conflictStrategy,
-    java.util.List<String> producedKeys) {}
+    List<String> workers,
+    String completionSemantics,
+    String dispatchMode,
+    String participation,
+    boolean repeatable,
+    String planningStrategy) {}
