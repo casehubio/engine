@@ -16,11 +16,11 @@
 package io.casehub.examples;
 
 import io.casehub.api.model.Binding;
-import io.casehub.api.spi.routing.CandidateSetSpec;
 import io.casehub.api.model.CaseDefinition;
 import io.casehub.api.model.ContextChangeTrigger;
 import io.casehub.api.model.HumanRoutingConfig;
 import io.casehub.api.model.JudgmentTarget;
+import io.casehub.api.spi.routing.CandidateSetSpec;
 import io.casehub.api.spi.routing.StaticSetStrategy;
 import io.casehub.engine.annotations.Bind;
 import io.casehub.engine.annotations.Case;
@@ -39,8 +39,8 @@ import java.util.Set;
  * targets capabilities. The {@code @Customize} escape hatch drops into the DSL to add the judgment
  * binding — showing exactly where annotations reach their limit.
  *
- * <p>See also: examples/yaml/humantask-loan-approval.yaml (YAML pathway)
- * examples/humantask-dsl/ (DSL pathway)
+ * <p>See also: examples/yaml/humantask-loan-approval.yaml (YAML pathway) examples/humantask-dsl/
+ * (DSL pathway)
  */
 @Case(
     namespace = "finance",
@@ -55,13 +55,17 @@ public interface HumanTaskLoanApprovalAnnotated {
   @Worker(capability = "assessCredit", description = "Automated credit scoring engine")
   @Bind(contextChange = ".application != null and .creditScore == null")
   default Map<String, Object> assessCredit(Map<String, Object> input) {
-    return Map.of("creditScore", Map.of("score", 720, "grade", "A", "factors", java.util.List.of("payment-history")));
+    return Map.of(
+        "creditScore",
+        Map.of("score", 720, "grade", "A", "factors", java.util.List.of("payment-history")));
   }
 
   @Worker(capability = "evaluateRisk", description = "Loan risk evaluation engine")
   @Bind(contextChange = ".creditScore != null and .riskAssessment == null")
   default Map<String, Object> evaluateRisk(Map<String, Object> input) {
-    return Map.of("riskAssessment", Map.of("level", "LOW", "debtToIncome", 0.32, "recommendation", "APPROVE"));
+    return Map.of(
+        "riskAssessment",
+        Map.of("level", "LOW", "debtToIncome", 0.32, "recommendation", "APPROVE"));
   }
 
   @Milestone(name = "creditAssessed", completionCriteria = ".creditScore != null")
@@ -74,9 +78,9 @@ public interface HumanTaskLoanApprovalAnnotated {
   default void loanDecided() {}
 
   /**
-   * Annotations cannot express humanTask binding targets — @Bind targets capabilities only. This
-   * @Customize block drops into the DSL to add the judgment binding with candidate groups, outcomes,
-   * and expiration.
+   * Annotations cannot express humanTask binding targets — @Bind targets capabilities only.
+   * This @Customize block drops into the DSL to add the judgment binding with candidate groups,
+   * outcomes, and expiration.
    */
   @Customize
   static void customize(CaseDefinition.Builder builder) {

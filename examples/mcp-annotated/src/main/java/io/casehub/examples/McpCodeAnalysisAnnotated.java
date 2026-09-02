@@ -25,12 +25,11 @@ import java.util.Map;
  * MCP — Code Analysis (annotation pathway).
  *
  * <p>Annotations cannot express {@code mcp:} worker blocks natively — they generate in-process
- * worker functions. For MCP tool invocation, use YAML ({@code mcp:} block) or DSL with the
- * {@code casehub-engine-mcp} module. This annotated version demonstrates the case structure with
+ * worker functions. For MCP tool invocation, use YAML ({@code mcp:} block) or DSL with the {@code
+ * casehub-engine-mcp} module. This annotated version demonstrates the case structure with
  * placeholder in-process workers.
  *
- * <p>See also: examples/yaml/mcp-code-analysis.yaml (YAML pathway)
- * examples/mcp-dsl/ (DSL pathway)
+ * <p>See also: examples/yaml/mcp-code-analysis.yaml (YAML pathway) examples/mcp-dsl/ (DSL pathway)
  */
 @Case(
     namespace = "devops",
@@ -58,10 +57,7 @@ public interface McpCodeAnalysisAnnotated {
   default Map<String, Object> vulnerabilityScan(Map<String, Object> input) {
     return Map.of(
         "vulnReport",
-        Map.of(
-            "vulnerabilities", java.util.List.of(),
-            "severity", "LOW",
-            "patchable", true));
+        Map.of("vulnerabilities", java.util.List.of(), "severity", "LOW", "patchable", true));
   }
 
   @Worker(capability = "generateReport", description = "Unified report generation")

@@ -96,6 +96,7 @@ public class AgentExperienceRecorder {
               caseInstance.tenancyId,
               caseInstance.getUuid().toString(),
               UUID.randomUUID().toString(),
+              Instant.now(),
               buildDescription(capabilityName, outcome),
               importance,
               Map.of(
@@ -152,7 +153,10 @@ public class AgentExperienceRecorder {
             caseInstance.getUuid().toString(),
             truncated,
             Map.copyOf(attributes),
-            importance);
+            io.casehub.neocortex.cognitive.Confidence.inferred(importance, java.time.Instant.now()),
+            null,
+            null,
+            null);
 
     CaseMemoryStore store = caseMemoryStore.get();
     Thread.startVirtualThread(

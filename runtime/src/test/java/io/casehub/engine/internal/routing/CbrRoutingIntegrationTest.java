@@ -71,7 +71,7 @@ class CbrRoutingIntegrationTest {
             "Enemy aggressive with 100 troops",
             "Flank from the east",
             "COMPLETED",
-            0.92,
+            io.casehub.neocortex.cognitive.Confidence.inferred(0.92, java.time.Instant.now()),
             Map.of(
                 "posture", FeatureValue.string("aggressive"), "armySize", FeatureValue.number(100)),
             List.of(trace),

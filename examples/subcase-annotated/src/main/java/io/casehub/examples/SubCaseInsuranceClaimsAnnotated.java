@@ -35,8 +35,8 @@ import java.util.Map;
  * escape hatch drops into the DSL to add sub-case bindings — showing exactly where annotations
  * reach their limit.
  *
- * <p>See also: examples/yaml/subcase-insurance-claims.yaml (YAML pathway)
- * examples/subcase-dsl/ (DSL pathway)
+ * <p>See also: examples/yaml/subcase-insurance-claims.yaml (YAML pathway) examples/subcase-dsl/
+ * (DSL pathway)
  */
 @Case(
     namespace = "insurance",
@@ -58,7 +58,8 @@ public interface SubCaseInsuranceClaimsAnnotated {
   @Bind(contextChange = ".investigation != null and .adjudication == null")
   default Map<String, Object> adjudicate(Map<String, Object> input) {
     return Map.of(
-        "adjudication", Map.of("decision", "APPROVED", "amount", 15000, "reasoning", "Valid claim"));
+        "adjudication",
+        Map.of("decision", "APPROVED", "amount", 15000, "reasoning", "Valid claim"));
   }
 
   @Milestone(

@@ -25,12 +25,12 @@ import java.util.Map;
  * A2A — Market Research (annotation pathway).
  *
  * <p>Annotations cannot express {@code a2a:} worker blocks natively — they generate in-process
- * worker functions. For remote A2A agents, use YAML ({@code a2a:} block) or DSL with the
- * {@code casehub-engine-a2a} module. This annotated version demonstrates the case structure with
+ * worker functions. For remote A2A agents, use YAML ({@code a2a:} block) or DSL with the {@code
+ * casehub-engine-a2a} module. This annotated version demonstrates the case structure with
  * placeholder in-process workers.
  *
- * <p>See also: examples/yaml/a2a-market-research.yaml (YAML pathway)
- * examples/a2a-dsl/ (DSL pathway)
+ * <p>See also: examples/yaml/a2a-market-research.yaml (YAML pathway) examples/a2a-dsl/ (DSL
+ * pathway)
  */
 @Case(
     namespace = "intelligence",
@@ -70,9 +70,12 @@ public interface A2AMarketResearchAnnotated {
     return Map.of(
         "assessment",
         Map.of(
-            "summary", "Market outlook positive",
-            "recommendations", java.util.List.of("expand"),
-            "confidence", 0.85));
+            "summary",
+            "Market outlook positive",
+            "recommendations",
+            java.util.List.of("expand"),
+            "confidence",
+            0.85));
   }
 
   @Goal(

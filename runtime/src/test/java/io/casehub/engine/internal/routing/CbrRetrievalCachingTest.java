@@ -237,7 +237,7 @@ class CbrRetrievalCachingTest {
             problem,
             solution,
             "COMPLETED",
-            0.95,
+            io.casehub.neocortex.cognitive.Confidence.inferred(0.95, java.time.Instant.now()),
             Map.of("f1", FeatureValue.string("v1")),
             List.of(trace),
             null,

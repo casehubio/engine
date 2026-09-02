@@ -28,8 +28,7 @@ class HumanTaskLoanApprovalAnnotatedTest {
   @RegisterExtension
   static final QuarkusUnitTest test =
       new QuarkusUnitTest()
-          .withApplicationRoot(
-              root -> root.addClasses(HumanTaskLoanApprovalAnnotated.class));
+          .withApplicationRoot(root -> root.addClasses(HumanTaskLoanApprovalAnnotated.class));
 
   @Inject CaseDefinition definition;
 

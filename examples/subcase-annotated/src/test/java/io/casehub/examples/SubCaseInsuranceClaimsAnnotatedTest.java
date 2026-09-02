@@ -28,8 +28,7 @@ class SubCaseInsuranceClaimsAnnotatedTest {
   @RegisterExtension
   static final QuarkusUnitTest test =
       new QuarkusUnitTest()
-          .withApplicationRoot(
-              root -> root.addClasses(SubCaseInsuranceClaimsAnnotated.class));
+          .withApplicationRoot(root -> root.addClasses(SubCaseInsuranceClaimsAnnotated.class));
 
   @Inject CaseDefinition definition;
 
