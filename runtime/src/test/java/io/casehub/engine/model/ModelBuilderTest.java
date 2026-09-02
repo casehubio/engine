@@ -292,7 +292,12 @@ class ModelBuilderTest {
     void nullTrigger_throws() {
       assertThrows(
           NullPointerException.class,
-          () -> Binding.builder().name("binding").capability(cap).on(null).build());
+          () ->
+              Binding.builder()
+                  .name("binding")
+                  .capability(cap)
+                  .on((io.casehub.api.model.Trigger) null)
+                  .build());
     }
 
     @Test

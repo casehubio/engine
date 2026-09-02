@@ -77,7 +77,7 @@ class CbrRoutingFuncDslIntegrationTest {
             "High-risk transaction detected",
             "Flag for manual review",
             "COMPLETED",
-            0.88,
+            io.casehub.neocortex.cognitive.Confidence.inferred(0.88, java.time.Instant.now()),
             Map.of("riskLevel", FeatureValue.string("high"), "amount", FeatureValue.number(50000)),
             List.of(trace),
             null,

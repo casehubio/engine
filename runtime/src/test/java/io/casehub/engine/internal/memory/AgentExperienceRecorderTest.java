@@ -126,33 +126,33 @@ class AgentExperienceRecorderTest {
   @Test
   void successOutcomeHasCorrectImportance() {
     recorder.record(createInstance(), "agent-1", "cap", new WorkerOutcome.Success<>(null), "b");
-    assertThat(((Outcome) recorded.get(0)).importance()).isEqualTo(0.3);
+    assertThat(((Outcome) recorded.get(0)).confidence()).isEqualTo(0.3);
   }
 
   @Test
   void failedOutcomeHasCorrectImportance() {
     recorder.record(createInstance(), "agent-1", "cap", new WorkerOutcome.Failed<>("error"), "b");
-    assertThat(((Outcome) recorded.get(0)).importance()).isEqualTo(0.8);
+    assertThat(((Outcome) recorded.get(0)).confidence()).isEqualTo(0.8);
   }
 
   @Test
   void declinedOutcomeHasCorrectImportance() {
     recorder.record(
         createInstance(), "agent-1", "cap", new WorkerOutcome.Declined<>("reason"), "b");
-    assertThat(((Outcome) recorded.get(0)).importance()).isEqualTo(0.6);
+    assertThat(((Outcome) recorded.get(0)).confidence()).isEqualTo(0.6);
   }
 
   @Test
   void expiredOutcomeHasCorrectImportance() {
     recorder.record(
         createInstance(), "agent-1", "cap", new WorkerOutcome.Expired<>("timeout"), "b");
-    assertThat(((Outcome) recorded.get(0)).importance()).isEqualTo(0.5);
+    assertThat(((Outcome) recorded.get(0)).confidence()).isEqualTo(0.5);
   }
 
   @Test
   void completedOutcomeHasCorrectImportance() {
     recorder.record(createInstance(), "agent-1", "cap", new WorkerOutcome.Completed<Void>(), "b");
-    assertThat(((Outcome) recorded.get(0)).importance()).isEqualTo(0.3);
+    assertThat(((Outcome) recorded.get(0)).confidence()).isEqualTo(0.3);
   }
 
   @Test
