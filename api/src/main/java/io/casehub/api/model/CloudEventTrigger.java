@@ -25,7 +25,7 @@ import java.util.Objects;
  * and {@code subject}. An optional {@code filter} expression provides predicate-based filtering
  * over the event and context.
  */
-public class CloudEventTrigger implements Trigger {
+public final class CloudEventTrigger implements Trigger {
 
   private final String type;
   private final String source;

@@ -48,4 +48,76 @@ public record CompoundDeclaration(
     if (dispatchMode == null) dispatchMode = "CHOREOGRAPHED";
     scopedBindings = scopedBindings != null ? Map.copyOf(scopedBindings) : Map.of();
   }
+
+  public static Builder builder(String name) {
+    return new Builder(name);
+  }
+
+  public static final class Builder {
+    private final String name;
+    private String completionSemantics;
+    private String dispatchMode;
+    private final java.util.HashMap<String, Participation> scopedBindings =
+        new java.util.HashMap<>();
+    private ExpressionEvaluator entryCondition;
+    private ExpressionEvaluator exitCondition;
+    private boolean repeatable;
+    private String planningStrategy;
+
+    private Builder(String name) {
+      this.name = java.util.Objects.requireNonNull(name);
+    }
+
+    public Builder completionSemantics(String completionSemantics) {
+      this.completionSemantics = completionSemantics;
+      return this;
+    }
+
+    public Builder dispatchMode(String dispatchMode) {
+      this.dispatchMode = dispatchMode;
+      return this;
+    }
+
+    public Builder scopedBinding(String bindingName, Participation participation) {
+      this.scopedBindings.put(bindingName, participation);
+      return this;
+    }
+
+    public Builder scopedBindings(Map<String, Participation> scopedBindings) {
+      this.scopedBindings.putAll(scopedBindings);
+      return this;
+    }
+
+    public Builder entryCondition(ExpressionEvaluator entryCondition) {
+      this.entryCondition = entryCondition;
+      return this;
+    }
+
+    public Builder exitCondition(ExpressionEvaluator exitCondition) {
+      this.exitCondition = exitCondition;
+      return this;
+    }
+
+    public Builder repeatable(boolean repeatable) {
+      this.repeatable = repeatable;
+      return this;
+    }
+
+    public Builder planningStrategy(String planningStrategy) {
+      this.planningStrategy = planningStrategy;
+      return this;
+    }
+
+    public CompoundDeclaration build() {
+      return new CompoundDeclaration(
+          name,
+          completionSemantics,
+          dispatchMode,
+          scopedBindings,
+          entryCondition,
+          exitCondition,
+          repeatable,
+          planningStrategy);
+    }
+  }
 }

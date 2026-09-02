@@ -15,4 +15,5 @@
  */
 package io.casehub.api.model;
 
-public interface Trigger {}
+public sealed interface Trigger
+    permits ContextChangeTrigger, ScheduleTrigger, ScopeActivatedTrigger, CloudEventTrigger {}

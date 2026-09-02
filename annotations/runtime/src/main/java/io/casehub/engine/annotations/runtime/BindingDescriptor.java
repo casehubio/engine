@@ -16,4 +16,10 @@
 package io.casehub.engine.annotations.runtime;
 
 public record BindingDescriptor(
-    String name, String capabilityName, String triggerType, String triggerValue, String when) {}
+    String name,
+    String capabilityName,
+    String triggerType,
+    String triggerValue,
+    String when,
+    String conflictStrategy,
+    java.util.List<String> producedKeys) {}

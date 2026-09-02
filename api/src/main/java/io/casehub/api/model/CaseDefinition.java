@@ -795,6 +795,14 @@ public class CaseDefinition {
       return this;
     }
 
+    public Builder capability(Capability capability) {
+      if (this.capabilities == null) {
+        this.capabilities = new ArrayList<>();
+      }
+      this.capabilities.add(Objects.requireNonNull(capability));
+      return this;
+    }
+
     public Builder workers(List<Worker> workers) {
       this.workers = workers;
       return this;
@@ -802,6 +810,14 @@ public class CaseDefinition {
 
     public Builder workers(Worker... workers) {
       this.workers = List.of(workers);
+      return this;
+    }
+
+    public Builder worker(Worker worker) {
+      if (this.workers == null) {
+        this.workers = new ArrayList<>();
+      }
+      this.workers.add(Objects.requireNonNull(worker));
       return this;
     }
 
@@ -815,6 +831,14 @@ public class CaseDefinition {
       return this;
     }
 
+    public Builder binding(Binding binding) {
+      if (this.bindings == null) {
+        this.bindings = new ArrayList<>();
+      }
+      this.bindings.add(Objects.requireNonNull(binding));
+      return this;
+    }
+
     public Builder milestones(List<Milestone> milestones) {
       this.milestones = milestones;
       return this;
@@ -825,6 +849,14 @@ public class CaseDefinition {
       return this;
     }
 
+    public Builder milestone(Milestone milestone) {
+      if (this.milestones == null) {
+        this.milestones = new ArrayList<>();
+      }
+      this.milestones.add(Objects.requireNonNull(milestone));
+      return this;
+    }
+
     public Builder goals(List<Goal> goals) {
       this.goals = goals;
       return this;
@@ -832,6 +864,14 @@ public class CaseDefinition {
 
     public Builder goals(Goal... goals) {
       this.goals = List.of(goals);
+      return this;
+    }
+
+    public Builder goal(Goal goal) {
+      if (this.goals == null) {
+        this.goals = new ArrayList<>();
+      }
+      this.goals.add(Objects.requireNonNull(goal));
       return this;
     }
 
@@ -1113,8 +1153,24 @@ public class CaseDefinition {
       return this;
     }
 
+    public Builder goapAction(io.casehub.engine.plan.goap.GoapAction action) {
+      if (this.goapActions == null) {
+        this.goapActions = new ArrayList<>();
+      }
+      this.goapActions.add(Objects.requireNonNull(action));
+      return this;
+    }
+
     public Builder compounds(List<CompoundDeclaration> compounds) {
       this.compounds = compounds;
+      return this;
+    }
+
+    public Builder compound(CompoundDeclaration compound) {
+      if (this.compounds == null) {
+        this.compounds = new ArrayList<>();
+      }
+      this.compounds.add(Objects.requireNonNull(compound));
       return this;
     }
 

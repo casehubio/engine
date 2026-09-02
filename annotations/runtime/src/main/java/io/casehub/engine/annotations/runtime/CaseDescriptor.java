@@ -35,4 +35,7 @@ public record CaseDescriptor(
     Map<String, List<String>> goalToEffectKeys,
     List<CompletionDescriptor> completions,
     List<CustomizerDescriptor> customizers,
-    List<String> standaloneCapabilities) {}
+    List<String> standaloneCapabilities,
+    List<CompoundDescriptor> compounds,
+    List<SubCaseDescriptor> subCases,
+    List<JudgmentDescriptor> judgments) {}

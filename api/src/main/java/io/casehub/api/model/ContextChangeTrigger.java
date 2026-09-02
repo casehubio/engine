@@ -18,7 +18,7 @@ package io.casehub.api.model;
 import io.casehub.api.model.evaluator.JQExpressionEvaluator;
 import io.casehub.platform.api.expression.ExpressionEvaluator;
 
-public class ContextChangeTrigger implements Trigger {
+public final class ContextChangeTrigger implements Trigger {
 
   private final ExpressionEvaluator filter;
   private final String listenLayer;
