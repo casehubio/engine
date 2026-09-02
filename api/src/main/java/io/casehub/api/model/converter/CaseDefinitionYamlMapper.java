@@ -414,7 +414,8 @@ public final class CaseDefinitionYamlMapper {
 
     java.util.LinkedHashMap<String, JsonNode> elements = new java.util.LinkedHashMap<>();
     for (JsonNode element : arrayNode) {
-      String id = adapter.getId(element);
+      JsonNode nameNode = element.get("name");
+      String id = nameNode != null ? nameNode.asText() : null;
       if (id == null) {
         throw new IllegalArgumentException(
             "Element in '" + fieldName + "' array missing 'name' field");
