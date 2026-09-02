@@ -19,6 +19,7 @@ import io.casehub.api.model.BindingTarget;
 import io.casehub.api.model.CapabilityTarget;
 import io.casehub.api.model.ExtensionTarget;
 import io.casehub.api.model.HumanRoutingConfig;
+import io.casehub.api.model.HumanTaskTarget;
 import io.casehub.api.model.JudgmentTarget;
 import io.casehub.api.model.SignalTarget;
 import io.casehub.api.model.SubCaseTarget;
@@ -180,9 +181,9 @@ public class PlanningCasePlanModelSnapshotProvider implements CasePlanModelSnaps
       case JudgmentTarget jt ->
           jt.routingConfig() instanceof HumanRoutingConfig ? "HUMAN" : "WORKER";
       case SubCaseTarget s -> "COMPOSED";
+      case HumanTaskTarget h -> "HUMAN";
       case SignalTarget sg -> "WORKER";
       case ExtensionTarget e -> "EXTERNAL";
-      case io.casehub.api.model.HumanTaskTarget h -> "HUMAN";
     };
   }
 }
