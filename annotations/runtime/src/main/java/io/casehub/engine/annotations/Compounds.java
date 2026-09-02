@@ -13,13 +13,15 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.casehub.engine.annotations.runtime;
+package io.casehub.engine.annotations;
 
-public record BindingDescriptor(
-    String name,
-    String capabilityName,
-    String triggerType,
-    String triggerValue,
-    String when,
-    String conflictStrategy,
-    java.util.List<String> producedKeys) {}
+import java.lang.annotation.ElementType;
+import java.lang.annotation.Retention;
+import java.lang.annotation.RetentionPolicy;
+import java.lang.annotation.Target;
+
+@Retention(RetentionPolicy.RUNTIME)
+@Target(ElementType.TYPE)
+public @interface Compounds {
+  Compound[] value();
+}

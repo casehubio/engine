@@ -15,11 +15,14 @@
  */
 package io.casehub.engine.annotations.runtime;
 
-public record BindingDescriptor(
+public record SubCaseDescriptor(
+    String methodName,
+    String namespace,
     String name,
-    String capabilityName,
+    String version,
+    String inputMapping,
+    String outputMapping,
+    int maxRecursionDepth,
     String triggerType,
     String triggerValue,
-    String when,
-    String conflictStrategy,
-    java.util.List<String> producedKeys) {}
+    String when) {}

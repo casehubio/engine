@@ -135,7 +135,8 @@ public final class CaseDefinitionYamlMapper {
     final byte[] bytes = yamlStream.readAllBytes();
     final JsonNode rawNode = objectMapper.readTree(bytes);
     final JsonNode processedNode = flattenExpressionOverrides(rawNode, objectMapper);
-    final JsonNode expandedNode = expandForEach(processedNode, objectMapper);
+    final JsonNode moduleExpandedNode = expandModules(processedNode, objectMapper);
+    final JsonNode expandedNode = expandForEach(moduleExpandedNode, objectMapper);
     final com.fasterxml.jackson.databind.ObjectMapper moduleMapper =
         objectMapper
             .copy()
@@ -177,7 +178,9 @@ public final class CaseDefinitionYamlMapper {
     final byte[] bytes = yamlStream.readAllBytes();
     final JsonNode rawNode = objectMapper.readTree(bytes);
     final JsonNode processedNode = flattenExpressionOverrides(rawNode, objectMapper);
-    final JsonNode resolvedNode = resolveVariables(processedNode, objectMapper, variableSources);
+    final JsonNode moduleExpandedNode = expandModules(processedNode, objectMapper);
+    final JsonNode resolvedNode =
+        resolveVariables(moduleExpandedNode, objectMapper, variableSources);
     final JsonNode expandedNode = expandForEach(resolvedNode, objectMapper);
     final com.fasterxml.jackson.databind.ObjectMapper moduleMapper =
         objectMapper
@@ -213,7 +216,8 @@ public final class CaseDefinitionYamlMapper {
       throw new IllegalArgumentException("JsonNode cannot be null");
     }
     final JsonNode processedNode = flattenExpressionOverrides(mergedNode, objectMapper);
-    final JsonNode expandedNode = expandForEach(processedNode, objectMapper);
+    final JsonNode moduleExpandedNode = expandModules(processedNode, objectMapper);
+    final JsonNode expandedNode = expandForEach(moduleExpandedNode, objectMapper);
     final com.fasterxml.jackson.databind.ObjectMapper moduleMapper =
         objectMapper
             .copy()
@@ -345,6 +349,133 @@ public final class CaseDefinitionYamlMapper {
     return mapper.valueToTree(resolved);
   }
 
+  private static JsonNode expandModules(JsonNode node, ObjectMapper mapper) {
+    JsonNode modulesNode = node.get("modules");
+    JsonNode importNode = node.get("import");
+    if (modulesNode == null
+        || importNode == null
+        || !modulesNode.isObject()
+        || !importNode.isArray()) {
+      return node;
+    }
+
+    java.util.Map<String, io.casehub.yaml.core.module.YamlModule> modules =
+        new java.util.LinkedHashMap<>();
+    modulesNode
+        .fields()
+        .forEachRemaining(
+            entry -> {
+              JsonNode mod = entry.getValue();
+              java.util.Map<String, io.casehub.yaml.core.module.YamlModuleParameter> params =
+                  new java.util.LinkedHashMap<>();
+              if (mod.has("parameters") && mod.get("parameters").isObject()) {
+                mod.get("parameters")
+                    .fields()
+                    .forEachRemaining(
+                        p -> {
+                          JsonNode pv = p.getValue();
+                          String type = pv.has("type") ? pv.get("type").asText() : "STRING";
+                          String def = pv.has("default") ? pv.get("default").asText() : null;
+                          boolean required = !pv.has("default");
+                          params.put(
+                              p.getKey(),
+                              io.casehub.yaml.core.module.YamlModuleParameter.builder()
+                                  .type(io.casehub.yaml.core.module.ParameterType.valueOf(type))
+                                  .required(required)
+                                  .defaultValue(def)
+                                  .build());
+                        });
+              }
+              java.util.Map<String, io.casehub.yaml.core.module.YamlModuleOutput> outputs =
+                  new java.util.LinkedHashMap<>();
+              if (mod.has("outputs") && mod.get("outputs").isObject()) {
+                mod.get("outputs")
+                    .fields()
+                    .forEachRemaining(
+                        o -> {
+                          outputs.put(
+                              o.getKey(),
+                              new io.casehub.yaml.core.module.YamlModuleOutput(
+                                  io.casehub.yaml.core.module.ParameterType.STRING,
+                                  o.getValue().asText()));
+                        });
+              }
+              @SuppressWarnings("unchecked")
+              java.util.Map<String, java.util.Map<String, Object>> sections =
+                  new java.util.LinkedHashMap<>();
+              if (mod.has("sections") && mod.get("sections").isObject()) {
+                mod.get("sections")
+                    .fields()
+                    .forEachRemaining(
+                        s -> {
+                          @SuppressWarnings("unchecked")
+                          java.util.Map<String, Object> sectionContent =
+                              mapper.convertValue(s.getValue(), java.util.Map.class);
+                          sections.put(s.getKey(), sectionContent);
+                        });
+              }
+              modules.put(
+                  entry.getKey(),
+                  new io.casehub.yaml.core.module.YamlModule(
+                      entry.getKey(), params, outputs, sections));
+            });
+
+    java.util.List<io.casehub.yaml.core.module.YamlImport> imports = new java.util.ArrayList<>();
+    for (JsonNode imp : importNode) {
+      if (!imp.has("module")) {
+        throw new IllegalArgumentException("Import entry missing required 'module' field");
+      }
+      String modName = imp.get("module").asText();
+      String as = imp.has("as") ? imp.get("as").asText() : modName;
+      String when = imp.has("when") ? imp.get("when").asText() : null;
+      java.util.Map<String, String> importParams = new java.util.LinkedHashMap<>();
+      if (imp.has("parameters") && imp.get("parameters").isObject()) {
+        imp.get("parameters")
+            .fields()
+            .forEachRemaining(p -> importParams.put(p.getKey(), p.getValue().asText()));
+      }
+      imports.add(new io.casehub.yaml.core.module.YamlImport(modName, as, when, importParams));
+    }
+
+    io.casehub.yaml.core.module.ExpandedModule expanded =
+        io.casehub.yaml.core.module.ModuleExpander.expand(imports, modules, java.util.Map.of());
+
+    com.fasterxml.jackson.databind.node.ObjectNode result = mapper.valueToTree(node);
+    com.fasterxml.jackson.databind.node.ObjectNode spec =
+        result.has("spec") && result.get("spec").isObject()
+            ? (com.fasterxml.jackson.databind.node.ObjectNode) result.get("spec")
+            : result;
+
+    for (var sectionEntry : expanded.sections().entrySet()) {
+      String sectionName = sectionEntry.getKey();
+      java.util.Map<String, Object> entries = sectionEntry.getValue();
+      if (entries.isEmpty()) continue;
+
+      com.fasterxml.jackson.databind.node.ArrayNode arr;
+      if (spec.has(sectionName) && spec.get(sectionName).isArray()) {
+        arr = (com.fasterxml.jackson.databind.node.ArrayNode) spec.get(sectionName);
+      } else {
+        arr = mapper.createArrayNode();
+        spec.set(sectionName, arr);
+      }
+      for (var entry : entries.entrySet()) {
+        JsonNode entryNode = mapper.valueToTree(entry.getValue());
+        if (entryNode.isObject()) {
+          com.fasterxml.jackson.databind.node.ObjectNode obj =
+              (com.fasterxml.jackson.databind.node.ObjectNode) entryNode;
+          if (!obj.has("name")) {
+            obj.put("name", entry.getKey());
+          }
+        }
+        arr.add(entryNode);
+      }
+    }
+
+    result.remove("modules");
+    result.remove("import");
+    return result;
+  }
+
   private static JsonNode expandForEach(JsonNode node, ObjectMapper mapper) {
     JsonNode iterationsNode = node.get("iterations");
     if (iterationsNode == null || !iterationsNode.isObject() || iterationsNode.isEmpty()) {
@@ -358,11 +489,20 @@ public final class CaseDefinitionYamlMapper {
         .forEachRemaining(
             entry -> {
               JsonNode group = entry.getValue();
-              java.util.List<String> in = new java.util.ArrayList<>();
-              if (group.has("in") && group.get("in").isArray()) {
-                group.get("in").forEach(v -> in.add(v.asText()));
-              }
               String as = group.has("as") ? group.get("as").asText() : entry.getKey();
+              Object in;
+              if (group.has("csv") && group.get("csv").isTextual()) {
+                io.casehub.yaml.core.data.CsvDataSource csv =
+                    io.casehub.yaml.core.data.CsvParser.parse(
+                        entry.getKey(), group.get("csv").asText());
+                in = csv.rows();
+              } else {
+                java.util.List<String> values = new java.util.ArrayList<>();
+                if (group.has("in") && group.get("in").isArray()) {
+                  group.get("in").forEach(v -> values.add(v.asText()));
+                }
+                in = values;
+              }
               groups.put(entry.getKey(), new io.casehub.yaml.core.foreach.IterationGroup(as, in));
             });
 
