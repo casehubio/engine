@@ -77,4 +77,114 @@ class CaseStatusTest {
           .isSameAs(status);
     }
   }
+
+  @Test
+  void completed_isTerminal() {
+    assertThat(CaseStatus.COMPLETED.isTerminal()).isTrue();
+  }
+
+  @Test
+  void faulted_isTerminal() {
+    assertThat(CaseStatus.FAULTED.isTerminal()).isTrue();
+  }
+
+  @Test
+  void cancelled_isTerminal() {
+    assertThat(CaseStatus.CANCELLED.isTerminal()).isTrue();
+  }
+
+  @Test
+  void starting_isNotTerminal() {
+    assertThat(CaseStatus.STARTING.isTerminal()).isFalse();
+  }
+
+  @Test
+  void running_isNotTerminal() {
+    assertThat(CaseStatus.RUNNING.isTerminal()).isFalse();
+  }
+
+  @Test
+  void waiting_isNotTerminal() {
+    assertThat(CaseStatus.WAITING.isTerminal()).isFalse();
+  }
+
+  @Test
+  void suspended_isNotTerminal() {
+    assertThat(CaseStatus.SUSPENDED.isTerminal()).isFalse();
+  }
+
+  @Test
+  void starting_isActive() {
+    assertThat(CaseStatus.STARTING.isActive()).isTrue();
+  }
+
+  @Test
+  void running_isActive() {
+    assertThat(CaseStatus.RUNNING.isActive()).isTrue();
+  }
+
+  @Test
+  void waiting_isActive() {
+    assertThat(CaseStatus.WAITING.isActive()).isTrue();
+  }
+
+  @Test
+  void suspended_isActive() {
+    assertThat(CaseStatus.SUSPENDED.isActive()).isTrue();
+  }
+
+  @Test
+  void completed_isNotActive() {
+    assertThat(CaseStatus.COMPLETED.isActive()).isFalse();
+  }
+
+  @Test
+  void faulted_isNotActive() {
+    assertThat(CaseStatus.FAULTED.isActive()).isFalse();
+  }
+
+  @Test
+  void cancelled_isNotActive() {
+    assertThat(CaseStatus.CANCELLED.isActive()).isFalse();
+  }
+
+  @Test
+  void terminalStatusesConstant_matchesIsTerminal() {
+    var expected =
+        java.util.Arrays.stream(CaseStatus.values()).filter(CaseStatus::isTerminal).toList();
+    assertThat(CaseStatus.TERMINAL_STATUSES)
+        .as("TERMINAL_STATUSES constant must match isTerminal() for all enum values")
+        .containsExactlyInAnyOrderElementsOf(expected);
+  }
+
+  @Test
+  void terminalStatusesAreNeverActive() {
+    for (CaseStatus status : CaseStatus.values()) {
+      if (status.isTerminal()) {
+        assertThat(status.isActive())
+            .as("%s is both terminal and active — must be one or the other", status)
+            .isFalse();
+      }
+    }
+  }
+
+  @Test
+  void activeStatusesAreNeverTerminal() {
+    for (CaseStatus status : CaseStatus.values()) {
+      if (status.isActive()) {
+        assertThat(status.isTerminal())
+            .as("%s is both active and terminal — must be one or the other", status)
+            .isFalse();
+      }
+    }
+  }
+
+  @Test
+  void everyStatusIsEitherTerminalOrActive() {
+    for (CaseStatus status : CaseStatus.values()) {
+      assertThat(status.isTerminal() || status.isActive())
+          .as("%s is neither terminal nor active — every status must be one or the other", status)
+          .isTrue();
+    }
+  }
 }
