@@ -6,7 +6,7 @@
 
 ## Methods
 
-### `public abstract Uni<io.casehub.engine.plan.DagPlan<io.casehub.engine.plan.TaskNode.LeafTask<T>>> decompose(io.casehub.engine.plan.TaskNode<T> task, io.casehub.engine.plan.DecompositionContext<T> context)`
+### `public abstract io.casehub.engine.plan.DagPlan<io.casehub.engine.plan.TaskNode.LeafTask<T>> decompose(io.casehub.engine.plan.TaskNode<T> task, io.casehub.engine.plan.DecompositionContext<T> context)`
 
 #### Parameters
 
@@ -14,3 +14,11 @@
 - `context` (`io.casehub.engine.plan.DecompositionContext<T>`)
 
 ### `public default java.lang.String id()`
+
+### `public default io.casehub.engine.plan.DagPlan<io.casehub.engine.plan.TaskNode.LeafTask<T>> replan(io.casehub.engine.plan.TaskNode<T> task, io.casehub.engine.plan.DecompositionContext<T> context, io.casehub.engine.plan.ReplanContext<T> replanContext)`
+
+#### Parameters
+
+- `task` (`io.casehub.engine.plan.TaskNode<T>`)
+- `context` (`io.casehub.engine.plan.DecompositionContext<T>`)
+- `replanContext` (`io.casehub.engine.plan.ReplanContext<T>`)

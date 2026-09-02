@@ -7,11 +7,16 @@
 Pre-probed agent health status, mapped from `casehub-eidos-api` `CapabilityStatus` at
 candidate construction time.
 
-<p>`UNAVAILABLE` workers are filtered before the candidate list is built — they never reach
-`AgentRoutingStrategy.select`. This enum exists so `casehub-engine-api` does not take
-a compile-time dependency on `casehub-eidos-api`.
+<p>`UNAVAILABLE` and `EXCLUDED` workers are filtered before the candidate list is
+built — they never reach `AgentRoutingStrategy.select`. This enum exists so `casehub-engine-api` does not take a compile-time dependency on `casehub-eidos-api`.
+
+<p>Enum declaration order reflects severity (softest first): `READY` > `BEHAVIORAL_VIOLATION` > `EPISTEMICALLY_WEAK` > `DEGRADED`.
 
 ## Enum Constants
+
+### `BEHAVIORAL_VIOLATION` (`io.casehub.api.spi.routing.AgentHealth`)
+
+Agent has behavioral compliance violations but is still operational — soft demotion.
 
 ### `DEGRADED` (`io.casehub.api.spi.routing.AgentHealth`)
 

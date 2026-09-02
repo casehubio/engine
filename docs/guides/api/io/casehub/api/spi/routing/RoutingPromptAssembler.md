@@ -41,6 +41,14 @@ Assemble all prompt sections for the given routing context.
 
 the assembled prompt string, or `null` if no section contributed content
 
+### `public java.lang.String assemble(io.casehub.api.spi.routing.AgentRoutingContext context, java.util.List<io.casehub.api.spi.routing.AgentCandidate> eligible, int maxBudgetChars)`
+
+#### Parameters
+
+- `context` (`io.casehub.api.spi.routing.AgentRoutingContext`)
+- `eligible` (`java.util.List<io.casehub.api.spi.routing.AgentCandidate>`)
+- `maxBudgetChars` (`int`)
+
 ### `private static int priority(io.casehub.api.spi.routing.RoutingPromptSection section)`
 
 #### Parameters

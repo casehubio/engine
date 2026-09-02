@@ -16,6 +16,8 @@
 
 ### `lambdaExtractor` (`java.util.function.Function<io.casehub.api.context.CaseContext,java.util.Map<java.lang.String,java.lang.Object>>`)
 
+### `minCostSamples` (`java.lang.Integer`)
+
 ### `minSimilarity` (`double`)
 
 ### `temporalDecayHalfLifeDays` (`java.lang.Integer`)
@@ -66,6 +68,12 @@
 #### Parameters
 
 - `extractor` (`java.util.function.Function<io.casehub.api.context.CaseContext,java.util.Map<java.lang.String,java.lang.Object>>`)
+
+### `public io.casehub.api.model.cbr.CbrConfig.Builder minCostSamples(java.lang.Integer minCostSamples)`
+
+#### Parameters
+
+- `minCostSamples` (`java.lang.Integer`)
 
 ### `public io.casehub.api.model.cbr.CbrConfig.Builder minSimilarity(double minSimilarity)`
 

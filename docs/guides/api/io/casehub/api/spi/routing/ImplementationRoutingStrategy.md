@@ -8,9 +8,6 @@ Selects which implementation(s) handle a capability when multiple bindings targe
 capability. Symmetric to `AgentRoutingStrategy` which selects which worker instance handles
 a task.
 
-<p>Returns `Uni` per protocol PP-20260529-9f9627 — implementations may perform blocking I/O
-(trust lookups, external classification).
-
 <p>Refs casehubio/engine#476.
 
 ## Methods

@@ -21,6 +21,12 @@ iterates all providers until one handles the node.
 
 - `rawWorkerNode` (`JsonNode`)
 
+### `public default java.util.List<io.casehub.api.spi.DiscoveredWorker> discoverWorkers(JsonNode rawWorkerNode)`
+
+#### Parameters
+
+- `rawWorkerNode` (`JsonNode`)
+
 ### `public abstract boolean handles(JsonNode rawWorkerNode)`
 
 Returns `true` if this provider can construct a `WorkerFunction` from the given

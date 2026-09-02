@@ -11,7 +11,7 @@ from the `correlationResolver` field on `io.casehub.api.model.InboundSignalMappi
 
 ## Methods
 
-### `public abstract Uni<java.util.UUID> resolve(java.lang.String correlationValue, java.lang.String tenancyId)`
+### `public abstract java.util.UUID resolve(java.lang.String correlationValue, java.lang.String tenancyId)`
 
 #### Parameters
 

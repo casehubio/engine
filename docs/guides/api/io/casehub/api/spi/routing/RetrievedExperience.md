@@ -10,7 +10,7 @@ the full plan trace showing which bindings were selected.
 
 ## Fields
 
-### `origin` (`java.lang.Double`)
+### `confidence` (`java.lang.Double`)
 
 ### `featureSimilarities` (`java.util.Map<java.lang.String,java.lang.Double>`)
 
@@ -28,7 +28,7 @@ the full plan trace showing which bindings were selected.
 
 ## Record Components
 
-### `origin` (`java.lang.Double`)
+### `confidence` (`java.lang.Double`)
 
 the quality/success score of the outcome (0.0-1.0, nullable)
 
@@ -69,7 +69,7 @@ the solution that was applied
 - `problem` (`java.lang.String`)
 - `solution` (`java.lang.String`)
 - `outcome` (`java.lang.String`)
-- `origin` (`java.lang.Double`)
+- `confidence` (`java.lang.Double`)
 - `similarityScore` (`double`)
 - `features` (`java.util.Map<java.lang.String,java.lang.Object>`)
 - `planTrace` (`java.util.List<io.casehub.api.spi.routing.ExperiencePlanStep>`)

@@ -12,6 +12,8 @@
 
 ### `reason` (`java.lang.String`)
 
+### `variantId` (`java.lang.String`)
+
 ## Record Components
 
 ### `capabilityName` (`java.lang.String`)
@@ -19,6 +21,8 @@
 ### `executorId` (`java.lang.String`)
 
 ### `reason` (`java.lang.String`)
+
+### `variantId` (`java.lang.String`)
 
 ## Constructors
 
@@ -29,6 +33,15 @@
 - `executorId` (`java.lang.String`)
 - `capabilityName` (`java.lang.String`)
 - `reason` (`java.lang.String`)
+
+### `public Assignment(java.lang.String executorId, java.lang.String capabilityName, java.lang.String reason, java.lang.String variantId)`
+
+#### Parameters
+
+- `executorId` (`java.lang.String`)
+- `capabilityName` (`java.lang.String`)
+- `reason` (`java.lang.String`)
+- `variantId` (`java.lang.String`)
 
 ## Methods
 
@@ -47,3 +60,5 @@
 ### `public java.lang.String reason()`
 
 ### `public final java.lang.String toString()`
+
+### `public java.lang.String variantId()`

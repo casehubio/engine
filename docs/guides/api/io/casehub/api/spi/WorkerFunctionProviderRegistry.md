@@ -16,3 +16,9 @@ iterating all registered providers until one handles the node. All CDI beans imp
 #### Parameters
 
 - `rawWorkerNode` (`JsonNode`)
+
+### `public default java.util.List<io.casehub.api.spi.DiscoveredWorker> discoverWorkers(JsonNode rawWorkerNode)`
+
+#### Parameters
+
+- `rawWorkerNode` (`JsonNode`)

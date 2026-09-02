@@ -18,6 +18,8 @@ A pre-filtered, pre-probed agent worker candidate passed to `AgentRoutingStrateg
 
 ### `runningJobs` (`int`)
 
+### `violations` (`java.util.Map<java.lang.String,java.lang.Integer>`)
+
 ### `workerId` (`java.lang.String`)
 
 ## Record Components
@@ -33,7 +35,7 @@ all capabilities declared by this worker
 
 ### `health` (`io.casehub.api.spi.routing.AgentHealth`)
 
-pre-probed health status; UNAVAILABLE workers are never included
+pre-probed health status; UNAVAILABLE and EXCLUDED workers are never included
 
 ### `matchDegree` (`MatchDegree`)
 
@@ -44,13 +46,17 @@ how this worker matched the requested capability; null when match metadata is
 
 count of currently active Quartz execution jobs for this worker
 
+### `violations` (`java.util.Map<java.lang.String,java.lang.Integer>`)
+
+per-dimension violation counts from `CapabilityStatus.BehavioralViolation`; null when health is not `BEHAVIORAL_VIOLATION`
+
 ### `workerId` (`java.lang.String`)
 
 the worker name from the case definition YAML
 
 ## Constructors
 
-### `public AgentCandidate(java.lang.String workerId, java.util.Set<java.lang.String> capabilities, int runningJobs, io.casehub.api.spi.routing.AgentHealth health, AgentDescriptor agentDescriptor, MatchDegree matchDegree)`
+### `public AgentCandidate(java.lang.String workerId, java.util.Set<java.lang.String> capabilities, int runningJobs, io.casehub.api.spi.routing.AgentHealth health, AgentDescriptor agentDescriptor, MatchDegree matchDegree, java.util.Map<java.lang.String,java.lang.Integer> violations)`
 
 #### Parameters
 
@@ -60,6 +66,7 @@ the worker name from the case definition YAML
 - `health` (`io.casehub.api.spi.routing.AgentHealth`)
 - `agentDescriptor` (`AgentDescriptor`)
 - `matchDegree` (`MatchDegree`)
+- `violations` (`java.util.Map<java.lang.String,java.lang.Integer>`)
 
 ## Methods
 
@@ -82,5 +89,7 @@ the worker name from the case definition YAML
 ### `public int runningJobs()`
 
 ### `public final java.lang.String toString()`
+
+### `public java.util.Map<java.lang.String,java.lang.Integer> violations()`
 
 ### `public java.lang.String workerId()`

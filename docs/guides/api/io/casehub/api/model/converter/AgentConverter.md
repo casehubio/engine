@@ -10,44 +10,20 @@
 
 ## Methods
 
-### `private static io.casehub.api.model.ai.ChatModelProvider toAnthropicProvider(AnthropicModel model)`
+### `public static io.casehub.api.model.ai.Agent toApiAgent(com.fasterxml.jackson.databind.JsonNode agentNode)`
+
+Builds an Agent directly from a raw YAML `com.fasterxml.jackson.databind.JsonNode`,
+bypassing the generated schema POJOs. Supports the flat YAML format where `model:` is the
+provider name string and other fields (`modelName`, `apiKey`, etc.) sit at the same
+level.
 
 #### Parameters
 
-- `model` (`AnthropicModel`)
+- `agentNode` (`com.fasterxml.jackson.databind.JsonNode`)
 
-### `public static io.casehub.api.model.ai.Agent toApiAgent(Agent schemaAgent)`
-
-#### Parameters
-
-- `schemaAgent` (`Agent`)
-
-### `private static io.casehub.api.model.ai.ChatModelProvider toChatModelProvider(AgentModel model)`
+### `private static io.casehub.api.model.ai.ChatModelProvider toChatModelProviderFromNode(com.fasterxml.jackson.databind.JsonNode node, java.lang.String providerType)`
 
 #### Parameters
 
-- `model` (`AgentModel`)
-
-### `private static io.casehub.api.model.ai.ChatModelProvider toGoogleAiProvider(GoogleAiGeminiModel model)`
-
-#### Parameters
-
-- `model` (`GoogleAiGeminiModel`)
-
-### `private static io.casehub.api.model.ai.ChatModelProvider toMistralProvider(MistralAiModel model)`
-
-#### Parameters
-
-- `model` (`MistralAiModel`)
-
-### `private static io.casehub.api.model.ai.ChatModelProvider toOllamaProvider(OllamaModel model)`
-
-#### Parameters
-
-- `model` (`OllamaModel`)
-
-### `private static io.casehub.api.model.ai.ChatModelProvider toOpenAiProvider(OpenAiModel model)`
-
-#### Parameters
-
-- `model` (`OpenAiModel`)
+- `node` (`com.fasterxml.jackson.databind.JsonNode`)
+- `providerType` (`java.lang.String`)

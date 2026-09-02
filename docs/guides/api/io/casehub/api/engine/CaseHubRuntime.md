@@ -6,6 +6,26 @@
 
 ## Methods
 
+### `public default io.casehub.api.context.CaseContext awaitQuiescence(java.util.UUID caseId, java.time.Duration timeout)`
+
+Waits until the case reaches quiescence — no workers are executing, no context change events
+are in-flight, and no pending evaluations remain. Unlike `.signalAndAwait` which tracks
+only the first wave of workers triggered by a signal, this tracks ALL cascading waves until the
+case is truly idle.
+
+<p>Returns the final `CaseContext` when quiescence is reached. If the case is already
+idle when called, returns immediately.
+
+<p>Throws `SettlementTimeoutException` if quiescence is not reached within the specified
+duration.
+
+<p>Refs casehubio/engine#610.
+
+#### Parameters
+
+- `caseId` (`java.util.UUID`)
+- `timeout` (`java.time.Duration`)
+
 ### `public abstract void cancelCase(java.util.UUID caseId)`
 
 Cancels a case. Valid from any non-terminal state (RUNNING, SUSPENDED, WAITING).

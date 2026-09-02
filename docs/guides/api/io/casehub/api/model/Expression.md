@@ -6,19 +6,19 @@
 
 ## Fields
 
-### `expression` (`java.lang.String`)
+### `evaluator` (`ExpressionEvaluator`)
 
 ## Record Components
 
-### `expression` (`java.lang.String`)
+### `evaluator` (`ExpressionEvaluator`)
 
 ## Constructors
 
-### `public Expression(java.lang.String expression)`
+### `public Expression(ExpressionEvaluator evaluator)`
 
 #### Parameters
 
-- `expression` (`java.lang.String`)
+- `evaluator` (`ExpressionEvaluator`)
 
 ## Methods
 
@@ -28,7 +28,7 @@
 
 - `o` (`java.lang.Object`)
 
-### `public java.lang.String expression()`
+### `public ExpressionEvaluator evaluator()`
 
 ### `public final int hashCode()`
 

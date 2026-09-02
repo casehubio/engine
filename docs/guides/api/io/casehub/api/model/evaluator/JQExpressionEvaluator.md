@@ -37,3 +37,9 @@
 ### `public final java.lang.String toString()`
 
 ### `public java.lang.String type()`
+
+### `public static void validate(java.lang.String expression)`
+
+#### Parameters
+
+- `expression` (`java.lang.String`)

@@ -54,3 +54,12 @@ carries the action for downstream risk classification via PlannedAction).
 #### Parameters
 
 - `input` (`java.util.Map<java.lang.String,java.lang.Object>`)
+
+### `public io.casehub.api.model.ai.AgentResponse executeDetailed(java.util.Map<java.lang.String,java.lang.Object> input)`
+
+Executes this agent and returns an `AgentResponse` containing both the `WorkerResult` and `TokenUsage` from the LLM call. Token usage is null when the model does
+not report it.
+
+#### Parameters
+
+- `input` (`java.util.Map<java.lang.String,java.lang.Object>`)

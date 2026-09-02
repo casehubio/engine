@@ -30,7 +30,7 @@ CDI iteration order (first wins).
 
 ## Methods
 
-### `private int candidateSetSize(io.casehub.api.spi.routing.CandidateSetStrategy strategy)`
+### `private static int candidateSetSize(io.casehub.api.spi.routing.CandidateSetStrategy strategy)`
 
 #### Parameters
 
@@ -43,14 +43,14 @@ CDI iteration order (first wins).
 - `action` (`PlannedAction`)
 - `context` (`io.casehub.api.spi.ClassificationContext`)
 
-### `io.casehub.api.spi.RiskDecision mostRestrictive(io.casehub.api.spi.RiskDecision a, io.casehub.api.spi.RiskDecision b)`
+### `public static io.casehub.api.spi.RiskDecision mostRestrictive(io.casehub.api.spi.RiskDecision a, io.casehub.api.spi.RiskDecision b)`
 
 #### Parameters
 
 - `a` (`io.casehub.api.spi.RiskDecision`)
 - `b` (`io.casehub.api.spi.RiskDecision`)
 
-### `private io.casehub.api.spi.RiskDecision.GateRequired narrower(io.casehub.api.spi.RiskDecision.GateRequired a, io.casehub.api.spi.RiskDecision.GateRequired b)`
+### `private static io.casehub.api.spi.RiskDecision.GateRequired narrower(io.casehub.api.spi.RiskDecision.GateRequired a, io.casehub.api.spi.RiskDecision.GateRequired b)`
 
 #### Parameters
 

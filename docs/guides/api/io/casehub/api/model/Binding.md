@@ -8,11 +8,19 @@
 
 ### `conflictResolverStrategy` (`java.lang.String`)
 
+### `consumes` (`java.lang.String`)
+
 ### `contextWrite` (`java.util.Map<java.lang.String,java.lang.Object>`)
+
+### `contingency` (`java.util.List<java.lang.String>`)
+
+### `exchangeProjectionExpression` (`java.lang.String`)
+
+### `exchangeProjectionStrategy` (`java.lang.String`)
 
 ### `executionMode` (`io.casehub.api.model.ExecutionMode`)
 
-### `inputProjectionOverride` (`java.lang.String`)
+### `inputProjectionOverride` (`ExpressionEvaluator`)
 
 ### `lifecycleScope` (`io.casehub.api.model.LifecycleScope`)
 
@@ -24,9 +32,17 @@
 
 ### `participation` (`io.casehub.api.model.Participation`)
 
-### `permissionIntent` (`java.util.List<io.casehub.api.model.acl.WorkerAction>`)
+### `permissionIntent` (`java.util.List<WorkerAction>`)
 
 ### `producedKeys` (`java.util.Set<java.lang.String>`)
+
+### `produces` (`java.lang.String`)
+
+### `recoveryOverride` (`io.casehub.api.model.RecoveryOverride`)
+
+### `replanHint` (`io.casehub.api.model.ReplanHint`)
+
+### `sideEffectClassification` (`io.casehub.api.model.SideEffectClassification`)
 
 ### `target` (`io.casehub.api.model.BindingTarget`)
 
@@ -46,11 +62,11 @@
 
 ### `public static io.casehub.api.model.Binding.Builder builder()`
 
-### `public java.lang.String effectiveInputProjection(Capability capability)`
+### `public ExpressionEvaluator effectiveInputProjection(io.casehub.api.model.CapabilityTarget capTarget)`
 
 #### Parameters
 
-- `capability` (`Capability`)
+- `capTarget` (`io.casehub.api.model.CapabilityTarget`)
 
 ### `public io.casehub.api.model.ExecutionMode executionMode()`
 
@@ -60,9 +76,17 @@ Strategy name for resolving concurrent writes to the same CaseContext key. Value
 "LAST_WRITER_WINS" (default), "FIRST_WRITER_WINS", "FAIL". Null means use the default
 (LAST_WRITER_WINS). See casehubio/engine#45, #51.
 
+### `public java.lang.String getConsumes()`
+
 ### `public java.util.Map<java.lang.String,java.lang.Object> getContextWrite()`
 
-### `public java.lang.String getInputProjectionOverride()`
+### `public java.util.List<java.lang.String> getContingency()`
+
+### `public java.lang.String getExchangeProjectionExpression()`
+
+### `public java.lang.String getExchangeProjectionStrategy()`
+
+### `public ExpressionEvaluator getInputProjectionOverride()`
 
 ### `public java.lang.String getName()`
 
@@ -70,12 +94,20 @@ Strategy name for resolving concurrent writes to the same CaseContext key. Value
 
 ### `public io.casehub.api.model.OutcomePolicy getOutcomePolicy()`
 
-### `public java.util.List<io.casehub.api.model.acl.WorkerAction> getPermissionIntent()`
+### `public java.util.List<WorkerAction> getPermissionIntent()`
 
 ### `public java.util.Set<java.lang.String> getProducedKeys()`
 
 Keys this binding declares it will produce. Used for static analysis and audit trail. Empty by
 default. Overlaps within the same stage trigger a validation warning.
+
+### `public java.lang.String getProduces()`
+
+### `public io.casehub.api.model.RecoveryOverride getRecoveryOverride()`
+
+### `public io.casehub.api.model.ReplanHint getReplanHint()`
+
+### `public io.casehub.api.model.SideEffectClassification getSideEffectClassification()`
 
 ### `public ExpressionEvaluator getWhen()`
 
@@ -89,11 +121,35 @@ default. Overlaps within the same stage trigger a validation warning.
 
 - `conflictResolverStrategy` (`java.lang.String`)
 
+### `public void setConsumes(java.lang.String consumes)`
+
+#### Parameters
+
+- `consumes` (`java.lang.String`)
+
 ### `public void setContextWrite(java.util.Map<java.lang.String,java.lang.Object> contextWrite)`
 
 #### Parameters
 
 - `contextWrite` (`java.util.Map<java.lang.String,java.lang.Object>`)
+
+### `public void setContingency(java.util.List<java.lang.String> contingency)`
+
+#### Parameters
+
+- `contingency` (`java.util.List<java.lang.String>`)
+
+### `public void setExchangeProjectionExpression(java.lang.String exchangeProjectionExpression)`
+
+#### Parameters
+
+- `exchangeProjectionExpression` (`java.lang.String`)
+
+### `public void setExchangeProjectionStrategy(java.lang.String exchangeProjectionStrategy)`
+
+#### Parameters
+
+- `exchangeProjectionStrategy` (`java.lang.String`)
 
 ### `public void setExecutionMode(io.casehub.api.model.ExecutionMode executionMode)`
 
@@ -101,11 +157,11 @@ default. Overlaps within the same stage trigger a validation warning.
 
 - `executionMode` (`io.casehub.api.model.ExecutionMode`)
 
-### `public void setInputProjectionOverride(java.lang.String inputProjectionOverride)`
+### `public void setInputProjectionOverride(ExpressionEvaluator inputProjectionOverride)`
 
 #### Parameters
 
-- `inputProjectionOverride` (`java.lang.String`)
+- `inputProjectionOverride` (`ExpressionEvaluator`)
 
 ### `public void setLifecycleScope(io.casehub.api.model.LifecycleScope lifecycleScope)`
 
@@ -125,17 +181,41 @@ default. Overlaps within the same stage trigger a validation warning.
 
 - `participation` (`io.casehub.api.model.Participation`)
 
-### `public void setPermissionIntent(java.util.List<io.casehub.api.model.acl.WorkerAction> permissionIntent)`
+### `public void setPermissionIntent(java.util.List<WorkerAction> permissionIntent)`
 
 #### Parameters
 
-- `permissionIntent` (`java.util.List<io.casehub.api.model.acl.WorkerAction>`)
+- `permissionIntent` (`java.util.List<WorkerAction>`)
 
 ### `public void setProducedKeys(java.util.Set<java.lang.String> producedKeys)`
 
 #### Parameters
 
 - `producedKeys` (`java.util.Set<java.lang.String>`)
+
+### `public void setProduces(java.lang.String produces)`
+
+#### Parameters
+
+- `produces` (`java.lang.String`)
+
+### `public void setRecoveryOverride(io.casehub.api.model.RecoveryOverride recoveryOverride)`
+
+#### Parameters
+
+- `recoveryOverride` (`io.casehub.api.model.RecoveryOverride`)
+
+### `public void setReplanHint(io.casehub.api.model.ReplanHint replanHint)`
+
+#### Parameters
+
+- `replanHint` (`io.casehub.api.model.ReplanHint`)
+
+### `public void setSideEffectClassification(io.casehub.api.model.SideEffectClassification sideEffectClassification)`
+
+#### Parameters
+
+- `sideEffectClassification` (`io.casehub.api.model.SideEffectClassification`)
 
 ### `public void setWhen(ExpressionEvaluator when)`
 

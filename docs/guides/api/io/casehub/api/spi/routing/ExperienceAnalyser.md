@@ -12,6 +12,8 @@ scoring) and `CbrAgentRoutingStrategy` (blocks, CBR-first routing).
 
 ## Fields
 
+### `DEFAULT_MAX_COST_FACTOR` (`double`)
+
 ### `DEFAULT_OUTCOME_WEIGHTS` (`java.util.Map<io.casehub.api.spi.routing.RoutingOutcome,java.lang.Double>`)
 
 ## Constructors
@@ -19,6 +21,39 @@ scoring) and `CbrAgentRoutingStrategy` (blocks, CBR-first routing).
 ### `private ExperienceAnalyser()`
 
 ## Methods
+
+### `public static java.util.Map<java.lang.String,java.lang.Double> actionCostFactors(java.util.List<io.casehub.api.spi.routing.RetrievedExperience> experiences, java.util.Set<java.lang.String> actionNames, int minSamples)`
+
+#### Parameters
+
+- `experiences` (`java.util.List<io.casehub.api.spi.routing.RetrievedExperience>`)
+- `actionNames` (`java.util.Set<java.lang.String>`)
+- `minSamples` (`int`)
+
+### `public static java.util.Map<java.lang.String,java.lang.Double> actionCostFactors(java.util.List<io.casehub.api.spi.routing.RetrievedExperience> experiences, java.util.Set<java.lang.String> actionNames, int minSamples, double maxCostFactor, java.util.Map<io.casehub.api.spi.routing.RoutingOutcome,java.lang.Double> outcomeWeights)`
+
+Computes per-action cost multipliers from CBR plan traces. Actions with low historical success
+rates get higher cost factors, steering the planner toward more reliable paths.
+
+#### Parameters
+
+- `experiences` (`java.util.List<io.casehub.api.spi.routing.RetrievedExperience>`) — retrieved similar cases from the CBR store
+- `actionNames` (`java.util.Set<java.lang.String>`) — action names (capability names) to compute cost factors for
+- `minSamples` (`int`) — minimum discrete sample count before learned costs override declared costs
+- `maxCostFactor` (`double`) — upper bound on the cost multiplier (prevents infinity on zero success)
+- `outcomeWeights` (`java.util.Map<io.casehub.api.spi.routing.RoutingOutcome,java.lang.Double>`) — per-outcome scoring weights
+
+#### Returns
+
+per-action cost multipliers (1.0 = no adjustment); empty map on cold start
+
+### `public static java.util.Map<java.lang.String,java.lang.Double> actionFailureRates(java.util.List<io.casehub.api.spi.routing.RetrievedExperience> experiences, java.util.Set<java.lang.String> actionNames, int minSamples)`
+
+#### Parameters
+
+- `experiences` (`java.util.List<io.casehub.api.spi.routing.RetrievedExperience>`)
+- `actionNames` (`java.util.Set<java.lang.String>`)
+- `minSamples` (`int`)
 
 ### `public static java.util.Map<java.lang.String,java.lang.Double> workerSuccessRates(java.util.List<io.casehub.api.spi.routing.RetrievedExperience> experiences, java.util.Set<java.lang.String> eligibleWorkerIds, java.lang.String capabilityName, java.util.Map<io.casehub.api.spi.routing.RoutingOutcome,java.lang.Double> outcomeWeights)`
 

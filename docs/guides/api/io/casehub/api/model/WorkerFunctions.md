@@ -12,6 +12,12 @@ Utilities for composing worker functions into larger flows.
 
 ## Methods
 
+### `public static WorkerFunction.ExchangeProcessor<T,T> exchangeSequence(WorkerFunction.ExchangeProcessor<?,?>[] steps)`
+
+#### Parameters
+
+- `steps` (`WorkerFunction.ExchangeProcessor<?,?>[]`)
+
 ### `public static java.util.Map<java.lang.String,java.lang.Object> merge(java.util.Map<java.lang.String,java.lang.Object> base, java.util.Map<java.lang.String,java.lang.Object> overlay)`
 
 Merges two maps, with overlay keys overwriting base keys.
