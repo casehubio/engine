@@ -17,7 +17,6 @@ package io.casehub.engine.internal.engine.handler;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import io.casehub.api.context.ContextLayer;
-import io.casehub.api.model.CaseStatus;
 import io.casehub.api.model.WorkResult;
 import io.casehub.api.model.event.CaseHubEventType;
 import io.casehub.api.model.event.EventStreamType;
@@ -83,7 +82,7 @@ public class ActionGateRejectedHandler {
       return;
     }
 
-    if (isTerminal(instance.getState())) {
+    if (instance.getState().isTerminal()) {
       LOG.warnf(
           "Gate rejected on terminated case (state=%s): caseId=%s gateId=%d — discarding",
           instance.getState(), event.caseId(), event.gateId());
@@ -202,11 +201,5 @@ public class ActionGateRejectedHandler {
     log.setTimestamp(Instant.now());
     log.setEventType(CaseHubEventType.ACTION_GATE_REJECTED);
     eventLogRepository.append(log, instance.tenancyId);
-  }
-
-  private static boolean isTerminal(final CaseStatus state) {
-    return state == CaseStatus.COMPLETED
-        || state == CaseStatus.FAULTED
-        || state == CaseStatus.CANCELLED;
   }
 }
