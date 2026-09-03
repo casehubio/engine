@@ -21,12 +21,17 @@ import java.util.List;
 public sealed interface RoutingResult
     permits RoutingResult.Selected, RoutingResult.Unresolvable, RoutingResult.Escalated {
 
-  record Selected(List<Assignment> assignments) implements RoutingResult {
+  record Selected(List<Assignment> assignments, @Nullable RoutingSelection selectionContext)
+      implements RoutingResult {
     public Selected {
       if (assignments.isEmpty()) {
         throw new IllegalArgumentException("Selected must have at least one assignment");
       }
       assignments = List.copyOf(assignments);
+    }
+
+    public Selected(List<Assignment> assignments) {
+      this(assignments, null);
     }
 
     public Assignment single() {
@@ -53,6 +58,15 @@ public sealed interface RoutingResult
 
   static RoutingResult assigned(List<Assignment> assignments) {
     return new Selected(assignments);
+  }
+
+  static RoutingResult assigned(Assignment assignment, RoutingSelection selectionContext) {
+    return new Selected(List.of(assignment), selectionContext);
+  }
+
+  static RoutingResult assigned(
+      String executorId, String reason, RoutingSelection selectionContext) {
+    return new Selected(List.of(new Assignment(executorId, null, reason)), selectionContext);
   }
 
   static RoutingResult unresolvable(String reason) {

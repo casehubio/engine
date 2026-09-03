@@ -60,6 +60,7 @@ import io.casehub.engine.internal.routing.BehavioralComplianceRecorder;
 import io.casehub.engine.internal.routing.GoalOutcomeRecorder;
 import io.casehub.engine.internal.routing.GoalRevisionEvaluator;
 import io.casehub.engine.internal.routing.PersonalitySignalRecorder;
+import io.casehub.engine.internal.routing.SelectionContextStore;
 import io.casehub.engine.internal.work.CaseResumptionService;
 import io.casehub.ledger.api.spi.LedgerTraceIdProvider;
 import io.casehub.worker.api.PlannedAction;
@@ -111,6 +112,7 @@ public class WorkflowExecutionCompletedHandler {
   @Inject io.casehub.api.spi.FailureClassifier failureClassifier;
   @Inject ExpectationValidator expectationValidator;
   @Inject io.casehub.engine.internal.worker.FailureCritiqueService failureCritiqueService;
+  @Inject SelectionContextStore selectionContextStore;
 
   @Inject
   jakarta.enterprise.inject.Instance<io.casehub.api.spi.routing.RoutingOutcomeRecorder>
@@ -309,7 +311,7 @@ public class WorkflowExecutionCompletedHandler {
                   worker.name(),
                   extractCapabilityTag(caseInstance, worker, bindingName),
                   traceId,
-                  null,
+                  selectionContextStore.remove(caseInstance.getUuid(), worker.name()),
                   event.reasoning()))
           .whenComplete(
               (v, t) -> {

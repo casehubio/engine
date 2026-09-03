@@ -52,6 +52,7 @@ import io.casehub.api.spi.routing.HumanTaskRoutingResult;
 import io.casehub.api.spi.routing.HumanTaskRoutingStrategy;
 import io.casehub.api.spi.routing.RetrievedExperience;
 import io.casehub.api.spi.routing.RoutingResult;
+import io.casehub.api.spi.routing.RoutingSelection;
 import io.casehub.eidos.api.CapabilityHealth;
 import io.casehub.engine.common.internal.context.BridgeResolver;
 import io.casehub.engine.common.internal.event.AgentRoutingEscalationEvent;
@@ -69,6 +70,7 @@ import io.casehub.engine.common.internal.worker.scope.ScopedWorkerRegistry;
 import io.casehub.engine.common.spi.CaseDefinitionRegistry;
 import io.casehub.engine.common.spi.event.CaseContextUpdatedEvent;
 import io.casehub.engine.common.spi.event.CaseLifecycleEvent;
+import io.casehub.engine.common.spi.event.SelectionContext;
 import io.casehub.engine.common.spi.scheduler.WorkerExecutionManager;
 import io.casehub.engine.internal.acl.WorkerGrantOrchestrator;
 import io.casehub.engine.internal.engine.CaseEvaluationSerializer;
@@ -76,6 +78,7 @@ import io.casehub.engine.internal.engine.QuiescenceTracker;
 import io.casehub.engine.internal.engine.SignalSettlementTracker;
 import io.casehub.engine.internal.routing.AgentCandidateFactory;
 import io.casehub.engine.internal.routing.CbrRetrievalService;
+import io.casehub.engine.internal.routing.SelectionContextStore;
 import io.casehub.ledger.api.spi.LedgerTraceIdProvider;
 import io.casehub.platform.api.expression.ExpressionEvaluator;
 import io.casehub.platform.api.routing.StrategyResolver;
@@ -141,6 +144,7 @@ public class CaseContextChangedEventHandler {
   @Inject CaseEvaluationSerializer evaluationSerializer;
   @Inject QuiescenceTracker quiescenceTracker;
   @Inject ScopedWorkerRegistry scopedWorkerRegistry;
+  @Inject SelectionContextStore selectionContextStore;
 
   @Inject Event<CaseContextUpdatedEvent> caseContextUpdatedEvents;
 
@@ -517,6 +521,25 @@ public class CaseContextChangedEventHandler {
         LOG.infof(
             "Agent selected: worker='%s' capability='%s' binding='%s' rationale='%s'",
             a.executorId(), capability.name(), binding.getName(), a.reason());
+        if (s.selectionContext() != null) {
+          RoutingSelection rs = s.selectionContext();
+          selectionContextStore.store(
+              caseInstance.getUuid(),
+              a.executorId(),
+              new SelectionContext(
+                  rs.strategyId(),
+                  new SelectionContext.SelectedCandidate(
+                      rs.selected().workerId(),
+                      rs.selected().score(),
+                      rs.selected().phase(),
+                      rs.selected().reason()),
+                  rs.alternatives().stream()
+                      .map(
+                          c ->
+                              new SelectionContext.SelectedCandidate(
+                                  c.workerId(), c.score(), c.phase(), c.reason()))
+                      .toList()));
+        }
         scheduleWorker(
             caseInstance,
             workers,
