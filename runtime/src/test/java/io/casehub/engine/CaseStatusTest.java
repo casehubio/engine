@@ -66,6 +66,51 @@ class CaseStatusTest {
   }
 
   @Test
+  void isTerminal_trueForTerminalStates() {
+    assertThat(CaseStatus.COMPLETED.isTerminal()).isTrue();
+    assertThat(CaseStatus.FAULTED.isTerminal()).isTrue();
+    assertThat(CaseStatus.CANCELLED.isTerminal()).isTrue();
+  }
+
+  @Test
+  void isTerminal_falseForNonTerminalStates() {
+    assertThat(CaseStatus.STARTING.isTerminal()).isFalse();
+    assertThat(CaseStatus.RUNNING.isTerminal()).isFalse();
+    assertThat(CaseStatus.WAITING.isTerminal()).isFalse();
+    assertThat(CaseStatus.SUSPENDED.isTerminal()).isFalse();
+  }
+
+  @Test
+  void isActive_trueForActiveStates() {
+    assertThat(CaseStatus.STARTING.isActive()).isTrue();
+    assertThat(CaseStatus.RUNNING.isActive()).isTrue();
+    assertThat(CaseStatus.WAITING.isActive()).isTrue();
+  }
+
+  @Test
+  void isActive_falseForInactiveStates() {
+    assertThat(CaseStatus.SUSPENDED.isActive()).isFalse();
+    assertThat(CaseStatus.COMPLETED.isActive()).isFalse();
+    assertThat(CaseStatus.FAULTED.isActive()).isFalse();
+    assertThat(CaseStatus.CANCELLED.isActive()).isFalse();
+  }
+
+  @Test
+  void terminalStatuses_containsExactlyTerminalValues() {
+    assertThat(CaseStatus.terminalStatuses())
+        .containsExactlyInAnyOrder(CaseStatus.COMPLETED, CaseStatus.FAULTED, CaseStatus.CANCELLED);
+  }
+
+  @Test
+  void isTerminal_and_isActive_areDisjoint() {
+    for (CaseStatus status : CaseStatus.values()) {
+      assertThat(status.isTerminal() && status.isActive())
+          .as("%s cannot be both terminal and active", status)
+          .isFalse();
+    }
+  }
+
+  @Test
   void valueOfRoundTripsForAllValues() {
     // String serialisation round-trips matter — state is stored as VARCHAR in the DB.
     for (CaseStatus status : CaseStatus.values()) {

@@ -15,6 +15,8 @@
  */
 package io.casehub.api.model;
 
+import java.util.Set;
+
 /**
  * Lifecycle states for a {@code CaseInstance}.
  *
@@ -39,5 +41,19 @@ public enum CaseStatus {
   /** Case terminated due to an error. */
   FAULTED,
   /** Case was stopped before completion. */
-  CANCELLED
+  CANCELLED;
+
+  private static final Set<CaseStatus> TERMINAL_STATUSES = Set.of(COMPLETED, FAULTED, CANCELLED);
+
+  public static Set<CaseStatus> terminalStatuses() {
+    return TERMINAL_STATUSES;
+  }
+
+  public boolean isTerminal() {
+    return TERMINAL_STATUSES.contains(this);
+  }
+
+  public boolean isActive() {
+    return this == STARTING || this == RUNNING || this == WAITING;
+  }
 }
