@@ -20,6 +20,7 @@ import io.casehub.api.spi.routing.AgentRoutingContext;
 import io.casehub.api.spi.routing.AgentRoutingStrategy;
 import io.casehub.api.spi.routing.EscalationReason;
 import io.casehub.api.spi.routing.RoutingResult;
+import io.casehub.api.spi.routing.RoutingSelection;
 import io.casehub.api.spi.routing.RoutingSignal;
 import io.casehub.api.spi.routing.RoutingSignalAssembler;
 import io.quarkus.arc.DefaultBean;
@@ -128,9 +129,16 @@ public class ComposableAgentRoutingStrategy implements AgentRoutingStrategy {
             .orElseThrow();
     double bestScore = scores.get(bestWorkerId);
 
-    return RoutingResult.assigned(
-        bestWorkerId,
-        "composable score %.3f from %d providers".formatted(bestScore, weights.size()));
+    String reason = "composable score %.3f from %d providers".formatted(bestScore, weights.size());
+    var selected = new RoutingSelection.Candidate(bestWorkerId, bestScore, "blended", reason);
+    var alternatives =
+        scores.entrySet().stream()
+            .filter(e -> !e.getKey().equals(bestWorkerId))
+            .map(e -> new RoutingSelection.Candidate(e.getKey(), e.getValue(), "blended", null))
+            .toList();
+    var routingSelection = new RoutingSelection(id(), selected, alternatives);
+
+    return RoutingResult.assigned(bestWorkerId, reason, routingSelection);
   }
 
   private Map<String, Double> resolveWeights(
