@@ -15,7 +15,6 @@
  */
 package io.casehub.engine.common.internal.executor;
 
-import io.casehub.api.model.CaseStatus;
 import io.casehub.api.model.MilestoneLifecycleStatus;
 import io.casehub.api.model.event.CaseHubEventType;
 import io.casehub.engine.common.internal.event.EventBusAddresses;
@@ -83,8 +82,7 @@ public class MilestoneSLAOrchestrator {
       return;
     }
 
-    if (caseInstance.getState() == CaseStatus.COMPLETED
-        || caseInstance.getState() == CaseStatus.CANCELLED) {
+    if (caseInstance.getState().isTerminal()) {
       LOG.debugf("Case %s already terminal, skipping SLA violation", caseId);
       return;
     }

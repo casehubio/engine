@@ -17,7 +17,6 @@ package io.casehub.resilience.deadletter;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import io.casehub.api.model.CaseDefinition;
-import io.casehub.api.model.CaseStatus;
 import io.casehub.api.model.event.CaseHubEventType;
 import io.casehub.engine.common.internal.event.EventBusAddresses;
 import io.casehub.engine.common.internal.event.WorkerScheduleEvent;
@@ -129,7 +128,7 @@ public class DeadLetterReplayService {
       LOG.warnf("DLQ replay: CaseInstance not found for caseId=%s", caseId);
       return Optional.empty();
     }
-    if (isTerminal(caseInstance.getState())) {
+    if (caseInstance.getState().isTerminal()) {
       LOG.warnf(
           "DLQ replay: case %s is %s — cannot accept new work", caseId, caseInstance.getState());
       return Optional.empty();
@@ -191,11 +190,5 @@ public class DeadLetterReplayService {
         workerId, caseId, entry.replayAttempts());
 
     return Optional.of(entry);
-  }
-
-  private static boolean isTerminal(CaseStatus state) {
-    return state == CaseStatus.COMPLETED
-        || state == CaseStatus.FAULTED
-        || state == CaseStatus.CANCELLED;
   }
 }
