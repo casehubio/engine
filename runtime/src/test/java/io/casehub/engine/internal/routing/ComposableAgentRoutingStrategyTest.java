@@ -23,6 +23,7 @@ import io.casehub.api.spi.routing.AgentHealth;
 import io.casehub.api.spi.routing.AgentRoutingContext;
 import io.casehub.api.spi.routing.EscalationReason;
 import io.casehub.api.spi.routing.RoutingResult;
+import io.casehub.api.spi.routing.RoutingSelection;
 import io.casehub.api.spi.routing.RoutingSignal;
 import io.casehub.api.spi.routing.RoutingSignalAssembler;
 import io.casehub.api.spi.routing.RoutingSignalProvider;
@@ -197,6 +198,29 @@ class ComposableAgentRoutingStrategyTest {
 
     assertThat(result).isInstanceOf(RoutingResult.Selected.class);
     assertThat(((RoutingResult.Selected) result).single().executorId()).isEqualTo("agent-c");
+  }
+
+  @Test
+  void selected_carriesRoutingSelection() {
+    var provider =
+        testProvider(
+            "trust",
+            Map.of(
+                "agent-a", new RoutingSignal.CandidateSignal.Score(0.9, "high trust"),
+                "agent-b", new RoutingSignal.CandidateSignal.Score(0.4, "low trust")));
+    var strategy = composable(provider);
+
+    var result = strategy.select(ctx(null), List.of(candidate("agent-a"), candidate("agent-b")));
+
+    assertThat(result).isInstanceOf(RoutingResult.Selected.class);
+    RoutingSelection rs = ((RoutingResult.Selected) result).selectionContext();
+    assertThat(rs).isNotNull();
+    assertThat(rs.strategyId()).isEqualTo("composable");
+    assertThat(rs.selected().workerId()).isEqualTo("agent-a");
+    assertThat(rs.selected().score()).isEqualTo(0.9);
+    assertThat(rs.alternatives()).hasSize(1);
+    assertThat(rs.alternatives().getFirst().workerId()).isEqualTo("agent-b");
+    assertThat(rs.alternatives().getFirst().score()).isEqualTo(0.4);
   }
 
   // --- helpers ---
