@@ -133,7 +133,7 @@ public class PlanItemCompletionHandler {
               if (!COMPLETABLE.contains(item.getStatus())) {
                 LOG.debugf(
                     "PlanItem %s for binding '%s' in case %s has status %s — not completable, skipping",
-                    item.getPlanItemId(), bindingName, caseId, item.getStatus());
+                    item.id(), bindingName, caseId, item.getStatus());
                 return;
               }
               TaskStatus prevStatus = item.getStatus();
@@ -146,12 +146,7 @@ public class PlanItemCompletionHandler {
               compoundCompletionEvaluator.evaluate(caseId, tenancyId, plan, item.getBindingName());
               planItemStateChangedEvents.fireAsync(
                   new PlanItemStateChangedEvent(
-                      caseId,
-                      item.getPlanItemId(),
-                      bindingName,
-                      prevStatus,
-                      TaskStatus.COMPLETED,
-                      tenancyId));
+                      caseId, item.id(), bindingName, prevStatus, TaskStatus.COMPLETED, tenancyId));
             },
             () ->
                 LOG.debugf(

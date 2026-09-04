@@ -170,7 +170,7 @@ public class SubCaseExecutionHandler {
                 pi.markDelegated();
               }
               // Index ALL spawns → same planItemId (M-of-N: any completing child routes here)
-              registry.indexForCompletion(parentCaseId, childCaseId.toString(), pi.getPlanItemId());
+              registry.indexForCompletion(parentCaseId, childCaseId.toString(), pi.id());
 
               // Fire-and-forget: completes immediately after spawning — no completion event needed.
               if (!waitForCompletion && pi.getStatus() == TaskStatus.DELEGATED) {

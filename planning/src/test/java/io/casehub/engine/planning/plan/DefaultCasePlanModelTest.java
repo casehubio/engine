@@ -73,14 +73,14 @@ class DefaultCasePlanModelTest {
   void getPlanItem_returns_by_id() {
     PlanItem item = PlanItem.create("b-a", ExecutorRef.of("w-a"), 0);
     plan.addPlanItem(item);
-    assertThat(plan.getPlanItem(item.getPlanItemId())).contains(item);
+    assertThat(plan.getPlanItem(item.id())).contains(item);
   }
 
   @Test
   void removePlanItem_removes_from_agenda() {
     PlanItem item = PlanItem.create("b-a", ExecutorRef.of("w-a"), 0);
     plan.addPlanItem(item);
-    plan.removePlanItem(item.getPlanItemId());
+    plan.removePlanItem(item.id());
     assertThat(plan.getAgenda()).isEmpty();
   }
 

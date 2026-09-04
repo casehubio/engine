@@ -268,7 +268,7 @@ public class PlanningStrategyLoopControl implements LoopControl {
             && pi.getStatus() == TaskStatus.RUNNING) {
           dispatched.add(binding);
         } else if (pi.tryMarkRunning()) {
-          registry.indexForCompletion(caseId, pi.executorName(), pi.getPlanItemId());
+          registry.indexForCompletion(caseId, pi.executorName(), pi.id());
           dispatched.add(binding);
         }
       } else {

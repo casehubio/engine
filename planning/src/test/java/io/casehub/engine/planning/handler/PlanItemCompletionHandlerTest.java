@@ -88,7 +88,7 @@ class PlanItemCompletionHandlerTest {
     PlanItem item = PlanItem.create("binding-a", ExecutorRef.of("worker-a"), 0);
     plan.addPlanItem(item);
     item.markRunning();
-    registry.indexForCompletion(caseId, "worker-a", item.getPlanItemId());
+    registry.indexForCompletion(caseId, "worker-a", item.id());
 
     handler.onWorkerFinished(eventFor("worker-a"));
 
@@ -105,7 +105,7 @@ class PlanItemCompletionHandlerTest {
     PlanItem item = PlanItem.create("binding-a", ExecutorRef.of("worker-a"), 0);
     plan.addPlanItem(item);
     item.markRunning();
-    registry.indexForCompletion(caseId, "worker-a", item.getPlanItemId());
+    registry.indexForCompletion(caseId, "worker-a", item.id());
 
     var compound = PlanItemDefinition.Compound.builder("intake").binding("binding-a").build();
     plan.registerDefinition(compound);
@@ -124,7 +124,7 @@ class PlanItemCompletionHandlerTest {
     plan.addPlanItem(item1);
     plan.addPlanItem(item2);
     item1.markRunning();
-    registry.indexForCompletion(caseId, "worker-a", item1.getPlanItemId());
+    registry.indexForCompletion(caseId, "worker-a", item1.id());
 
     var compound =
         PlanItemDefinition.Compound.builder("intake")
@@ -144,7 +144,7 @@ class PlanItemCompletionHandlerTest {
     PlanItem item = PlanItem.create("binding-a", ExecutorRef.of("worker-a"), 0);
     plan.addPlanItem(item);
     item.markRunning();
-    registry.indexForCompletion(caseId, "worker-a", item.getPlanItemId());
+    registry.indexForCompletion(caseId, "worker-a", item.id());
 
     handler.onWorkerFinished(eventFor("worker-a"));
 
@@ -158,7 +158,7 @@ class PlanItemCompletionHandlerTest {
     PlanItem item = PlanItem.create("binding-a", ExecutorRef.of("worker-a"), 0);
     plan.addPlanItem(item);
     item.markRunning();
-    registry.indexForCompletion(caseId, "worker-a", item.getPlanItemId());
+    registry.indexForCompletion(caseId, "worker-a", item.id());
 
     var compound =
         PlanItemDefinition.Compound.builder("intake").binding("unrelated-binding").build();
@@ -177,7 +177,7 @@ class PlanItemCompletionHandlerTest {
     PlanItem item = PlanItem.create("binding-a", ExecutorRef.of("worker-a"), 0);
     plan.addPlanItem(item);
     item.markRunning();
-    registry.indexForCompletion(caseId, "worker-a", item.getPlanItemId());
+    registry.indexForCompletion(caseId, "worker-a", item.id());
 
     var compound = PlanItemDefinition.Compound.builder("intake").build();
     plan.registerDefinition(compound);
@@ -195,7 +195,7 @@ class PlanItemCompletionHandlerTest {
     item.tryMarkDispatching();
     item.markDelegated();
     UUID childCaseId = UUID.randomUUID();
-    registry.indexForCompletion(caseId, childCaseId.toString(), item.getPlanItemId());
+    registry.indexForCompletion(caseId, childCaseId.toString(), item.id());
 
     handler.onSubCaseFinished(new SubCaseExecutionCompleted(caseId, childCaseId, "test-tenant"));
 
@@ -209,7 +209,7 @@ class PlanItemCompletionHandlerTest {
     item.tryMarkDispatching();
     item.markDelegated();
     UUID childCaseId = UUID.randomUUID();
-    registry.indexForCompletion(caseId, childCaseId.toString(), item.getPlanItemId());
+    registry.indexForCompletion(caseId, childCaseId.toString(), item.id());
 
     var compound = PlanItemDefinition.Compound.builder("intake").binding("subcase-binding").build();
     plan.registerDefinition(compound);
@@ -235,8 +235,8 @@ class PlanItemCompletionHandlerTest {
     item.markDelegated();
     UUID child1 = UUID.randomUUID();
     UUID child2 = UUID.randomUUID();
-    registry.indexForCompletion(caseId, child1.toString(), item.getPlanItemId());
-    registry.indexForCompletion(caseId, child2.toString(), item.getPlanItemId());
+    registry.indexForCompletion(caseId, child1.toString(), item.id());
+    registry.indexForCompletion(caseId, child2.toString(), item.id());
 
     handler.onSubCaseFinished(new SubCaseExecutionCompleted(caseId, child2, "test-tenant"));
 

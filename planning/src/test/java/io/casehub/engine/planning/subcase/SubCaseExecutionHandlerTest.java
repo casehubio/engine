@@ -145,7 +145,7 @@ class SubCaseExecutionHandlerTest {
 
     assertThat(registry.getPlanItemId(parentCaseId, childId.toString()))
         .as("child case ID must be indexed so SubCaseCompletionService can route completion")
-        .contains(item.getPlanItemId());
+        .contains(item.id());
   }
 
   @Test
@@ -264,7 +264,6 @@ class SubCaseExecutionHandlerTest {
     // Still DELEGATED (not double-marked)
     assertThat(item.getStatus()).isEqualTo(TaskStatus.DELEGATED);
     // But child2 is indexed
-    assertThat(registry.getPlanItemId(parentCaseId, child2.toString()))
-        .contains(item.getPlanItemId());
+    assertThat(registry.getPlanItemId(parentCaseId, child2.toString())).contains(item.id());
   }
 }

@@ -188,7 +188,7 @@ class SubCaseCompletionServiceTest {
     plan.addPlanItem(subcaseItem);
     subcaseItem.tryMarkDispatching();
     subcaseItem.markDelegated();
-    registry.indexForCompletion(parentCaseId, childCaseId.toString(), subcaseItem.getPlanItemId());
+    registry.indexForCompletion(parentCaseId, childCaseId.toString(), subcaseItem.id());
 
     service.cancelPlanItemOnRejected(parentCaseId, childCaseId);
 

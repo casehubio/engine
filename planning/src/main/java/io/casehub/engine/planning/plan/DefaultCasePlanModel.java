@@ -69,7 +69,7 @@ public class DefaultCasePlanModel implements CasePlanModel {
   @Override
   public void addPlanItem(PlanItem item) {
     agenda.add(item);
-    itemsById.put(item.getPlanItemId(), item);
+    itemsById.put(item.id(), item);
     latestByBinding.put(item.getBindingName(), item);
   }
 
@@ -85,7 +85,7 @@ public class DefaultCasePlanModel implements CasePlanModel {
             return existing; // active or completed item present — reject
           }
           agenda.add(item);
-          itemsById.put(item.getPlanItemId(), item);
+          itemsById.put(item.id(), item);
           added[0] = true;
           return item;
         });
@@ -100,7 +100,7 @@ public class DefaultCasePlanModel implements CasePlanModel {
    */
   @Override
   public void restorePlanItem(PlanItem item) {
-    itemsById.put(item.getPlanItemId(), item);
+    itemsById.put(item.id(), item);
     latestByBinding.put(item.getBindingName(), item);
   }
 
@@ -357,7 +357,7 @@ public class DefaultCasePlanModel implements CasePlanModel {
       if (item != null
           && !item.getStatus().isTerminal()
           && item.getStatus() != io.casehub.api.model.TaskStatus.RUNNING) {
-        removePlanItem(item.getPlanItemId());
+        removePlanItem(item.id());
       }
       parentIndex.remove(bindingName);
     }

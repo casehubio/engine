@@ -135,7 +135,7 @@ class CasePlanModelPromoteTest {
 
     plan.promoteToCompound("step-a", subCompound);
 
-    var oldItem = plan.getPlanItem(item.getPlanItemId());
+    var oldItem = plan.getPlanItem(item.id());
     assertThat(oldItem).isPresent();
     assertThat(oldItem.get().getStatus()).isEqualTo(TaskStatus.OBSOLETE);
   }
