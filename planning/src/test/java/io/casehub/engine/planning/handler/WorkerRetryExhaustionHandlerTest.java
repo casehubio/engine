@@ -75,7 +75,7 @@ class WorkerRetryExhaustionHandlerTest {
     PlanItem item = PlanItem.create("capability-binding", ExecutorRef.of("worker-a"), 0);
     plan.addPlanItem(item);
     item.markRunning();
-    registry.indexForCompletion(caseId, "worker-a", item.getPlanItemId());
+    registry.indexForCompletion(caseId, "worker-a", item.id());
 
     handler.onWorkerRetriesExhausted(
         new WorkerRetriesExhaustedEvent(
@@ -112,7 +112,7 @@ class WorkerRetryExhaustionHandlerTest {
     plan.addPlanItem(item);
     item.markRunning();
     item.markFaulted(); // already terminal
-    registry.indexForCompletion(caseId, "worker-a", item.getPlanItemId());
+    registry.indexForCompletion(caseId, "worker-a", item.id());
 
     handler.onWorkerRetriesExhausted(
         new WorkerRetriesExhaustedEvent(
@@ -134,7 +134,7 @@ class WorkerRetryExhaustionHandlerTest {
     PlanItem item = PlanItem.create("capability-binding", ExecutorRef.of("worker-a"), 0);
     plan.addPlanItem(item);
     // PENDING — no markRunning()
-    registry.indexForCompletion(caseId, "worker-a", item.getPlanItemId());
+    registry.indexForCompletion(caseId, "worker-a", item.id());
 
     handler.onWorkerRetriesExhausted(
         new WorkerRetriesExhaustedEvent(
@@ -157,7 +157,7 @@ class WorkerRetryExhaustionHandlerTest {
     PlanItem item = PlanItem.create("capability-binding", ExecutorRef.of("worker-a"), 0);
     plan.addPlanItem(item);
     item.markRunning();
-    registry.indexForCompletion(caseId, "worker-a", item.getPlanItemId());
+    registry.indexForCompletion(caseId, "worker-a", item.id());
 
     // Act: call onWorkerRetriesExhausted
     handler.onWorkerRetriesExhausted(
@@ -178,7 +178,7 @@ class WorkerRetryExhaustionHandlerTest {
         .fireAsync(
             new PlanItemStateChangedEvent(
                 caseId,
-                item.getPlanItemId(),
+                item.id(),
                 "capability-binding",
                 TaskStatus.RUNNING,
                 TaskStatus.FAULTED,

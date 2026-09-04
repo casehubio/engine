@@ -467,7 +467,7 @@ class PlanItemTest {
     String planItemId = UUID.randomUUID().toString();
     PlanItem item =
         PlanItem.restore(planItemId, "my-binding", null, null, TaskStatus.DELEGATED, Instant.now());
-    assertThat(item.getPlanItemId()).isEqualTo(planItemId);
+    assertThat(item.id()).isEqualTo(planItemId);
     assertThat(item.getBindingName()).isEqualTo("my-binding");
     assertThat(item.getStatus()).isEqualTo(TaskStatus.DELEGATED);
     assertThat(item.getTarget()).isNull();

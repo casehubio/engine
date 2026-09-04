@@ -72,17 +72,17 @@ public class JudgmentPlanItemHandler {
               if (!item.tryMarkReDispatching()) {
                 LOG.warnf(
                     "Cannot re-dispatch PlanItem %s for binding '%s' (status=%s) — skipping",
-                    item.getPlanItemId(), event.bindingName(), item.getStatus());
+                    item.id(), event.bindingName(), item.getStatus());
                 return;
               }
               LOG.infof(
                   "PlanItem %s for binding '%s' transitioned %s → DISPATCHING for re-dispatch",
-                  item.getPlanItemId(), event.bindingName(), prevStatus);
+                  item.id(), event.bindingName(), prevStatus);
 
               planItemStateChangedEvents.fireAsync(
                   new PlanItemStateChangedEvent(
                       event.caseId(),
-                      item.getPlanItemId(),
+                      item.id(),
                       event.bindingName(),
                       prevStatus,
                       TaskStatus.DISPATCHING,
@@ -109,11 +109,11 @@ public class JudgmentPlanItemHandler {
                 item.markFaulted();
                 LOG.infof(
                     "PlanItem %s for binding '%s' marked FAULTED: %s",
-                    item.getPlanItemId(), event.bindingName(), event.reason());
+                    item.id(), event.bindingName(), event.reason());
                 planItemStateChangedEvents.fireAsync(
                     new PlanItemStateChangedEvent(
                         event.caseId(),
-                        item.getPlanItemId(),
+                        item.id(),
                         event.bindingName(),
                         prevStatus,
                         TaskStatus.FAULTED,
@@ -121,7 +121,7 @@ public class JudgmentPlanItemHandler {
               } catch (IllegalStateException e) {
                 LOG.warnf(
                     "Cannot fault PlanItem %s (status=%s): %s",
-                    item.getPlanItemId(), item.getStatus(), e.getMessage());
+                    item.id(), item.getStatus(), e.getMessage());
               }
             });
   }
@@ -130,7 +130,7 @@ public class JudgmentPlanItemHandler {
     if (!judgmentScheduler.isResolvable()) {
       LOG.warnf(
           "No JudgmentScheduler available for re-dispatch — reverting PlanItem %s to DELEGATED",
-          item.getPlanItemId());
+          item.id());
       item.markDelegated();
       return;
     }
@@ -145,7 +145,7 @@ public class JudgmentPlanItemHandler {
     if (def == null) {
       LOG.warnf(
           "CaseDefinition not found for binding '%s' — reverting PlanItem %s to DELEGATED",
-          event.bindingName(), item.getPlanItemId());
+          event.bindingName(), item.id());
       item.markDelegated();
       return;
     }
@@ -158,7 +158,7 @@ public class JudgmentPlanItemHandler {
     if (binding == null || !(binding.target() instanceof JudgmentTarget target)) {
       LOG.warnf(
           "Binding '%s' is not a JudgmentTarget — reverting PlanItem %s to DELEGATED",
-          event.bindingName(), item.getPlanItemId());
+          event.bindingName(), item.id());
       item.markDelegated();
       return;
     }
@@ -187,7 +187,7 @@ public class JudgmentPlanItemHandler {
           e,
           "Judgment scheduling failed for binding '%s' — reverting PlanItem %s to DELEGATED",
           event.bindingName(),
-          item.getPlanItemId());
+          item.id());
       item.markDelegated();
     }
   }

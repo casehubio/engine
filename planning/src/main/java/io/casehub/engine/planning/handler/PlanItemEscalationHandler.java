@@ -69,16 +69,16 @@ public class PlanItemEscalationHandler {
               if (!item.tryMarkEscalated()) {
                 LOG.debugf(
                     "PlanItem %s for binding '%s' in case %s has status %s — cannot escalate",
-                    item.getPlanItemId(), event.bindingName(), event.caseId(), item.getStatus());
+                    item.id(), event.bindingName(), event.caseId(), item.getStatus());
                 return;
               }
               LOG.infof(
                   "PlanItem %s for binding '%s' in case %s marked ESCALATED (was %s)",
-                  item.getPlanItemId(), event.bindingName(), event.caseId(), prevStatus);
+                  item.id(), event.bindingName(), event.caseId(), prevStatus);
               planItemStateChangedEvents.fireAsync(
                   new PlanItemStateChangedEvent(
                       event.caseId(),
-                      item.getPlanItemId(),
+                      item.id(),
                       event.bindingName(),
                       prevStatus,
                       TaskStatus.ESCALATED,

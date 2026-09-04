@@ -364,8 +364,8 @@ public class DefaultPlanAdaptationEvaluator implements PlanAdaptationEvaluator {
       plan.getPlanItemByBindingName(pending.capabilityName())
           .ifPresent(
               item -> {
-                planItemStore.updateStatus(item.getPlanItemId(), TaskStatus.OBSOLETE, tenancyId);
-                obsoletedPlanItemIds.add(item.getPlanItemId());
+                planItemStore.updateStatus(item.id(), TaskStatus.OBSOLETE, tenancyId);
+                obsoletedPlanItemIds.add(item.id());
               });
     }
 

@@ -89,7 +89,7 @@ public class WorkerOutcomeResolvedHandler {
                   planItemStateChangedEvents.fireAsync(
                       new PlanItemStateChangedEvent(
                           event.caseInstance().getUuid(),
-                          item.getPlanItemId(),
+                          item.id(),
                           item.getBindingName(),
                           TaskStatus.RUNNING,
                           TaskStatus.OBSOLETE,
@@ -102,7 +102,7 @@ public class WorkerOutcomeResolvedHandler {
                           ContextLayer.WORKING));
                   LOG.infof(
                       "PlanItem '%s' decomposed deeper for binding '%s'",
-                      item.getPlanItemId(), event.bindingName());
+                      item.id(), event.bindingName());
                   return;
                 }
               }
@@ -113,7 +113,7 @@ public class WorkerOutcomeResolvedHandler {
               planItemStateChangedEvents.fireAsync(
                   new PlanItemStateChangedEvent(
                       event.caseInstance().getUuid(),
-                      item.getPlanItemId(),
+                      item.id(),
                       item.getBindingName(),
                       prevStatus,
                       TaskStatus.FAULTED,
@@ -140,7 +140,7 @@ public class WorkerOutcomeResolvedHandler {
 
               LOG.infof(
                   "PlanItem '%s' marked FAULTED for binding '%s' — disposition=%s",
-                  item.getPlanItemId(), event.bindingName(), event.disposition());
+                  item.id(), event.bindingName(), event.disposition());
             });
   }
 }

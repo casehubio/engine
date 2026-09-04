@@ -234,7 +234,7 @@ class DefaultPlanAdaptationEvaluatorTest {
     evaluator.evaluateAdaptation(caseId, TENANT, "cap-a", TaskStatus.COMPLETED);
 
     verify(planItemStore, never())
-        .updateStatus(eq(runningItem.getPlanItemId()), eq(TaskStatus.OBSOLETE), anyString());
+        .updateStatus(eq(runningItem.id()), eq(TaskStatus.OBSOLETE), anyString());
     assertThat(runningItem.getStatus()).isEqualTo(TaskStatus.RUNNING);
   }
 
