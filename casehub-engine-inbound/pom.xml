@@ -37,9 +37,10 @@
             <artifactId>casehub-engine-common</artifactId>
             <version>${project.version}</version>
         </dependency>
+        <!-- API/SPI only — WorkItemOperations, TenantContextExecutor (no work runtime) -->
         <dependency>
             <groupId>io.casehub</groupId>
-            <artifactId>casehub-work</artifactId>
+            <artifactId>casehub-work-api</artifactId>
         </dependency>
         <dependency>
             <groupId>io.quarkus</groupId>
