@@ -50,6 +50,8 @@ import io.casehub.api.model.ReplanHint;
 import io.casehub.api.model.SideEffectClassification;
 import io.casehub.api.model.SignalType;
 import io.casehub.api.model.SlaStartFrom;
+import io.casehub.api.model.StallRecoveryAction;
+import io.casehub.api.model.StallRecoveryPolicy;
 import io.casehub.api.model.SubCase;
 import io.casehub.api.model.Use;
 import io.casehub.api.model.WorkerFunctions;
@@ -335,6 +337,8 @@ public final class YamlCaseDefinitionConverter {
     if (spec.adaptationConfig() != null) def.setAdaptationConfig(spec.adaptationConfig());
     if (spec.recoveryPolicy() != null)
       def.setRecoveryPolicy(convertRecoveryPolicy(spec.recoveryPolicy()));
+    if (spec.stallRecoveryPolicy() != null)
+      def.setStallRecoveryPolicy(convertStallRecoveryPolicy(spec.stallRecoveryPolicy()));
     if (spec.monitoring() != null) def.setMonitoringConfig(convertMonitoring(spec.monitoring()));
     if (spec.observation() != null)
       def.setObservationConfig(convertObservation(spec.observation()));
@@ -1177,6 +1181,32 @@ public final class YamlCaseDefinitionConverter {
         yrp.maxTriageAttempts() != null
             ? yrp.maxTriageAttempts()
             : RecoveryPolicy.DEFAULT.maxTriageAttempts());
+  }
+
+  private static StallRecoveryPolicy convertStallRecoveryPolicy(
+      com.fasterxml.jackson.databind.JsonNode node) {
+    boolean enabled = node.path("enabled").asBoolean(false);
+    String classifierId =
+        node.has("classifierId") ? node.get("classifierId").asText() : "policy-lookup";
+    StallRecoveryAction defaultAction = StallRecoveryAction.NOTIFY;
+    if (node.has("defaultAction")) {
+      defaultAction = StallRecoveryAction.valueOf(node.get("defaultAction").asText().toUpperCase());
+    }
+    java.util.Map<io.casehub.qhorus.api.watchdog.WatchdogConditionType, StallRecoveryAction>
+        conditionActions =
+            new java.util.EnumMap<>(io.casehub.qhorus.api.watchdog.WatchdogConditionType.class);
+    com.fasterxml.jackson.databind.JsonNode ca = node.get("conditionActions");
+    if (ca != null && ca.isObject()) {
+      ca.fields()
+          .forEachRemaining(
+              entry -> {
+                var ct =
+                    io.casehub.qhorus.api.watchdog.WatchdogConditionType.valueOf(entry.getKey());
+                var action = StallRecoveryAction.valueOf(entry.getValue().asText().toUpperCase());
+                conditionActions.put(ct, action);
+              });
+    }
+    return new StallRecoveryPolicy(enabled, classifierId, conditionActions, defaultAction);
   }
 
   private static MonitoringConfig convertMonitoring(YamlMonitoringConfig ym) {
