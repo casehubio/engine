@@ -20,6 +20,7 @@ import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CopyOnWriteArrayList;
@@ -44,6 +45,8 @@ class ActorStateAccumulatorImpl implements ActorStateAccumulator {
   private final CopyOnWriteArrayList<UUID> engineActiveCaseIds = new CopyOnWriteArrayList<>();
   private final CopyOnWriteArrayList<String> sources = new CopyOnWriteArrayList<>();
   private final ConcurrentHashMap<String, String> warnings = new ConcurrentHashMap<>();
+  private final AtomicReference<Double> aggregatePressure = new AtomicReference<>(null);
+  private final ConcurrentHashMap<String, Double> pressureBySignalType = new ConcurrentHashMap<>();
 
   ActorStateAccumulatorImpl(final String actorId) {
     this.actorId = actorId;
@@ -86,6 +89,15 @@ class ActorStateAccumulatorImpl implements ActorStateAccumulator {
     engineActiveCaseIds.add(caseId);
   }
 
+  @Override
+  public void capacity(
+      final double aggregatePressure, final Map<String, Double> pressureBySignalType) {
+    this.aggregatePressure.set(aggregatePressure);
+    if (pressureBySignalType != null) {
+      this.pressureBySignalType.putAll(pressureBySignalType);
+    }
+  }
+
   /** Called by ActorStateAggregator after contributor.contribute() succeeds. */
   void markSucceeded(final String sourceName) {
     sources.add(sourceName);
@@ -106,6 +118,10 @@ class ActorStateAccumulatorImpl implements ActorStateAccumulator {
         new ArrayList<>(commitments),
         new ArrayList<>(engineActiveCaseIds),
         new ArrayList<>(sources),
+        aggregatePressure.get(),
+        pressureBySignalType.isEmpty()
+            ? null
+            : Collections.unmodifiableMap(new HashMap<>(pressureBySignalType)),
         warnings.isEmpty() ? null : Collections.unmodifiableMap(new HashMap<>(warnings)));
   }
 }
