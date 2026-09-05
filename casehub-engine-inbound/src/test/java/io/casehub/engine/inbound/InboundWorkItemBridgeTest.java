@@ -26,10 +26,10 @@ import io.casehub.qhorus.api.gateway.MessageReceivedEvent;
 import io.casehub.qhorus.api.message.MessageType;
 import io.casehub.work.api.WorkItem;
 import io.casehub.work.api.WorkItemCreateRequest;
+import io.casehub.work.api.spi.TenantContextExecutor;
 import io.casehub.work.api.spi.WorkItemStore;
 import io.casehub.work.api.spi.WorkloadProvider;
 import io.casehub.work.memory.InMemoryWorkItemStore;
-import io.casehub.work.runtime.service.TenantContextRunner;
 import io.quarkus.test.junit.QuarkusTest;
 import jakarta.annotation.Priority;
 import jakarta.enterprise.context.ApplicationScoped;
@@ -84,7 +84,7 @@ class InboundWorkItemBridgeTest {
   @Alternative
   @Priority(1)
   @ApplicationScoped
-  static class RecordingTenantContextRunner extends TenantContextRunner {
+  static class RecordingTenantContextRunner implements TenantContextExecutor {
     static volatile String lastTenancyId;
 
     static void reset() {
@@ -94,7 +94,7 @@ class InboundWorkItemBridgeTest {
     @Override
     public void runInTenantContext(final String tenancyId, final Runnable work) {
       lastTenancyId = tenancyId;
-      super.runInTenantContext(tenancyId, work);
+      work.run();
     }
   }
 
