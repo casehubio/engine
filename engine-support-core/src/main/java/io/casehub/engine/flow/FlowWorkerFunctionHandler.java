@@ -34,15 +34,14 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 import java.util.function.Function;
 
 /**
  * {@link WorkerFunctionHandler} for Serverless Workflow workers.
- *
- * <p>Replaces {@code FlowWorkerExecutor} — merges execution logic into the handler model. Sets
- * {@link WorkerExecutionContext} around the workflow execution so casehub tasks inside the workflow
- * can access case context via {@code WorkerExecutionContext.current()}.
  *
  * <p>Plain {@code @ApplicationScoped} (no {@code @DefaultBean}) — when {@code casehub-engine-flow}
  * is on the classpath, this handler is discovered automatically.
@@ -121,13 +120,29 @@ public class FlowWorkerFunctionHandler implements WorkerFunctionHandler {
 
       WorkflowModel model;
       try {
-        model = future.join();
-      } catch (Exception e) {
+        model = future.get(timeoutMs, TimeUnit.MILLISECONDS);
+      } catch (TimeoutException e) {
+        future.cancel(true);
+        List<StepResult> steps = registry.getSteps(instanceId);
+        registry.remove(instanceId);
+        return new HandlerResult(
+            WorkerResult.expired("Flow workflow timed out after " + timeoutMs + "ms"),
+            Map.of(),
+            new PlaybookExecutionResult.Failure("Timed out after " + timeoutMs + "ms", steps));
+      } catch (ExecutionException e) {
         List<StepResult> steps = registry.getSteps(instanceId);
         registry.remove(instanceId);
         Throwable root = e.getCause() != null ? e.getCause() : e;
         throw new PlaybookExecutionException(
             root.getMessage(), root, new PlaybookExecutionResult.Failure(root.getMessage(), steps));
+      } catch (InterruptedException e) {
+        Thread.currentThread().interrupt();
+        List<StepResult> steps = registry.getSteps(instanceId);
+        registry.remove(instanceId);
+        return new HandlerResult(
+            WorkerResult.failed("Flow workflow interrupted"),
+            Map.of(),
+            new PlaybookExecutionResult.Failure("Interrupted", steps));
       }
 
       List<StepResult> steps = registry.getSteps(instanceId);
