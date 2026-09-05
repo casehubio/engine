@@ -40,10 +40,10 @@
             <artifactId>casehub-ledger</artifactId>
         </dependency>
 
-        <!-- WorkActorStateContributor -->
+        <!-- WorkActorStateContributor — API/SPI types only (WorkItemStore, WorkItemQuery, WorkItemStatus) -->
         <dependency>
             <groupId>io.casehub</groupId>
-            <artifactId>casehub-work</artifactId>
+            <artifactId>casehub-work-api</artifactId>
         </dependency>
         <!-- QhorusActorStateContributor — SPI interfaces only -->
         <dependency>

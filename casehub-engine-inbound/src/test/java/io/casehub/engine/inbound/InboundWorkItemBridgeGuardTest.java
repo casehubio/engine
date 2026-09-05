@@ -23,8 +23,8 @@ import static org.mockito.Mockito.when;
 
 import io.casehub.qhorus.api.gateway.MessageReceivedEvent;
 import io.casehub.qhorus.api.message.MessageType;
-import io.casehub.work.runtime.service.TenantContextRunner;
-import io.casehub.work.runtime.service.WorkItemService;
+import io.casehub.work.api.spi.TenantContextExecutor;
+import io.casehub.work.api.spi.WorkItemOperations;
 import io.quarkus.runtime.StartupEvent;
 import jakarta.enterprise.inject.Instance;
 import java.time.Instant;
@@ -42,14 +42,14 @@ import org.mockito.junit.jupiter.MockitoExtension;
 class InboundWorkItemBridgeGuardTest {
 
   @Mock Instance<InboundWorkItemPolicy> policy;
-  @Mock WorkItemService workItemService;
-  @Mock TenantContextRunner tenantContextRunner;
+  @Mock WorkItemOperations workItemOperations;
+  @Mock TenantContextExecutor tenantContextExecutor;
 
   private InboundWorkItemBridge bridge() {
     final InboundWorkItemBridge b = new InboundWorkItemBridge();
     b.policy = policy;
-    b.workItemService = workItemService;
-    b.tenantContextRunner = tenantContextRunner;
+    b.workItemOperations = workItemOperations;
+    b.tenantContextExecutor = tenantContextExecutor;
     return b;
   }
 
@@ -76,7 +76,7 @@ class InboundWorkItemBridgeGuardTest {
 
     bridge().onMessage(anyEvent());
 
-    verify(workItemService, never()).create(any());
+    verify(workItemOperations, never()).create(any());
   }
 
   @Test

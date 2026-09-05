@@ -18,8 +18,8 @@ package io.casehub.engine.inbound;
 import io.casehub.qhorus.api.gateway.MessageObserver;
 import io.casehub.qhorus.api.gateway.MessageReceivedEvent;
 import io.casehub.work.api.WorkItemCreateRequest;
-import io.casehub.work.runtime.service.TenantContextRunner;
-import io.casehub.work.runtime.service.WorkItemService;
+import io.casehub.work.api.spi.TenantContextExecutor;
+import io.casehub.work.api.spi.WorkItemOperations;
 import io.quarkus.runtime.StartupEvent;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.enterprise.event.Observes;
@@ -46,19 +46,19 @@ import org.jboss.logging.Logger;
  *
  * <p><strong>Exception handling:</strong> policy exceptions are caught and logged with channel
  * context; the bridge returns without creating a WorkItem. Infrastructure exceptions ({@code
- * TenantContextRunner}, {@code WorkItemService}) propagate out of {@link #onMessage} to {@code
+ * TenantContextExecutor}, {@code WorkItemOperations}) propagate out of {@link #onMessage} to {@code
  * MessageObserverDispatcher}'s outer safety net, which catches and logs them at WARN — neither path
  * retries or produces a hard failure to the message sender.
  *
- * <p><strong>Request context:</strong> {@code TenantContextRunner.runInTenantContext()} activates a
- * CDI request context if none is active (normal case in qhorus {@code afterCompletion} callbacks),
- * sets {@code TenantHolder}, runs the work, then terminates the context. {@code
- * WorkItemService.create()} is {@code @Transactional} and manages its own transaction boundary
- * independently of the request context lifecycle.
+ * <p><strong>Request context:</strong> {@code TenantContextExecutor.runInTenantContext()} activates
+ * a CDI request context if none is active (normal case in qhorus {@code afterCompletion}
+ * callbacks), sets tenant identity, runs the work, then terminates the context. {@code
+ * WorkItemOperations.create()} manages its own transaction boundary independently of the request
+ * context lifecycle.
  *
  * <p><strong>At-most-once delivery:</strong> {@code onMessage} runs in the qhorus JTA {@code
  * afterCompletion(STATUS_COMMITTED)} callback — the qhorus message is committed before observers
- * fire. If {@code WorkItemService.create()} fails, no WorkItem is created and no retry occurs.
+ * fire. If {@code WorkItemOperations.create()} fails, no WorkItem is created and no retry occurs.
  */
 @ApplicationScoped
 public class InboundWorkItemBridge implements MessageObserver {
@@ -67,8 +67,8 @@ public class InboundWorkItemBridge implements MessageObserver {
   private static final String CREATED_BY = "casehub-engine-inbound";
 
   @Inject Instance<InboundWorkItemPolicy> policy;
-  @Inject WorkItemService workItemService;
-  @Inject TenantContextRunner tenantContextRunner;
+  @Inject WorkItemOperations workItemOperations;
+  @Inject TenantContextExecutor tenantContextExecutor;
 
   void onStartup(@Observes final StartupEvent ignored) {
     if (policy.isAmbiguous()) {
@@ -97,8 +97,8 @@ public class InboundWorkItemBridge implements MessageObserver {
 
     decision.ifPresent(
         request ->
-            tenantContextRunner.runInTenantContext(
-                event.tenancyId(), () -> workItemService.create(stamp(request))));
+            tenantContextExecutor.runInTenantContext(
+                event.tenancyId(), () -> workItemOperations.create(stamp(request))));
   }
 
   private WorkItemCreateRequest stamp(final WorkItemCreateRequest request) {
