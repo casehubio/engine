@@ -47,6 +47,8 @@ class ActorStateResourceTest {
         List.of(),
         List.of(UUID.randomUUID()),
         List.of("ledger", "work", "qhorus", "engine"),
+        null,
+        null,
         null);
   }
 
@@ -91,6 +93,8 @@ class ActorStateResourceTest {
             List.of(),
             List.of(),
             List.of("ledger", "qhorus", "engine"),
+            null,
+            null,
             Map.of("work", "DB timeout"));
     Mockito.when(aggregator.forActor(Mockito.anyString())).thenReturn(resp);
 

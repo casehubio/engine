@@ -37,6 +37,8 @@ public record ActorStateResponse(
     List<CommitmentSummary> openCommitments,
     List<UUID> engineActiveCaseIds,
     List<String> sources,
+    @JsonInclude(JsonInclude.Include.NON_NULL) Double aggregatePressure,
+    @JsonInclude(JsonInclude.Include.NON_NULL) Map<String, Double> pressureBySignalType,
     @JsonInclude(JsonInclude.Include.NON_NULL) Map<String, String> sourceWarnings) {
 
   /** Summary of an active WorkItem assigned to or owned by the actor. */
