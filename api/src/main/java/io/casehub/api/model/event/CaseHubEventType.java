@@ -166,5 +166,8 @@ public enum CaseHubEventType {
   WATCH_PATTERN_ADDED, // conductor added an escalation watch pattern
   WATCH_PATTERN_REMOVED, // conductor removed an escalation watch pattern
   IMPROVEMENT_BLOCKED, // conductor manually blocked an improvement stream
-  IMPROVEMENT_UNBLOCKED // conductor unblocked a previously blocked improvement
+  IMPROVEMENT_UNBLOCKED, // conductor unblocked a previously blocked improvement
+
+  STALL_DETECTED, // watchdog alert observed; NOTIFY action — observability only
+  STALL_RECOVERY_INITIATED // watchdog alert triggered a recovery action
 }

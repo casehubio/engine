@@ -63,6 +63,7 @@ Activated by adding to the consumer's classpath — same CDI/Spring discovery pa
 | `casehub-engine-inbound` | `casehub-engine-inbound` | Connector-to-signal bridge (`InboundSignalBridge`) |
 | `casehub-engine-work-cloudevent` | `work-cloudevent` | CloudEvent bridge for distributed HumanTask/ActionGate/Judgment dispatch |
 | `casehub-engine-actor-state` | `actor-state` | Unified actor workload view via `ActorStateContributor` SPI |
+| `casehub-engine-watchdog` | `watchdog` | Watchdog → recovery bridge. `WatchdogAlertObserver`, `StallRecoveryDispatchHandler`, `DefaultStallRecoveryHandler` (7 recovery actions) |
 | `casehub-engine-eidos-routing` | `eidos-routing` | Engine-aware agent selection bridge to casehub-eidos. `EngineAwareAgentSelector` |
 | `casehub-engine-yaml-cbr` | `yaml-cbr` | YAML-core ↔ CBR bridge: outcome recording, plan-to-playbook mapping, goal-modulated playbook selection |
 | `casehub-engine-work-adapter` | `work-adapter` | Engine ↔ casehub-work bridge: HumanTask scheduling, case compensation events, judgment bindings |
