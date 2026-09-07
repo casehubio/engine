@@ -193,6 +193,88 @@ class CaseDefinitionYamlMapperCbrTest {
   }
 
   @Test
+  void cbr_crossType_parsed() throws IOException {
+    String yaml =
+        """
+        dsl: "0.1.0"
+        namespace: test
+        name: test-case
+        version: "1.0.0"
+        spec:
+          cbr:
+            features:
+              f1: ".x"
+            domain: "test"
+            crossType: true
+        """;
+    InputStream is = new ByteArrayInputStream(yaml.getBytes(StandardCharsets.UTF_8));
+    CaseDefinition def = CaseDefinitionYamlMapper.load(is);
+    assertThat(def.getCbrConfig()).isNotNull();
+    assertThat(def.getCbrConfig().crossType()).isTrue();
+    assertThat(def.getCbrConfig().caseType()).isNull();
+  }
+
+  @Test
+  void cbr_problemDescription_parsed() throws IOException {
+    String yaml =
+        """
+        dsl: "0.1.0"
+        namespace: test
+        name: test-case
+        version: "1.0.0"
+        spec:
+          cbr:
+            features:
+              f1: ".x"
+            domain: "test"
+            problemDescription: '(.alert.severity + " — " + .alert.category)'
+        """;
+    InputStream is = new ByteArrayInputStream(yaml.getBytes(StandardCharsets.UTF_8));
+    CaseDefinition def = CaseDefinitionYamlMapper.load(is);
+    assertThat(def.getCbrConfig()).isNotNull();
+    assertThat(def.getCbrConfig().problemDescription())
+        .isEqualTo("(.alert.severity + \" — \" + .alert.category)");
+  }
+
+  @Test
+  void cbr_problemDescription_defaults_to_null() throws IOException {
+    String yaml =
+        """
+        dsl: "0.1.0"
+        namespace: test
+        name: test-case
+        version: "1.0.0"
+        spec:
+          cbr:
+            features:
+              f1: ".x"
+        """;
+    InputStream is = new ByteArrayInputStream(yaml.getBytes(StandardCharsets.UTF_8));
+    CaseDefinition def = CaseDefinitionYamlMapper.load(is);
+    assertThat(def.getCbrConfig()).isNotNull();
+    assertThat(def.getCbrConfig().problemDescription()).isNull();
+  }
+
+  @Test
+  void cbr_crossType_defaults_to_false() throws IOException {
+    String yaml =
+        """
+        dsl: "0.1.0"
+        namespace: test
+        name: test-case
+        version: "1.0.0"
+        spec:
+          cbr:
+            features:
+              f1: ".x"
+        """;
+    InputStream is = new ByteArrayInputStream(yaml.getBytes(StandardCharsets.UTF_8));
+    CaseDefinition def = CaseDefinitionYamlMapper.load(is);
+    assertThat(def.getCbrConfig()).isNotNull();
+    assertThat(def.getCbrConfig().crossType()).isFalse();
+  }
+
+  @Test
   void cbr_minCostSamples_defaults_to_null() throws IOException {
     String yaml =
         """

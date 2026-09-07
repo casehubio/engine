@@ -242,7 +242,7 @@ class CbrRetrievalCachingTest {
             List.of(trace),
             null,
             null);
-    return new ScoredCbrCase<>(cbrCase, 0.87);
+    return new ScoredCbrCase<>(cbrCase, "test-case", 0.87);
   }
 
   /** Counting stub for CbrCaseMemoryStore — tracks invocation count. */

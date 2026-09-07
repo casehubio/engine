@@ -163,17 +163,20 @@ public class CbrCaseRetainObserver implements CaseOutcomeObserver {
       return;
     }
 
-    String solution =
+    String traceString =
         traces.stream()
             .map(t -> t.bindingName() + "→" + t.workerName() + "(" + t.stepOutcome() + ")")
             .collect(Collectors.joining(", "));
+    String solution = buildSolution(traceString, definition);
+
+    String problem = buildProblem(config, definition, event);
 
     String producerAgentId = deriveProducerAgentId(traces);
     Double trustScore = lookupTrustScore(producerAgentId);
 
     PlanCbrCase cbrCase =
         new PlanCbrCase(
-            event.caseType(),
+            problem,
             solution,
             event.outcomeLabel(),
             null,
@@ -190,6 +193,54 @@ public class CbrCaseRetainObserver implements CaseOutcomeObserver {
         event.tenancyId(),
         event.caseId().toString(),
         io.casehub.platform.api.path.Path.root());
+  }
+
+  private String buildProblem(CbrConfig config, CaseDefinition definition, CaseOutcomeEvent event) {
+    if (config.problemDescription() != null) {
+      JsonNode node = MAPPER.valueToTree(event.caseFileSnapshot());
+      ValidationResult result = jqEvaluator.eval(config.problemDescription(), node);
+      if (result.ok() && result.output() != null && !result.output().isEmpty()) {
+        JsonNode output = result.output().get(0);
+        if (output.isTextual() && !output.asText().isBlank()) {
+          return output.asText();
+        }
+      }
+      LOG.debugf(
+          "problemDescription JQ returned no usable text for caseType='%s' — falling back",
+          event.caseType());
+    }
+
+    StringBuilder sb = new StringBuilder();
+    if (definition.getTitle() != null) {
+      sb.append(definition.getTitle());
+    } else {
+      sb.append(event.caseType());
+    }
+    if (definition.getSummary() != null) {
+      sb.append(" — ").append(definition.getSummary());
+    }
+    return sb.toString();
+  }
+
+  private String buildSolution(String traceString, CaseDefinition definition) {
+    StringBuilder sb = new StringBuilder(traceString);
+    if (definition.getLabels() != null && !definition.getLabels().isEmpty()) {
+      sb.append(" [labels: ");
+      sb.append(
+          definition.getLabels().stream()
+              .map(io.casehub.platform.api.path.Path::value)
+              .collect(Collectors.joining(", ")));
+      sb.append("]");
+    }
+    if (definition.getTypes() != null && !definition.getTypes().isEmpty()) {
+      sb.append(" [types: ");
+      sb.append(
+          definition.getTypes().stream()
+              .map(io.casehub.platform.api.path.Path::value)
+              .collect(Collectors.joining(", ")));
+      sb.append("]");
+    }
+    return sb.toString();
   }
 
   private String deriveProducerAgentId(List<PlanTrace> traces) {

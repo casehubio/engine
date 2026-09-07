@@ -32,7 +32,9 @@ public record CbrConfig(
     CbrRetrievalTiming timing,
     String cbrType,
     Integer temporalDecayHalfLifeDays,
-    Integer minCostSamples) {
+    Integer minCostSamples,
+    boolean crossType,
+    String problemDescription) {
 
   public enum CbrRetrievalTiming {
     PER_EVALUATION,
@@ -57,6 +59,12 @@ public record CbrConfig(
     }
     if (caseType != null && caseType.isBlank()) {
       throw new IllegalArgumentException("caseType must not be blank when provided");
+    }
+    if (crossType && caseType != null) {
+      throw new IllegalArgumentException("crossType and caseType are mutually exclusive");
+    }
+    if (problemDescription != null && problemDescription.isBlank()) {
+      throw new IllegalArgumentException("problemDescription must not be blank when provided");
     }
     if (cbrType != null && cbrType.isBlank()) {
       throw new IllegalArgumentException("cbrType must not be blank when provided");
@@ -100,6 +108,8 @@ public record CbrConfig(
     private String cbrType;
     private Integer temporalDecayHalfLifeDays;
     private Integer minCostSamples;
+    private boolean crossType;
+    private String problemDescription;
 
     public Builder feature(final String name, final String jqExpression) {
       if (lambdaExtractor != null) {
@@ -167,6 +177,16 @@ public record CbrConfig(
       return this;
     }
 
+    public Builder crossType(final boolean crossType) {
+      this.crossType = crossType;
+      return this;
+    }
+
+    public Builder problemDescription(final String problemDescription) {
+      this.problemDescription = problemDescription;
+      return this;
+    }
+
     public CbrConfig build() {
       final FeatureExtractor extractor;
       if (!jqFeatures.isEmpty()) {
@@ -187,7 +207,9 @@ public record CbrConfig(
           timing,
           cbrType,
           temporalDecayHalfLifeDays,
-          minCostSamples);
+          minCostSamples,
+          crossType,
+          problemDescription);
     }
   }
 }

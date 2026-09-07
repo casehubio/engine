@@ -57,6 +57,9 @@ public class CbrConfigDeserializer extends StdDeserializer<CbrConfig> {
     if (node.has("temporalDecayHalfLifeDays"))
       builder.temporalDecayHalfLifeDays(node.get("temporalDecayHalfLifeDays").asInt());
     if (node.has("minCostSamples")) builder.minCostSamples(node.get("minCostSamples").asInt());
+    if (node.has("crossType")) builder.crossType(node.get("crossType").asBoolean());
+    if (node.has("problemDescription"))
+      builder.problemDescription(node.get("problemDescription").asText());
     if (node.has("timing")) {
       builder.timing(
           CbrRetrievalTiming.valueOf(node.get("timing").asText().toUpperCase().replace("-", "_")));
