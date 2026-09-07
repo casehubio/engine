@@ -32,6 +32,8 @@ import java.util.Objects;
  * @param features extracted features from the past case (empty map if none)
  * @param planTrace the sequence of plan steps that were executed (empty list if none)
  * @param featureSimilarities per-feature similarity contributions (empty map when unavailable)
+ * @param caseType the case definition type that produced this experience (nullable — null for
+ *     same-type queries where the type is implicit)
  */
 public record RetrievedExperience(
     String problem,
@@ -41,7 +43,29 @@ public record RetrievedExperience(
     double similarityScore,
     Map<String, Object> features,
     List<ExperiencePlanStep> planTrace,
-    Map<String, Double> featureSimilarities) {
+    Map<String, Double> featureSimilarities,
+    String caseType) {
+
+  public RetrievedExperience(
+      String problem,
+      String solution,
+      String outcome,
+      Double confidence,
+      double similarityScore,
+      Map<String, Object> features,
+      List<ExperiencePlanStep> planTrace,
+      Map<String, Double> featureSimilarities) {
+    this(
+        problem,
+        solution,
+        outcome,
+        confidence,
+        similarityScore,
+        features,
+        planTrace,
+        featureSimilarities,
+        null);
+  }
 
   public RetrievedExperience {
     Objects.requireNonNull(problem, "problem must not be null");

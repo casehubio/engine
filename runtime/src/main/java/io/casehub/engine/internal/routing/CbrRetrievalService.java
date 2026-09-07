@@ -163,6 +163,51 @@ public class CbrRetrievalService {
     return retrieveInternal(definition, instance, caseClass);
   }
 
+  public List<RetrievedExperience> retrieveForSelection(
+      String tenancyId,
+      String domain,
+      Map<String, FeatureValue> features,
+      int topK,
+      double minSimilarity,
+      Map<String, Double> weights) {
+    return retrieveForSelection(
+        tenancyId, domain, features, topK, minSimilarity, weights, PlanCbrCase.class);
+  }
+
+  public <C extends CbrCase> List<RetrievedExperience> retrieveForSelection(
+      String tenancyId,
+      String domain,
+      Map<String, FeatureValue> features,
+      int topK,
+      double minSimilarity,
+      Map<String, Double> weights,
+      Class<C> caseClass) {
+    try {
+      if (features.isEmpty()) {
+        return List.of();
+      }
+
+      CbrQuery query =
+          CbrQuery.crossType(
+                  tenancyId,
+                  new MemoryDomain(domain),
+                  io.casehub.platform.api.path.Path.root(),
+                  features,
+                  topK)
+              .withMinSimilarity(minSimilarity)
+              .withWeights(weights);
+
+      List<ScoredCbrCase<C>> scoredCases = cbrStore.retrieveSimilar(query, caseClass);
+      return List.copyOf(mapResults(scoredCases, features));
+    } catch (Exception failure) {
+      LOG.warnf(
+          failure,
+          "CBR selection retrieval failed for domain '%s' — proceeding without experiences",
+          domain);
+      return List.of();
+    }
+  }
+
   private <C extends CbrCase> List<RetrievedExperience> retrieveInternal(
       CaseDefinition definition, CaseInstance instance, Class<C> caseClass) {
     try {
@@ -191,19 +236,32 @@ public class CbrRetrievalService {
         return List.of();
       }
 
-      String caseType = config.caseType() != null ? config.caseType() : definition.getName();
-
-      CbrQuery baseQuery =
-          CbrQuery.of(
-                  instance.tenancyId,
-                  new MemoryDomain(resolvedDomain),
-                  io.casehub.platform.api.path.Path.root(),
-                  caseType,
-                  features,
-                  config.topK())
-              .withMinSimilarity(config.minSimilarity())
-              .withWeights(config.weights())
-              .withVectorWeight(config.vectorWeight());
+      CbrQuery baseQuery;
+      if (config.crossType()) {
+        baseQuery =
+            CbrQuery.crossType(
+                    instance.tenancyId,
+                    new MemoryDomain(resolvedDomain),
+                    io.casehub.platform.api.path.Path.root(),
+                    features,
+                    config.topK())
+                .withMinSimilarity(config.minSimilarity())
+                .withWeights(config.weights())
+                .withVectorWeight(config.vectorWeight());
+      } else {
+        String caseType = config.caseType() != null ? config.caseType() : definition.getName();
+        baseQuery =
+            CbrQuery.of(
+                    instance.tenancyId,
+                    new MemoryDomain(resolvedDomain),
+                    io.casehub.platform.api.path.Path.root(),
+                    caseType,
+                    features,
+                    config.topK())
+                .withMinSimilarity(config.minSimilarity())
+                .withWeights(config.weights())
+                .withVectorWeight(config.vectorWeight());
+      }
 
       CbrQuery query =
           config.temporalDecayHalfLifeDays() != null
@@ -212,7 +270,7 @@ public class CbrRetrievalService {
               : baseQuery;
 
       List<ScoredCbrCase<C>> scoredCases = cbrStore.retrieveSimilar(query, caseClass);
-      List<RetrievedExperience> result = List.copyOf(mapResults(scoredCases, caseType, features));
+      List<RetrievedExperience> result = List.copyOf(mapResults(scoredCases, features));
 
       if (config.timing() == CbrRetrievalTiming.CASE_LIFETIME) {
         cacheIfUnderBound(instance.getUuid(), result);
@@ -297,17 +355,18 @@ public class CbrRetrievalService {
   }
 
   private <C extends CbrCase> List<RetrievedExperience> mapResults(
-      List<ScoredCbrCase<C>> scoredCases, String caseType, Map<String, FeatureValue> features) {
-    return scoredCases.stream().map(s -> mapScoredCase(s, caseType, features)).toList();
+      List<ScoredCbrCase<C>> scoredCases, Map<String, FeatureValue> features) {
+    return scoredCases.stream().map(s -> mapScoredCase(s, features)).toList();
   }
 
   @SuppressWarnings("unchecked")
   private <C extends CbrCase> RetrievedExperience mapScoredCase(
-      ScoredCbrCase<C> scored, String caseType, Map<String, FeatureValue> features) {
+      ScoredCbrCase<C> scored, Map<String, FeatureValue> features) {
     CbrCase c = scored.cbrCase();
+    String resultCaseType = scored.caseType();
     List<ExperiencePlanStep> trace;
     if (c instanceof PlanCbrCase) {
-      trace = adaptAndMapPlanTrace((ScoredCbrCase<PlanCbrCase>) scored, caseType, features);
+      trace = adaptAndMapPlanTrace((ScoredCbrCase<PlanCbrCase>) scored, resultCaseType, features);
     } else {
       trace = List.of();
     }
@@ -319,7 +378,8 @@ public class CbrRetrievalService {
         scored.score(),
         new LinkedHashMap<>(c.features()),
         trace,
-        scored.featureSimilarities());
+        scored.featureSimilarities(),
+        resultCaseType);
   }
 
   private List<ExperiencePlanStep> adaptAndMapPlanTrace(

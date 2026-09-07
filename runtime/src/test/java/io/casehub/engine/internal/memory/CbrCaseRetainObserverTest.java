@@ -463,6 +463,140 @@ class CbrCaseRetainObserverTest {
     assertThat(store.storedCases.get(0).outcome()).isEqualTo("FAULTED");
   }
 
+  @Test
+  void problem_uses_title_when_available() {
+    var config = CbrConfig.builder().feature("k", ".k").domain("dom").build();
+    var def =
+        CaseDefinition.builder()
+            .name("titled-case")
+            .namespace("test")
+            .version("1.0.0")
+            .title("Phishing Investigation Playbook")
+            .cbrConfig(config)
+            .bindings(capBinding("b1", "cap1"))
+            .build();
+    registry.register(def);
+    planItemStore.items = List.of(planItem("b1", "w1", TaskStatus.COMPLETED));
+
+    observer.onOutcome(event("titled-case", "COMPLETED", Map.of("k", "v")));
+
+    assertThat(store.storedCases).hasSize(1);
+    assertThat(store.storedCases.get(0).problem()).isEqualTo("Phishing Investigation Playbook");
+  }
+
+  @Test
+  void problem_appends_summary_when_available() {
+    var config = CbrConfig.builder().feature("k", ".k").domain("dom").build();
+    var def =
+        CaseDefinition.builder()
+            .name("sum-case")
+            .namespace("test")
+            .version("1.0.0")
+            .title("AML Investigation")
+            .summary("Investigates suspicious transactions for money laundering indicators")
+            .cbrConfig(config)
+            .bindings(capBinding("b1", "cap1"))
+            .build();
+    registry.register(def);
+    planItemStore.items = List.of(planItem("b1", "w1", TaskStatus.COMPLETED));
+
+    observer.onOutcome(event("sum-case", "COMPLETED", Map.of("k", "v")));
+
+    assertThat(store.storedCases.get(0).problem())
+        .isEqualTo(
+            "AML Investigation — Investigates suspicious transactions for money laundering indicators");
+  }
+
+  @Test
+  void problem_falls_back_to_caseType_without_title() {
+    registry.register(
+        defWithJqCbr("bare-case", "dom", Map.of("k", ".k"), capBinding("b1", "cap1")));
+    planItemStore.items = List.of(planItem("b1", "w1", TaskStatus.COMPLETED));
+
+    observer.onOutcome(event("bare-case", "COMPLETED", Map.of("k", "v")));
+
+    assertThat(store.storedCases.get(0).problem()).isEqualTo("bare-case");
+  }
+
+  @Test
+  void problem_uses_jq_expression_when_configured() {
+    var config =
+        CbrConfig.builder()
+            .feature("k", ".k")
+            .domain("dom")
+            .problemDescription("(.alert.severity + \" incident — \" + .alert.category)")
+            .build();
+    var def =
+        CaseDefinition.builder()
+            .name("jq-prob-case")
+            .namespace("test")
+            .version("1.0.0")
+            .title("Should Be Overridden")
+            .cbrConfig(config)
+            .bindings(capBinding("b1", "cap1"))
+            .build();
+    registry.register(def);
+    planItemStore.items = List.of(planItem("b1", "w1", TaskStatus.COMPLETED));
+
+    observer.onOutcome(
+        event(
+            "jq-prob-case",
+            "COMPLETED",
+            Map.of("k", "v", "alert", Map.of("severity", "HIGH", "category", "phishing"))));
+
+    assertThat(store.storedCases.get(0).problem()).isEqualTo("HIGH incident — phishing");
+  }
+
+  @Test
+  void problem_jq_fallback_on_empty_result() {
+    var config =
+        CbrConfig.builder()
+            .feature("k", ".k")
+            .domain("dom")
+            .problemDescription(".nonexistent")
+            .build();
+    var def =
+        CaseDefinition.builder()
+            .name("jq-fb-case")
+            .namespace("test")
+            .version("1.0.0")
+            .title("Fallback Title")
+            .cbrConfig(config)
+            .bindings(capBinding("b1", "cap1"))
+            .build();
+    registry.register(def);
+    planItemStore.items = List.of(planItem("b1", "w1", TaskStatus.COMPLETED));
+
+    observer.onOutcome(event("jq-fb-case", "COMPLETED", Map.of("k", "v")));
+
+    assertThat(store.storedCases.get(0).problem()).isEqualTo("Fallback Title");
+  }
+
+  @Test
+  void solution_includes_labels_and_types() {
+    var config = CbrConfig.builder().feature("k", ".k").domain("dom").build();
+    var def =
+        CaseDefinition.builder()
+            .name("meta-case")
+            .namespace("test")
+            .version("1.0.0")
+            .cbrConfig(config)
+            .bindings(capBinding("b1", "cap1"))
+            .build();
+    def.setLabels(java.util.Set.of(io.casehub.platform.api.path.Path.parse("soc/phishing")));
+    def.setTypes(
+        java.util.Set.of(io.casehub.platform.api.path.Path.parse("investigation/automated")));
+    registry.register(def);
+    planItemStore.items = List.of(planItem("b1", "w1", TaskStatus.COMPLETED));
+
+    observer.onOutcome(event("meta-case", "COMPLETED", Map.of("k", "v")));
+
+    String solution = store.storedCases.get(0).solution();
+    assertThat(solution).contains("b1→w1(SUCCESS)");
+    assertThat(solution).contains("[labels: soc/phishing]");
+    assertThat(solution).contains("[types: investigation/automated]");
+  }
+
   // --- Helpers ---
 
   private CaseOutcomeEvent event(String caseType, String outcome, Map<String, Object> snapshot) {

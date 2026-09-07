@@ -20,6 +20,7 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertInstanceOf;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import io.casehub.api.model.CaseDefinition;
@@ -205,7 +206,7 @@ class CbrRetrievalServiceTest {
             List.of(planTrace),
             null,
             null);
-    cbrStore.setResult(List.of(new ScoredCbrCase<>(cbrCase, 0.87)));
+    cbrStore.setResult(List.of(new ScoredCbrCase<>(cbrCase, "test-case", 0.87)));
 
     List<RetrievedExperience> result = service.retrieve(def, buildInstance());
 
@@ -218,6 +219,7 @@ class CbrRetrievalServiceTest {
     assertEquals(0.87, exp.similarityScore());
     assertEquals(1, exp.planTrace().size());
     assertEquals("bind1", exp.planTrace().get(0).bindingName());
+    assertEquals("test-case", exp.caseType());
   }
 
   @Test
@@ -275,7 +277,7 @@ class CbrRetrievalServiceTest {
             Map.of("f1", FeatureValue.string("v1")),
             null,
             null);
-    cbrStore.setResult(List.of(new ScoredCbrCase<>(fvCase, 0.85)));
+    cbrStore.setResult(List.of(new ScoredCbrCase<>(fvCase, "test-case", 0.85)));
     List<RetrievedExperience> result = service.retrieve(def, buildInstance());
     assertEquals(1, result.size());
     assertEquals("problem1", result.get(0).problem());
@@ -296,7 +298,7 @@ class CbrRetrievalServiceTest {
             Map.of("f1", FeatureValue.string("v1")),
             null,
             null);
-    cbrStore.setResult(List.of(new ScoredCbrCase<>(fvCase, 0.75)));
+    cbrStore.setResult(List.of(new ScoredCbrCase<>(fvCase, "test-case", 0.75)));
     List<RetrievedExperience> result =
         service.retrieve(
             def, buildInstance(), io.casehub.neocortex.memory.cbr.FeatureVectorCbrCase.class);
@@ -337,7 +339,7 @@ class CbrRetrievalServiceTest {
             List.of(pt),
             null,
             null);
-    cbrStore.setResult(List.of(new ScoredCbrCase<>(planCase, 0.9)));
+    cbrStore.setResult(List.of(new ScoredCbrCase<>(planCase, "test-case", 0.9)));
     List<RetrievedExperience> result = service.retrieve(def, buildInstance());
     assertEquals(1, result.size());
     assertEquals(1, result.get(0).planTrace().size());
@@ -392,7 +394,7 @@ class CbrRetrievalServiceTest {
             List.of(pt),
             null,
             null);
-    cbrStore.setResult(List.of(new ScoredCbrCase<>(planCase, 0.87)));
+    cbrStore.setResult(List.of(new ScoredCbrCase<>(planCase, "test-case", 0.87)));
 
     List<RetrievedExperience> result = service.retrieve(def, buildInstance());
 
@@ -421,7 +423,7 @@ class CbrRetrievalServiceTest {
             List.of(new PlanTrace("b1", "c1", "w1", "SUCCESS", 0, Map.of(), null)),
             null,
             null);
-    cbrStore.setResult(List.of(new ScoredCbrCase<>(planCase, 0.8)));
+    cbrStore.setResult(List.of(new ScoredCbrCase<>(planCase, "custom-type", 0.8)));
 
     service.retrieve(def, buildInstance());
 
@@ -445,7 +447,7 @@ class CbrRetrievalServiceTest {
                 new PlanTrace("b2", "c2", "w2", "FAILURE", 0, Map.of(), null)),
             null,
             null);
-    cbrStore.setResult(List.of(new ScoredCbrCase<>(planCase, 0.8)));
+    cbrStore.setResult(List.of(new ScoredCbrCase<>(planCase, "test-case", 0.8)));
 
     planAdapter.setResult(
         new AdaptedPlan(
@@ -486,7 +488,7 @@ class CbrRetrievalServiceTest {
             Map.of("f1", FeatureValue.string("v1")),
             null,
             null);
-    cbrStore.setResult(List.of(new ScoredCbrCase<>(fvCase, 0.85)));
+    cbrStore.setResult(List.of(new ScoredCbrCase<>(fvCase, "test-case", 0.85)));
 
     service.retrieve(def, buildInstance());
 
@@ -509,7 +511,7 @@ class CbrRetrievalServiceTest {
             List.of(pt),
             null,
             null);
-    cbrStore.setResult(List.of(new ScoredCbrCase<>(planCase, 0.8)));
+    cbrStore.setResult(List.of(new ScoredCbrCase<>(planCase, "test-case", 0.8)));
 
     service =
         new CbrRetrievalService(
@@ -548,7 +550,7 @@ class CbrRetrievalServiceTest {
             List.of(planTrace),
             null,
             null);
-    cbrStore.setResult(List.of(new ScoredCbrCase<>(cbrCase, 0.87)));
+    cbrStore.setResult(List.of(new ScoredCbrCase<>(cbrCase, "test-case", 0.87)));
 
     List<RetrievedExperience> result = service.retrieve(def, buildInstance());
 
@@ -575,7 +577,7 @@ class CbrRetrievalServiceTest {
             List.of(planTrace),
             null,
             null);
-    cbrStore.setResult(List.of(new ScoredCbrCase<>(cbrCase, 0.87)));
+    cbrStore.setResult(List.of(new ScoredCbrCase<>(cbrCase, "test-case", 0.87)));
 
     List<RetrievedExperience> result = service.retrieve(def, buildInstance());
 
@@ -583,6 +585,153 @@ class CbrRetrievalServiceTest {
     assertEquals(
         io.casehub.api.spi.routing.RoutingOutcome.FAILURE,
         result.get(0).planTrace().get(0).stepOutcome());
+  }
+
+  @Test
+  void retrieveForSelection_builds_crossType_query() {
+    PlanCbrCase phishingCase =
+        new PlanCbrCase(
+            "phishing alert",
+            "phishing playbook",
+            "COMPLETED",
+            io.casehub.neocortex.cognitive.Confidence.inferred(0.9, java.time.Instant.now()),
+            Map.of("severity", FeatureValue.string("high")),
+            List.of(),
+            null,
+            null);
+    cbrStore.setResult(List.of(new ScoredCbrCase<>(phishingCase, "phishing", 0.92)));
+
+    List<RetrievedExperience> result =
+        service.retrieveForSelection(
+            "test-tenant",
+            "soc",
+            Map.of("severity", FeatureValue.string("high")),
+            5,
+            0.0,
+            Map.of());
+
+    assertEquals(1, result.size());
+    assertEquals("phishing", result.get(0).caseType());
+    assertEquals("phishing alert", result.get(0).problem());
+
+    CbrQuery query = cbrStore.lastQuery();
+    assertInstanceOf(
+        io.casehub.neocortex.memory.cbr.CaseTypeScope.AllInDomain.class, query.caseTypeScope());
+    assertEquals("soc", query.domain().name());
+  }
+
+  @Test
+  void retrieveForSelection_empty_features_returns_empty() {
+    List<RetrievedExperience> result =
+        service.retrieveForSelection("test-tenant", "soc", Map.of(), 5, 0.0, Map.of());
+
+    assertTrue(result.isEmpty());
+    assertFalse(cbrStore.wasCalled());
+  }
+
+  @Test
+  void retrieveForSelection_store_failure_returns_empty() {
+    cbrStore.setFailure(new RuntimeException("store down"));
+
+    List<RetrievedExperience> result =
+        service.retrieveForSelection(
+            "test-tenant", "soc", Map.of("f1", FeatureValue.string("v1")), 5, 0.0, Map.of());
+
+    assertTrue(result.isEmpty());
+  }
+
+  @Test
+  void crossType_builds_allInDomain_query() {
+    CbrConfig config =
+        CbrConfig.builder()
+            .featureExtractor(ctx -> Map.of("f1", "v1"))
+            .domain("test")
+            .crossType(true)
+            .build();
+    CaseDefinition def = buildDefinition(config);
+    cbrStore.setResult(List.of());
+    service.retrieve(def, buildInstance());
+
+    CbrQuery query = cbrStore.lastQuery();
+    assertInstanceOf(
+        io.casehub.neocortex.memory.cbr.CaseTypeScope.AllInDomain.class, query.caseTypeScope());
+  }
+
+  @Test
+  void crossType_results_carry_per_result_caseType() {
+    CbrConfig config =
+        CbrConfig.builder()
+            .featureExtractor(ctx -> Map.of("f1", "v1"))
+            .domain("test")
+            .crossType(true)
+            .build();
+    CaseDefinition def = buildDefinition(config);
+    PlanCbrCase phishingCase =
+        new PlanCbrCase(
+            "phishing alert",
+            "phishing playbook",
+            "COMPLETED",
+            io.casehub.neocortex.cognitive.Confidence.inferred(0.9, java.time.Instant.now()),
+            Map.of("f1", FeatureValue.string("v1")),
+            List.of(),
+            null,
+            null);
+    PlanCbrCase ransomwareCase =
+        new PlanCbrCase(
+            "ransomware alert",
+            "ransomware playbook",
+            "FAULTED",
+            io.casehub.neocortex.cognitive.Confidence.inferred(0.4, java.time.Instant.now()),
+            Map.of("f1", FeatureValue.string("v1")),
+            List.of(),
+            null,
+            null);
+    cbrStore.setResult(
+        List.of(
+            new ScoredCbrCase<>(phishingCase, "phishing", 0.92),
+            new ScoredCbrCase<>(ransomwareCase, "ransomware", 0.78)));
+
+    List<RetrievedExperience> result = service.retrieve(def, buildInstance());
+
+    assertEquals(2, result.size());
+    assertEquals("phishing", result.get(0).caseType());
+    assertEquals("ransomware", result.get(1).caseType());
+  }
+
+  @Test
+  void crossType_and_caseType_mutually_exclusive() {
+    assertThrows(
+        IllegalArgumentException.class,
+        () ->
+            CbrConfig.builder()
+                .featureExtractor(ctx -> Map.of("f1", "v1"))
+                .domain("test")
+                .caseType("specific")
+                .crossType(true)
+                .build());
+  }
+
+  @Test
+  void sameType_results_carry_caseType() {
+    CbrConfig config =
+        CbrConfig.builder().featureExtractor(ctx -> Map.of("f1", "v1")).domain("test").build();
+    CaseDefinition def = buildDefinition(config);
+    PlanCbrCase cbrCase =
+        new PlanCbrCase(
+            "problem1",
+            "solution1",
+            "COMPLETED",
+            io.casehub.neocortex.cognitive.Confidence.inferred(0.9, java.time.Instant.now()),
+            Map.of("f1", FeatureValue.string("v1")),
+            List.of(),
+            null,
+            null);
+    cbrStore.setResult(List.of(new ScoredCbrCase<>(cbrCase, "test-case", 0.85)));
+
+    List<RetrievedExperience> result = service.retrieve(def, buildInstance());
+
+    assertEquals(1, result.size());
+    assertEquals("test-case", result.get(0).caseType());
   }
 
   private CaseDefinition buildDefinition(CbrConfig config) {
