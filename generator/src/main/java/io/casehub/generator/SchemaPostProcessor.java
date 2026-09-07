@@ -55,7 +55,6 @@ final class SchemaPostProcessor {
           "QuorumConfig",
           "PlanningConstraints",
           "RecoveryPolicy",
-          "AdaptationConfig",
           "EpisodicMemoryConfig",
           "CbrConfig",
           "ReflectionTriggerConfig",
@@ -143,16 +142,12 @@ final class SchemaPostProcessor {
     if (defs == null) {
       defs = schema.putObject("$defs");
     }
-    defs.set("ExpressionOrOverride", buildExpressionOrOverride());
     defs.set("GoalExpression", buildGoalExpression());
     defs.set("CaseDefinitionSpec", buildCaseDefinitionSpec(schema));
     defs.set("HumanTask", buildHumanTask());
     defs.set("Judgment", buildJudgment());
     defs.set("SubCase", buildSubCase());
-    defs.set("CloudEventTrigger", buildCloudEventTrigger());
-    defs.set("ScheduleTrigger", buildScheduleTrigger());
-    defs.set("ScopeActivatedTrigger", buildScopeActivatedTrigger());
-    defs.set("ContextChangeTrigger", buildContextChangeTrigger());
+
     defs.set("ExecutionPolicy", buildExecutionPolicy());
     defs.set("RetryPolicy", buildRetryPolicy());
     defs.set("Authorization", buildAuthorization());
@@ -298,7 +293,6 @@ final class SchemaPostProcessor {
 
     specProps.set("reflection", buildReflection());
     specProps.set("monitoring", buildMonitoring());
-    specProps.set("adaptation", buildAdaptation());
     specProps.set("planningConstraints", buildPlanningConstraints());
     specProps.set("recoveryPolicy", buildRecoveryPolicy());
     specProps.set("portfolioConfig", buildPortfolioConfig());
@@ -369,34 +363,6 @@ final class SchemaPostProcessor {
     windowSize.put("type", "integer");
     windowSize.put("minimum", 1);
     windowSize.put("default", 5);
-    return n;
-  }
-
-  private static ObjectNode buildAdaptation() {
-    ObjectNode n = newObject();
-    n.put(
-        "description", "Per-case plan adaptation configuration. String preset or explicit object.");
-    ArrayNode oneOf = n.putArray("oneOf");
-    ObjectNode stringVariant = oneOf.addObject();
-    stringVariant.put("type", "string");
-    stringVariant.putArray("enum").add("adaptive").add("conservative").add("off").add("progress");
-    ObjectNode objVariant = oneOf.addObject();
-    objVariant.put("type", "object");
-    objVariant.put("unevaluatedProperties", false);
-    ObjectNode objProps = objVariant.putObject("properties");
-    objProps.putObject("trigger").put("type", "string");
-    objProps.putObject("optimization").put("type", "string");
-    objProps.putObject("revision").put("type", "string");
-    ObjectNode objThreshold = objProps.putObject("threshold");
-    objThreshold.put("type", "number");
-    objThreshold.put("minimum", 0);
-    objThreshold.put("maximum", 1);
-    objProps.putObject("metaReasoner").put("type", "string");
-    objProps.putObject("repair").put("type", "string");
-    ObjectNode contThreshold = objProps.putObject("contingencyThreshold");
-    contThreshold.put("type", "number");
-    contThreshold.put("minimum", 0);
-    contThreshold.put("maximum", 1);
     return n;
   }
 
@@ -1237,23 +1203,6 @@ final class SchemaPostProcessor {
     return new ObjectNode(com.fasterxml.jackson.databind.node.JsonNodeFactory.instance);
   }
 
-  private static ObjectNode buildExpressionOrOverride() {
-    ObjectNode n = newObject();
-    n.put(
-        "description",
-        "Expression string or per-expression language override map."
-            + " Plain string uses the definition-level expressionLang."
-            + " Map syntax overrides: { jq: \".expr\" } or { mvel: \"expr\" }.");
-    ArrayNode oneOf = n.putArray("oneOf");
-    oneOf.addObject().put("type", "string");
-    ObjectNode mapVariant = oneOf.addObject();
-    mapVariant.put("type", "object");
-    mapVariant.put("minProperties", 1);
-    mapVariant.put("maxProperties", 1);
-    mapVariant.putObject("additionalProperties").put("type", "string");
-    return n;
-  }
-
   private static ObjectNode buildGoalExpression() {
     ObjectNode n = newObject();
     n.put("type", "object");
@@ -1407,59 +1356,6 @@ final class SchemaPostProcessor {
     ObjectNode requiredCount = props.putObject("requiredCount");
     requiredCount.put("type", "integer");
     requiredCount.put("minimum", 1);
-    return n;
-  }
-
-  private static ObjectNode buildCloudEventTrigger() {
-    ObjectNode n = newObject();
-    n.put("description", "Fires on matching CloudEvents.");
-    ArrayNode oneOf = n.putArray("oneOf");
-    oneOf.addObject().put("type", "string").put("description", "CloudEvent type exact match");
-    ObjectNode objVariant = oneOf.addObject();
-    objVariant.put("type", "object");
-    objVariant.putArray("required").add("type");
-    objVariant.put("unevaluatedProperties", false);
-    objVariant.put("additionalProperties", false);
-    ObjectNode props = objVariant.putObject("properties");
-    props.putObject("type").put("type", "string");
-    props.putObject("source").put("type", "string");
-    props.putObject("subject").put("type", "string");
-    props.putObject("filter").put("$ref", "#/$defs/ExpressionOrOverride");
-    return n;
-  }
-
-  private static ObjectNode buildScheduleTrigger() {
-    ObjectNode n = newObject();
-    n.put("type", "object");
-    n.put("description", "Time-based trigger.");
-    n.put("unevaluatedProperties", false);
-    n.put("additionalProperties", false);
-    ArrayNode oneOf = n.putArray("oneOf");
-    oneOf.addObject().putArray("required").add("cron");
-    oneOf.addObject().putArray("required").add("every");
-    ObjectNode props = n.putObject("properties");
-    props.putObject("cron").put("type", "string");
-    props.putObject("every").put("type", "string");
-    props.putObject("timezone").put("type", "string");
-    return n;
-  }
-
-  private static ObjectNode buildScopeActivatedTrigger() {
-    ObjectNode n = newObject();
-    n.put("type", "object");
-    n.put("unevaluatedProperties", false);
-    n.put("additionalProperties", false);
-    return n;
-  }
-
-  private static ObjectNode buildContextChangeTrigger() {
-    ObjectNode n = newObject();
-    n.put("type", "object");
-    n.put("unevaluatedProperties", false);
-    n.put("additionalProperties", false);
-    ObjectNode props = n.putObject("properties");
-    props.putObject("filter").put("$ref", "#/$defs/ExpressionOrOverride");
-    props.putObject("listenLayer").put("type", "string");
     return n;
   }
 
