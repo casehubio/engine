@@ -51,7 +51,7 @@ public class CaseHubSchemaGenerator {
             JakartaValidationOption.NOT_NULLABLE_FIELD_IS_REQUIRED));
     configBuilder.with(new JacksonModule(JacksonOption.RESPECT_JSONPROPERTY_ORDER));
 
-    configBuilder.with(new io.casehub.generator.module.EnumInliningModule());
+    configBuilder.with(new io.casehub.schema.generator.module.EnumInliningModule());
     configBuilder.with(new io.casehub.generator.module.WorkerSchemaModule());
     configBuilder.with(new io.casehub.generator.module.CaseCompletionSchemaModule());
     configBuilder.with(new io.casehub.generator.module.ExpressionEvaluatorModule());
