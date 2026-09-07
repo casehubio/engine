@@ -147,6 +147,7 @@ final class SchemaPostProcessor {
     defs.set("GoalExpression", buildGoalExpression());
     defs.set("CaseDefinitionSpec", buildCaseDefinitionSpec(schema));
     defs.set("HumanTask", buildHumanTask());
+    defs.set("Judgment", buildJudgment());
     defs.set("SubCase", buildSubCase());
     defs.set("CloudEventTrigger", buildCloudEventTrigger());
     defs.set("ScheduleTrigger", buildScheduleTrigger());
@@ -1322,6 +1323,51 @@ final class SchemaPostProcessor {
     outcomes.putObject("items").put("type", "string");
     props.putObject("payloadType").put("type", "string");
     props.putObject("resolutionType").put("type", "string");
+    return n;
+  }
+
+  private static ObjectNode buildJudgment() {
+    ObjectNode n = newObject();
+    n.put("type", "object");
+    n.put("unevaluatedProperties", false);
+    n.put(
+        "description",
+        "Caller-agnostic judgment yield — the engine publishes a judgment request"
+            + " via JudgmentScheduler; any caller type (human, LLM, A2A) can respond.");
+    ArrayNode oneOf = n.putArray("oneOf");
+    oneOf.addObject().putArray("required").add("prompt");
+    oneOf.addObject().putArray("required").add("promptExpression");
+    ObjectNode props = n.putObject("properties");
+    props.putObject("prompt").put("type", "string");
+    props.putObject("promptExpression").put("type", "string");
+    props.putObject("inputMapping").put("type", "string");
+    props.putObject("outputMapping").put("type", "string");
+    props.putObject("resolutionType").put("type", "string");
+    props.putObject("expiresIn").put("type", "string");
+    props.putObject("expiresInExpression").put("type", "string");
+    props.putObject("expiresAtExpression").put("type", "string");
+    ObjectNode evidence = props.putObject("evidenceRequirements");
+    evidence.put("type", "array");
+    evidence.putObject("items").put("type", "string");
+    props.putObject("title").put("type", "string");
+    props.putObject("titleExpression").put("type", "string");
+    ObjectNode outcomes = props.putObject("outcomes");
+    outcomes.put("type", "array");
+    outcomes.putObject("items").put("type", "string");
+    props.putObject("scope").put("type", "string");
+    props.putObject("scopeExpression").put("type", "string");
+    props.putObject("priority").put("type", "string");
+    props.putObject("verifierStrategy").put("type", "string");
+    props.putObject("escalationStrategy").put("type", "string");
+    props.putObject("trustThreshold").put("type", "string");
+    ObjectNode maxEscalation = props.putObject("maxEscalationAttempts");
+    maxEscalation.put("type", "integer");
+    maxEscalation.put("minimum", 1);
+    maxEscalation.put("default", 3);
+    ObjectNode human = props.putObject("human");
+    human.put("type", "object");
+    human.put("additionalProperties", true);
+    human.put("description", "Human caller routing configuration.");
     return n;
   }
 
