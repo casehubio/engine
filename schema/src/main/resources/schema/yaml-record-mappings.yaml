@@ -85,25 +85,22 @@ types:
       contextWrite: { type: "Map<String, Object>" }
       humanTask: { type: YamlHumanTaskTarget }
       subCase: { type: YamlSubCaseTarget }
+      judgment: { type: YamlJudgmentTarget }
     extra:
       - { name: sideEffectClassification, type: String }
-      - { name: judgment, type: YamlJudgmentTarget }
       - { name: recoveryOverride, type: YamlRecoveryOverride }
 
   # ── Worker ──
   Worker:
     record: YamlWorker
     fields:
-      doBlock: { property: do, type: JsonNode }
       effect: { type: "Map<String, Boolean>" }
-    extra:
-      - { name: definitionRef, type: String }
-      - { name: forEach, type: String }
-      - { name: agent, type: YamlAgent }
-      - { name: react, type: YamlReact }
-      - { name: a2a, type: YamlA2A }
-      - { name: mcp, type: YamlMcp }
-      - { name: agentDescriptor, type: YamlAgentDescriptor }
+      agent: { type: YamlAgent }
+      a2a: { type: YamlA2A }
+      mcp: { type: YamlMcp }
+      react: { type: YamlReact }
+      agentDescriptor: { type: YamlAgentDescriptor }
+      do: { name: doBlock, type: JsonNode }
 
   # ── Capability ──
   Capability:

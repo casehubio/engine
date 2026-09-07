@@ -159,6 +159,10 @@ final class SchemaPostProcessor {
     defs.set("Cbr", buildCbr());
     defs.set("Agent", buildAgent());
     defs.set("AgentModel", buildAgentModel());
+    defs.set("A2A", buildA2A());
+    defs.set("MCP", buildMCP());
+    defs.set("React", buildReact());
+    defs.set("Auth", buildAuth());
     buildLlmProviderDefs(defs);
   }
 
@@ -1640,6 +1644,69 @@ final class SchemaPostProcessor {
       }
       defs.set(entry.getKey(), n);
     }
+  }
+
+  private static ObjectNode buildA2A() {
+    ObjectNode n = newObject();
+    n.put("type", "object");
+    n.put("unevaluatedProperties", false);
+    n.putArray("required").add("endpoint");
+    n.put("description", "A2A remote agent worker configuration.");
+    ObjectNode props = n.putObject("properties");
+    addStringProp(props, "endpoint", 1, 0, null);
+    props.putObject("skill").put("type", "string");
+    ObjectNode streaming = props.putObject("streaming");
+    streaming.put("type", "boolean");
+    streaming.put("default", false);
+    props.putObject("auth").put("$ref", "#/$defs/Auth");
+    return n;
+  }
+
+  private static ObjectNode buildMCP() {
+    ObjectNode n = newObject();
+    n.put("type", "object");
+    n.put("unevaluatedProperties", false);
+    n.put("description", "MCP server tool worker configuration.");
+    ArrayNode oneOf = n.putArray("oneOf");
+    oneOf.addObject().putArray("required").add("command");
+    oneOf.addObject().putArray("required").add("url");
+    ObjectNode props = n.putObject("properties");
+    ObjectNode command = props.putObject("command");
+    command.put("type", "array");
+    command.putObject("items").put("type", "string");
+    command.put("minItems", 1);
+    addStringProp(props, "url", 1, 0, null);
+    props.putObject("auth").put("$ref", "#/$defs/Auth");
+    ObjectNode env = props.putObject("env");
+    env.put("type", "object");
+    env.putObject("additionalProperties").put("type", "string");
+    return n;
+  }
+
+  private static ObjectNode buildReact() {
+    ObjectNode n = newObject();
+    n.put("type", "object");
+    n.put("unevaluatedProperties", false);
+    n.put("description", "ReAct (reason-act-observe) multi-turn execution configuration.");
+    ObjectNode props = n.putObject("properties");
+    ObjectNode maxCycles = props.putObject("maxCycles");
+    maxCycles.put("type", "integer");
+    maxCycles.put("minimum", 1);
+    maxCycles.put("default", 20);
+    return n;
+  }
+
+  private static ObjectNode buildAuth() {
+    ObjectNode n = newObject();
+    n.put("type", "object");
+    n.put("unevaluatedProperties", false);
+    n.putArray("required").add("type");
+    ObjectNode props = n.putObject("properties");
+    ObjectNode type = props.putObject("type");
+    type.put("type", "string");
+    type.putArray("enum").add("bearer").add("api-key").add("none");
+    props.putObject("tokenConfigKey").put("type", "string");
+    return n;
   }
 
   // --- Helpers ---

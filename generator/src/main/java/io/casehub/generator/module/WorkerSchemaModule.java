@@ -35,11 +35,7 @@ public class WorkerSchemaModule implements Module {
             (type, context) -> {
               if (type.getErasedType() == Worker.class) {
                 ObjectNode schema =
-                    context
-                        .getGeneratorConfig()
-                        .createObjectNode()
-                        .put("type", "object")
-                        .put("additionalProperties", true);
+                    context.getGeneratorConfig().createObjectNode().put("type", "object");
 
                 ObjectNode properties = schema.putObject("properties");
 
@@ -71,6 +67,21 @@ public class WorkerSchemaModule implements Module {
                 softDep.put("type", "array");
                 softDep.putObject("items").put("type", "string");
 
+                properties.putObject("definitionRef").put("type", "string");
+                properties.putObject("forEach").put("type", "string");
+
+                properties.putObject("agent").put("$ref", "#/$defs/Agent");
+                properties.putObject("a2a").put("$ref", "#/$defs/A2A");
+                properties.putObject("mcp").put("$ref", "#/$defs/MCP");
+                properties.putObject("react").put("$ref", "#/$defs/React");
+                ObjectNode doBlock = properties.putObject("do");
+                doBlock.put("type", "array");
+                properties.putObject("serviceAccountId").put("type", "string");
+                ObjectNode agentDescriptor = properties.putObject("agentDescriptor");
+                agentDescriptor.put("type", "object");
+                agentDescriptor.put("additionalProperties", true);
+
+                schema.put("unevaluatedProperties", false);
                 schema.putArray("required").add("name").add("capabilities");
 
                 return new CustomDefinition(schema);
