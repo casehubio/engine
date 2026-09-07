@@ -29,10 +29,13 @@ import com.github.victools.jsonschema.module.jackson.JacksonModule;
 import com.github.victools.jsonschema.module.jackson.JacksonOption;
 import com.github.victools.jsonschema.module.jakarta.validation.JakartaValidationModule;
 import com.github.victools.jsonschema.module.jakarta.validation.JakartaValidationOption;
+import io.casehub.api.model.AdaptationConfig;
 import io.casehub.schema.generator.module.SealedHierarchyModule;
+import io.casehub.schema.generator.module.ShorthandModule;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.Map;
 
 public class CaseHubSchemaGenerator {
 
@@ -59,6 +62,9 @@ public class CaseHubSchemaGenerator {
     configBuilder.with(new io.casehub.generator.module.BindingTargetModule());
     configBuilder.with(new io.casehub.generator.module.SpecNestingModule());
     configBuilder.with(new io.casehub.generator.module.UnevaluatedPropertiesModule());
+
+    configBuilder.with(
+        new ShorthandModule(Map.of(AdaptationConfig.class, AdaptationShorthand.definition())));
 
     // Registered last — existing modules (TriggerModule, BindingTargetModule, etc.)
     // handle their types via withCustomDefinitionProvider which fires first.

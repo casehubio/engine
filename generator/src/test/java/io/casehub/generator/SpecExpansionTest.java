@@ -89,7 +89,13 @@ class SpecExpansionTest {
     JsonNode adaptation =
         schema.path("$defs").path("CaseDefinitionSpec").path("properties").path("adaptation");
     assertFalse(adaptation.isMissingNode());
-    assertTrue(adaptation.has("oneOf"), "adaptation should have oneOf (string preset or object)");
+    JsonNode resolved = adaptation;
+    if (adaptation.has("$ref")) {
+      String defName = adaptation.get("$ref").asText().replace("#/$defs/", "");
+      resolved = schema.path("$defs").path(defName);
+    }
+    assertTrue(
+        resolved.has("oneOf"), "adaptation (resolved) should have oneOf (string preset or object)");
   }
 
   @Test
