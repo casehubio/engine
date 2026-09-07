@@ -51,6 +51,7 @@ public class BindingTargetModule implements Module {
               properties.putObject("capability").put("type", "string");
               properties.putObject("subCase").put("$ref", "#/$defs/SubCase");
               properties.putObject("humanTask").put("$ref", "#/$defs/HumanTask");
+              properties.putObject("judgment").put("$ref", "#/$defs/Judgment");
               ObjectNode signal = properties.putObject("signal");
               signal.put("type", "object");
               signal.put("additionalProperties", true);
@@ -63,6 +64,7 @@ public class BindingTargetModule implements Module {
               oneOf.addObject().putArray("required").add("capability");
               oneOf.addObject().putArray("required").add("subCase");
               oneOf.addObject().putArray("required").add("humanTask");
+              oneOf.addObject().putArray("required").add("judgment");
               oneOf.addObject().putArray("required").add("signal");
             });
   }
