@@ -10,6 +10,8 @@
 
 ### `cbrType` (`java.lang.String`)
 
+### `crossType` (`boolean`)
+
 ### `domain` (`java.lang.String`)
 
 ### `jqFeatures` (`java.util.Map<java.lang.String,java.lang.String>`)
@@ -19,6 +21,8 @@
 ### `minCostSamples` (`java.lang.Integer`)
 
 ### `minSimilarity` (`double`)
+
+### `problemDescription` (`java.lang.String`)
 
 ### `temporalDecayHalfLifeDays` (`java.lang.Integer`)
 
@@ -50,6 +54,12 @@
 
 - `cbrType` (`java.lang.String`)
 
+### `public io.casehub.api.model.cbr.CbrConfig.Builder crossType(boolean crossType)`
+
+#### Parameters
+
+- `crossType` (`boolean`)
+
 ### `public io.casehub.api.model.cbr.CbrConfig.Builder domain(java.lang.String domain)`
 
 #### Parameters
@@ -80,6 +90,12 @@
 #### Parameters
 
 - `minSimilarity` (`double`)
+
+### `public io.casehub.api.model.cbr.CbrConfig.Builder problemDescription(java.lang.String problemDescription)`
+
+#### Parameters
+
+- `problemDescription` (`java.lang.String`)
 
 ### `public io.casehub.api.model.cbr.CbrConfig.Builder temporalDecayHalfLifeDays(java.lang.Integer temporalDecayHalfLifeDays)`
 
