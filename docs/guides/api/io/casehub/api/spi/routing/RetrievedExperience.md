@@ -10,6 +10,8 @@ the full plan trace showing which bindings were selected.
 
 ## Fields
 
+### `caseType` (`java.lang.String`)
+
 ### `confidence` (`java.lang.Double`)
 
 ### `featureSimilarities` (`java.util.Map<java.lang.String,java.lang.Double>`)
@@ -27,6 +29,11 @@ the full plan trace showing which bindings were selected.
 ### `solution` (`java.lang.String`)
 
 ## Record Components
+
+### `caseType` (`java.lang.String`)
+
+the case definition type that produced this experience (nullable — null for
+    same-type queries where the type is implicit)
 
 ### `confidence` (`java.lang.Double`)
 
@@ -75,7 +82,23 @@ the solution that was applied
 - `planTrace` (`java.util.List<io.casehub.api.spi.routing.ExperiencePlanStep>`)
 - `featureSimilarities` (`java.util.Map<java.lang.String,java.lang.Double>`)
 
+### `public RetrievedExperience(java.lang.String problem, java.lang.String solution, java.lang.String outcome, java.lang.Double confidence, double similarityScore, java.util.Map<java.lang.String,java.lang.Object> features, java.util.List<io.casehub.api.spi.routing.ExperiencePlanStep> planTrace, java.util.Map<java.lang.String,java.lang.Double> featureSimilarities, java.lang.String caseType)`
+
+#### Parameters
+
+- `problem` (`java.lang.String`)
+- `solution` (`java.lang.String`)
+- `outcome` (`java.lang.String`)
+- `confidence` (`java.lang.Double`)
+- `similarityScore` (`double`)
+- `features` (`java.util.Map<java.lang.String,java.lang.Object>`)
+- `planTrace` (`java.util.List<io.casehub.api.spi.routing.ExperiencePlanStep>`)
+- `featureSimilarities` (`java.util.Map<java.lang.String,java.lang.Double>`)
+- `caseType` (`java.lang.String`)
+
 ## Methods
+
+### `public java.lang.String caseType()`
 
 ### `public java.lang.Double confidence()`
 
