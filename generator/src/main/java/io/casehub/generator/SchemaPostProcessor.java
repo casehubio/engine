@@ -66,7 +66,23 @@ final class SchemaPostProcessor {
           "ContextConstraint",
           "ChannelDeclaration",
           "GoapAction",
-          "RecoveryOverride");
+          "RecoveryOverride",
+          // Sealed permits of BindingTarget — BindingTargetModule flattens these
+          "CapabilityTarget",
+          "ExtensionTarget",
+          "HumanTaskTarget",
+          "JudgmentTarget",
+          "SignalTarget",
+          "SubCaseTarget",
+          // Sealed permits of FeatureExtractor
+          "JqFeatureExtractor",
+          "LambdaFeatureExtractor",
+          // Sealed permits of Effect (ContextConstraint inner)
+          "Prefer",
+          "Exclude",
+          // Sealed permits of LabelAction
+          "Add",
+          "Remove");
 
   private SchemaPostProcessor() {}
 

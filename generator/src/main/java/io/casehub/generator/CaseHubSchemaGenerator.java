@@ -29,6 +29,7 @@ import com.github.victools.jsonschema.module.jackson.JacksonModule;
 import com.github.victools.jsonschema.module.jackson.JacksonOption;
 import com.github.victools.jsonschema.module.jakarta.validation.JakartaValidationModule;
 import com.github.victools.jsonschema.module.jakarta.validation.JakartaValidationOption;
+import io.casehub.schema.generator.module.SealedHierarchyModule;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -58,6 +59,11 @@ public class CaseHubSchemaGenerator {
     configBuilder.with(new io.casehub.generator.module.BindingTargetModule());
     configBuilder.with(new io.casehub.generator.module.SpecNestingModule());
     configBuilder.with(new io.casehub.generator.module.UnevaluatedPropertiesModule());
+
+    // Registered last — existing modules (TriggerModule, BindingTargetModule, etc.)
+    // handle their types via withCustomDefinitionProvider which fires first.
+    // SealedHierarchyModule auto-generates oneOf for any remaining sealed interfaces.
+    configBuilder.with(new SealedHierarchyModule());
 
     this.schemaGenerator = new SchemaGenerator(configBuilder.build());
   }
