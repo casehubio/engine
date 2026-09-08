@@ -20,6 +20,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import io.casehub.api.model.CaseDefinition;
 import io.casehub.api.model.cbr.CbrConfig;
 import io.casehub.api.model.cbr.JqFeatureExtractor;
+import io.casehub.api.model.evaluator.JQExpressionEvaluator;
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.io.InputStream;
@@ -232,7 +233,8 @@ class CaseDefinitionYamlMapperCbrTest {
     InputStream is = new ByteArrayInputStream(yaml.getBytes(StandardCharsets.UTF_8));
     CaseDefinition def = CaseDefinitionYamlMapper.load(is);
     assertThat(def.getCbrConfig()).isNotNull();
-    assertThat(def.getCbrConfig().problemDescription())
+    assertThat(def.getCbrConfig().problemDescription()).isInstanceOf(JQExpressionEvaluator.class);
+    assertThat(((JQExpressionEvaluator) def.getCbrConfig().problemDescription()).expression())
         .isEqualTo("(.alert.severity + \" — \" + .alert.category)");
   }
 
