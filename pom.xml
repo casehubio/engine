@@ -153,6 +153,17 @@
         </repository>
     </repositories>
 
+    <pluginRepositories>
+        <pluginRepository>
+            <id>github</id>
+            <name>casehubio GitHub Packages</name>
+            <url>https://maven.pkg.github.com/casehubio/*</url>
+            <snapshots>
+                <enabled>true</enabled>
+            </snapshots>
+        </pluginRepository>
+    </pluginRepositories>
+
     <dependencyManagement>
         <dependencies>
             <dependency>
