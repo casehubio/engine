@@ -82,9 +82,12 @@ class CoreModulesTest {
   void worker_hasTypedExtensionProperties() {
     JsonNode workerDef = findDef("Worker");
     assertNotNull(workerDef, "Worker should be in $defs");
-    assertFalse(
+    assertTrue(
         workerDef.has("additionalProperties"),
-        "Worker should NOT have additionalProperties (typed extensions replace it)");
+        "Worker should have additionalProperties for plugin extensibility");
+    assertTrue(
+        workerDef.get("additionalProperties").asBoolean(),
+        "Worker additionalProperties should be true");
     JsonNode props = workerDef.path("properties");
     assertTrue(props.has("agent"), "Worker should have 'agent' extension property");
     assertTrue(props.has("a2a"), "Worker should have 'a2a' extension property");
