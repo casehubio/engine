@@ -1,0 +1,7 @@
+# ForEachAdapter implementation — contains behavioral logic (ForEachAdapter<JsonNode>),
+# not a data record; cannot be generated from JSON Schema.
+JsonNodeForEachAdapter
+
+# Agent descriptor record — models agent-level metadata not part of the
+# CaseDefinition schema; no corresponding JSON Schema definition exists.
+YamlAgentDescriptor
