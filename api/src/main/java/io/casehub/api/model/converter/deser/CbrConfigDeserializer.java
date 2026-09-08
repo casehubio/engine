@@ -21,6 +21,8 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.deser.std.StdDeserializer;
 import io.casehub.api.model.cbr.CbrConfig;
 import io.casehub.api.model.cbr.CbrConfig.CbrRetrievalTiming;
+import io.casehub.api.model.evaluator.JQExpressionEvaluator;
+import io.casehub.platform.api.expression.ExpressionEvaluator;
 import java.io.IOException;
 
 public class CbrConfigDeserializer extends StdDeserializer<CbrConfig> {
@@ -59,7 +61,7 @@ public class CbrConfigDeserializer extends StdDeserializer<CbrConfig> {
     if (node.has("minCostSamples")) builder.minCostSamples(node.get("minCostSamples").asInt());
     if (node.has("crossType")) builder.crossType(node.get("crossType").asBoolean());
     if (node.has("problemDescription"))
-      builder.problemDescription(node.get("problemDescription").asText());
+      builder.problemDescription(resolveExpression(node.get("problemDescription"), ctxt));
     if (node.has("timing")) {
       builder.timing(
           CbrRetrievalTiming.valueOf(node.get("timing").asText().toUpperCase().replace("-", "_")));
@@ -71,6 +73,16 @@ public class CbrConfigDeserializer extends StdDeserializer<CbrConfig> {
     }
 
     return builder.build();
+  }
+
+  private ExpressionEvaluator resolveExpression(JsonNode node, DeserializationContext ctxt)
+      throws IOException {
+    if (node.isTextual()) {
+      return new JQExpressionEvaluator(node.asText());
+    }
+    JsonParser nested = node.traverse(ctxt.getParser().getCodec());
+    nested.nextToken();
+    return ctxt.readValue(nested, ExpressionEvaluator.class);
   }
 
   @Override

@@ -15,9 +15,9 @@
  */
 package io.casehub.api.model.evaluator;
 
-import io.casehub.platform.api.expression.ExpressionEvaluator;
+import io.casehub.platform.api.expression.StringExpressionEvaluator;
 
-public record JQExpressionEvaluator(String expression) implements ExpressionEvaluator {
+public record JQExpressionEvaluator(String expression) implements StringExpressionEvaluator {
 
   public static final String TYPE = "jq";
 

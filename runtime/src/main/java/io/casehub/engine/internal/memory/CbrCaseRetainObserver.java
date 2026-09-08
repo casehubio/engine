@@ -17,6 +17,7 @@ package io.casehub.engine.internal.memory;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import io.casehub.api.engine.ExpressionEngineRegistry;
 import io.casehub.api.model.Binding;
 import io.casehub.api.model.CapabilityTarget;
 import io.casehub.api.model.CaseDefinition;
@@ -68,6 +69,7 @@ public class CbrCaseRetainObserver implements CaseOutcomeObserver {
   private final CaseDefinitionRegistry registry;
   private final Instance<PlanItemStore> planItemStoreInstance;
   private final JQEvaluator jqEvaluator;
+  private final ExpressionEngineRegistry expressionEngineRegistry;
   private final Instance<TrustScoreSource> trustScoreSource;
 
   @Inject
@@ -76,11 +78,13 @@ public class CbrCaseRetainObserver implements CaseOutcomeObserver {
       CaseDefinitionRegistry registry,
       Instance<PlanItemStore> planItemStoreInstance,
       JQEvaluator jqEvaluator,
+      ExpressionEngineRegistry expressionEngineRegistry,
       Instance<TrustScoreSource> trustScoreSource) {
     this.cbrStore = cbrStore;
     this.registry = registry;
     this.planItemStoreInstance = planItemStoreInstance;
     this.jqEvaluator = jqEvaluator;
+    this.expressionEngineRegistry = expressionEngineRegistry;
     this.trustScoreSource = trustScoreSource;
   }
 
@@ -197,17 +201,22 @@ public class CbrCaseRetainObserver implements CaseOutcomeObserver {
 
   private String buildProblem(CbrConfig config, CaseDefinition definition, CaseOutcomeEvent event) {
     if (config.problemDescription() != null) {
-      JsonNode node = MAPPER.valueToTree(event.caseFileSnapshot());
-      ValidationResult result = jqEvaluator.eval(config.problemDescription(), node);
-      if (result.ok() && result.output() != null && !result.output().isEmpty()) {
-        JsonNode output = result.output().get(0);
-        if (output.isTextual() && !output.asText().isBlank()) {
-          return output.asText();
+      try {
+        JsonNode node = MAPPER.valueToTree(event.caseFileSnapshot());
+        List<JsonNode> results =
+            expressionEngineRegistry.transform(config.problemDescription(), node);
+        if (results != null && !results.isEmpty()) {
+          JsonNode output = results.get(0);
+          if (output.isTextual() && !output.asText().isBlank()) {
+            return output.asText();
+          }
         }
+      } catch (Exception e) {
+        LOG.warnf(
+            e,
+            "problemDescription expression failed for caseType='%s' — falling back",
+            event.caseType());
       }
-      LOG.debugf(
-          "problemDescription JQ returned no usable text for caseType='%s' — falling back",
-          event.caseType());
     }
 
     StringBuilder sb = new StringBuilder();

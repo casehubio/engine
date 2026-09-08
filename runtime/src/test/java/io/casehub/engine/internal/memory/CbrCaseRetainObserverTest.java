@@ -17,9 +17,12 @@ package io.casehub.engine.internal.memory;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatCode;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
+import com.fasterxml.jackson.databind.JsonNode;
+import io.casehub.api.engine.ExpressionEngineRegistry;
 import io.casehub.api.model.Binding;
 import io.casehub.api.model.CapabilityTarget;
 import io.casehub.api.model.CaseDefinition;
@@ -28,6 +31,7 @@ import io.casehub.api.model.TaskStatus;
 import io.casehub.api.model.cbr.CbrConfig;
 import io.casehub.api.spi.CaseOutcomeEvent;
 import io.casehub.engine.common.internal.jq.JQEvaluator;
+import io.casehub.engine.common.internal.jq.ValidationResult;
 import io.casehub.engine.common.internal.model.PlanItemRecord;
 import io.casehub.engine.common.internal.model.PlanItemSaveRequest;
 import io.casehub.engine.common.internal.model.TargetType;
@@ -43,6 +47,8 @@ import io.casehub.neocortex.memory.cbr.CbrQuery;
 import io.casehub.neocortex.memory.cbr.FeatureValue;
 import io.casehub.neocortex.memory.cbr.PlanCbrCase;
 import io.casehub.neocortex.memory.cbr.ScoredCbrCase;
+import io.casehub.platform.api.expression.ExpressionEvaluator;
+import io.casehub.platform.api.expression.StringExpressionEvaluator;
 import io.casehub.worker.api.Capability;
 import jakarta.enterprise.inject.Instance;
 import java.time.Instant;
@@ -61,6 +67,7 @@ class CbrCaseRetainObserverTest {
   private StubRegistry registry;
   private StubPlanItemStore planItemStore;
   private JQEvaluator jqEvaluator;
+  private ExpressionEngineRegistry expressionRegistry;
   private CbrCaseRetainObserver observer;
 
   @BeforeEach
@@ -69,6 +76,15 @@ class CbrCaseRetainObserverTest {
     registry = new StubRegistry();
     planItemStore = new StubPlanItemStore();
     jqEvaluator = new JQEvaluator();
+    expressionRegistry = mock(ExpressionEngineRegistry.class);
+    when(expressionRegistry.transform(any(ExpressionEvaluator.class), any(JsonNode.class)))
+        .thenAnswer(
+            inv -> {
+              StringExpressionEvaluator eval = (StringExpressionEvaluator) inv.getArgument(0);
+              JsonNode input = inv.getArgument(1);
+              ValidationResult r = jqEvaluator.eval(eval.expression(), input);
+              return r.ok() ? r.output() : List.of();
+            });
     @SuppressWarnings("unchecked")
     Instance<PlanItemStore> planItemStoreInstance = mock(Instance.class);
     when(planItemStoreInstance.isUnsatisfied()).thenReturn(false);
@@ -78,7 +94,7 @@ class CbrCaseRetainObserverTest {
     when(trustInstance.isUnsatisfied()).thenReturn(true);
     observer =
         new CbrCaseRetainObserver(
-            store, registry, planItemStoreInstance, jqEvaluator, trustInstance);
+            store, registry, planItemStoreInstance, jqEvaluator, expressionRegistry, trustInstance);
   }
 
   @Test
@@ -121,7 +137,8 @@ class CbrCaseRetainObserverTest {
     when(pisInstance.isUnsatisfied()).thenReturn(false);
     when(pisInstance.get()).thenReturn(planItemStore);
     var trustObserver =
-        new CbrCaseRetainObserver(store, registry, pisInstance, jqEvaluator, trustInstance);
+        new CbrCaseRetainObserver(
+            store, registry, pisInstance, jqEvaluator, expressionRegistry, trustInstance);
 
     registry.register(
         defWithJqCbr("trust-case", "dom", Map.of("k", ".k"), capBinding("b1", "cap1")));
@@ -781,22 +798,43 @@ class CbrCaseRetainObserverTest {
     }
 
     @Override
-    public boolean supersede(String caseId, String tenantId, String newCaseId, String reason) { return false; }
+    public boolean supersede(String caseId, String tenantId, String newCaseId, String reason) {
+      return false;
+    }
 
     @Override
-    public boolean reinstate(String caseId, String tenantId) { return false; }
+    public boolean reinstate(String caseId, String tenantId) {
+      return false;
+    }
 
     @Override
-    public int reinstateAll(java.util.Collection<String> caseIds, String tenantId) { return 0; }
+    public int reinstateAll(java.util.Collection<String> caseIds, String tenantId) {
+      return 0;
+    }
 
     @Override
-    public int reinstateMatching(String caseType, MemoryDomain domain, String tenantId, java.util.Map<String, io.casehub.neocortex.memory.cbr.CbrFilter> filters) { return 0; }
+    public int reinstateMatching(
+        String caseType,
+        MemoryDomain domain,
+        String tenantId,
+        java.util.Map<String, io.casehub.neocortex.memory.cbr.CbrFilter> filters) {
+      return 0;
+    }
 
     @Override
-    public int supersedeAll(java.util.Collection<String> caseIds, String tenantId, String reason) { return 0; }
+    public int supersedeAll(java.util.Collection<String> caseIds, String tenantId, String reason) {
+      return 0;
+    }
 
     @Override
-    public int supersedeMatching(String caseType, MemoryDomain domain, String tenantId, java.util.Map<String, io.casehub.neocortex.memory.cbr.CbrFilter> filters, String reason) { return 0; }
+    public int supersedeMatching(
+        String caseType,
+        MemoryDomain domain,
+        String tenantId,
+        java.util.Map<String, io.casehub.neocortex.memory.cbr.CbrFilter> filters,
+        String reason) {
+      return 0;
+    }
 
     @Override
     public Integer eraseByScope(io.casehub.platform.api.path.Path scope, String tenantId) {
@@ -804,7 +842,11 @@ class CbrCaseRetainObserverTest {
     }
 
     @Override
-    public List<String> findCaseIds(String caseType, MemoryDomain domain, String tenantId, java.util.Map<String, io.casehub.neocortex.memory.cbr.CbrFilter> filters) {
+    public List<String> findCaseIds(
+        String caseType,
+        MemoryDomain domain,
+        String tenantId,
+        java.util.Map<String, io.casehub.neocortex.memory.cbr.CbrFilter> filters) {
       return List.of();
     }
 

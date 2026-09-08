@@ -16,6 +16,9 @@
 package io.casehub.api.model.cbr;
 
 import io.casehub.api.context.CaseContext;
+import io.casehub.api.model.evaluator.JQExpressionEvaluator;
+import io.casehub.platform.api.expression.ExpressionEvaluator;
+import io.casehub.platform.api.expression.StringExpressionEvaluator;
 import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.Objects;
@@ -34,7 +37,7 @@ public record CbrConfig(
     Integer temporalDecayHalfLifeDays,
     Integer minCostSamples,
     boolean crossType,
-    String problemDescription) {
+    ExpressionEvaluator problemDescription) {
 
   public enum CbrRetrievalTiming {
     PER_EVALUATION,
@@ -63,7 +66,9 @@ public record CbrConfig(
     if (crossType && caseType != null) {
       throw new IllegalArgumentException("crossType and caseType are mutually exclusive");
     }
-    if (problemDescription != null && problemDescription.isBlank()) {
+    if (problemDescription instanceof StringExpressionEvaluator se
+        && se.expression() != null
+        && se.expression().isBlank()) {
       throw new IllegalArgumentException("problemDescription must not be blank when provided");
     }
     if (cbrType != null && cbrType.isBlank()) {
@@ -109,7 +114,7 @@ public record CbrConfig(
     private Integer temporalDecayHalfLifeDays;
     private Integer minCostSamples;
     private boolean crossType;
-    private String problemDescription;
+    private ExpressionEvaluator problemDescription;
 
     public Builder feature(final String name, final String jqExpression) {
       if (lambdaExtractor != null) {
@@ -182,7 +187,12 @@ public record CbrConfig(
       return this;
     }
 
-    public Builder problemDescription(final String problemDescription) {
+    public Builder problemDescription(final String jqExpression) {
+      this.problemDescription = new JQExpressionEvaluator(jqExpression);
+      return this;
+    }
+
+    public Builder problemDescription(final ExpressionEvaluator problemDescription) {
       this.problemDescription = problemDescription;
       return this;
     }
