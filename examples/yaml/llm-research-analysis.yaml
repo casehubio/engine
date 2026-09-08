@@ -75,36 +75,45 @@ spec:
       capabilities:
         - gatherSources
       agent:
-        model: anthropic
-        modelName: claude-sonnet-4-20250514
         systemPrompt: |
           You are a research assistant specialising in academic source discovery.
           Search for papers, datasets, and authoritative sources on the given topic.
           Return structured results with paper titles, authors, and relevance scores.
+        inputProjection: "{ topic: .topic, keywords: .keywords }"
+        outputProjection: "{ sources: { papers: .papers, datasets: .datasets, sourceCount: .sourceCount } }"
+        model:
+          anthropic:
+            modelName: claude-sonnet-4-20250514
 
     - name: data-analyst
       description: "AI-powered statistical analysis and pattern extraction"
       capabilities:
         - analyseData
       agent:
-        model: anthropic
-        modelName: claude-sonnet-4-20250514
         systemPrompt: |
           You are a data analyst. Given research sources and a methodology,
           perform analysis, extract patterns, and compute confidence intervals.
           Return structured findings with statistical backing.
+        inputProjection: "{ sources: .sources, methodology: .methodology }"
+        outputProjection: "{ analysis: { findings: .findings, confidence: .confidence, methodology: .methodology } }"
+        model:
+          anthropic:
+            modelName: claude-sonnet-4-20250514
 
     - name: findings-synthesiser
       description: "AI-powered research synthesis and conclusion generation"
       capabilities:
         - synthesiseFindings
       agent:
-        model: anthropic
-        modelName: claude-sonnet-4-20250514
         systemPrompt: |
           You are a research synthesiser. Given analysis results and source
           materials, produce a coherent summary with evidence-backed conclusions
           and honest assessment of limitations.
+        inputProjection: "{ analysis: .analysis, sources: .sources, topic: .topic }"
+        outputProjection: "{ synthesis: { summary: .summary, conclusions: .conclusions, limitations: .limitations } }"
+        model:
+          anthropic:
+            modelName: claude-sonnet-4-20250514
 
   ## ─── Bindings ─────────────────────────────────────────────────────
   ## The LLM planner determines ordering. Bindings provide trigger

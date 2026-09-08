@@ -577,7 +577,7 @@ $defs:
       agentDescriptor:
         type: object
         additionalProperties: true
-    unevaluatedProperties: false
+    additionalProperties: true
     required:
     - name
     - capabilities
