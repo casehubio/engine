@@ -81,7 +81,7 @@ public class WorkerSchemaModule implements Module {
                 agentDescriptor.put("type", "object");
                 agentDescriptor.put("additionalProperties", true);
 
-                schema.put("unevaluatedProperties", false);
+                schema.put("additionalProperties", true);
                 schema.putArray("required").add("name").add("capabilities");
 
                 return new CustomDefinition(schema);
