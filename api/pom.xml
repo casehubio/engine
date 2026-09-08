@@ -192,6 +192,36 @@
                     </execution>
                 </executions>
             </plugin>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-enforcer-plugin</artifactId>
+                <dependencies>
+                    <dependency>
+                        <groupId>io.casehub</groupId>
+                        <artifactId>casehub-platform-drift-detection</artifactId>
+                        <version>${project.version}</version>
+                    </dependency>
+                </dependencies>
+                <executions>
+                    <execution>
+                        <id>detect-yaml-record-drift</id>
+                        <phase>process-classes</phase>
+                        <goals>
+                            <goal>enforce</goal>
+                        </goals>
+                        <configuration>
+                            <rules>
+                                <driftDetectionRule implementation="io.casehub.platform.drift.DriftDetectionRule">
+                                    <generatedSourcesDir>${project.build.directory}/generated-sources/yaml-records/io/casehub/api/model/converter/yaml</generatedSourcesDir>
+                                    <sourceRoot>${project.basedir}/src/main/java</sourceRoot>
+                                    <targetPackage>io.casehub.api.model.converter.yaml</targetPackage>
+                                    <allowListFile>${project.basedir}/src/main/resources/hand-written-exceptions.txt</allowListFile>
+                                </driftDetectionRule>
+                            </rules>
+                        </configuration>
+                    </execution>
+                </executions>
+            </plugin>
             <!-- Build test-jar to share contract tests with runtime and example modules -->
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
