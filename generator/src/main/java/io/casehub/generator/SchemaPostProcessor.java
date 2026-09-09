@@ -212,7 +212,9 @@ final class SchemaPostProcessor {
           "workerServiceAccountIds",
           "defaultQuorum",
           "humanTaskContextConstraints",
-          "humanTaskWorkloadConstraint");
+          "humanTaskWorkloadConstraint",
+          "maxConcurrentDispatches",
+          "watchdogPolicy");
 
   private static void cleanSpecProperties(ObjectNode schema) {
     ObjectNode defs = (ObjectNode) schema.get("$defs");
@@ -313,6 +315,23 @@ final class SchemaPostProcessor {
     wsai.put(
         "description",
         "Map of worker name to service account ID for tenant-specific endpoint resolution.");
+
+    ObjectNode mcd = specProps.putObject("maxConcurrentDispatches");
+    mcd.put("type", "integer");
+    mcd.put("description", "Maximum concurrent binding dispatches per case. Null means unlimited.");
+    mcd.put("minimum", 1);
+
+    ObjectNode wp = specProps.putObject("watchdogPolicy");
+    wp.put("type", "object");
+    wp.put(
+        "description",
+        "Per-condition watchdog response policy. Keys are WatchdogConditionType names,"
+            + " values are CANCEL_AFFECTED or IGNORE.");
+    wp.putObject("additionalProperties")
+        .put("type", "string")
+        .putArray("enum")
+        .add("CANCEL_AFFECTED")
+        .add("IGNORE");
   }
 
   private static void renameProperty(ObjectNode props, String oldName, String newName) {
