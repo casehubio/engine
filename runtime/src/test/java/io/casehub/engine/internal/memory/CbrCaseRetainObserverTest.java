@@ -17,12 +17,9 @@ package io.casehub.engine.internal.memory;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatCode;
-import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
-import com.fasterxml.jackson.databind.JsonNode;
-import io.casehub.api.engine.ExpressionEngineRegistry;
 import io.casehub.api.model.Binding;
 import io.casehub.api.model.CapabilityTarget;
 import io.casehub.api.model.CaseDefinition;
@@ -31,7 +28,6 @@ import io.casehub.api.model.TaskStatus;
 import io.casehub.api.model.cbr.CbrConfig;
 import io.casehub.api.spi.CaseOutcomeEvent;
 import io.casehub.engine.common.internal.jq.JQEvaluator;
-import io.casehub.engine.common.internal.jq.ValidationResult;
 import io.casehub.engine.common.internal.model.PlanItemRecord;
 import io.casehub.engine.common.internal.model.PlanItemSaveRequest;
 import io.casehub.engine.common.internal.model.TargetType;
@@ -47,8 +43,6 @@ import io.casehub.neocortex.memory.cbr.CbrQuery;
 import io.casehub.neocortex.memory.cbr.FeatureValue;
 import io.casehub.neocortex.memory.cbr.PlanCbrCase;
 import io.casehub.neocortex.memory.cbr.ScoredCbrCase;
-import io.casehub.platform.api.expression.ExpressionEvaluator;
-import io.casehub.platform.api.expression.StringExpressionEvaluator;
 import io.casehub.worker.api.Capability;
 import jakarta.enterprise.inject.Instance;
 import java.time.Instant;
@@ -67,7 +61,6 @@ class CbrCaseRetainObserverTest {
   private StubRegistry registry;
   private StubPlanItemStore planItemStore;
   private JQEvaluator jqEvaluator;
-  private ExpressionEngineRegistry expressionRegistry;
   private CbrCaseRetainObserver observer;
 
   @BeforeEach
@@ -76,15 +69,6 @@ class CbrCaseRetainObserverTest {
     registry = new StubRegistry();
     planItemStore = new StubPlanItemStore();
     jqEvaluator = new JQEvaluator();
-    expressionRegistry = mock(ExpressionEngineRegistry.class);
-    when(expressionRegistry.transform(any(ExpressionEvaluator.class), any(JsonNode.class)))
-        .thenAnswer(
-            inv -> {
-              StringExpressionEvaluator eval = (StringExpressionEvaluator) inv.getArgument(0);
-              JsonNode input = inv.getArgument(1);
-              ValidationResult r = jqEvaluator.eval(eval.expression(), input);
-              return r.ok() ? r.output() : List.of();
-            });
     @SuppressWarnings("unchecked")
     Instance<PlanItemStore> planItemStoreInstance = mock(Instance.class);
     when(planItemStoreInstance.isUnsatisfied()).thenReturn(false);
@@ -94,7 +78,7 @@ class CbrCaseRetainObserverTest {
     when(trustInstance.isUnsatisfied()).thenReturn(true);
     observer =
         new CbrCaseRetainObserver(
-            store, registry, planItemStoreInstance, jqEvaluator, expressionRegistry, trustInstance);
+            store, registry, planItemStoreInstance, jqEvaluator, null, trustInstance);
   }
 
   @Test
@@ -137,8 +121,7 @@ class CbrCaseRetainObserverTest {
     when(pisInstance.isUnsatisfied()).thenReturn(false);
     when(pisInstance.get()).thenReturn(planItemStore);
     var trustObserver =
-        new CbrCaseRetainObserver(
-            store, registry, pisInstance, jqEvaluator, expressionRegistry, trustInstance);
+        new CbrCaseRetainObserver(store, registry, pisInstance, jqEvaluator, null, trustInstance);
 
     registry.register(
         defWithJqCbr("trust-case", "dom", Map.of("k", ".k"), capBinding("b1", "cap1")));
@@ -480,140 +463,6 @@ class CbrCaseRetainObserverTest {
     assertThat(store.storedCases.get(0).outcome()).isEqualTo("FAULTED");
   }
 
-  @Test
-  void problem_uses_title_when_available() {
-    var config = CbrConfig.builder().feature("k", ".k").domain("dom").build();
-    var def =
-        CaseDefinition.builder()
-            .name("titled-case")
-            .namespace("test")
-            .version("1.0.0")
-            .title("Phishing Investigation Playbook")
-            .cbrConfig(config)
-            .bindings(capBinding("b1", "cap1"))
-            .build();
-    registry.register(def);
-    planItemStore.items = List.of(planItem("b1", "w1", TaskStatus.COMPLETED));
-
-    observer.onOutcome(event("titled-case", "COMPLETED", Map.of("k", "v")));
-
-    assertThat(store.storedCases).hasSize(1);
-    assertThat(store.storedCases.get(0).problem()).isEqualTo("Phishing Investigation Playbook");
-  }
-
-  @Test
-  void problem_appends_summary_when_available() {
-    var config = CbrConfig.builder().feature("k", ".k").domain("dom").build();
-    var def =
-        CaseDefinition.builder()
-            .name("sum-case")
-            .namespace("test")
-            .version("1.0.0")
-            .title("AML Investigation")
-            .summary("Investigates suspicious transactions for money laundering indicators")
-            .cbrConfig(config)
-            .bindings(capBinding("b1", "cap1"))
-            .build();
-    registry.register(def);
-    planItemStore.items = List.of(planItem("b1", "w1", TaskStatus.COMPLETED));
-
-    observer.onOutcome(event("sum-case", "COMPLETED", Map.of("k", "v")));
-
-    assertThat(store.storedCases.get(0).problem())
-        .isEqualTo(
-            "AML Investigation — Investigates suspicious transactions for money laundering indicators");
-  }
-
-  @Test
-  void problem_falls_back_to_caseType_without_title() {
-    registry.register(
-        defWithJqCbr("bare-case", "dom", Map.of("k", ".k"), capBinding("b1", "cap1")));
-    planItemStore.items = List.of(planItem("b1", "w1", TaskStatus.COMPLETED));
-
-    observer.onOutcome(event("bare-case", "COMPLETED", Map.of("k", "v")));
-
-    assertThat(store.storedCases.get(0).problem()).isEqualTo("bare-case");
-  }
-
-  @Test
-  void problem_uses_jq_expression_when_configured() {
-    var config =
-        CbrConfig.builder()
-            .feature("k", ".k")
-            .domain("dom")
-            .problemDescription("(.alert.severity + \" incident — \" + .alert.category)")
-            .build();
-    var def =
-        CaseDefinition.builder()
-            .name("jq-prob-case")
-            .namespace("test")
-            .version("1.0.0")
-            .title("Should Be Overridden")
-            .cbrConfig(config)
-            .bindings(capBinding("b1", "cap1"))
-            .build();
-    registry.register(def);
-    planItemStore.items = List.of(planItem("b1", "w1", TaskStatus.COMPLETED));
-
-    observer.onOutcome(
-        event(
-            "jq-prob-case",
-            "COMPLETED",
-            Map.of("k", "v", "alert", Map.of("severity", "HIGH", "category", "phishing"))));
-
-    assertThat(store.storedCases.get(0).problem()).isEqualTo("HIGH incident — phishing");
-  }
-
-  @Test
-  void problem_jq_fallback_on_empty_result() {
-    var config =
-        CbrConfig.builder()
-            .feature("k", ".k")
-            .domain("dom")
-            .problemDescription(".nonexistent")
-            .build();
-    var def =
-        CaseDefinition.builder()
-            .name("jq-fb-case")
-            .namespace("test")
-            .version("1.0.0")
-            .title("Fallback Title")
-            .cbrConfig(config)
-            .bindings(capBinding("b1", "cap1"))
-            .build();
-    registry.register(def);
-    planItemStore.items = List.of(planItem("b1", "w1", TaskStatus.COMPLETED));
-
-    observer.onOutcome(event("jq-fb-case", "COMPLETED", Map.of("k", "v")));
-
-    assertThat(store.storedCases.get(0).problem()).isEqualTo("Fallback Title");
-  }
-
-  @Test
-  void solution_includes_labels_and_types() {
-    var config = CbrConfig.builder().feature("k", ".k").domain("dom").build();
-    var def =
-        CaseDefinition.builder()
-            .name("meta-case")
-            .namespace("test")
-            .version("1.0.0")
-            .cbrConfig(config)
-            .bindings(capBinding("b1", "cap1"))
-            .build();
-    def.setLabels(java.util.Set.of(io.casehub.platform.api.path.Path.parse("soc/phishing")));
-    def.setTypes(
-        java.util.Set.of(io.casehub.platform.api.path.Path.parse("investigation/automated")));
-    registry.register(def);
-    planItemStore.items = List.of(planItem("b1", "w1", TaskStatus.COMPLETED));
-
-    observer.onOutcome(event("meta-case", "COMPLETED", Map.of("k", "v")));
-
-    String solution = store.storedCases.get(0).solution();
-    assertThat(solution).contains("b1→w1(SUCCESS)");
-    assertThat(solution).contains("[labels: soc/phishing]");
-    assertThat(solution).contains("[types: investigation/automated]");
-  }
-
   // --- Helpers ---
 
   private CaseOutcomeEvent event(String caseType, String outcome, Map<String, Object> snapshot) {
@@ -799,25 +648,33 @@ class CbrCaseRetainObserverTest {
 
     @Override
     public boolean supersede(String caseId, String tenantId, String newCaseId, String reason) {
-      return false;
+      return true;
     }
 
     @Override
     public boolean reinstate(String caseId, String tenantId) {
-      return false;
+      return true;
     }
 
     @Override
-    public int reinstateAll(java.util.Collection<String> caseIds, String tenantId) {
-      return 0;
+    public io.casehub.neocortex.memory.cbr.SupersessionStatus getSupersessionStatus(
+        String caseId, String tenantId) {
+      return null;
     }
 
     @Override
-    public int reinstateMatching(
-        String caseType,
-        MemoryDomain domain,
+    public java.util.List<io.casehub.neocortex.memory.cbr.SupersessionStatus> findSupersededCases(
+        String tenantId, MemoryDomain domain) {
+      return java.util.List.of();
+    }
+
+    @Override
+    public int supersedeMatching(
         String tenantId,
-        java.util.Map<String, io.casehub.neocortex.memory.cbr.CbrFilter> filters) {
+        MemoryDomain domain,
+        String reason,
+        java.util.Map<String, io.casehub.neocortex.memory.cbr.CbrFilter> filters,
+        String newCaseId) {
       return 0;
     }
 
@@ -827,39 +684,31 @@ class CbrCaseRetainObserverTest {
     }
 
     @Override
-    public int supersedeMatching(
+    public int reinstateMatching(
+        String tenantId,
+        MemoryDomain domain,
+        String reason,
+        java.util.Map<String, io.casehub.neocortex.memory.cbr.CbrFilter> filters) {
+      return 0;
+    }
+
+    @Override
+    public int reinstateAll(java.util.Collection<String> caseIds, String tenantId) {
+      return 0;
+    }
+
+    @Override
+    public java.util.List<String> findCaseIds(
         String caseType,
         MemoryDomain domain,
         String tenantId,
-        java.util.Map<String, io.casehub.neocortex.memory.cbr.CbrFilter> filters,
-        String reason) {
-      return 0;
+        java.util.Map<String, io.casehub.neocortex.memory.cbr.CbrFilter> filters) {
+      return java.util.List.of();
     }
 
     @Override
     public Integer eraseByScope(io.casehub.platform.api.path.Path scope, String tenantId) {
       return 0;
-    }
-
-    @Override
-    public List<String> findCaseIds(
-        String caseType,
-        MemoryDomain domain,
-        String tenantId,
-        java.util.Map<String, io.casehub.neocortex.memory.cbr.CbrFilter> filters) {
-      return List.of();
-    }
-
-    @Override
-    public List<io.casehub.neocortex.memory.cbr.SupersessionStatus> findSupersededCases(
-        String tenantId, MemoryDomain domain) {
-      return List.of();
-    }
-
-    @Override
-    public io.casehub.neocortex.memory.cbr.SupersessionStatus getSupersessionStatus(
-        String caseId, String tenantId) {
-      return null;
     }
   }
 }

@@ -242,7 +242,7 @@ class CbrRetrievalCachingTest {
             List.of(trace),
             null,
             null);
-    return new ScoredCbrCase<>(cbrCase, "test-case", 0.87);
+    return new ScoredCbrCase<>(cbrCase, "plan", 0.87);
   }
 
   /** Counting stub for CbrCaseMemoryStore — tracks invocation count. */
@@ -301,31 +301,18 @@ class CbrRetrievalCachingTest {
     }
 
     @Override
-    public boolean supersede(String caseId, String tenantId, String newCaseId, String reason) { return false; }
+    public boolean supersede(String caseId, String tenantId, String newCaseId, String reason) {
+      return true;
+    }
 
     @Override
-    public boolean reinstate(String caseId, String tenantId) { return false; }
-
-    @Override
-    public int reinstateAll(java.util.Collection<String> caseIds, String tenantId) { return 0; }
-
-    @Override
-    public int reinstateMatching(String caseType, io.casehub.neocortex.memory.MemoryDomain domain, String tenantId, java.util.Map<String, io.casehub.neocortex.memory.cbr.CbrFilter> filters) { return 0; }
-
-    @Override
-    public int supersedeAll(java.util.Collection<String> caseIds, String tenantId, String reason) { return 0; }
-
-    @Override
-    public int supersedeMatching(String caseType, io.casehub.neocortex.memory.MemoryDomain domain, String tenantId, java.util.Map<String, io.casehub.neocortex.memory.cbr.CbrFilter> filters, String reason) { return 0; }
+    public boolean reinstate(String caseId, String tenantId) {
+      return true;
+    }
 
     @Override
     public Integer eraseByScope(io.casehub.platform.api.path.Path scope, String tenantId) {
       return 0;
-    }
-
-    @Override
-    public java.util.List<String> findCaseIds(String caseType, io.casehub.neocortex.memory.MemoryDomain domain, String tenantId, java.util.Map<String, io.casehub.neocortex.memory.cbr.CbrFilter> filters) {
-      return java.util.List.of();
     }
 
     @Override
@@ -338,6 +325,44 @@ class CbrRetrievalCachingTest {
     public io.casehub.neocortex.memory.cbr.SupersessionStatus getSupersessionStatus(
         String caseId, String tenantId) {
       return null;
+    }
+
+    @Override
+    public java.util.List<String> findCaseIds(
+        String caseType,
+        io.casehub.neocortex.memory.MemoryDomain domain,
+        String tenantId,
+        java.util.Map<String, io.casehub.neocortex.memory.cbr.CbrFilter> filters) {
+      return java.util.List.of();
+    }
+
+    @Override
+    public int supersedeMatching(
+        String tenantId,
+        io.casehub.neocortex.memory.MemoryDomain domain,
+        String reason,
+        java.util.Map<String, io.casehub.neocortex.memory.cbr.CbrFilter> filters,
+        String newCaseId) {
+      return 0;
+    }
+
+    @Override
+    public int supersedeAll(java.util.Collection<String> caseIds, String tenantId, String reason) {
+      return 0;
+    }
+
+    @Override
+    public int reinstateMatching(
+        String tenantId,
+        io.casehub.neocortex.memory.MemoryDomain domain,
+        String reason,
+        java.util.Map<String, io.casehub.neocortex.memory.cbr.CbrFilter> filters) {
+      return 0;
+    }
+
+    @Override
+    public int reinstateAll(java.util.Collection<String> caseIds, String tenantId) {
+      return 0;
     }
   }
 }

@@ -306,6 +306,21 @@ public final class YamlCaseDefinitionConverter {
     if (spec.candidateMatching() != null) def.setCandidateMatching(spec.candidateMatching());
     if (spec.decompositionStrategy() != null)
       def.setDecompositionStrategy(spec.decompositionStrategy());
+    if (spec.maxConcurrentDispatches() != null)
+      def.setMaxConcurrentDispatches(spec.maxConcurrentDispatches());
+    if (spec.watchdogPolicy() != null && !spec.watchdogPolicy().isEmpty()) {
+      var policy =
+          new java.util.LinkedHashMap<
+              io.casehub.qhorus.api.watchdog.WatchdogConditionType,
+              io.casehub.api.model.WatchdogResponseAction>();
+      spec.watchdogPolicy()
+          .forEach(
+              (k, v) ->
+                  policy.put(
+                      io.casehub.qhorus.api.watchdog.WatchdogConditionType.valueOf(k),
+                      io.casehub.api.model.WatchdogResponseAction.valueOf(v)));
+      def.setWatchdogPolicy(policy);
+    }
     if (spec.maxDecompositionDepth() != null)
       def.setMaxDecompositionDepth(spec.maxDecompositionDepth());
     if (spec.maxAdaptations() != null) def.setMaxAdaptations(spec.maxAdaptations());
