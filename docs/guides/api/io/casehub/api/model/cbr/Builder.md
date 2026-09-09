@@ -22,7 +22,7 @@
 
 ### `minSimilarity` (`double`)
 
-### `problemDescription` (`java.lang.String`)
+### `problemDescription` (`ExpressionEvaluator`)
 
 ### `temporalDecayHalfLifeDays` (`java.lang.Integer`)
 
@@ -91,11 +91,17 @@
 
 - `minSimilarity` (`double`)
 
-### `public io.casehub.api.model.cbr.CbrConfig.Builder problemDescription(java.lang.String problemDescription)`
+### `public io.casehub.api.model.cbr.CbrConfig.Builder problemDescription(ExpressionEvaluator problemDescription)`
 
 #### Parameters
 
-- `problemDescription` (`java.lang.String`)
+- `problemDescription` (`ExpressionEvaluator`)
+
+### `public io.casehub.api.model.cbr.CbrConfig.Builder problemDescription(java.lang.String jqExpression)`
+
+#### Parameters
+
+- `jqExpression` (`java.lang.String`)
 
 ### `public io.casehub.api.model.cbr.CbrConfig.Builder temporalDecayHalfLifeDays(java.lang.Integer temporalDecayHalfLifeDays)`
 
