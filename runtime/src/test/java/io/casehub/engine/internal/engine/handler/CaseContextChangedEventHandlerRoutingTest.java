@@ -112,6 +112,10 @@ class CaseContextChangedEventHandlerRoutingTest {
 
   @Mock io.casehub.engine.internal.engine.QuiescenceTracker quiescenceTracker;
 
+  @Mock io.casehub.engine.internal.routing.SelectionContextStore selectionContextStore;
+  @Mock io.casehub.api.spi.DispatchBudget dispatchBudget;
+  @Mock io.casehub.engine.common.spi.PlanItemStore planItemStore;
+
   @InjectMocks CaseContextChangedEventHandler handler;
 
   private CaseInstance caseInstance;
@@ -189,6 +193,7 @@ class CaseContextChangedEventHandlerRoutingTest {
     when(loopControl.select(any(), any())).thenReturn(List.of(binding));
     when(traceIdProvider.currentTraceId()).thenReturn(java.util.Optional.empty());
     when(cbrRetrievalService.retrieve(any(), any())).thenReturn(List.of());
+    when(dispatchBudget.availableCapacity(any())).thenReturn(Integer.MAX_VALUE);
   }
 
   @Test

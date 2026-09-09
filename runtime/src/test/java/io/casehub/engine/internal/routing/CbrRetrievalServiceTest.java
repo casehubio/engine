@@ -392,7 +392,7 @@ class CbrRetrievalServiceTest {
             List.of(pt),
             null,
             null);
-    cbrStore.setResult(List.of(new ScoredCbrCase<>(planCase, "plan", 0.87)));
+    cbrStore.setResult(List.of(new ScoredCbrCase<>(planCase, "test-case", 0.87)));
 
     List<RetrievedExperience> result = service.retrieve(def, buildInstance());
 
@@ -421,7 +421,7 @@ class CbrRetrievalServiceTest {
             List.of(new PlanTrace("b1", "c1", "w1", "SUCCESS", 0, Map.of(), null)),
             null,
             null);
-    cbrStore.setResult(List.of(new ScoredCbrCase<>(planCase, "plan", 0.8)));
+    cbrStore.setResult(List.of(new ScoredCbrCase<>(planCase, "custom-type", 0.8)));
 
     service.retrieve(def, buildInstance());
 
