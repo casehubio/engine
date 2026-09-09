@@ -26,6 +26,13 @@ import io.casehub.engine.common.spi.CaseDefinitionRegistry;
 import io.casehub.engine.common.spi.PlanItemStore;
 import io.casehub.engine.common.spi.cache.CaseInstanceCache;
 import io.casehub.engine.common.spi.scheduler.WorkerExecutionManager;
+import io.casehub.qhorus.api.watchdog.AgentStaleContext;
+import io.casehub.qhorus.api.watchdog.AlertContext;
+import io.casehub.qhorus.api.watchdog.BarrierStuckContext;
+import io.casehub.qhorus.api.watchdog.CircularDelegationContext;
+import io.casehub.qhorus.api.watchdog.ConversationStallContext;
+import io.casehub.qhorus.api.watchdog.EchoChamberContext;
+import io.casehub.qhorus.api.watchdog.LoopDetectedContext;
 import io.casehub.qhorus.api.watchdog.WatchdogAlertEvent;
 import io.casehub.qhorus.api.watchdog.WatchdogConditionType;
 import io.casehub.worker.api.Worker;
@@ -61,22 +68,30 @@ public class WatchdogRecoveryBridge {
   @Inject WorkerExecutionManager executionManager;
 
   void onWatchdogAlert(@ObservesAsync WatchdogAlertEvent event) {
-    List<String> agentIds = event.context().affectedAgentIds();
+    List<String> agentIds = extractAffectedAgentIds(event.context());
     if (agentIds.isEmpty()) {
       LOG.debugf("Watchdog %s — no affected agents, skipping recovery", event.conditionType());
       return;
     }
 
-    if (event.caseId() != null) {
-      handleForCase(event, event.caseId(), agentIds);
-    } else {
-      for (String agentId : agentIds) {
-        List<UUID> caseIds = executionManager.getActiveCaseIds(agentId);
-        for (UUID caseId : caseIds) {
-          handleForCase(event, caseId, List.of(agentId));
-        }
+    for (String agentId : agentIds) {
+      List<UUID> caseIds = executionManager.getActiveCaseIds(agentId);
+      for (UUID caseId : caseIds) {
+        handleForCase(event, caseId, List.of(agentId));
       }
     }
+  }
+
+  private static List<String> extractAffectedAgentIds(AlertContext context) {
+    return switch (context) {
+      case AgentStaleContext c -> c.staleInstanceIds();
+      case LoopDetectedContext c -> List.of(c.sender());
+      case EchoChamberContext c -> c.participants();
+      case CircularDelegationContext c -> c.cycle();
+      case ConversationStallContext c -> c.correlationIds();
+      case BarrierStuckContext c -> c.missingContributors();
+      default -> List.of();
+    };
   }
 
   private void handleForCase(WatchdogAlertEvent event, UUID caseId, List<String> agentIds) {

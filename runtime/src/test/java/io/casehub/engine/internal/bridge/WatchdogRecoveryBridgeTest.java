@@ -85,7 +85,8 @@ class WatchdogRecoveryBridgeTest {
   }
 
   @Test
-  void agentStale_with_caseId_publishes_synthetic_expired() {
+  void agentStale_publishes_synthetic_expired() {
+    when(executionManager.getActiveCaseIds("worker-1")).thenReturn(List.of(caseId));
     when(planItemStore.findByCaseId(caseId, "tenant-1"))
         .thenReturn(List.of(planItem("worker-1", TaskStatus.RUNNING)));
 
@@ -96,8 +97,7 @@ class WatchdogRecoveryBridgeTest {
             "notif",
             "AGENT_STALE: stale",
             Instant.now(),
-            new AgentStaleContext(1, List.of("worker-1")),
-            caseId);
+            new AgentStaleContext(1, List.of("worker-1")));
 
     bridge.onWatchdogAlert(event);
 
@@ -137,8 +137,7 @@ class WatchdogRecoveryBridgeTest {
             "notif",
             "CHANNEL_IDLE: idle",
             Instant.now(),
-            new ChannelIdleContext(List.of(), 600),
-            caseId);
+            new ChannelIdleContext(List.of(), 600));
 
     bridge.onWatchdogAlert(event);
 
@@ -157,6 +156,7 @@ class WatchdogRecoveryBridgeTest {
             .build();
     when(definitionRegistry.getCaseDefinition(metaModel)).thenReturn(definition);
 
+    when(executionManager.getActiveCaseIds("worker-1")).thenReturn(List.of(caseId));
     when(planItemStore.findByCaseId(caseId, "tenant-1"))
         .thenReturn(List.of(planItem("worker-1", TaskStatus.RUNNING)));
 
@@ -167,8 +167,7 @@ class WatchdogRecoveryBridgeTest {
             "notif",
             "LOOP_DETECTED: loop",
             Instant.now(),
-            new LoopDetectedContext(UUID.randomUUID(), "ch-1", "worker-1", 5, 0.9),
-            caseId);
+            new LoopDetectedContext(UUID.randomUUID(), "ch-1", "worker-1", 5, 0.9));
 
     bridge.onWatchdogAlert(event);
 
@@ -177,6 +176,7 @@ class WatchdogRecoveryBridgeTest {
 
   @Test
   void terminal_planItem_skipped() {
+    when(executionManager.getActiveCaseIds("worker-1")).thenReturn(List.of(caseId));
     when(planItemStore.findByCaseId(caseId, "tenant-1"))
         .thenReturn(List.of(planItem("worker-1", TaskStatus.COMPLETED)));
 
@@ -187,8 +187,7 @@ class WatchdogRecoveryBridgeTest {
             "notif",
             "AGENT_STALE: stale",
             Instant.now(),
-            new AgentStaleContext(1, List.of("worker-1")),
-            caseId);
+            new AgentStaleContext(1, List.of("worker-1")));
 
     bridge.onWatchdogAlert(event);
 
@@ -197,6 +196,7 @@ class WatchdogRecoveryBridgeTest {
 
   @Test
   void no_matching_planItem_skips_silently() {
+    when(executionManager.getActiveCaseIds("unknown-worker")).thenReturn(List.of(caseId));
     when(planItemStore.findByCaseId(caseId, "tenant-1"))
         .thenReturn(List.of(planItem("other-worker", TaskStatus.RUNNING)));
 
@@ -207,8 +207,7 @@ class WatchdogRecoveryBridgeTest {
             "notif",
             "AGENT_STALE: stale",
             Instant.now(),
-            new AgentStaleContext(1, List.of("unknown-worker")),
-            caseId);
+            new AgentStaleContext(1, List.of("unknown-worker")));
 
     bridge.onWatchdogAlert(event);
 
@@ -224,8 +223,7 @@ class WatchdogRecoveryBridgeTest {
             "notif",
             "CHANNEL_IDLE: idle",
             Instant.now(),
-            new ChannelIdleContext(List.of("worker-1"), 600),
-            caseId);
+            new ChannelIdleContext(List.of("worker-1"), 600));
 
     bridge.onWatchdogAlert(event);
 
