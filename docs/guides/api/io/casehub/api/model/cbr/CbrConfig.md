@@ -20,7 +20,7 @@
 
 ### `minSimilarity` (`double`)
 
-### `problemDescription` (`java.lang.String`)
+### `problemDescription` (`ExpressionEvaluator`)
 
 ### `temporalDecayHalfLifeDays` (`java.lang.Integer`)
 
@@ -48,7 +48,7 @@
 
 ### `minSimilarity` (`double`)
 
-### `problemDescription` (`java.lang.String`)
+### `problemDescription` (`ExpressionEvaluator`)
 
 ### `temporalDecayHalfLifeDays` (`java.lang.Integer`)
 
@@ -62,7 +62,7 @@
 
 ## Constructors
 
-### `public CbrConfig(io.casehub.api.model.cbr.FeatureExtractor featureExtractor, int topK, double minSimilarity, java.util.Map<java.lang.String,java.lang.Double> weights, java.lang.String domain, java.lang.String caseType, double vectorWeight, io.casehub.api.model.cbr.CbrConfig.CbrRetrievalTiming timing, java.lang.String cbrType, java.lang.Integer temporalDecayHalfLifeDays, java.lang.Integer minCostSamples, boolean crossType, java.lang.String problemDescription)`
+### `public CbrConfig(io.casehub.api.model.cbr.FeatureExtractor featureExtractor, int topK, double minSimilarity, java.util.Map<java.lang.String,java.lang.Double> weights, java.lang.String domain, java.lang.String caseType, double vectorWeight, io.casehub.api.model.cbr.CbrConfig.CbrRetrievalTiming timing, java.lang.String cbrType, java.lang.Integer temporalDecayHalfLifeDays, java.lang.Integer minCostSamples, boolean crossType, ExpressionEvaluator problemDescription)`
 
 #### Parameters
 
@@ -78,7 +78,7 @@
 - `temporalDecayHalfLifeDays` (`java.lang.Integer`)
 - `minCostSamples` (`java.lang.Integer`)
 - `crossType` (`boolean`)
-- `problemDescription` (`java.lang.String`)
+- `problemDescription` (`ExpressionEvaluator`)
 
 ## Methods
 
@@ -106,7 +106,7 @@
 
 ### `public double minSimilarity()`
 
-### `public java.lang.String problemDescription()`
+### `public ExpressionEvaluator problemDescription()`
 
 ### `public java.lang.Integer temporalDecayHalfLifeDays()`
 

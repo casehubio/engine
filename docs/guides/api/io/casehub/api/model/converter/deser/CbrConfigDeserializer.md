@@ -22,3 +22,10 @@
 #### Parameters
 
 - `ctxt` (`DeserializationContext`)
+
+### `private ExpressionEvaluator resolveExpression(JsonNode node, DeserializationContext ctxt)`
+
+#### Parameters
+
+- `node` (`JsonNode`)
+- `ctxt` (`DeserializationContext`)

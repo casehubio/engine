@@ -74,6 +74,8 @@
 
 ### `maxAdaptations` (`java.lang.Integer`)
 
+### `maxConcurrentDispatches` (`java.lang.Integer`)
+
 ### `maxDecompositionDepth` (`java.lang.Integer`)
 
 ### `maxEscalations` (`java.lang.Integer`)
@@ -113,6 +115,8 @@
 ### `use` (`io.casehub.api.model.Use`)
 
 ### `version` (`java.lang.String`)
+
+### `watchdogPolicy` (`java.util.Map<io.casehub.qhorus.api.watchdog.WatchdogConditionType,io.casehub.api.model.WatchdogResponseAction>`)
 
 ### `workerServiceAccountIds` (`java.util.Map<java.lang.String,java.lang.String>`)
 
@@ -220,6 +224,8 @@
 
 ### `public java.lang.Integer getMaxAdaptations()`
 
+### `public java.lang.Integer getMaxConcurrentDispatches()`
+
 ### `public java.lang.Integer getMaxDecompositionDepth()`
 
 ### `public java.lang.Integer getMaxEscalations()`
@@ -259,6 +265,8 @@
 ### `public io.casehub.api.model.Use getUse()`
 
 ### `public java.lang.String getVersion()`
+
+### `public java.util.Map<io.casehub.qhorus.api.watchdog.WatchdogConditionType,io.casehub.api.model.WatchdogResponseAction> getWatchdogPolicy()`
 
 ### `public java.lang.String getWorkerServiceAccountId(java.lang.String workerName)`
 
@@ -458,6 +466,12 @@
 
 - `maxAdaptations` (`java.lang.Integer`)
 
+### `public void setMaxConcurrentDispatches(java.lang.Integer maxConcurrentDispatches)`
+
+#### Parameters
+
+- `maxConcurrentDispatches` (`java.lang.Integer`)
+
 ### `public void setMaxDecompositionDepth(java.lang.Integer maxDecompositionDepth)`
 
 #### Parameters
@@ -553,6 +567,12 @@
 #### Parameters
 
 - `use` (`io.casehub.api.model.Use`)
+
+### `public void setWatchdogPolicy(java.util.Map<io.casehub.qhorus.api.watchdog.WatchdogConditionType,io.casehub.api.model.WatchdogResponseAction> watchdogPolicy)`
+
+#### Parameters
+
+- `watchdogPolicy` (`java.util.Map<io.casehub.qhorus.api.watchdog.WatchdogConditionType,io.casehub.api.model.WatchdogResponseAction>`)
 
 ### `public void setWorkerServiceAccountIds(java.util.Map<java.lang.String,java.lang.String> workerServiceAccountIds)`
 
