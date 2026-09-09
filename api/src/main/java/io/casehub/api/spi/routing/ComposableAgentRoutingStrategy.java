@@ -13,16 +13,8 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.casehub.engine.internal.routing;
+package io.casehub.api.spi.routing;
 
-import io.casehub.api.spi.routing.AgentCandidate;
-import io.casehub.api.spi.routing.AgentRoutingContext;
-import io.casehub.api.spi.routing.AgentRoutingStrategy;
-import io.casehub.api.spi.routing.EscalationReason;
-import io.casehub.api.spi.routing.RoutingResult;
-import io.casehub.api.spi.routing.RoutingSelection;
-import io.casehub.api.spi.routing.RoutingSignal;
-import io.casehub.api.spi.routing.RoutingSignalAssembler;
 import io.quarkus.arc.DefaultBean;
 import io.quarkus.arc.Unremovable;
 import jakarta.enterprise.context.ApplicationScoped;
