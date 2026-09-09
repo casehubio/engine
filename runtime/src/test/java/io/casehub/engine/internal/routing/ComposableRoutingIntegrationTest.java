@@ -22,6 +22,7 @@ import io.casehub.api.model.CognitiveDemand;
 import io.casehub.api.spi.routing.AgentCandidate;
 import io.casehub.api.spi.routing.AgentHealth;
 import io.casehub.api.spi.routing.AgentRoutingContext;
+import io.casehub.api.spi.routing.ComposableAgentRoutingStrategy;
 import io.casehub.api.spi.routing.RoutingResult;
 import io.casehub.api.spi.routing.RoutingSignalAssembler;
 import io.casehub.api.spi.routing.RoutingSignalProvider;

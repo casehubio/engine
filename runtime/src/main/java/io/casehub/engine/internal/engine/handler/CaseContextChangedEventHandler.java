@@ -144,12 +144,9 @@ public class CaseContextChangedEventHandler {
   @Inject CaseEvaluationSerializer evaluationSerializer;
   @Inject QuiescenceTracker quiescenceTracker;
   @Inject ScopedWorkerRegistry scopedWorkerRegistry;
-<<<<<<< HEAD
   @Inject SelectionContextStore selectionContextStore;
-=======
   @Inject io.casehub.api.spi.DispatchBudget dispatchBudget;
   @Inject io.casehub.engine.common.spi.PlanItemStore planItemStore;
->>>>>>> c722d0be (feat(#1043,#1044): concurrency budget + watchdog→recovery bridge)
 
   @Inject Event<CaseContextUpdatedEvent> caseContextUpdatedEvents;
 
