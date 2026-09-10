@@ -278,6 +278,18 @@ Four operational SPIs. All ship with `@DefaultBean @ApplicationScoped` no-op def
 | `WorkerStatusListener` | Worker lifecycle callbacks: `started()`, `completed()`, `stalled()` |
 | `CaseChannelProvider` | Open/close/post to backend-agnostic channels. `postToChannel` takes a `MessageType` parameter from `casehub-qhorus-api` |
 | `WorkerContextProvider` | Build worker startup context from ledger lineage — includes prior worker summaries, causal chain metadata |
+| `DispatchBudget` | Session-level dispatch capacity. Engine queries `availableCapacity(DispatchBudgetQuery)` before dispatching bindings. `@DefaultBean` returns `MAX_VALUE` (unlimited). Implement to cap concurrent worker sessions (e.g. claudony's `ClaudonyDispatchBudget`). Advisory — `submit()` remains the hard gate |
+| `FailureClassifier` | Classify worker failure modes into `FailureCategory` (Transient, Knowledge, Infeasible). `@DefaultBean` uses heuristic pattern matching. Implement for domain-specific classification (e.g. devtown's `DevtownFailureClassifier` for PR review failure modes) |
+
+### Concurrency Budget (`CaseDefinition` config)
+
+`maxConcurrentDispatches` (nullable Integer) — caps concurrent binding dispatches per case. Set in YAML: `spec: { maxConcurrentDispatches: 5 }`. Engine counts RUNNING/DISPATCHING/DELEGATED PlanItems and admits at most `min(caseBudget, externalBudget)` bindings per CONTEXT_CHANGED cycle. Null = unlimited.
+
+### Watchdog Response Policy (`CaseDefinition` config)
+
+`watchdogPolicy` — per-condition response when qhorus watchdog fires. Three actions: `CANCEL_AFFECTED` (cancel hung workers → failure pipeline), `SIGNAL` (write to `.watchdogAlert` in case context → bindings react), `IGNORE` (no action). Defaults: worker-hung conditions (AGENT_STALE, LOOP_DETECTED, etc.) → CANCEL_AFFECTED; case-level conditions (QUEUE_DEPTH, CONTEXT_PRESSURE, etc.) → SIGNAL. YAML: `spec: { watchdogPolicy: { LOOP_DETECTED: IGNORE } }`.
+
+Case definitions bind automated interventions via JQ: `.watchdogAlert.conditionType == "QUEUE_DEPTH"`.
 
 ### AgentRoutingStrategy SPI (`api/spi/routing/`)
 
