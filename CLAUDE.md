@@ -1086,6 +1086,13 @@ Two-layer dispatch throttle: case-level cap (engine-internal) + external budget 
 
 **Per-condition response policy:** `CaseDefinition.watchdogPolicy` (`Map<WatchdogConditionType, WatchdogResponseAction>`, nullable). `WatchdogResponseAction`: `CANCEL_AFFECTED` (default for worker-hung) or `IGNORE` (default for case-level). YAML: `spec: { watchdogPolicy: { LOOP_DETECTED: IGNORE } }`. Refs engine#1044.
 
+## SubscribableEvent Implementations
+
+Engine events implementing `SubscribableEvent` (platform-api) for the unified notification pipeline:
+
+- `PathologyAlertEvent` (`api/model/`, type=`"pathology.alert"`) — agent-reported pathology conditions. Wraps conditionType, detail, caseId, from, timestamp. Refs parent#471.
+- `CaseLifecycleEvent` (`common/spi/event/`, type=`"case.lifecycle.<eventType>"`) — case state transitions (CaseStarted, CaseCompleted, etc.). 6+ internal CDI observers remain unchanged; this adds the subscription-matched notification path. Refs parent#471.
+
 ## ContextBridge Protocol (engine#203)
 
 `ContextBridge<T>` (`api/context/`) is the typed context protocol for worker input translation. `WorkerFunction<T, R>` carries `inputType(): Class<T>` and `outputType(): Class<R>` via the Reified Varargs Type Token pattern — `Worker.builder().<MyPojo>fn().returning(OutputPojo.class).apply((input, scope) -> ...)` captures runtime types despite erasure. Three-level DSL ceremony: Map→Map (no types, `Worker.builder().function(fn)`), T→Map (`fn().apply((input, scope) -> ...)`), T→R (`fn().returning(R.class).apply((input, scope) -> ...)`). Three built-in bridges: `MapBridge` (identity, `Map.class`), `JacksonPojoBridge<T>` (Jackson deserialisation to any POJO), `JsonNodeBridge` (raw `JsonNode`). `BridgeResolver` (`common/internal/context/`, `@ApplicationScoped`) resolves bridges via a priority chain: CaseDefinition default → CDI discovery → MapBridge fallback → JacksonPojoBridge auto-create. `BridgeResolver.resolveByType(Class<?>)` is the canonical resolution method; `resolveByTypeName(String)` delegates via `Class.forName()`. Pipeline integration: `WorkerScheduleEventHandler` calls `bridge.initialise()` + `bridge.serialise()` and writes `contextBridgeType` to EventLog metadata; `QuartzWorkerExecutionJob` reads `contextBridgeType` from metadata, calls `resolveByTypeName()` + `bridge.deserialise()` (or `initialise()` for live-view bridges), and calls `bridge.extractOutput()` for live-view output extraction. `WorkerFunctionHandler.execute()` and `WorkerExecutor.execute()` accept `Object inputData` (not `Map<String,Object>`). YAML support: `contextType:` on worker definitions creates typed `WorkerFunction.Sync<T>`. Refs engine#203.
