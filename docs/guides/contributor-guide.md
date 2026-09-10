@@ -108,6 +108,23 @@ WorkerScheduleEvent
       -> publish CONTEXT_CHANGED -> bindings re-evaluate
 ```
 
+### Concurrency Budget
+
+`CaseContextChangedEventHandler.applyDispatchBudget()` runs after `loopControl.select()`, before dispatch. Two layers:
+- **Case-level:** `CaseDefinition.maxConcurrentDispatches` → counts active PlanItems (RUNNING/DISPATCHING/DELEGATED) via `PlanItemStore`. No TOCTOU race — `CaseEvaluationSerializer` serializes per-case.
+- **External:** `DispatchBudget.availableCapacity()` SPI (engine-api). `NoOpDispatchBudget` (`@DefaultBean`) returns `MAX_VALUE`. Consumer implementations (e.g. claudony) check their session pool.
+
+Admitted = `min(selected.size(), caseBudget, externalBudget)`.
+
+### Watchdog→Recovery Bridge
+
+`WatchdogRecoveryBridge` (`runtime/internal/bridge/`) — `@ObservesAsync WatchdogAlertEvent` from qhorus CDI events. Three actions per `WatchdogResponseAction`:
+- **CANCEL_AFFECTED** (default for worker-hung: AGENT_STALE, BARRIER_STUCK, LOOP_DETECTED, CONVERSATION_STALL, ECHO_CHAMBER, CIRCULAR_DELEGATION) — resolves `affectedAgentIds()` → matching PlanItems → publishes synthetic `WorkflowExecutionCompleted(Expired)` on `WORKER_EXECUTION_FINISHED`. Existing failure pipeline handles retry/reroute/recovery.
+- **SIGNAL** (default for case-level: CONTEXT_PRESSURE, CHANNEL_IDLE, QUEUE_DEPTH, OBLIGATION_FAN_OUT, APPROVAL_PENDING, DELIVERY_LAG) — writes alert to `.watchdogAlert` in case context via `CaseHubRuntime.signal()`. Case-definition bindings react via JQ triggers.
+- **IGNORE** — no engine action.
+
+Per-condition policy configurable on `CaseDefinition.watchdogPolicy`.
+
 ### Worker Execution Manager Routing
 
 `WorkerExecutionRoutingStrategy` selects which `WorkerExecutionManager` backend handles a dispatch. The `@WorkerBackend` CDI qualifier distinguishes backend implementations from the composite manager. Default: `QuartzWorkerExecutionManager`.
