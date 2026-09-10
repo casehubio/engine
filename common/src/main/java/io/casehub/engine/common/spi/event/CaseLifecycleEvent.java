@@ -57,7 +57,14 @@ public record CaseLifecycleEvent(
     String namespace,
     JsonNode contextSnapshot,
     String satisfiedGoalName,
-    String satisfiedGoalKind) {
+    String satisfiedGoalKind) implements io.casehub.platform.api.subscription.SubscribableEvent {
+
+  public static final String EVENT_TYPE_PREFIX = "case.lifecycle.";
+
+  @Override
+  public String type() {
+    return EVENT_TYPE_PREFIX + (eventType != null ? eventType : "unknown");
+  }
 
   public static CaseLifecycleEvent of(
       CaseInstance caseInstance,
