@@ -66,19 +66,22 @@ public class WatchdogRecoveryBridge {
   @Inject CaseDefinitionRegistry definitionRegistry;
   @Inject PlanItemStore planItemStore;
   @Inject WorkerExecutionManager executionManager;
+  @Inject jakarta.enterprise.inject.Instance<io.casehub.api.engine.CaseHubRuntime> caseHubRuntime;
 
   void onWatchdogAlert(@ObservesAsync WatchdogAlertEvent event) {
     List<String> agentIds = extractAffectedAgentIds(event.context());
-    if (agentIds.isEmpty()) {
-      LOG.debugf("Watchdog %s — no affected agents, skipping recovery", event.conditionType());
-      return;
-    }
 
-    for (String agentId : agentIds) {
-      List<UUID> caseIds = executionManager.getActiveCaseIds(agentId);
-      for (UUID caseId : caseIds) {
-        handleForCase(event, caseId, List.of(agentId));
+    if (event.caseId() != null) {
+      handleForCase(event, event.caseId(), agentIds);
+    } else if (!agentIds.isEmpty()) {
+      for (String agentId : agentIds) {
+        List<UUID> caseIds = executionManager.getActiveCaseIds(agentId);
+        for (UUID caseId : caseIds) {
+          handleForCase(event, caseId, List.of(agentId));
+        }
       }
+    } else {
+      LOG.debugf("Watchdog %s — no caseId and no affected agents, skipping", event.conditionType());
     }
   }
 
@@ -107,6 +110,11 @@ public class WatchdogRecoveryBridge {
     WatchdogResponseAction action = resolveAction(event.conditionType(), definition);
     if (action == WatchdogResponseAction.IGNORE) {
       LOG.debugf("Watchdog %s on case %s — policy IGNORE", event.conditionType(), caseId);
+      return;
+    }
+
+    if (action == WatchdogResponseAction.SIGNAL) {
+      signalCaseContext(event, caseId, agentIds);
       return;
     }
 
@@ -141,7 +149,30 @@ public class WatchdogRecoveryBridge {
     }
     return WORKER_HUNG_CONDITIONS.contains(conditionType)
         ? WatchdogResponseAction.CANCEL_AFFECTED
-        : WatchdogResponseAction.IGNORE;
+        : WatchdogResponseAction.SIGNAL;
+  }
+
+  private void signalCaseContext(WatchdogAlertEvent event, UUID caseId, List<String> agentIds) {
+    if (!caseHubRuntime.isResolvable()) {
+      LOG.debugf("Watchdog SIGNAL skipped — CaseHubRuntime not available");
+      return;
+    }
+
+    Map<String, Object> alertPayload = new java.util.HashMap<>();
+    alertPayload.put("conditionType", event.conditionType().name());
+    alertPayload.put("summary", event.summary());
+    alertPayload.put("firedAt", event.firedAt().toString());
+    if (!agentIds.isEmpty()) {
+      alertPayload.put("affectedAgents", agentIds);
+    }
+
+    LOG.infof("Watchdog %s → context signal for case=%s", event.conditionType(), caseId);
+
+    try {
+      caseHubRuntime.get().signal(caseId, "watchdogAlert", alertPayload);
+    } catch (Exception e) {
+      LOG.warnf(e, "Failed to signal watchdog alert to case %s", caseId);
+    }
   }
 
   private Worker resolveWorker(CaseDefinition definition, String workerName) {
