@@ -70,6 +70,11 @@ public record ContextConstraint(ExpressionEvaluator condition, Effect effect, do
       return this;
     }
 
+    public Builder when(Predicate<CaseContext> predicate, String description) {
+      this.condition = new LambdaExpressionEvaluator(predicate, description);
+      return this;
+    }
+
     public Builder when(ExpressionEvaluator evaluator) {
       this.condition = evaluator;
       return this;

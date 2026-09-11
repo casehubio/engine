@@ -133,6 +133,13 @@ public class Goal {
       return this;
     }
 
+    public Builder condition(Predicate<CaseContext> predicate, String description) {
+      this.condition =
+          new LambdaExpressionEvaluator(
+              Objects.requireNonNull(predicate, "condition must not be null"), description);
+      return this;
+    }
+
     public Builder kind(String kind) {
       this.kind = kind;
       return this;

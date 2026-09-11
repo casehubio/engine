@@ -15,6 +15,7 @@
  */
 package io.casehub.api.model.evaluator;
 
+import com.fasterxml.jackson.annotation.JsonProperty;
 import io.casehub.api.context.CaseContext;
 import io.casehub.platform.api.expression.ExpressionEvaluator;
 import io.casehub.platform.api.expression.LambdaExpression;
@@ -24,20 +25,36 @@ import java.util.function.Predicate;
  * An {@link ExpressionEvaluator} backed by a Java lambda. Thin subclass of platform's {@link
  * LambdaExpression} that preserves the {@link Predicate}-based constructor for Java DSL users.
  *
- * <p>Not serialisable — use {@link JQExpressionEvaluator} for YAML-defined cases.
+ * <p>The lambda itself is not serialisable, but the optional {@code description} field provides a
+ * human-readable expression string for REST serialization and UI display. Use the two-arg
+ * constructor to attach a description. Without a description, the evaluator serializes with {@code
+ * "expression": null}.
  */
 public final class LambdaExpressionEvaluator extends LambdaExpression<CaseContext, Boolean>
     implements ExpressionEvaluator {
 
   public static final String TYPE = "lambda";
 
+  private final String description;
+
   public LambdaExpressionEvaluator(final Predicate<CaseContext> predicate) {
+    this(predicate, null);
+  }
+
+  public LambdaExpressionEvaluator(
+      final Predicate<CaseContext> predicate, final String description) {
     super(predicate::test);
+    this.description = description;
   }
 
   @Override
   public String type() {
     return TYPE;
+  }
+
+  @JsonProperty("expression")
+  public String expression() {
+    return description;
   }
 
   public boolean test(final CaseContext context) {
