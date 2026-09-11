@@ -16,7 +16,9 @@
 package io.casehub.api.model;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
+import io.casehub.api.context.CaseContext;
 import io.casehub.api.model.evaluator.JQExpressionEvaluator;
+import io.casehub.api.model.evaluator.LambdaExpressionEvaluator;
 import io.casehub.platform.api.acl.WorkerAction;
 import io.casehub.platform.api.expression.ExpressionEvaluator;
 import io.casehub.worker.api.Capability;
@@ -25,6 +27,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
+import java.util.function.Predicate;
 
 public class Binding {
 
@@ -366,6 +369,16 @@ public class Binding {
 
     public Builder when(String when) {
       this.when = new JQExpressionEvaluator(when);
+      return this;
+    }
+
+    public Builder when(Predicate<CaseContext> predicate) {
+      this.when = new LambdaExpressionEvaluator(predicate);
+      return this;
+    }
+
+    public Builder when(Predicate<CaseContext> predicate, String description) {
+      this.when = new LambdaExpressionEvaluator(predicate, description);
       return this;
     }
 
