@@ -16,24 +16,18 @@
 package io.casehub.resilience.poison;
 
 import io.casehub.api.spi.WorkerExecutionGuard;
-import jakarta.annotation.Priority;
-import jakarta.enterprise.context.ApplicationScoped;
-import jakarta.enterprise.inject.Alternative;
-import jakarta.inject.Inject;
 import java.util.UUID;
 
 /**
  * {@link WorkerExecutionGuard} that blocks workers quarantined by the {@link PoisonPillDetector}.
- *
- * <p>Active when {@code casehub-resilience} is on the classpath and selected as the CDI alternative
- * (via {@code quarkus.arc.selected-alternatives} in {@code application.properties}).
  */
-@Alternative
-@Priority(10)
-@ApplicationScoped
 public class PoisonPillWorkerExecutionGuard implements WorkerExecutionGuard {
 
-  @Inject PoisonPillDetector detector;
+  private final PoisonPillDetector detector;
+
+  public PoisonPillWorkerExecutionGuard(PoisonPillDetector detector) {
+    this.detector = detector;
+  }
 
   @Override
   public boolean isBlocked(String workerId, UUID caseId) {
