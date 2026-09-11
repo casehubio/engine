@@ -19,7 +19,6 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import io.casehub.api.model.Binding;
 import io.casehub.api.model.CaseDefinition;
-
 import io.casehub.api.spi.StepOutcomeEvent;
 import io.casehub.api.spi.StepOutcomeObserver;
 import io.casehub.api.spi.routing.RoutingOutcome;
@@ -90,7 +89,11 @@ class StepOutcomeObserverTest {
 
     handler.onWorkflowExecutionCompletedHandler(
         new WorkflowExecutionCompleted(
-            instance, worker, "idem-1", Map.of("action", "reduce"), "analyse",
+            instance,
+            worker,
+            "idem-1",
+            Map.of("action", "reduce"),
+            "analyse",
             WorkerOutcome.success()));
 
     assertThat(StepCapturingObserver.capturedEvents)
@@ -142,7 +145,11 @@ class StepOutcomeObserverTest {
 
     handler.onWorkflowExecutionCompletedHandler(
         new WorkflowExecutionCompleted(
-            instance, worker, "idem-2", null, "assess",
+            instance,
+            worker,
+            "idem-2",
+            null,
+            "assess",
             new WorkerOutcome.Declined<>("insufficient data")));
 
     assertThat(StepCapturingObserver.capturedEvents)
@@ -190,8 +197,7 @@ class StepOutcomeObserverTest {
     // Should not throw — exception is caught and logged
     handler.onWorkflowExecutionCompletedHandler(
         new WorkflowExecutionCompleted(
-            instance, worker, "idem-3", Map.of("ok", true), "check",
-            WorkerOutcome.success()));
+            instance, worker, "idem-3", Map.of("ok", true), "check", WorkerOutcome.success()));
   }
 
   @ApplicationScoped
