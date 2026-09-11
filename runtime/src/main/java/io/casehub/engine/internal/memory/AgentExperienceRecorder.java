@@ -15,6 +15,7 @@
  */
 package io.casehub.engine.internal.memory;
 
+import io.casehub.api.model.MemoryRetrievalConfig;
 import io.casehub.api.model.ReflectionTriggerConfig;
 import io.casehub.engine.common.internal.model.CaseInstance;
 import io.casehub.engine.common.spi.CaseDefinitionRegistry;
@@ -142,8 +143,7 @@ public class AgentExperienceRecorder {
       attributes.put("truncated", "true");
     }
 
-    ReflectionTriggerConfig config = lookupConfig(caseInstance);
-    double importance = resolveImportance(outcome, config);
+    double importance = resolveReasoningImportance(outcome, caseInstance);
 
     MemoryInput input =
         new MemoryInput(
@@ -211,6 +211,22 @@ public class AgentExperienceRecorder {
             : ReflectionTriggerConfig.DEFAULT_IMPORTANCE_WEIGHTS;
     String kind = outcomeKindName(outcome);
     return weights.getOrDefault(kind, 0.3);
+  }
+
+  private double resolveReasoningImportance(WorkerOutcome<?> outcome, CaseInstance caseInstance) {
+    try {
+      var def = caseDefinitionRegistry.getCaseDefinition(caseInstance.getCaseMetaModel());
+      if (def != null
+          && def.getMemoryRetrieval() != null
+          && !def.getMemoryRetrieval().importanceWeights().isEmpty()) {
+        String kind = outcomeKindName(outcome);
+        return def.getMemoryRetrieval().importanceWeights().getOrDefault(kind, 0.3);
+      }
+    } catch (Exception e) {
+      // fall through to defaults
+    }
+    String kind = outcomeKindName(outcome);
+    return MemoryRetrievalConfig.DEFAULT_REASONING_IMPORTANCE_WEIGHTS.getOrDefault(kind, 0.3);
   }
 
   private void evaluateReflectionTrigger(
