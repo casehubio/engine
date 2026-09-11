@@ -92,7 +92,7 @@ import java.util.function.Predicate;
 public class Milestone {
 
   private static final ExpressionEvaluator DEFAULT_ENTRY_CRITERIA =
-      new LambdaExpressionEvaluator(ctx -> true);
+      new LambdaExpressionEvaluator(ctx -> true, "true");
 
   @com.fasterxml.jackson.annotation.JsonPropertyDescription(
       "Unique milestone name within the definition.")
@@ -197,6 +197,13 @@ public class Milestone {
       return this;
     }
 
+    public Builder entryCriteria(Predicate<CaseContext> predicate, String description) {
+      this.entryCriteria =
+          new LambdaExpressionEvaluator(
+              Objects.requireNonNull(predicate, "entryCriteria must not be null"), description);
+      return this;
+    }
+
     public Builder completionCriteria(ExpressionEvaluator completionCriteria) {
       this.completionCriteria = completionCriteria;
       return this;
@@ -213,6 +220,14 @@ public class Milestone {
       this.completionCriteria =
           new LambdaExpressionEvaluator(
               Objects.requireNonNull(predicate, "completionCriteria must not be null"));
+      return this;
+    }
+
+    public Builder completionCriteria(Predicate<CaseContext> predicate, String description) {
+      this.completionCriteria =
+          new LambdaExpressionEvaluator(
+              Objects.requireNonNull(predicate, "completionCriteria must not be null"),
+              description);
       return this;
     }
 
