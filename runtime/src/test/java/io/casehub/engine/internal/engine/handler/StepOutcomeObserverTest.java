@@ -157,7 +157,7 @@ class StepOutcomeObserverTest {
         .isNotEmpty();
 
     StepOutcomeEvent event = StepCapturingObserver.capturedEvents.get(0);
-    assertThat(event.outcome()).isEqualTo(RoutingOutcome.FAILURE);
+    assertThat(event.outcome()).isEqualTo(RoutingOutcome.DECLINED);
     assertThat(event.contextSnapshot()).containsEntry("error_state", true);
   }
 

@@ -392,7 +392,8 @@ public class CbrRetrievalService {
           resultCaseType,
           io.casehub.api.spi.routing.ResolutionSourceType.RESOLUTION_GUIDE,
           guide.solution(),
-          docSteps);
+          docSteps,
+          scored.caseId());
     }
     List<ExperiencePlanStep> trace;
     if (c instanceof ResolvedCase) {
@@ -409,7 +410,11 @@ public class CbrRetrievalService {
         new LinkedHashMap<>(c.features()),
         trace,
         scored.featureSimilarities(),
-        resultCaseType);
+        resultCaseType,
+        io.casehub.api.spi.routing.ResolutionSourceType.PLAN_TRACE,
+        null,
+        null,
+        scored.caseId());
   }
 
   private List<ExperiencePlanStep> adaptAndMapPlanTrace(
