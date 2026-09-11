@@ -459,6 +459,19 @@ final class SchemaPostProcessor {
     ObjectNode domains = props.putObject("domains");
     domains.put("type", "array");
     domains.putObject("items").put("type", "string");
+    ObjectNode caseScopedDomains = props.putObject("caseScopedDomains");
+    caseScopedDomains.put("type", "array");
+    caseScopedDomains.putObject("items").put("type", "string");
+    ObjectNode maxCaseMemories = props.putObject("maxCaseMemories");
+    maxCaseMemories.put("type", "integer");
+    maxCaseMemories.put("minimum", 0);
+    ObjectNode importanceWeights = props.putObject("importanceWeights");
+    importanceWeights.put("type", "object");
+    importanceWeights.put(
+        "description",
+        "Per-outcome importance weights for the worker-reasoning domain."
+            + " Overrides ReflectionTriggerConfig defaults.");
+    importanceWeights.putObject("additionalProperties").put("type", "number");
     return n;
   }
 
@@ -706,6 +719,13 @@ final class SchemaPostProcessor {
       context.put("unevaluatedProperties", false);
       context.putObject("properties").putObject("storeFactory").put("type", "string");
     }
+    ObjectNode definitions = (ObjectNode) rootProps.get("definitions");
+    if (definitions != null && definitions.has("$ref")) {
+      definitions.removeAll();
+      definitions.put("type", "object");
+      definitions.put("description", "Inline definition namespace for definitionRef references.");
+      definitions.put("additionalProperties", true);
+    }
     ObjectNode semanticData = (ObjectNode) rootProps.get("semanticData");
     if (semanticData != null && semanticData.has("$ref")) {
       semanticData.removeAll();
@@ -786,8 +806,20 @@ final class SchemaPostProcessor {
       for (var fieldEntry : modelEntry.getValue().entrySet()) {
         ObjectNode field = (ObjectNode) props.get(fieldEntry.getKey());
         if (field != null) {
-          field.put("minimum", fieldEntry.getValue()[0]);
-          field.put("maximum", fieldEntry.getValue()[1]);
+          JsonNode oneOf = field.get("oneOf");
+          if (oneOf != null && oneOf.isArray()) {
+            for (JsonNode branch : oneOf) {
+              if (branch.isObject()
+                  && branch.has("type")
+                  && !"string".equals(branch.get("type").asText())) {
+                ((ObjectNode) branch).put("minimum", fieldEntry.getValue()[0]);
+                ((ObjectNode) branch).put("maximum", fieldEntry.getValue()[1]);
+              }
+            }
+          } else {
+            field.put("minimum", fieldEntry.getValue()[0]);
+            field.put("maximum", fieldEntry.getValue()[1]);
+          }
         }
       }
     }
@@ -1537,8 +1569,10 @@ final class SchemaPostProcessor {
             "OllamaModel", List.of("baseUrl", "modelName"));
     Set<String> stringFields =
         Set.of("apiKey", "modelName", "version", "organizationId", "baseUrl");
-    Set<String> numberFields = Set.of("temperature", "topP", "frequencyPenalty", "presencePenalty");
-    Set<String> intFields = Set.of("maxTokens", "topK");
+    Set<String> numberFields = Set.of("topP", "frequencyPenalty", "presencePenalty");
+    Set<String> intFields = Set.of("topK");
+    Set<String> stringOrNumberFields = Set.of("temperature");
+    Set<String> stringOrIntFields = Set.of("maxTokens");
     for (var entry : providers.entrySet()) {
       ObjectNode n = newObject();
       n.put("type", "object");
@@ -1555,6 +1589,14 @@ final class SchemaPostProcessor {
         } else if (intFields.contains(field)) {
           prop.put("type", "integer");
           prop.put("minimum", 1);
+        } else if (stringOrNumberFields.contains(field)) {
+          ArrayNode oneOf = prop.putArray("oneOf");
+          oneOf.addObject().put("type", "number");
+          oneOf.addObject().put("type", "string");
+        } else if (stringOrIntFields.contains(field)) {
+          ArrayNode oneOf = prop.putArray("oneOf");
+          oneOf.addObject().put("type", "integer");
+          oneOf.addObject().put("type", "string");
         }
       }
       defs.set(entry.getKey(), n);

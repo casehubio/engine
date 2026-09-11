@@ -801,14 +801,8 @@ $defs:
           \ 5."
       maxConcurrentDispatches:
         type: integer
-        description: "Maximum concurrent binding dispatches per case. Null means unlimited."
+        description: Maximum concurrent binding dispatches per case. Null means unlimited.
         minimum: 1
-      watchdogPolicy:
-        type: object
-        description: "Per-condition watchdog response policy. Keys are WatchdogConditionType names, values are CANCEL_AFFECTED or IGNORE."
-        additionalProperties:
-          type: string
-          enum: [CANCEL_AFFECTED, IGNORE]
       maxDecompositionDepth:
         type: integer
         description: "Maximum nesting depth for dynamic decomposition. Default: 3."
@@ -829,10 +823,17 @@ $defs:
             type: array
             items:
               type: string
+          caseScopedDomains:
+            type: array
+            items:
+              type: string
+          maxCaseMemories:
+            type: integer
+            minimum: 0
           importanceWeights:
             type: object
-            description: Per-outcome importance weights for the worker-reasoning
-              domain. Overrides ReflectionTriggerConfig defaults.
+            description: Per-outcome importance weights for the worker-reasoning domain.
+              Overrides ReflectionTriggerConfig defaults.
             additionalProperties:
               type: number
       milestones:
@@ -902,6 +903,15 @@ $defs:
         type: object
         additionalProperties:
           type: number
+      watchdogPolicy:
+        type: object
+        description: "Per-condition watchdog response policy. Keys are WatchdogConditionType\
+          \ names, values are CANCEL_AFFECTED or IGNORE."
+        additionalProperties:
+          type: string
+          enum:
+          - CANCEL_AFFECTED
+          - IGNORE
       workerServiceAccountIds:
         type: object
         additionalProperties:
@@ -1298,31 +1308,6 @@ $defs:
         - none
       tokenConfigKey:
         type: string
-  OllamaModel:
-    type: object
-    unevaluatedProperties: false
-    required:
-    - baseUrl
-    - modelName
-    properties:
-      baseUrl:
-        type: string
-      modelName:
-        type: string
-      temperature:
-        type: number
-        minimum: 0.0
-        maximum: 2.0
-      maxTokens:
-        type: integer
-        minimum: 1
-      topP:
-        type: number
-        minimum: 0.0
-        maximum: 1.0
-      topK:
-        type: integer
-        minimum: 1
   MistralAiModel:
     type: object
     unevaluatedProperties: false
@@ -1334,12 +1319,15 @@ $defs:
       modelName:
         type: string
       temperature:
-        type: number
-        minimum: 0.0
-        maximum: 1.0
+        oneOf:
+        - type: number
+          minimum: 0.0
+          maximum: 1.0
+        - type: string
       maxTokens:
-        type: integer
-        minimum: 1
+        oneOf:
+        - type: integer
+        - type: string
       topP:
         type: number
         minimum: 0.0
@@ -1357,12 +1345,15 @@ $defs:
       modelName:
         type: string
       temperature:
-        type: number
-        minimum: 0.0
-        maximum: 1.0
+        oneOf:
+        - type: number
+          minimum: 0.0
+          maximum: 1.0
+        - type: string
       maxTokens:
-        type: integer
-        minimum: 1
+        oneOf:
+        - type: integer
+        - type: string
       topP:
         type: number
         minimum: 0.0
@@ -1389,7 +1380,6 @@ $defs:
       maxTokens:
         oneOf:
         - type: integer
-          minimum: 1
         - type: string
       topP:
         type: number
@@ -1420,12 +1410,15 @@ $defs:
       version:
         type: string
       temperature:
-        type: number
-        minimum: 0.0
-        maximum: 1.0
+        oneOf:
+        - type: number
+          minimum: 0.0
+          maximum: 1.0
+        - type: string
       maxTokens:
-        type: integer
-        minimum: 1
+        oneOf:
+        - type: integer
+        - type: string
       topP:
         type: number
         minimum: 0.0
@@ -1435,12 +1428,44 @@ $defs:
         minimum: 1
       baseUrl:
         type: string
+  OllamaModel:
+    type: object
+    unevaluatedProperties: false
+    required:
+    - baseUrl
+    - modelName
+    properties:
+      baseUrl:
+        type: string
+      modelName:
+        type: string
+      temperature:
+        oneOf:
+        - type: number
+          minimum: 0.0
+          maximum: 2.0
+        - type: string
+      maxTokens:
+        oneOf:
+        - type: integer
+        - type: string
+      topP:
+        type: number
+        minimum: 0.0
+        maximum: 1.0
+      topK:
+        type: integer
+        minimum: 1
 type: object
 properties:
   contextType:
     type: string
     description: "Fully qualified class name for the typed context bridge. Enables\
       \ typed POJO context instead of Map<String, Object>."
+  definitions:
+    type: object
+    description: Inline definition namespace for definitionRef references.
+    additionalProperties: true
   dsl:
     type: string
     description: The version of the DSL used by the CaseHub.
@@ -1575,10 +1600,6 @@ properties:
     properties:
       storeFactory:
         type: string
-  definitions:
-    type: object
-    description: Inline definition namespace for definitionRef references.
-    additionalProperties: true
 unevaluatedProperties: false
 required:
 - dsl
