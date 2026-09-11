@@ -372,6 +372,7 @@ types:
       - { name: enabled, type: Boolean }
       - { name: maxMemories, type: Integer }
       - { name: domains, type: "Set<String>" }
+      - { name: importanceWeights, type: "Map<String, Double>" }
 
   YamlMonitoringConfig:
     record: YamlMonitoringConfig

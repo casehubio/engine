@@ -829,6 +829,12 @@ $defs:
             type: array
             items:
               type: string
+          importanceWeights:
+            type: object
+            description: Per-outcome importance weights for the worker-reasoning
+              domain. Overrides ReflectionTriggerConfig defaults.
+            additionalProperties:
+              type: number
       milestones:
         description: Observable progress markers derived from CaseContext.
         type: array

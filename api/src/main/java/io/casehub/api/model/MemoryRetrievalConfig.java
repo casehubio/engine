@@ -15,6 +15,9 @@
  */
 package io.casehub.api.model;
 
+import java.util.Collections;
+import java.util.LinkedHashMap;
+import java.util.Map;
 import java.util.Set;
 
 public record MemoryRetrievalConfig(
@@ -22,7 +25,11 @@ public record MemoryRetrievalConfig(
     int maxMemories,
     Set<String> domains,
     Set<String> caseScopedDomains,
-    int maxCaseMemories) {
+    int maxCaseMemories,
+    Map<String, Double> importanceWeights) {
+
+  public static final Map<String, Double> DEFAULT_REASONING_IMPORTANCE_WEIGHTS =
+      Map.of("SUCCESS", 0.7, "COMPLETED", 0.7, "DECLINED", 0.6, "FAILED", 0.8, "EXPIRED", 0.5);
 
   public MemoryRetrievalConfig {
     if (maxMemories < 1) {
@@ -33,17 +40,36 @@ public record MemoryRetrievalConfig(
     if (maxCaseMemories < 0) {
       throw new IllegalArgumentException("maxCaseMemories must be >= 0");
     }
+    importanceWeights =
+        importanceWeights == null
+            ? Map.of()
+            : Collections.unmodifiableMap(new LinkedHashMap<>(importanceWeights));
   }
 
   public boolean isCaseScopedRetrievalEffectivelyDisabled() {
     return !caseScopedDomains.isEmpty() && maxCaseMemories == 0;
   }
 
+  public MemoryRetrievalConfig(
+      boolean enabled,
+      int maxMemories,
+      Set<String> domains,
+      Set<String> caseScopedDomains,
+      int maxCaseMemories) {
+    this(enabled, maxMemories, domains, caseScopedDomains, maxCaseMemories, Map.of());
+  }
+
   public MemoryRetrievalConfig(boolean enabled, int maxMemories, Set<String> domains) {
-    this(enabled, maxMemories, domains, Set.of(), 0);
+    this(enabled, maxMemories, domains, Set.of(), 0, Map.of());
   }
 
   public static MemoryRetrievalConfig defaults() {
-    return new MemoryRetrievalConfig(false, 10, Set.of("experience", "reflection"), Set.of(), 0);
+    return new MemoryRetrievalConfig(
+        false,
+        10,
+        Set.of("experience", "reflection"),
+        Set.of(),
+        0,
+        DEFAULT_REASONING_IMPORTANCE_WEIGHTS);
   }
 }
