@@ -450,6 +450,7 @@ public class WorkflowExecutionCompletedHandler {
     final String reason;
     final OutcomeAction action;
     final CaseHubEventType eventType;
+    final io.casehub.api.spi.routing.RoutingOutcome routingOutcome;
 
     switch (event.outcome()) {
       case WorkerOutcome.Declined d -> {
@@ -457,18 +458,21 @@ public class WorkflowExecutionCompletedHandler {
         reason = d.reason();
         action = policy.onDecline();
         eventType = CaseHubEventType.WORKER_OUTCOME_DECLINED;
+        routingOutcome = io.casehub.api.spi.routing.RoutingOutcome.DECLINED;
       }
       case WorkerOutcome.Failed f -> {
         outcomeStatus = "FAILED";
         reason = f.reason();
         action = policy.onFailure();
         eventType = CaseHubEventType.WORKER_OUTCOME_FAILED;
+        routingOutcome = io.casehub.api.spi.routing.RoutingOutcome.FAILURE;
       }
       case WorkerOutcome.Expired e -> {
         outcomeStatus = "EXPIRED";
         reason = e.reason();
         action = policy.onExpired();
         eventType = CaseHubEventType.WORKER_OUTCOME_EXPIRED;
+        routingOutcome = io.casehub.api.spi.routing.RoutingOutcome.FAILURE;
       }
       case WorkerOutcome.Success s ->
           throw new IllegalStateException("Success should not reach handleSemanticFailure");
@@ -480,13 +484,13 @@ public class WorkflowExecutionCompletedHandler {
         caseInstance,
         worker,
         bindingName,
-        io.casehub.api.spi.routing.RoutingOutcome.FAILURE,
+        routingOutcome,
         caseInstance.getCaseContext().snapshot().asJsonNode());
     fireStepOutcomeObserver(
         caseInstance,
         worker,
         bindingName,
-        io.casehub.api.spi.routing.RoutingOutcome.FAILURE,
+        routingOutcome,
         OBJECT_MAPPER.convertValue(
             caseInstance.getCaseContext().layer(ContextLayer.WORKING).asJsonNode(), MAP_TYPE),
         extractDurationMs(event));
@@ -1084,27 +1088,28 @@ public class WorkflowExecutionCompletedHandler {
     String capabilityName = extractCapabilityTag(caseInstance, worker, bindingName);
     java.time.Duration duration =
         executionDurationMs != null ? java.time.Duration.ofMillis(executionDurationMs) : null;
-    try {
-      stepOutcomeObserver
-          .get()
-          .onStepOutcome(
-              new io.casehub.api.spi.StepOutcomeEvent(
-                  caseInstance.getUuid(),
-                  caseInstance.tenancyId,
-                  caseInstance.getCaseMetaModel().getName(),
-                  bindingName,
-                  capabilityName,
-                  worker.name(),
-                  outcome,
-                  contextSnapshot,
-                  duration));
-    } catch (Exception err) {
-      LOG.warnf(
-          err,
-          "Step outcome observation failed for caseId=%s worker=%s binding=%s",
-          caseInstance.getUuid(),
-          worker.name(),
-          bindingName);
+    var event =
+        new io.casehub.api.spi.StepOutcomeEvent(
+            caseInstance.getUuid(),
+            caseInstance.tenancyId,
+            caseInstance.getCaseMetaModel().getName(),
+            bindingName,
+            capabilityName,
+            worker.name(),
+            outcome,
+            contextSnapshot,
+            duration);
+    for (io.casehub.api.spi.StepOutcomeObserver observer : stepOutcomeObserver) {
+      try {
+        observer.onStepOutcome(event);
+      } catch (Exception err) {
+        LOG.warnf(
+            err,
+            "Step outcome observation failed for caseId=%s worker=%s binding=%s",
+            caseInstance.getUuid(),
+            worker.name(),
+            bindingName);
+      }
     }
   }
 }

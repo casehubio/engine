@@ -41,6 +41,8 @@ import java.util.Objects;
  *     results)
  * @param documentSteps structured steps from a ResolutionGuide (nullable — null for plan trace
  *     results)
+ * @param caseId the CBR case store ID for this experience (nullable — null when unavailable or for
+ *     backward compatibility)
  */
 public record RetrievedExperience(
     String problem,
@@ -54,7 +56,8 @@ public record RetrievedExperience(
     String caseType,
     ResolutionSourceType sourceType,
     @Nullable String documentContent,
-    @Nullable List<DocumentStep> documentSteps) {
+    @Nullable List<DocumentStep> documentSteps,
+    @Nullable String caseId) {
 
   public RetrievedExperience(
       String problem,
@@ -76,6 +79,7 @@ public record RetrievedExperience(
         featureSimilarities,
         null,
         ResolutionSourceType.PLAN_TRACE,
+        null,
         null,
         null);
   }
@@ -102,6 +106,36 @@ public record RetrievedExperience(
         caseType,
         ResolutionSourceType.PLAN_TRACE,
         null,
+        null,
+        null);
+  }
+
+  public RetrievedExperience(
+      String problem,
+      String solution,
+      String outcome,
+      Double confidence,
+      double similarityScore,
+      Map<String, Object> features,
+      List<ExperiencePlanStep> planTrace,
+      Map<String, Double> featureSimilarities,
+      String caseType,
+      ResolutionSourceType sourceType,
+      @Nullable String documentContent,
+      @Nullable List<DocumentStep> documentSteps) {
+    this(
+        problem,
+        solution,
+        outcome,
+        confidence,
+        similarityScore,
+        features,
+        planTrace,
+        featureSimilarities,
+        caseType,
+        sourceType,
+        documentContent,
+        documentSteps,
         null);
   }
 
