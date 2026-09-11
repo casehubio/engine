@@ -41,7 +41,7 @@ import io.casehub.neocortex.memory.cbr.CbrCaseMemoryStore;
 import io.casehub.neocortex.memory.cbr.CbrFeatureSchema;
 import io.casehub.neocortex.memory.cbr.CbrQuery;
 import io.casehub.neocortex.memory.cbr.FeatureValue;
-import io.casehub.neocortex.memory.cbr.PlanCbrCase;
+import io.casehub.neocortex.memory.cbr.ResolvedCase;
 import io.casehub.neocortex.memory.cbr.ScoredCbrCase;
 import io.casehub.worker.api.Capability;
 import jakarta.enterprise.inject.Instance;
@@ -95,15 +95,15 @@ class CbrCaseRetainObserverTest {
         event("test-case", "COMPLETED", Map.of("transaction", Map.of("amount", 50000))));
 
     assertThat(store.storedCases).hasSize(1);
-    PlanCbrCase stored = store.storedCases.get(0);
+    ResolvedCase stored = store.storedCases.get(0);
     assertThat(stored.problem()).isEqualTo("test-case");
     assertThat(stored.outcome()).isEqualTo("COMPLETED");
     assertThat(stored.features()).containsEntry("amount", FeatureValue.number(50000));
-    assertThat(stored.planTrace()).hasSize(1);
-    assertThat(stored.planTrace().get(0).bindingName()).isEqualTo("assess-risk");
-    assertThat(stored.planTrace().get(0).capabilityName()).isEqualTo("risk-assessment");
-    assertThat(stored.planTrace().get(0).workerName()).isEqualTo("worker-1");
-    assertThat(stored.planTrace().get(0).stepOutcome()).isEqualTo("SUCCESS");
+    assertThat(stored.resolutionStep()).hasSize(1);
+    assertThat(stored.resolutionStep().get(0).bindingName()).isEqualTo("assess-risk");
+    assertThat(stored.resolutionStep().get(0).capabilityName()).isEqualTo("risk-assessment");
+    assertThat(stored.resolutionStep().get(0).workerName()).isEqualTo("worker-1");
+    assertThat(stored.resolutionStep().get(0).stepOutcome()).isEqualTo("SUCCESS");
     assertThat(stored.producerAgentId()).isEqualTo("worker-1");
     assertThat(stored.trustScore()).isNull();
   }
@@ -130,7 +130,7 @@ class CbrCaseRetainObserverTest {
     trustObserver.onOutcome(event("trust-case", "COMPLETED", Map.of("k", "v")));
 
     assertThat(store.storedCases).hasSize(1);
-    PlanCbrCase stored = store.storedCases.get(0);
+    ResolvedCase stored = store.storedCases.get(0);
     assertThat(stored.producerAgentId()).isEqualTo("worker-1");
     assertThat(stored.trustScore()).isEqualTo(0.92);
   }
@@ -235,11 +235,12 @@ class CbrCaseRetainObserverTest {
     observer.onOutcome(event("f-case", "COMPLETED", Map.of("k", "v")));
 
     assertThat(store.storedCases).hasSize(1);
-    assertThat(store.storedCases.get(0).planTrace()).hasSize(2);
-    assertThat(store.storedCases.get(0).planTrace().get(0).bindingName()).isEqualTo("cap-bind");
-    assertThat(store.storedCases.get(0).planTrace().get(0).capabilityName()).isEqualTo("cap1");
-    assertThat(store.storedCases.get(0).planTrace().get(1).bindingName()).isEqualTo("ht-bind");
-    assertThat(store.storedCases.get(0).planTrace().get(1).capabilityName()).isNull();
+    assertThat(store.storedCases.get(0).resolutionStep()).hasSize(2);
+    assertThat(store.storedCases.get(0).resolutionStep().get(0).bindingName())
+        .isEqualTo("cap-bind");
+    assertThat(store.storedCases.get(0).resolutionStep().get(0).capabilityName()).isEqualTo("cap1");
+    assertThat(store.storedCases.get(0).resolutionStep().get(1).bindingName()).isEqualTo("ht-bind");
+    assertThat(store.storedCases.get(0).resolutionStep().get(1).capabilityName()).isNull();
   }
 
   @Test
@@ -257,8 +258,8 @@ class CbrCaseRetainObserverTest {
 
     observer.onOutcome(event("nt-case", "COMPLETED", Map.of("k", "v")));
 
-    assertThat(store.storedCases.get(0).planTrace()).hasSize(1);
-    assertThat(store.storedCases.get(0).planTrace().get(0).bindingName()).isEqualTo("b1");
+    assertThat(store.storedCases.get(0).resolutionStep()).hasSize(1);
+    assertThat(store.storedCases.get(0).resolutionStep().get(0).bindingName()).isEqualTo("b1");
   }
 
   @Test
@@ -276,7 +277,7 @@ class CbrCaseRetainObserverTest {
 
     observer.onOutcome(event("ne-case", "CANCELLED", Map.of("k", "v")));
 
-    assertThat(store.storedCases.get(0).planTrace()).hasSize(1);
+    assertThat(store.storedCases.get(0).resolutionStep()).hasSize(1);
   }
 
   @Test
@@ -301,7 +302,7 @@ class CbrCaseRetainObserverTest {
 
     observer.onOutcome(event("os-case", "FAULTED", Map.of("k", "v")));
 
-    var traces = store.storedCases.get(0).planTrace();
+    var traces = store.storedCases.get(0).resolutionStep();
     assertThat(traces)
         .extracting("stepOutcome")
         .containsExactly("SUCCESS", "FAILURE", "DECLINED", "CANCELLED", "OBSOLETE");
@@ -347,7 +348,7 @@ class CbrCaseRetainObserverTest {
 
     observer.onOutcome(event("pri-case", "COMPLETED", Map.of("k", "v")));
 
-    var traces = store.storedCases.get(0).planTrace();
+    var traces = store.storedCases.get(0).resolutionStep();
     assertThat(traces).hasSize(3);
     assertThat(traces.get(0).bindingName()).isEqualTo("first");
     assertThat(traces.get(0).priority()).isEqualTo(0);
@@ -367,7 +368,7 @@ class CbrCaseRetainObserverTest {
 
     observer.onOutcome(event("single-case", "COMPLETED", Map.of("k", "v")));
 
-    var traces = store.storedCases.get(0).planTrace();
+    var traces = store.storedCases.get(0).resolutionStep();
     assertThat(traces).hasSize(1);
     assertThat(traces.get(0).priority()).isEqualTo(0);
   }
@@ -391,7 +392,7 @@ class CbrCaseRetainObserverTest {
 
     observer.onOutcome(event("gap-case", "COMPLETED", Map.of("k", "v")));
 
-    var traces = store.storedCases.get(0).planTrace();
+    var traces = store.storedCases.get(0).resolutionStep();
     assertThat(traces).hasSize(2);
     assertThat(traces.get(0).priority()).isEqualTo(0);
     assertThat(traces.get(1).priority()).isEqualTo(1);
@@ -593,7 +594,7 @@ class CbrCaseRetainObserverTest {
   }
 
   static class RecordingCbrStore implements CbrCaseMemoryStore {
-    final List<PlanCbrCase> storedCases = new ArrayList<>();
+    final List<ResolvedCase> storedCases = new ArrayList<>();
     String lastCaseType, lastEntityId, lastTenantId, lastCaseId;
     MemoryDomain lastDomain;
     RuntimeException throwOnStore;
@@ -610,7 +611,7 @@ class CbrCaseRetainObserverTest {
       if (throwOnStore != null) {
         throw throwOnStore;
       }
-      storedCases.add((PlanCbrCase) c);
+      storedCases.add((ResolvedCase) c);
       lastCaseType = ct;
       lastEntityId = eid;
       lastDomain = d;
