@@ -1375,12 +1375,16 @@ $defs:
       modelName:
         type: string
       temperature:
-        type: number
-        minimum: 0.0
-        maximum: 2.0
+        oneOf:
+        - type: number
+          minimum: 0.0
+          maximum: 2.0
+        - type: string
       maxTokens:
-        type: integer
-        minimum: 1
+        oneOf:
+        - type: integer
+          minimum: 1
+        - type: string
       topP:
         type: number
         minimum: 0.0
@@ -1565,6 +1569,10 @@ properties:
     properties:
       storeFactory:
         type: string
+  definitions:
+    type: object
+    description: Inline definition namespace for definitionRef references.
+    additionalProperties: true
 unevaluatedProperties: false
 required:
 - dsl

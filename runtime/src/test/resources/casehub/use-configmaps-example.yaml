@@ -1,6 +1,6 @@
-dsl: "0.1"
+dsl: "0.1.0"
 version: "1.0.0"
-name: Feature Flag Controlled Workflow
+name: feature-flag-workflow
 namespace: test
 title: Example Case using configMaps for feature flags
 

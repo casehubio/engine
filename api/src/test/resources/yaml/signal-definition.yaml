@@ -19,4 +19,4 @@ spec:
       capability: process
       on:
         contextChange:
-          expression: ".signals"
+          filter: ".signals"

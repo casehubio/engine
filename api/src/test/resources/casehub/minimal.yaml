@@ -1,6 +1,6 @@
-dsl: "0.1"
+dsl: "0.1.0"
 version: "1.0.0"
-name: Minimal
+name: minimal
 namespace: test
 spec:
   capabilities:

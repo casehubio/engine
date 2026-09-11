@@ -50,7 +50,7 @@ public class YamlSimpleCaseHubBeanTest {
     assertNotNull(def);
 
     // name
-    assertEquals("Document Processing Test (YAML)", def.getName());
+    assertEquals("document-processing-test", def.getName());
 
     // capabilities
     assertEquals(1, def.getCapabilities().size());
