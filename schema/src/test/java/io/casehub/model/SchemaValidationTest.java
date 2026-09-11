@@ -29,6 +29,8 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Set;
 import java.util.stream.Stream;
 import org.junit.jupiter.api.BeforeAll;
@@ -91,6 +93,47 @@ class SchemaValidationTest {
   @ParameterizedTest
   @MethodSource("standaloneExampleFiles")
   void standaloneYaml_validatesAgainstSchema(Path yamlFile) throws IOException {
+    JsonNode yamlNode = YAML_MAPPER.readTree(Files.readString(yamlFile));
+    JsonNode jsonNode = JSON_MAPPER.readTree(JSON_MAPPER.writeValueAsString(yamlNode));
+    Set<ValidationMessage> errors = schema.validate(jsonNode);
+    assertTrue(
+        errors.isEmpty(),
+        () -> "Schema validation failed for " + yamlFile.getFileName() + ":\n" + errors);
+  }
+
+  static Stream<Path> testFixtureFiles() throws IOException {
+    String[] dirs = {
+      "../api/src/test/resources/casehub",
+      "../api/src/test/resources/yaml",
+      "../runtime/src/test/resources/casehub",
+      "../flow/src/test/resources/casehub"
+    };
+    List<Path> files = new ArrayList<>();
+    for (String dir : dirs) {
+      Path dirPath = Path.of(dir);
+      if (!Files.exists(dirPath)) {
+        continue;
+      }
+      try (Stream<Path> paths = Files.list(dirPath)) {
+        paths
+            .filter(p -> p.toString().endsWith(".yaml") || p.toString().endsWith(".yml"))
+            .filter(
+                p -> {
+                  try {
+                    return Files.readString(p).lines().anyMatch(l -> l.startsWith("dsl:"));
+                  } catch (IOException e) {
+                    return false;
+                  }
+                })
+            .forEach(files::add);
+      }
+    }
+    return files.stream();
+  }
+
+  @ParameterizedTest
+  @MethodSource("testFixtureFiles")
+  void testFixtureYaml_validatesAgainstSchema(Path yamlFile) throws IOException {
     JsonNode yamlNode = YAML_MAPPER.readTree(Files.readString(yamlFile));
     JsonNode jsonNode = JSON_MAPPER.readTree(JSON_MAPPER.writeValueAsString(yamlNode));
     Set<ValidationMessage> errors = schema.validate(jsonNode);

@@ -1,6 +1,6 @@
-dsl: "0.1"
+dsl: "0.1.0"
 version: "1.0.0"
-name: CBR Routing Test
+name: cbr-routing-test
 namespace: test-cbr
 title: Test Case with CBR Config for Routing Integration Tests
 spec:

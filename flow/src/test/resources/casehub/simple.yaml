@@ -1,6 +1,6 @@
-dsl: "0.1"
+dsl: "0.1.0"
 version: "1.0.0"
-name: Document Processing Test (YAML)
+name: document-processing-test
 namespace: test-yaml
 title: Test Case with Worker and Capability
 spec:
