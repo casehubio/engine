@@ -372,6 +372,45 @@ Platform-level agent mesh primitives (pure Java, no CDI):
 
 ---
 
+## Case Lifecycle Events
+
+`CaseLifecycleEvent` is a CDI event fired via `Event.fireAsync()` on every auditable case lifecycle transition. Consumers observe it with `@ObservesAsync CaseLifecycleEvent` — no engine dependency coupling required.
+
+**Enrichment fields** (available on every event):
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `caseId` | UUID | Case instance identifier |
+| `tenancyId` | String | Owning tenant |
+| `commandType` | String | Actor intent — `"StartCase"`, `"SuspendCase"`, etc. |
+| `eventType` | String | Observable fact — `"CaseStarted"`, `"CaseSuspended"`, etc. |
+| `caseStatus` | String | CaseStatus at transition time; null for non-status events |
+| `caseDefinitionName` | String | Case definition name from CaseMetaModel |
+| `namespace` | String | Case definition namespace |
+| `contextSnapshot` | JsonNode | Working layer at fire time — point-in-time, read-only |
+| `satisfiedGoalName` | String | Goal that caused terminal transition; null if not goal-triggered |
+| `satisfiedGoalKind` | String | Kind of satisfied goal (e.g. `"success"`, `"failure"`) |
+| `actorId` | String | Initiating actor; null for system-triggered events |
+| `traceId` | String | OTel trace ID for distributed tracing correlation |
+
+**Usage example:**
+```java
+@ApplicationScoped
+public class AuditObserver {
+    void onLifecycle(@ObservesAsync CaseLifecycleEvent event) {
+        if ("CaseCompleted".equals(event.eventType())) {
+            log.infof("Case %s (%s/%s) completed via goal %s",
+                event.caseId(), event.namespace(), event.caseDefinitionName(),
+                event.satisfiedGoalName());
+        }
+    }
+}
+```
+
+Consumers can discriminate by case type via `caseDefinitionName`/`namespace` and extract context data from `contextSnapshot` without a repository round-trip.
+
+---
+
 ## REST API (`casehub-engine-rest`)
 
 Opt-in JAX-RS module — add to classpath to expose REST endpoints. All endpoints use `@RunOnVirtualThread` and include OpenAPI annotations.
