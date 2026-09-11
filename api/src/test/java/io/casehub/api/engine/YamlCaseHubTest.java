@@ -57,7 +57,7 @@ class YamlCaseHubTest {
 
     CaseDefinition def = hub.getDefinition();
 
-    assertThat(def.getName()).isEqualTo("Minimal");
+    assertThat(def.getName()).isEqualTo("minimal");
     assertThat(def.getNamespace()).isEqualTo("test");
     assertThat(def.getCapabilities()).hasSize(1);
     assertThat(def.getWorkers()).isEmpty();
