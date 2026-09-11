@@ -70,7 +70,7 @@ class YamlCaseHubOverlayTest {
 
     CaseDefinition def = hub.getDefinition();
 
-    assertThat(def.getName()).isEqualTo("Minimal");
+    assertThat(def.getName()).isEqualTo("minimal");
     assertThat(def.getCapabilities()).hasSize(1);
     assertThat(def.getBindings()).hasSize(1);
   }
@@ -99,7 +99,7 @@ class YamlCaseHubOverlayTest {
 
     CaseDefinition def = hub.getDefinition();
 
-    assertThat(def.getName()).isEqualTo("Minimal");
+    assertThat(def.getName()).isEqualTo("minimal");
     assertThat(def.getCapabilities()).hasSize(1);
   }
 
