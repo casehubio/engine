@@ -26,8 +26,8 @@ import io.casehub.api.spi.routing.RoutingOutcome;
 import io.casehub.neocortex.memory.MemoryDomain;
 import io.casehub.neocortex.memory.cbr.CbrCaseMemoryStore;
 import io.casehub.neocortex.memory.cbr.FeatureValue;
-import io.casehub.neocortex.memory.cbr.PlanCbrCase;
-import io.casehub.neocortex.memory.cbr.PlanTrace;
+import io.casehub.neocortex.memory.cbr.ResolutionStep;
+import io.casehub.neocortex.memory.cbr.ResolvedCase;
 import io.casehub.platform.api.identity.TenancyConstants;
 import io.quarkus.test.junit.QuarkusTest;
 import io.quarkus.test.junit.QuarkusTestProfile;
@@ -63,11 +63,11 @@ class CbrRoutingIntegrationTest {
   @Test
   void yamlCbrConfig_experiencesReachAgentRoutingStrategy() {
     // Pre-load the CBR store with a matching case
-    PlanTrace trace =
-        new PlanTrace(
+    ResolutionStep trace =
+        new ResolutionStep(
             "plan-on-enemy-sighted", "planBattle", "battle-planner", "SUCCESS", 0, Map.of(), null);
-    PlanCbrCase pastCase =
-        new PlanCbrCase(
+    ResolvedCase pastCase =
+        new ResolvedCase(
             "Enemy aggressive with 100 troops",
             "Flank from the east",
             "COMPLETED",
