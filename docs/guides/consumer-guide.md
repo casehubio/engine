@@ -246,6 +246,12 @@ CBR enables experience-driven routing and planning. Configured per case definiti
 
 `CbrCaseTypeRegistration` registers case types for CBR retention.
 
+**Document ingestion:** `CorpusSourceAdapter` (`api/spi/`, extends `NamedStrategy`) — implement to ingest knowledge base documents (runbooks, SOPs) into the CBR store as `ResolutionGuide` entries. `discover(tenancyId)` returns `List<ResolutionGuideInput>`. `NoOpCorpusSourceAdapter` (`@DefaultBean`) ships as the default. `ResolutionIngestionService` bridges the adapter to `CbrCaseMemoryStore` with idempotent re-ingestion.
+
+**Outcome weighting:** Enabled by default (`casehub.cbr.outcome-weighting.enabled=true`). Cases with higher outcome confidence rank higher in retrieval. Tune via `casehub.cbr.outcome-weighting.influence` (default `0.3`).
+
+**Retrieval feedback:** `RetrievalFeedbackObserver` (Layer 1, automatic) and `SelectionFeedbackRecorder` (Layer 3, judgment bindings) record retrieval relevance signals via `CbrRetrievalTracker`. Transparent no-op when `memory-cbr-tracking` is not on the classpath.
+
 ### Oversight Gate (`api/spi/`)
 
 Platform-level oversight for consequential worker actions:
