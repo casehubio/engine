@@ -70,16 +70,18 @@ public class WatchdogRecoveryBridge {
 
   void onWatchdogAlert(@ObservesAsync WatchdogAlertEvent event) {
     List<String> agentIds = extractAffectedAgentIds(event.context());
-    if (agentIds.isEmpty()) {
-      LOG.debugf("Watchdog %s — no affected agents, skipping recovery", event.conditionType());
-      return;
-    }
 
-    for (String agentId : agentIds) {
-      List<UUID> caseIds = executionManager.getActiveCaseIds(agentId);
-      for (UUID caseId : caseIds) {
-        handleForCase(event, caseId, List.of(agentId));
+    if (event.caseId() != null) {
+      handleForCase(event, event.caseId(), agentIds);
+    } else if (!agentIds.isEmpty()) {
+      for (String agentId : agentIds) {
+        List<UUID> caseIds = executionManager.getActiveCaseIds(agentId);
+        for (UUID caseId : caseIds) {
+          handleForCase(event, caseId, List.of(agentId));
+        }
       }
+    } else {
+      LOG.debugf("Watchdog %s — no caseId and no affected agents, skipping", event.conditionType());
     }
   }
 
