@@ -500,6 +500,36 @@ workers:
 
 ---
 
+## Outcome Weighting
+
+Outcome weighting boosts retrieval scores for cases with higher outcome confidence. Enabled by default:
+
+```properties
+casehub.cbr.outcome-weighting.enabled=true
+```
+
+The `OutcomeWeightingCbrCaseMemoryStore` decorator (neocortex) applies a score multiplier: `score * (1 - α + α * confidence)` where `α = 0.3` (configurable via `casehub.cbr.outcome-weighting.influence`). Cases that resolved successfully with high confidence rank higher than cases that scraped by.
+
+**Cold start:** newly ingested documents (via `ResolutionIngestionService`) have null confidence, which defaults to `1.0` — no penalty, no boost. Documents are ranked purely by similarity until they accumulate outcome feedback.
+
+**Tuning `influence`:** the `α` parameter controls how much confidence affects ranking. At `α = 0.0`, confidence is ignored (pure similarity). At `α = 1.0`, score is fully determined by confidence. The default `0.3` is a reasonable starting point — enough to promote proven resolutions without burying novel but untested approaches.
+
+---
+
+## Retrieval Feedback
+
+The engine records three layers of retrieval feedback, forming a closed loop between retrieval quality and outcomes:
+
+**Layer 1 — Per-step (automatic):** `RetrievalFeedbackObserver` fires on every worker completion via `StepOutcomeObserver`. Success outcomes record `RELEVANT` for each retrieved experience; failures record `NOT_RELEVANT`. DECLINED outcomes only penalise experiences containing the declined agent's trace — other experiences get no signal.
+
+**Layer 2 — Per-case (automatic):** `CbrCaseRetainObserver` stores resolved cases with outcome confidence on case terminal state. This is the existing retain path — no new code needed.
+
+**Layer 3 — Per-selection (judgment):** When a human or LLM selects a resolution candidate via a judgment binding, `SelectionFeedbackRecorder` records `HIGHLY_RELEVANT` for the selected candidate and `PARTIALLY_RELEVANT` for unselected candidates above a similarity threshold (`casehub.cbr.selection-feedback.threshold`, default `0.5`). Candidates below the threshold get no signal.
+
+All three layers require `CbrRetrievalTracker` on the classpath (neocortex `memory-cbr-tracking` module). Without it, feedback recording is a transparent no-op.
+
+---
+
 ## Best Practices
 
 1. **Start with 3-5 features** that discriminate between case outcomes. Add more only when retrieval quality is insufficient.

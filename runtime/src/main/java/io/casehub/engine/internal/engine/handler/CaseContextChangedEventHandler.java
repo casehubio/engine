@@ -875,6 +875,10 @@ public class CaseContextChangedEventHandler {
       payloadTypeName = hrc.payloadType() != null ? hrc.payloadType().getName() : null;
     }
 
+    if (!experiences.isEmpty()) {
+      populateCandidates(caseInstance, binding.getName(), experiences);
+    }
+
     judgmentScheduler
         .get()
         .schedule(
@@ -898,6 +902,49 @@ public class CaseContextChangedEventHandler {
     LOG.infof(
         "Judgment yield dispatched: caseId=%s binding=%s",
         caseInstance.getUuid(), binding.getName());
+  }
+
+  @SuppressWarnings("unchecked")
+  private void populateCandidates(
+      CaseInstance caseInstance, String bindingName, List<RetrievedExperience> experiences) {
+    List<Map<String, Object>> summaries =
+        experiences.stream()
+            .map(
+                exp -> {
+                  var summary = new java.util.LinkedHashMap<String, Object>();
+                  summary.put("caseId", exp.caseId());
+                  summary.put(
+                      "sourceType", exp.sourceType() != null ? exp.sourceType().name() : null);
+                  summary.put("similarity", exp.similarityScore());
+                  summary.put("caseType", exp.caseType());
+                  summary.put("problem", exp.problem());
+                  summary.put("confidence", exp.confidence());
+                  summary.put(
+                      "stepCount",
+                      exp.documentSteps() != null
+                          ? exp.documentSteps().size()
+                          : (exp.planTrace() != null ? exp.planTrace().size() : 0));
+                  return (Map<String, Object>) (Map<String, ?>) summary;
+                })
+            .toList();
+
+    var mutableCtx = (io.casehub.api.context.MutableCaseContext) caseInstance.getCaseContext();
+    var layer =
+        (io.casehub.engine.internal.context.WritableLayerImpl)
+            mutableCtx.writableLayer(ContextLayer.WORKING);
+
+    Map<String, Object> existing =
+        (Map<String, Object>) caseInstance.getCaseContext().get("_candidates");
+    var candidatesMap =
+        existing != null
+            ? new java.util.LinkedHashMap<>(existing)
+            : new java.util.LinkedHashMap<String, Object>();
+    candidatesMap.put(bindingName, summaries);
+    layer.engineSet("_candidates", candidatesMap);
+
+    LOG.debugf(
+        "Populated %d candidates at _candidates.%s for caseId=%s",
+        summaries.size(), bindingName, caseInstance.getUuid());
   }
 
   private Set<String> resolveCandidateSet(
