@@ -51,8 +51,7 @@ public class DefaultPersistentScope<T> implements PersistentScope<T> {
   private final io.casehub.api.engine.WorkerRuntime innerRuntime;
   private final CaseInstance caseInstance;
   private final String bindingName;
-  private final java.util.concurrent.atomic.AtomicReference<String> reasoning =
-      new java.util.concurrent.atomic.AtomicReference<>();
+  private final AtomicReference<String> reasoning = new AtomicReference<>();
 
   public DefaultPersistentScope(
       Class<T> inputType,
