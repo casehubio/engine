@@ -70,6 +70,7 @@ Convention: `proj/` in workspace reaches the project repo; `wksp/` in the projec
 This repo owns its own documentation, synced to parent via CI:
 - `docs/guides/consumer-guide.md` — for app builders: modules, APIs, quick start
 - `docs/guides/contributor-guide.md` — for platform builders: architecture, SPIs, internals
+- `docs/guides/yaml-dsl-conventions.md` — DSL conventions: naming, shorthands, sealed types, expression overrides
 
 Update the relevant guide in the same session when implementation changes modules, SPIs, or public APIs. Do not defer — drift compounds.
 
@@ -192,7 +193,7 @@ is public (`public Long id`) and set by the repository after save.
 
 `ReflectionTriggerConfig` (`api/model/`) — per-case reflection trigger configuration on `CaseDefinition`. Fields: `enabled`, `importanceThreshold` (cumulative importance to trigger, range [0, 10]), `maxUnreflectedOutcomes` (hard ceiling), `maxSourceMemories`, `importanceWeights` (Map<String, Double> keyed by WorkerOutcome variant name). `DEFAULT_IMPORTANCE_WEIGHTS`: SUCCESS→0.3, COMPLETED→0.3, DECLINED→0.6, FAILED→0.8, EXPIRED→0.5. YAML: `spec.reflection:` block. Refs engine#801.
 
-`MemoryRetrievalConfig` (`api/model/`) — per-case memory retrieval configuration on `CaseDefinition`. Fields: `enabled`, `maxMemories`, `domains` (Set<String>, empty = all). YAML: `spec.memoryRetrieval:` block. Refs engine#804.
+`MemoryRetrievalConfig` (`api/model/`) — per-case memory retrieval configuration on `CaseDefinition`. Fields: `enabled`, `maxMemories`, `domains` (Set<String>, empty = all), `importanceWeights` (Map<String, Double>, per-outcome importance for worker-reasoning domain — independent from `ReflectionTriggerConfig.importanceWeights`). `DEFAULT_REASONING_IMPORTANCE_WEIGHTS`: SUCCESS→0.7, COMPLETED→0.7, DECLINED→0.6, FAILED→0.8, EXPIRED→0.5. YAML: `spec.memoryRetrieval:` block. Refs engine#804, engine#958.
 
 `RetrievedMemory` (`api/model/`) — engine-owned read model for neocortex `Memory`. Fields: `memoryId`, `text`, `domain`, `createdAt`, `attributes`. Maps from `Memory` without leaking neocortex types into the engine API. Same principle as `RetrievedExperience` mapping from `ScoredCbrCase`. Refs engine#804.
 
