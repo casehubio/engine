@@ -125,7 +125,8 @@ public class PersistentWorkerFunctionHandler implements WorkerFunctionHandler {
         () -> {
           try {
             ((Consumer<PersistentScope<?>>) (Consumer) persistent.handler()).accept(scope);
-            publishCompletion(context, metadata, WorkerOutcome.completed(), bindingName);
+            publishCompletion(
+                context, metadata, WorkerOutcome.completed(), bindingName, scope.getReasoning());
           } catch (ScopeTerminatedException e) {
             LOG.debugf(
                 "Persistent worker '%s' terminated by engine for binding '%s'",
@@ -137,7 +138,11 @@ public class PersistentWorkerFunctionHandler implements WorkerFunctionHandler {
                 metadata.workerName(),
                 bindingName);
             publishCompletion(
-                context, metadata, new WorkerOutcome.Failed<>(e.getMessage()), bindingName);
+                context,
+                metadata,
+                new WorkerOutcome.Failed<>(e.getMessage()),
+                bindingName,
+                scope.getReasoning());
           }
         });
 
@@ -148,7 +153,8 @@ public class PersistentWorkerFunctionHandler implements WorkerFunctionHandler {
       WorkerContext context,
       ExecutionMetadata metadata,
       WorkerOutcome<?> outcome,
-      String bindingName) {
+      String bindingName,
+      String reasoning) {
     CaseInstance freshInstance = recoveryService.loadOrRestoreCaseInstance(context.caseId());
     if (freshInstance == null) {
       LOG.warnf(
@@ -171,6 +177,16 @@ public class PersistentWorkerFunctionHandler implements WorkerFunctionHandler {
     eventBus.publish(
         EventBusAddresses.WORKER_EXECUTION_FINISHED,
         new WorkflowExecutionCompleted(
-            freshInstance, worker, metadata.inputDataHash(), Map.of(), bindingName, outcome));
+            freshInstance,
+            worker,
+            metadata.inputDataHash(),
+            Map.of(),
+            bindingName,
+            outcome,
+            null,
+            null,
+            null,
+            Map.of(),
+            reasoning));
   }
 }

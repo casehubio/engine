@@ -51,8 +51,10 @@ public class DefaultPersistentScope<T> implements PersistentScope<T> {
   private final io.casehub.api.engine.WorkerRuntime innerRuntime;
   private final CaseInstance caseInstance;
   private final String bindingName;
+  private final java.util.concurrent.atomic.AtomicReference<String> reasoning = new java.util.concurrent.atomic.AtomicReference<>();
 
-  public DefaultPersistentScope(
+
+    public DefaultPersistentScope(
       Class<T> inputType,
       BlockingQueue<io.casehub.engine.common.internal.worker.scope.ContextEvent> mailbox,
       UUID caseId,
@@ -142,4 +144,14 @@ public class DefaultPersistentScope<T> implements PersistentScope<T> {
   public Map<String, Object> accumulatedState() {
     return Map.of();
   }
+
+  public void reasoning(String reasoning) {
+    this.reasoning.set(reasoning);
+  }
+
+  public String getReasoning() {
+    return reasoning.get();
+  }
+
+
 }
