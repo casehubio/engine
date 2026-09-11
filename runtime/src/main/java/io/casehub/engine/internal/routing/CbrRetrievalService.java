@@ -143,6 +143,9 @@ public class CbrRetrievalService {
       if (config == null) {
         return List.of();
       }
+      if (config.crossType()) {
+        return retrieveInternal(definition, instance, CbrCase.class);
+      }
       String cbrType = config.cbrType() != null ? config.cbrType() : "plan";
       Class<? extends CbrCase> caseClass = typeMap.get(cbrType);
       if (caseClass == null) {
@@ -364,6 +367,33 @@ public class CbrRetrievalService {
       ScoredCbrCase<C> scored, Map<String, FeatureValue> features) {
     CbrCase c = scored.cbrCase();
     String resultCaseType = scored.caseType();
+    if (c instanceof ResolutionGuide guide) {
+      var docSteps =
+          guide.steps() != null && !guide.steps().isEmpty()
+              ? guide.steps().stream()
+                  .map(
+                      s ->
+                          new io.casehub.api.spi.routing.DocumentStep(
+                              s.description(),
+                              s.preconditions(),
+                              s.expectedOutcome(),
+                              s.automationHint()))
+                  .toList()
+              : null;
+      return new RetrievedExperience(
+          c.problem(),
+          c.solution(),
+          c.outcome(),
+          c.confidence() != null ? c.confidence().value() : null,
+          scored.score(),
+          new LinkedHashMap<>(c.features()),
+          List.of(),
+          scored.featureSimilarities(),
+          resultCaseType,
+          io.casehub.api.spi.routing.ResolutionSourceType.RESOLUTION_GUIDE,
+          guide.solution(),
+          docSteps);
+    }
     List<ExperiencePlanStep> trace;
     if (c instanceof ResolvedCase) {
       trace = adaptAndMapPlanTrace((ScoredCbrCase<ResolvedCase>) scored, resultCaseType, features);

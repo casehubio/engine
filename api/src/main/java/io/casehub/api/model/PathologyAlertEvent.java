@@ -29,7 +29,8 @@ public record PathologyAlertEvent(
     String detail,
     String from,
     Instant timestamp,
-    String tenancyId) implements SubscribableEvent {
+    String tenancyId)
+    implements SubscribableEvent {
 
   public static final String EVENT_TYPE = "pathology.alert";
 
