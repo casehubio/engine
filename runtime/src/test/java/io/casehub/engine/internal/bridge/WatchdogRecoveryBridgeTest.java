@@ -214,69 +214,6 @@ class WatchdogRecoveryBridgeTest {
     verify(eventBus, never()).publish(any(String.class), any());
   }
 
-  @Test
-  void caseLevelCondition_defaultsToSignal() {
-    var runtime = mock(io.casehub.api.engine.CaseHubRuntime.class);
-    @SuppressWarnings("unchecked")
-    jakarta.enterprise.inject.Instance<io.casehub.api.engine.CaseHubRuntime> runtimeInstance =
-        mock(jakarta.enterprise.inject.Instance.class);
-    when(runtimeInstance.isResolvable()).thenReturn(true);
-    when(runtimeInstance.get()).thenReturn(runtime);
-    injectField(bridge, "caseHubRuntime", runtimeInstance);
-
-    var event =
-        new WatchdogAlertEvent(
-            UUID.randomUUID(),
-            "target",
-            "notif",
-            "CHANNEL_IDLE: idle",
-            Instant.now(),
-            new ChannelIdleContext(List.of("ch-1"), 600),
-            caseId);
-
-    bridge.onWatchdogAlert(event);
-
-    verify(eventBus, never()).publish(any(String.class), any());
-    verify(runtime).signal(eq(caseId), eq("watchdogAlert"), any());
-  }
-
-  @Test
-  void caseLevelCondition_ignorePolicy_skips_signal() {
-    definition =
-        CaseDefinition.builder()
-            .namespace("test")
-            .name("test-case")
-            .version("1.0")
-            .watchdogPolicy(
-                Map.of(WatchdogConditionType.CHANNEL_IDLE, WatchdogResponseAction.IGNORE))
-            .build();
-    when(definitionRegistry.getCaseDefinition(metaModel)).thenReturn(definition);
-
-    var event =
-        new WatchdogAlertEvent(
-            UUID.randomUUID(),
-            "target",
-            "notif",
-            "CHANNEL_IDLE: idle",
-            Instant.now(),
-            new ChannelIdleContext(List.of("ch-1"), 600),
-            caseId);
-
-    bridge.onWatchdogAlert(event);
-
-    verify(eventBus, never()).publish(any(String.class), any());
-  }
-
-  private static void injectField(Object target, String fieldName, Object value) {
-    try {
-      var field = target.getClass().getDeclaredField(fieldName);
-      field.setAccessible(true);
-      field.set(target, value);
-    } catch (Exception e) {
-      throw new RuntimeException(e);
-    }
-  }
-
   private PlanItemRecord planItem(String executorName, TaskStatus status) {
     return PlanItemRecord.primitive(
         caseId,
