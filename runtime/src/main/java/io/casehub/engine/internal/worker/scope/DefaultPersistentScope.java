@@ -34,6 +34,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.BlockingQueue;
+import java.util.concurrent.atomic.AtomicReference;
 
 public class DefaultPersistentScope<T> implements PersistentScope<T> {
 

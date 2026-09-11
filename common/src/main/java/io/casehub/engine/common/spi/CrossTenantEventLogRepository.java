@@ -54,4 +54,8 @@ public interface CrossTenantEventLogRepository {
    * operate across tenants.
    */
   List<EventLog> findByCaseAndWorkerAndType(UUID caseId, String workerId, CaseHubEventType type);
+
+  default List<EventLog> findByTypesAfterId(Collection<CaseHubEventType> types, long afterId) {
+    return findByTypes(types).stream().filter(e -> e.id != null && e.id > afterId).toList();
+  }
 }
