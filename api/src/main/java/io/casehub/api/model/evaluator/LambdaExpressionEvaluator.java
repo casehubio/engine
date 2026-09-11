@@ -52,6 +52,7 @@ public final class LambdaExpressionEvaluator extends LambdaExpression<CaseContex
     return TYPE;
   }
 
+  @Override
   @JsonProperty("expression")
   public String expression() {
     return description;
