@@ -60,7 +60,8 @@ public class SpecNestingModule implements Module {
           "labels",
           "context",
           "episodic",
-          "layers");
+          "layers",
+          "definitions");
 
   @Override
   public void applyToConfigBuilder(SchemaGeneratorConfigBuilder builder) {
