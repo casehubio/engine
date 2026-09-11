@@ -38,8 +38,8 @@ import io.casehub.ledger.api.spi.TrustScoreSource;
 import io.casehub.neocortex.memory.MemoryDomain;
 import io.casehub.neocortex.memory.cbr.CbrCaseMemoryStore;
 import io.casehub.neocortex.memory.cbr.FeatureValue;
-import io.casehub.neocortex.memory.cbr.PlanCbrCase;
-import io.casehub.neocortex.memory.cbr.PlanTrace;
+import io.casehub.neocortex.memory.cbr.ResolutionStep;
+import io.casehub.neocortex.memory.cbr.ResolvedCase;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.enterprise.inject.Instance;
 import jakarta.inject.Inject;
@@ -156,9 +156,9 @@ public class CbrCaseRetainObserver implements CaseOutcomeObserver {
             .sorted(Comparator.comparing(PlanItemRecord::createdAt))
             .toList();
 
-    List<PlanTrace> traces = new ArrayList<>(sorted.size());
+    List<ResolutionStep> traces = new ArrayList<>(sorted.size());
     for (int i = 0; i < sorted.size(); i++) {
-      traces.add(toPlanTrace(sorted.get(i), capabilityNameMap, i));
+      traces.add(toResolutionStep(sorted.get(i), capabilityNameMap, i));
     }
 
     if (traces.isEmpty()) {
@@ -178,8 +178,8 @@ public class CbrCaseRetainObserver implements CaseOutcomeObserver {
     String producerAgentId = deriveProducerAgentId(traces);
     Double trustScore = lookupTrustScore(producerAgentId);
 
-    PlanCbrCase cbrCase =
-        new PlanCbrCase(
+    ResolvedCase cbrCase =
+        new ResolvedCase(
             problem,
             solution,
             event.outcomeLabel(),
@@ -252,10 +252,10 @@ public class CbrCaseRetainObserver implements CaseOutcomeObserver {
     return sb.toString();
   }
 
-  private String deriveProducerAgentId(List<PlanTrace> traces) {
+  private String deriveProducerAgentId(List<ResolutionStep> traces) {
     return traces.stream()
         .filter(t -> "SUCCESS".equals(t.stepOutcome()))
-        .map(PlanTrace::workerName)
+        .map(ResolutionStep::workerName)
         .findFirst()
         .orElseGet(() -> traces.get(0).workerName());
   }
@@ -332,9 +332,9 @@ public class CbrCaseRetainObserver implements CaseOutcomeObserver {
     return map;
   }
 
-  private PlanTrace toPlanTrace(
+  private ResolutionStep toResolutionStep(
       PlanItemRecord record, Map<String, String> capabilityNameMap, int priority) {
-    return new PlanTrace(
+    return new ResolutionStep(
         record.bindingName(),
         capabilityNameMap.get(record.bindingName()),
         record.executorName(),

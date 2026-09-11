@@ -15,27 +15,15 @@
  */
 package io.casehub.api.model;
 
-import io.casehub.platform.api.subscription.SubscribableEvent;
-import java.time.Instant;
-import java.util.UUID;
+import io.casehub.api.spi.routing.ResolutionSourceType;
+import jakarta.annotation.Nullable;
+import java.util.Objects;
 
-/**
- * Subscribable event for agent-reported pathology conditions detected during case execution.
- * Enables the notification pipeline to route pathology alerts to operators and agents.
- */
-public record PathologyAlertEvent(
-    UUID caseId,
-    String conditionType,
-    String detail,
-    String from,
-    Instant timestamp,
-    String tenancyId)
-    implements SubscribableEvent {
+public record ResolutionSelection(
+    String selectedCaseId, ResolutionSourceType sourceType, @Nullable String rationale) {
 
-  public static final String EVENT_TYPE = "pathology.alert";
-
-  @Override
-  public String type() {
-    return EVENT_TYPE;
+  public ResolutionSelection {
+    Objects.requireNonNull(selectedCaseId, "selectedCaseId must not be null");
+    Objects.requireNonNull(sourceType, "sourceType must not be null");
   }
 }

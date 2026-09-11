@@ -15,6 +15,7 @@
  */
 package io.casehub.api.spi.routing;
 
+import jakarta.annotation.Nullable;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -34,6 +35,14 @@ import java.util.Objects;
  * @param featureSimilarities per-feature similarity contributions (empty map when unavailable)
  * @param caseType the case definition type that produced this experience (nullable — null for
  *     same-type queries where the type is implicit)
+ * @param sourceType discriminator: PLAN_TRACE for historical execution traces, RESOLUTION_GUIDE for
+ *     knowledge base documents
+ * @param documentContent prose solution from a ResolutionGuide (nullable — null for plan trace
+ *     results)
+ * @param documentSteps structured steps from a ResolutionGuide (nullable — null for plan trace
+ *     results)
+ * @param caseId the CBR case store ID for this experience (nullable — null when unavailable or for
+ *     backward compatibility)
  */
 public record RetrievedExperience(
     String problem,
@@ -44,7 +53,11 @@ public record RetrievedExperience(
     Map<String, Object> features,
     List<ExperiencePlanStep> planTrace,
     Map<String, Double> featureSimilarities,
-    String caseType) {
+    String caseType,
+    ResolutionSourceType sourceType,
+    @Nullable String documentContent,
+    @Nullable List<DocumentStep> documentSteps,
+    @Nullable String caseId) {
 
   public RetrievedExperience(
       String problem,
@@ -64,6 +77,65 @@ public record RetrievedExperience(
         features,
         planTrace,
         featureSimilarities,
+        null,
+        ResolutionSourceType.PLAN_TRACE,
+        null,
+        null,
+        null);
+  }
+
+  public RetrievedExperience(
+      String problem,
+      String solution,
+      String outcome,
+      Double confidence,
+      double similarityScore,
+      Map<String, Object> features,
+      List<ExperiencePlanStep> planTrace,
+      Map<String, Double> featureSimilarities,
+      String caseType) {
+    this(
+        problem,
+        solution,
+        outcome,
+        confidence,
+        similarityScore,
+        features,
+        planTrace,
+        featureSimilarities,
+        caseType,
+        ResolutionSourceType.PLAN_TRACE,
+        null,
+        null,
+        null);
+  }
+
+  public RetrievedExperience(
+      String problem,
+      String solution,
+      String outcome,
+      Double confidence,
+      double similarityScore,
+      Map<String, Object> features,
+      List<ExperiencePlanStep> planTrace,
+      Map<String, Double> featureSimilarities,
+      String caseType,
+      ResolutionSourceType sourceType,
+      @Nullable String documentContent,
+      @Nullable List<DocumentStep> documentSteps) {
+    this(
+        problem,
+        solution,
+        outcome,
+        confidence,
+        similarityScore,
+        features,
+        planTrace,
+        featureSimilarities,
+        caseType,
+        sourceType,
+        documentContent,
+        documentSteps,
         null);
   }
 
@@ -77,5 +149,9 @@ public record RetrievedExperience(
     features = features != null ? Map.copyOf(features) : Map.of();
     planTrace = planTrace != null ? List.copyOf(planTrace) : List.of();
     featureSimilarities = featureSimilarities != null ? Map.copyOf(featureSimilarities) : Map.of();
+    documentSteps = documentSteps != null ? List.copyOf(documentSteps) : null;
+    if (sourceType == null) {
+      sourceType = ResolutionSourceType.PLAN_TRACE;
+    }
   }
 }

@@ -35,8 +35,8 @@ import io.casehub.neocortex.memory.cbr.CbrCaseMemoryStore;
 import io.casehub.neocortex.memory.cbr.CbrFeatureSchema;
 import io.casehub.neocortex.memory.cbr.CbrQuery;
 import io.casehub.neocortex.memory.cbr.FeatureValue;
-import io.casehub.neocortex.memory.cbr.PlanCbrCase;
-import io.casehub.neocortex.memory.cbr.PlanTrace;
+import io.casehub.neocortex.memory.cbr.ResolutionStep;
+import io.casehub.neocortex.memory.cbr.ResolvedCase;
 import io.casehub.neocortex.memory.cbr.ScoredCbrCase;
 import java.lang.reflect.Method;
 import java.util.List;
@@ -230,10 +230,11 @@ class CbrRetrievalCachingTest {
     return instance;
   }
 
-  private ScoredCbrCase<PlanCbrCase> scoredCase(String problem, String solution) {
-    PlanTrace trace = new PlanTrace("bind1", "cap1", "worker1", "SUCCESS", 0, Map.of(), null);
-    PlanCbrCase cbrCase =
-        new PlanCbrCase(
+  private ScoredCbrCase<ResolvedCase> scoredCase(String problem, String solution) {
+    ResolutionStep trace =
+        new ResolutionStep("bind1", "cap1", "worker1", "SUCCESS", 0, Map.of(), null);
+    ResolvedCase cbrCase =
+        new ResolvedCase(
             problem,
             solution,
             "COMPLETED",
@@ -248,9 +249,9 @@ class CbrRetrievalCachingTest {
   /** Counting stub for CbrCaseMemoryStore — tracks invocation count. */
   static class CountingCbrStore implements CbrCaseMemoryStore {
     private int callCount;
-    private List<ScoredCbrCase<PlanCbrCase>> result = List.of();
+    private List<ScoredCbrCase<ResolvedCase>> result = List.of();
 
-    void setResult(List<ScoredCbrCase<PlanCbrCase>> result) {
+    void setResult(List<ScoredCbrCase<ResolvedCase>> result) {
       this.result = result;
     }
 
