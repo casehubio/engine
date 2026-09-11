@@ -11,48 +11,34 @@
 
     <artifactId>casehub-engine-ledger</artifactId>
     <name>Case Hub :: Ledger</name>
-    <description>Optional immutable audit ledger — hash-chained case lifecycle entries via casehub-ledger</description>
+    <description>Quarkus CDI wiring for ledger-core POJOs — @Produces, observer adapters</description>
 
     <properties>
         <maven.deploy.skip>false</maven.deploy.skip>
     </properties>
 
     <dependencies>
-        <!-- CaseLifecycleEvent lives in engine-common (no CDI beans — safe as compile dep) -->
+        <dependency>
+            <groupId>io.casehub</groupId>
+            <artifactId>casehub-engine-ledger-core</artifactId>
+            <version>${project.version}</version>
+        </dependency>
         <dependency>
             <groupId>io.casehub</groupId>
             <artifactId>casehub-engine-common</artifactId>
             <version>${project.version}</version>
         </dependency>
-        <!-- AgentRoutingStrategy SPI — TrustWeightedAgentStrategy implements it -->
         <dependency>
             <groupId>io.casehub</groupId>
             <artifactId>casehub-engine-api</artifactId>
             <version>${project.version}</version>
         </dependency>
-        <!-- Required: casehub-engine-api declares casehub-eidos-api as optional, so it does not
-             propagate. AgentCandidate carries AgentDescriptor as a field; javac must resolve
-             AgentDescriptor to compile any code that accepts AgentCandidate. Kept optional here
-             for the same reason — consumers that use AgentCandidate-accepting APIs (e.g.
-             TrustCandidateClassifier) must also declare casehub-eidos-api explicitly. -->
-        <dependency>
-            <groupId>io.casehub</groupId>
-            <artifactId>casehub-eidos-api</artifactId>
-            <optional>true</optional>
-        </dependency>
-
         <dependency>
             <groupId>io.casehub</groupId>
             <artifactId>casehub-ledger</artifactId>
         </dependency>
 
-        <!-- CommitmentAttestationPolicy SPI — TrustGatedAttestationPolicy implements it -->
-        <dependency>
-            <groupId>io.casehub</groupId>
-            <artifactId>casehub-qhorus-api</artifactId>
-        </dependency>
-
-        <!-- CDI + JPA (blocking) for EntityManager -->
+        <!-- CDI + JPA -->
         <dependency>
             <groupId>io.quarkus</groupId>
             <artifactId>quarkus-arc</artifactId>
