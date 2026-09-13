@@ -1099,17 +1099,18 @@ public class WorkflowExecutionCompletedHandler {
             outcome,
             contextSnapshot,
             duration);
-    for (io.casehub.api.spi.StepOutcomeObserver observer : stepOutcomeObserver) {
-      try {
-        observer.onStepOutcome(event);
-      } catch (Exception err) {
-        LOG.warnf(
-            err,
-            "Step outcome observation failed for caseId=%s worker=%s binding=%s",
-            caseInstance.getUuid(),
-            worker.name(),
-            bindingName);
-      }
-    }
+    stepOutcomeObserver.ifPresent(
+        observer -> {
+          try {
+            observer.onStepOutcome(event);
+          } catch (Exception err) {
+            LOG.warnf(
+                err,
+                "Step outcome observation failed for caseId=%s worker=%s binding=%s",
+                caseInstance.getUuid(),
+                worker.name(),
+                bindingName);
+          }
+        });
   }
 }
