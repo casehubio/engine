@@ -4,8 +4,8 @@
 
 **Kind:** `class`
 
-Discovers all `RoutingPromptSection` implementations via CDI, sorts them by `jakarta.annotation.Priority` (lower values first), and assembles their rendered output into a
-single prompt string.
+Sorts `RoutingPromptSection` implementations by `jakarta.annotation.Priority` (lower
+values first) and assembles their rendered output into a single prompt string.
 
 <p>Sections returning `null` or blank strings are skipped. Sections that throw are logged
 and skipped — a failing section never prevents other sections from rendering.
@@ -20,11 +20,11 @@ and skipped — a failing section never prevents other sections from rendering.
 
 ## Constructors
 
-### `public RoutingPromptAssembler(Instance<io.casehub.api.spi.routing.RoutingPromptSection> sections)`
+### `public RoutingPromptAssembler(java.util.List<io.casehub.api.spi.routing.RoutingPromptSection> sections)`
 
 #### Parameters
 
-- `sections` (`Instance<io.casehub.api.spi.routing.RoutingPromptSection>`)
+- `sections` (`java.util.List<io.casehub.api.spi.routing.RoutingPromptSection>`)
 
 ## Methods
 
