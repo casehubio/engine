@@ -4,8 +4,8 @@
 
 **Kind:** `class`
 
-Discovers all `RoutingSignalProvider` implementations via CDI, sorts them by `jakarta.annotation.Priority` (lower values first), and assembles their signals into a map keyed
-by provider `RoutingSignalProvider.id()`.
+Sorts `RoutingSignalProvider` implementations by `jakarta.annotation.Priority` (lower
+values first) and assembles their signals into a map keyed by provider `RoutingSignalProvider.id()`.
 
 <p>Providers returning `null` are skipped. Providers that throw are logged and skipped — a
 failing provider never prevents other providers from contributing.
@@ -20,11 +20,11 @@ failing provider never prevents other providers from contributing.
 
 ## Constructors
 
-### `public RoutingSignalAssembler(Instance<io.casehub.api.spi.routing.RoutingSignalProvider> providers)`
+### `public RoutingSignalAssembler(java.util.List<io.casehub.api.spi.routing.RoutingSignalProvider> providers)`
 
 #### Parameters
 
-- `providers` (`Instance<io.casehub.api.spi.routing.RoutingSignalProvider>`)
+- `providers` (`java.util.List<io.casehub.api.spi.routing.RoutingSignalProvider>`)
 
 ## Methods
 
