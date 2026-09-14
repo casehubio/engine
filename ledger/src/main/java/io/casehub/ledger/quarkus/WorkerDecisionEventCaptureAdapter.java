@@ -17,18 +17,17 @@ package io.casehub.ledger.quarkus;
 
 import io.casehub.engine.common.spi.event.WorkerDecisionEvent;
 import io.casehub.ledger.service.WorkerDecisionEventCapture;
+import io.quarkus.narayana.jta.QuarkusTransaction;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.enterprise.event.ObservesAsync;
 import jakarta.inject.Inject;
-import jakarta.transaction.Transactional;
 
 @ApplicationScoped
 public class WorkerDecisionEventCaptureAdapter {
 
   @Inject WorkerDecisionEventCapture capture;
 
-  @Transactional
   void onWorkerDecisionEvent(@ObservesAsync WorkerDecisionEvent event) {
-    capture.onWorkerDecisionEvent(event);
+    QuarkusTransaction.requiringNew().run(() -> capture.onWorkerDecisionEvent(event));
   }
 }
