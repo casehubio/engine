@@ -136,7 +136,6 @@ class RlsIntegrationTest {
    * to a role with BYPASSRLS, and {@link RlsPolicyApplicator} has granted that role table-level DML
    * access. Without the GRANT, the role switch succeeds but queries fail with "permission denied".
    */
-  @org.junit.jupiter.api.Disabled("TODO: fix after engine-support-core extraction — updateStateAndAppendEvent not persisting")
   @Test
   void crossTenantRepo_bypassesRlsAndSeesAllTenants() throws Exception {
     UUID ownCaseId = UUID.randomUUID();
