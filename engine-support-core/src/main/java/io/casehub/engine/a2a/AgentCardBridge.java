@@ -29,20 +29,10 @@ public final class AgentCardBridge {
             ? card.skills().stream()
                 .map(
                     skill ->
-                        new AgentCapability(
-                            skill.name() != null ? skill.name() : skill.id(),
-                            skill.description(),
-                            null,
-                            null,
-                            null,
-                            null,
-                            null,
-                            null,
-                            null,
-                            null,
-                            null,
-                            null,
-                            null))
+                        AgentCapability.builder()
+                            .name(skill.name() != null ? skill.name() : skill.id())
+                            .description(skill.description())
+                            .build())
                 .toList()
             : List.of();
 
