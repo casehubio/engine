@@ -50,7 +50,7 @@ class CaseLedgerEventCaptureTest {
 
   private List<CaseLedgerEntry> findByCaseIdInTx(UUID caseId) {
     return io.quarkus.narayana.jta.QuarkusTransaction.requiringNew()
-        .call(() -> findByCaseIdInTx(caseId));
+        .call(() -> repository.findByCaseId(caseId));
   }
 
   @Test
