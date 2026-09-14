@@ -32,7 +32,6 @@ import io.casehub.engine.common.internal.model.CaseInstance;
 import io.casehub.engine.common.internal.model.CaseMetaModel;
 import io.casehub.engine.common.spi.CaseDefinitionRegistry;
 import io.casehub.worker.api.WorkerOutcome;
-import jakarta.enterprise.inject.Instance;
 import java.util.List;
 import java.util.Optional;
 import org.junit.jupiter.api.BeforeEach;
@@ -44,15 +43,11 @@ class GoalOutcomeRecorderTest {
   private CaseDefinitionRegistry registry;
   private GoalOutcomeRecorder recorder;
 
-  @SuppressWarnings("unchecked")
   @BeforeEach
   void setUp() {
     signalStore = mock(GoalSignalStore.class);
-    Instance<GoalSignalStore> storeInstance = mock(Instance.class);
-    when(storeInstance.isResolvable()).thenReturn(true);
-    when(storeInstance.get()).thenReturn(signalStore);
     registry = mock(CaseDefinitionRegistry.class);
-    recorder = new GoalOutcomeRecorder(storeInstance, registry);
+    recorder = new GoalOutcomeRecorder(Optional.of(signalStore), registry);
   }
 
   @Test
@@ -227,10 +222,7 @@ class GoalOutcomeRecorderTest {
 
   @Test
   void noSignalStore_doesNothing() {
-    @SuppressWarnings("unchecked")
-    Instance<GoalSignalStore> absent = mock(Instance.class);
-    when(absent.isResolvable()).thenReturn(false);
-    var noStoreRecorder = new GoalOutcomeRecorder(absent, registry);
+    var noStoreRecorder = new GoalOutcomeRecorder(Optional.empty(), registry);
 
     CaseInstance instance = buildCaseInstance("tenant-1");
     noStoreRecorder.record(instance, "worker-1", "cap-x", new WorkerOutcome.Declined<>("fail"));

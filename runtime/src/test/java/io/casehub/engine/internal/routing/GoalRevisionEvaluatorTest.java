@@ -36,7 +36,6 @@ import io.casehub.eidos.api.DefaultGoalEvolution;
 import io.casehub.eidos.api.GoalEvolution;
 import io.casehub.eidos.api.GoalOutcome;
 import io.casehub.eidos.api.GoalPriority;
-import io.casehub.eidos.api.GoalSignalStore;
 import io.casehub.eidos.api.InMemoryGoalSignalStore;
 import io.casehub.eidos.api.Visibility;
 import io.casehub.engine.common.internal.history.EventLog;
@@ -45,7 +44,6 @@ import io.casehub.engine.common.internal.model.CaseMetaModel;
 import io.casehub.engine.common.spi.CaseDefinitionRegistry;
 import io.casehub.engine.common.spi.EventLogRepository;
 import io.casehub.worker.api.WorkerOutcome;
-import jakarta.enterprise.inject.Instance;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
@@ -68,7 +66,6 @@ class GoalRevisionEvaluatorTest {
   private final List<AgentDescriptor> registeredDescriptors = new ArrayList<>();
   private final List<EventLog> writtenLogs = new ArrayList<>();
 
-  @SuppressWarnings("unchecked")
   @BeforeEach
   void setUp() {
     goalSignalStore = new InMemoryGoalSignalStore();
@@ -84,23 +81,11 @@ class GoalRevisionEvaluatorTest {
     registeredDescriptors.clear();
     writtenLogs.clear();
 
-    Instance<GoalSignalStore> signalStoreInstance = mock(Instance.class);
-    when(signalStoreInstance.isResolvable()).thenReturn(true);
-    when(signalStoreInstance.get()).thenReturn(goalSignalStore);
-
-    Instance<GoalEvolution> evolutionInstance = mock(Instance.class);
-    when(evolutionInstance.isResolvable()).thenReturn(true);
-    when(evolutionInstance.get()).thenReturn(goalEvolution);
-
-    Instance<AgentRegistry> registryInstance = mock(Instance.class);
-    when(registryInstance.isResolvable()).thenReturn(true);
-    when(registryInstance.get()).thenReturn(agentRegistry);
-
     evaluator =
         new GoalRevisionEvaluator(
-            signalStoreInstance,
-            evolutionInstance,
-            registryInstance,
+            Optional.of(goalSignalStore),
+            Optional.of(goalEvolution),
+            Optional.of(agentRegistry),
             goalRemovalService,
             caseDefinitionRegistry,
             strategyResolver,
@@ -113,17 +98,11 @@ class GoalRevisionEvaluatorTest {
 
   @Test
   void skipsWhenNotEnabled() {
-    @SuppressWarnings("unchecked")
-    Instance<GoalSignalStore> si = mock(Instance.class);
-    @SuppressWarnings("unchecked")
-    Instance<GoalEvolution> ei = mock(Instance.class);
-    @SuppressWarnings("unchecked")
-    Instance<AgentRegistry> ri = mock(Instance.class);
     var disabled =
         new GoalRevisionEvaluator(
-            si,
-            ei,
-            ri,
+            Optional.of(goalSignalStore),
+            Optional.of(goalEvolution),
+            Optional.of(agentRegistry),
             goalRemovalService,
             caseDefinitionRegistry,
             strategyResolver,
@@ -135,23 +114,16 @@ class GoalRevisionEvaluatorTest {
 
     disabled.record(buildCaseInstance("tenant-1"), "worker-1", "cap-x", WorkerOutcome.success());
 
-    verify(si, never()).isResolvable();
+    verify(caseDefinitionRegistry, never()).getCaseDefinition(any());
   }
 
   @Test
   void skipsWhenGoalSignalStoreNotResolvable() {
-    @SuppressWarnings("unchecked")
-    Instance<GoalSignalStore> absent = mock(Instance.class);
-    when(absent.isResolvable()).thenReturn(false);
-    @SuppressWarnings("unchecked")
-    Instance<GoalEvolution> ei = mock(Instance.class);
-    @SuppressWarnings("unchecked")
-    Instance<AgentRegistry> ri = mock(Instance.class);
     var eval =
         new GoalRevisionEvaluator(
-            absent,
-            ei,
-            ri,
+            Optional.empty(),
+            Optional.empty(),
+            Optional.empty(),
             goalRemovalService,
             caseDefinitionRegistry,
             strategyResolver,
@@ -163,7 +135,7 @@ class GoalRevisionEvaluatorTest {
 
     eval.record(buildCaseInstance("tenant-1"), "worker-1", "cap-x", WorkerOutcome.success());
 
-    verify(ei, never()).isResolvable();
+    verify(caseDefinitionRegistry, never()).getCaseDefinition(any());
   }
 
   @Test
