@@ -46,7 +46,7 @@ import io.casehub.neocortex.memory.cbr.ResolutionStep;
 import io.casehub.neocortex.memory.cbr.ResolvedCase;
 import io.casehub.neocortex.memory.cbr.ScoredCbrCase;
 import io.casehub.neocortex.memory.cbr.TemporalDecay;
-import java.lang.reflect.Method;
+
 import java.time.Duration;
 import java.util.List;
 import java.util.Map;
@@ -63,10 +63,7 @@ class CbrRetrievalServiceTest {
 
   @BeforeEach
   void setUp() throws Exception {
-    jqEvaluator = new JQEvaluator();
-    Method init = JQEvaluator.class.getDeclaredMethod("init");
-    init.setAccessible(true);
-    init.invoke(jqEvaluator);
+    jqEvaluator = new JQEvaluator(null, null);
 
     cbrStore = new RecordingCbrStore();
     planAdapter = new RecordingPlanAdapter();

@@ -201,7 +201,7 @@ class CaseContextChangedEventHandlerRoutingTest {
     when(agentRoutingStrategy.select(any(), any()))
         .thenReturn(RoutingResult.assigned("analyst-worker", "selected by test"));
 
-    handler.onCaseStateContextChangedEventHandler(
+    handler.handle(
         new CaseContextChangedEvent(
             caseInstance, caseInstance.getCaseContext(), ContextLayer.WORKING));
 
@@ -216,7 +216,7 @@ class CaseContextChangedEventHandlerRoutingTest {
     // tryProvision requires a provisioner that has the capability — no-op provisioner won't trigger
     when(workerProvisioner.getCapabilities()).thenReturn(java.util.Set.of());
 
-    handler.onCaseStateContextChangedEventHandler(
+    handler.handle(
         new CaseContextChangedEvent(
             caseInstance, caseInstance.getCaseContext(), ContextLayer.WORKING));
 
@@ -232,7 +232,7 @@ class CaseContextChangedEventHandlerRoutingTest {
             RoutingResult.escalate(
                 "research", EscalationReason.BORDERLINE_STALEMATE, "all candidates borderline"));
 
-    handler.onCaseStateContextChangedEventHandler(
+    handler.handle(
         new CaseContextChangedEvent(
             caseInstance, caseInstance.getCaseContext(), ContextLayer.WORKING));
 
@@ -303,7 +303,7 @@ class CaseContextChangedEventHandlerRoutingTest {
     inst.setCaseMetaModel(metaModel);
     inst.setCaseContext(ctx);
 
-    handler.onCaseStateContextChangedEventHandler(
+    handler.handle(
         new CaseContextChangedEvent(inst, ctx, "extracted"));
 
     verify(eventBus).publish(eq(EventBusAddresses.WORKER_SCHEDULE), any(WorkerScheduleEvent.class));
@@ -368,7 +368,7 @@ class CaseContextChangedEventHandlerRoutingTest {
     inst.setCaseMetaModel(metaModel);
     inst.setCaseContext(ctx);
 
-    handler.onCaseStateContextChangedEventHandler(
+    handler.handle(
         new CaseContextChangedEvent(inst, ctx, ContextLayer.WORKING));
 
     verify(eventBus, never())
@@ -403,7 +403,7 @@ class CaseContextChangedEventHandlerRoutingTest {
                 java.time.Instant.now().plusSeconds(3600),
                 java.time.Instant.now()));
 
-    handler.onCaseStateContextChangedEventHandler(
+    handler.handle(
         new CaseContextChangedEvent(
             caseInstance, caseInstance.getCaseContext(), ContextLayer.WORKING));
 
@@ -444,7 +444,7 @@ class CaseContextChangedEventHandlerRoutingTest {
 
     caseInstance.setCaseContext(ctx);
 
-    handler.onCaseStateContextChangedEventHandler(
+    handler.handle(
         new CaseContextChangedEvent(caseInstance, ctx, ContextLayer.WORKING));
 
     verify(eventBus, never())

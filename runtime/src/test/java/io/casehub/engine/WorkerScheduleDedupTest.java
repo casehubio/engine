@@ -92,7 +92,7 @@ public class WorkerScheduleDedupTest {
             executionIdempotency,
             Map.of("status", "processed")));
 
-    handler.onWorkerScheduleEventHandler(
+    handler.handle(
         new WorkerScheduleEvent(instance, bean.worker(), bean.capability()));
 
     Awaitility.await()
@@ -134,7 +134,7 @@ public class WorkerScheduleDedupTest {
             executionIdempotency,
             Map.of("documentId", "doc-resubmit", "status", "queued")));
 
-    handler.onWorkerScheduleEventHandler(
+    handler.handle(
         new WorkerScheduleEvent(instance, bean.worker(), bean.capability()));
 
     Awaitility.await()

@@ -55,21 +55,15 @@ class AgentExperienceRecorderReasoningTest {
     when(storeInstance.isResolvable()).thenReturn(true);
     when(storeInstance.get()).thenReturn(store);
 
-    Instance<ExperienceRecorder> expInstance = mock(Instance.class);
-    when(expInstance.isResolvable()).thenReturn(false);
-
-    Instance<ReflectionOrchestrator> reflInstance = mock(Instance.class);
-    when(reflInstance.isResolvable()).thenReturn(false);
-
     recorder =
         new AgentExperienceRecorder(
-            expInstance,
-            reflInstance,
+            java.util.Optional.empty(),
+            java.util.Optional.empty(),
             mock(CaseDefinitionRegistry.class),
             mock(GoalFormationEvaluator.class),
-            storeInstance,
-            mock(Instance.class));
-    recorder.reasoningEnabled = true;
+            java.util.Optional.of(store),
+            java.util.Optional.empty(),
+            true);
   }
 
   @Test
@@ -123,27 +117,32 @@ class AgentExperienceRecorderReasoningTest {
 
   @Test
   void storeReasoningNoOpWhenDisabled() {
-    recorder.reasoningEnabled = false;
-    recorder.storeReasoning(
+    var disabledRecorder =
+        new AgentExperienceRecorder(
+            java.util.Optional.empty(),
+            java.util.Optional.empty(),
+            mock(CaseDefinitionRegistry.class),
+            mock(GoalFormationEvaluator.class),
+            java.util.Optional.of(store),
+            java.util.Optional.empty(),
+            false);
+    disabledRecorder.storeReasoning(
         mockCaseInstance(), "agent-1", "cap", WorkerOutcome.success(), "reasoning text", "binding");
-    verify(storeInstance, never()).get();
+    verify(store, never()).store(any());
   }
 
   @SuppressWarnings("unchecked")
   @Test
   void storeReasoningNoOpWhenStoreNotResolvable() {
-    Instance<CaseMemoryStore> unresolv = mock(Instance.class);
-    when(unresolv.isResolvable()).thenReturn(false);
-
     var rec =
         new AgentExperienceRecorder(
-            mock(Instance.class),
-            mock(Instance.class),
+            java.util.Optional.empty(),
+            java.util.Optional.empty(),
             mock(CaseDefinitionRegistry.class),
             mock(GoalFormationEvaluator.class),
-            unresolv,
-            mock(Instance.class));
-    rec.reasoningEnabled = true;
+            java.util.Optional.empty(),
+            java.util.Optional.empty(),
+            true);
 
     rec.storeReasoning(
         mockCaseInstance(), "agent-1", "cap", WorkerOutcome.success(), "reasoning", "binding");

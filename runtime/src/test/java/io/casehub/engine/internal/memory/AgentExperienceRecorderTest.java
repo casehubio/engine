@@ -89,27 +89,16 @@ class AgentExperienceRecorderTest {
     when(registry.getCaseDefinition(org.mockito.ArgumentMatchers.any(CaseMetaModel.class)))
         .thenReturn(definition);
 
-    Instance<ExperienceRecorder> expInstance = mock(Instance.class);
-    when(expInstance.isResolvable()).thenReturn(true);
-    when(expInstance.get()).thenReturn(expRecorder);
-
-    Instance<ReflectionOrchestrator> reflInstance = mock(Instance.class);
-    when(reflInstance.isResolvable()).thenReturn(true);
-    when(reflInstance.get()).thenReturn(orchestrator);
-
     GoalFormationEvaluator goalFormationEvaluator = mock(GoalFormationEvaluator.class);
-    Instance caseMemoryStoreInstance = mock(Instance.class);
-    when(caseMemoryStoreInstance.isResolvable()).thenReturn(false);
-    Instance meterRegistryInstance = mock(Instance.class);
-    when(meterRegistryInstance.isResolvable()).thenReturn(false);
     recorder =
         new AgentExperienceRecorder(
-            expInstance,
-            reflInstance,
+            java.util.Optional.of(expRecorder),
+            java.util.Optional.of(orchestrator),
             registry,
             goalFormationEvaluator,
-            caseMemoryStoreInstance,
-            meterRegistryInstance);
+            java.util.Optional.empty(),
+            java.util.Optional.empty(),
+            false);
   }
 
   @Test
@@ -204,24 +193,16 @@ class AgentExperienceRecorderTest {
   @Test
   @SuppressWarnings("unchecked")
   void noopWhenExperienceRecorderUnavailable() {
-    Instance<ExperienceRecorder> unavailable = mock(Instance.class);
-    when(unavailable.isResolvable()).thenReturn(false);
-    Instance<ReflectionOrchestrator> reflInstance = mock(Instance.class);
-    when(reflInstance.isResolvable()).thenReturn(false);
-
     GoalFormationEvaluator goalFormationEvaluator = mock(GoalFormationEvaluator.class);
-    Instance caseMemoryStore = mock(Instance.class);
-    when(caseMemoryStore.isResolvable()).thenReturn(false);
-    Instance meterRegistry = mock(Instance.class);
-    when(meterRegistry.isResolvable()).thenReturn(false);
     var noopRecorder =
         new AgentExperienceRecorder(
-            unavailable,
-            reflInstance,
+            java.util.Optional.empty(),
+            java.util.Optional.empty(),
             registry,
             goalFormationEvaluator,
-            caseMemoryStore,
-            meterRegistry);
+            java.util.Optional.empty(),
+            java.util.Optional.empty(),
+            false);
     noopRecorder.record(createInstance(), "agent-1", "cap", new WorkerOutcome.Success<>(null), "b");
     assertThat(recorded).isEmpty();
   }

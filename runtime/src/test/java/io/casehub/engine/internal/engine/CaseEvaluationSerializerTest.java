@@ -28,7 +28,7 @@ import org.junit.jupiter.api.Test;
 
 class CaseEvaluationSerializerTest {
 
-  private final CaseEvaluationSerializer serializer = new CaseEvaluationSerializer();
+  private final CaseEvaluationSerializer serializer = new CaseEvaluationSerializer(new QuiescenceTracker());
 
   @Test
   void runsEvaluatorImmediatelyWhenIdle() {

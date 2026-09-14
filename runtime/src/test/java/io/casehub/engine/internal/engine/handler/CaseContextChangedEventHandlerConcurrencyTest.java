@@ -38,12 +38,9 @@ class CaseContextChangedEventHandlerConcurrencyTest {
 
   @Test
   void applyDispatchBudget_caseCap_limits_dispatch_count() {
-    var handler = new CaseContextChangedEventHandler();
     var store = mock(PlanItemStore.class);
     var budget = mock(DispatchBudget.class);
-
-    injectField(handler, "planItemStore", store);
-    injectField(handler, "dispatchBudget", budget);
+    var handler = newHandler(store, budget);
 
     UUID caseId = UUID.randomUUID();
     var instance = stubInstance(caseId, "tenant-1");
@@ -69,12 +66,9 @@ class CaseContextChangedEventHandlerConcurrencyTest {
 
   @Test
   void applyDispatchBudget_allSlotsOccupied_returnsEmpty() {
-    var handler = new CaseContextChangedEventHandler();
     var store = mock(PlanItemStore.class);
     var budget = mock(DispatchBudget.class);
-
-    injectField(handler, "planItemStore", store);
-    injectField(handler, "dispatchBudget", budget);
+    var handler = newHandler(store, budget);
 
     UUID caseId = UUID.randomUUID();
     var instance = stubInstance(caseId, "tenant-1");
@@ -99,12 +93,9 @@ class CaseContextChangedEventHandlerConcurrencyTest {
 
   @Test
   void applyDispatchBudget_externalBudget_wins_when_lower() {
-    var handler = new CaseContextChangedEventHandler();
     var store = mock(PlanItemStore.class);
     var budget = mock(DispatchBudget.class);
-
-    injectField(handler, "planItemStore", store);
-    injectField(handler, "dispatchBudget", budget);
+    var handler = newHandler(store, budget);
 
     UUID caseId = UUID.randomUUID();
     var instance = stubInstance(caseId, "tenant-1");
@@ -126,12 +117,9 @@ class CaseContextChangedEventHandlerConcurrencyTest {
 
   @Test
   void applyDispatchBudget_nullMaxConcurrent_unlimited() {
-    var handler = new CaseContextChangedEventHandler();
     var store = mock(PlanItemStore.class);
     var budget = mock(DispatchBudget.class);
-
-    injectField(handler, "planItemStore", store);
-    injectField(handler, "dispatchBudget", budget);
+    var handler = newHandler(store, budget);
 
     UUID caseId = UUID.randomUUID();
     var instance = stubInstance(caseId, "tenant-1");
@@ -147,12 +135,9 @@ class CaseContextChangedEventHandlerConcurrencyTest {
 
   @Test
   void applyDispatchBudget_pendingPlanItems_notCounted() {
-    var handler = new CaseContextChangedEventHandler();
     var store = mock(PlanItemStore.class);
     var budget = mock(DispatchBudget.class);
-
-    injectField(handler, "planItemStore", store);
-    injectField(handler, "dispatchBudget", budget);
+    var handler = newHandler(store, budget);
 
     UUID caseId = UUID.randomUUID();
     var instance = stubInstance(caseId, "tenant-1");
@@ -179,12 +164,9 @@ class CaseContextChangedEventHandlerConcurrencyTest {
 
   @Test
   void applyDispatchBudget_emptySelected_returnsEmpty() {
-    var handler = new CaseContextChangedEventHandler();
     var store = mock(PlanItemStore.class);
     var budget = mock(DispatchBudget.class);
-
-    injectField(handler, "planItemStore", store);
-    injectField(handler, "dispatchBudget", budget);
+    var handler = newHandler(store, budget);
 
     UUID caseId = UUID.randomUUID();
     var instance = stubInstance(caseId, "tenant-1");
@@ -252,13 +234,9 @@ class CaseContextChangedEventHandlerConcurrencyTest {
     }
   }
 
-  private static void injectField(Object target, String fieldName, Object value) {
-    try {
-      var field = target.getClass().getDeclaredField(fieldName);
-      field.setAccessible(true);
-      field.set(target, value);
-    } catch (Exception e) {
-      throw new RuntimeException(e);
-    }
+  private static CaseContextChangedEventHandler newHandler(PlanItemStore store, DispatchBudget budget) {
+    return new CaseContextChangedEventHandler(
+        null, null, null, null, null, null, null, null, null, null, null, null, null, null, null,
+        null, null, null, null, null, null, null, budget, store, null, java.util.Optional.empty());
   }
 }

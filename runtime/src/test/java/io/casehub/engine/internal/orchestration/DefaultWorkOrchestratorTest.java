@@ -123,7 +123,7 @@ class DefaultWorkOrchestratorTest {
     executionManager = mock(WorkerExecutionManager.class);
     capabilityHealth = mock(CapabilityHealth.class);
     eventBus = mock(EventBus.class);
-    registry = new PendingWorkRegistry();
+    registry = new PendingWorkRegistry(mock(io.casehub.engine.common.spi.CrossTenantEventLogRepository.class));
     caseDefinitionRegistry = mock(CaseDefinitionRegistry.class);
     caseInstanceRepository = mock(CaseInstanceRepository.class);
     eventLogRepository = mock(EventLogRepository.class);

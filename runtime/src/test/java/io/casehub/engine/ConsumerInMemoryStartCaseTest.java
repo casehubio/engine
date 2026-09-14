@@ -192,7 +192,12 @@ public class ConsumerInMemoryStartCaseTest {
 
   @Alternative
   @ApplicationScoped
-  public static class ProfileScopedCaseInstanceRepository extends InMemoryCaseInstanceRepository {}
+  public static class ProfileScopedCaseInstanceRepository extends InMemoryCaseInstanceRepository {
+    @jakarta.inject.Inject
+    public ProfileScopedCaseInstanceRepository(io.casehub.engine.common.spi.EventLogRepository eventLogRepository) {
+      super(eventLogRepository);
+    }
+  }
 
   // ── Test profile ──
 

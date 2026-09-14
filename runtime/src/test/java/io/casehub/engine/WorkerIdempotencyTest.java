@@ -107,7 +107,7 @@ public class WorkerIdempotencyTest {
 
     // Send the same WorkerScheduleEvent three times in rapid succession
     for (int i = 0; i < 3; i++) {
-      handler.onWorkerScheduleEventHandler(
+      handler.handle(
           new WorkerScheduleEvent(instance, bean.worker(), bean.capability()));
     }
 
@@ -287,7 +287,7 @@ public class WorkerIdempotencyTest {
 
     // Five handler invocations for the same input hash
     for (int i = 0; i < 5; i++) {
-      handler.onWorkerScheduleEventHandler(
+      handler.handle(
           new WorkerScheduleEvent(instance, bean.worker(), bean.capability()));
     }
 
@@ -334,7 +334,7 @@ public class WorkerIdempotencyTest {
             inputDataHash,
             Map.of("op", "VERIFY")));
 
-    handler.onWorkerScheduleEventHandler(
+    handler.handle(
         new WorkerScheduleEvent(instance, bean.worker(), bean.capability()));
 
     Awaitility.await()
@@ -409,13 +409,13 @@ public class WorkerIdempotencyTest {
             Map.of("task", Map.of("op", "PARALLEL"), "taskId", taskId));
 
     // Fire four schedule events concurrently (no await between them)
-    handler.onWorkerScheduleEventHandler(
+    handler.handle(
         new WorkerScheduleEvent(instance, bean.worker(), bean.capability()));
-    handler.onWorkerScheduleEventHandler(
+    handler.handle(
         new WorkerScheduleEvent(instance, bean.worker(), bean.capability()));
-    handler.onWorkerScheduleEventHandler(
+    handler.handle(
         new WorkerScheduleEvent(instance, bean.worker(), bean.capability()));
-    handler.onWorkerScheduleEventHandler(
+    handler.handle(
         new WorkerScheduleEvent(instance, bean.worker(), bean.capability()));
 
     await()

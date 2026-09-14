@@ -43,7 +43,6 @@ import io.casehub.engine.common.spi.CaseDefinitionRegistry;
 import io.casehub.engine.common.spi.PlanItemStore;
 import io.casehub.worker.api.PlannedAction;
 import io.casehub.worker.api.WorkerOutcome;
-import jakarta.enterprise.inject.Instance;
 import java.time.Instant;
 import java.util.Optional;
 import java.util.UUID;
@@ -54,41 +53,23 @@ import org.mockito.MockedStatic;
 class BehavioralComplianceRecorderTest {
 
   private BehavioralSignalStore signalStore;
-
-  @SuppressWarnings("unchecked")
-  private Instance<BehavioralSignalStore> storeInstance = mock(Instance.class);
-
   private CaseDefinitionRegistry registry;
   private PlanItemStore planItemStore;
-
-  @SuppressWarnings("unchecked")
-  private Instance<PlanItemStore> planItemStoreInstance = mock(Instance.class);
-
   private VocabularyRegistry vocabularyRegistry;
   private BehavioralComplianceRecorder recorder;
   private CaseInstance caseInstance;
   private CaseDefinition definition;
 
-  @SuppressWarnings("unchecked")
   @BeforeEach
   void setUp() {
     signalStore = mock(BehavioralSignalStore.class);
-    storeInstance = mock(Instance.class);
-    when(storeInstance.isResolvable()).thenReturn(true);
-    when(storeInstance.get()).thenReturn(signalStore);
-
     registry = mock(CaseDefinitionRegistry.class);
-
     planItemStore = mock(PlanItemStore.class);
-    planItemStoreInstance = mock(Instance.class);
-    when(planItemStoreInstance.isResolvable()).thenReturn(true);
-    when(planItemStoreInstance.get()).thenReturn(planItemStore);
-
     vocabularyRegistry = mock(VocabularyRegistry.class);
 
     recorder =
         new BehavioralComplianceRecorder(
-            storeInstance, registry, planItemStoreInstance, vocabularyRegistry);
+            Optional.of(signalStore), registry, Optional.of(planItemStore), vocabularyRegistry);
 
     caseInstance = mock(CaseInstance.class);
     caseInstance.tenancyId = "tenant-1";
@@ -203,14 +184,11 @@ class BehavioralComplianceRecorderTest {
     verifyNoInteractions(signalStore);
   }
 
-  @SuppressWarnings("unchecked")
   @Test
   void storeUnavailable_noOp() {
-    Instance<BehavioralSignalStore> absent = mock(Instance.class);
-    when(absent.isResolvable()).thenReturn(false);
     var silentRecorder =
         new BehavioralComplianceRecorder(
-            absent, registry, planItemStoreInstance, vocabularyRegistry);
+            Optional.empty(), registry, Optional.of(planItemStore), vocabularyRegistry);
 
     silentRecorder.record(caseInstance, "worker-1", "analysis", WorkerOutcome.success(), 5000L);
     // no exception, no interactions with signalStore
@@ -353,14 +331,10 @@ class BehavioralComplianceRecorderTest {
         .record(anyString(), anyString(), anyString(), eq(ComplianceDimension.DELEGATION), any());
   }
 
-  @SuppressWarnings("unchecked")
   @Test
   void planItemStoreUnavailable_skipsDelegation() {
-    Instance<PlanItemStore> absentStore = mock(Instance.class);
-    when(absentStore.isResolvable()).thenReturn(false);
-
     var recorderNoPlanItems =
-        new BehavioralComplianceRecorder(storeInstance, registry, absentStore, vocabularyRegistry);
+        new BehavioralComplianceRecorder(Optional.of(signalStore), registry, Optional.empty(), vocabularyRegistry);
 
     AgentDescriptor delegating =
         AgentDescriptor.builder()

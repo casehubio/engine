@@ -66,7 +66,7 @@ class CaseOutcomeObserverTest {
     instance.setCaseContext(new CaseContextImpl(Map.of("result", "done")));
     instance.tenancyId = "test-tenant";
 
-    statusChangedHandler.onCaseStatusChangedHandler(
+    statusChangedHandler.handle(
         new CaseStatusChanged(instance, "RUNNING", "COMPLETED"));
 
     assertThat(OutcomeCapturingObserver.capturedEvents)
@@ -96,7 +96,7 @@ class CaseOutcomeObserverTest {
     instance.setCaseContext(new CaseContextImpl(Map.of("error", "timeout")));
     instance.tenancyId = "test-tenant";
 
-    statusChangedHandler.onCaseStatusChangedHandler(
+    statusChangedHandler.handle(
         new CaseStatusChanged(instance, "RUNNING", "FAULTED"));
 
     assertThat(OutcomeCapturingObserver.capturedEvents).hasSize(1);
@@ -111,7 +111,7 @@ class CaseOutcomeObserverTest {
     instance.setCaseContext(new CaseContextImpl());
     instance.tenancyId = "test-tenant";
 
-    statusChangedHandler.onCaseStatusChangedHandler(
+    statusChangedHandler.handle(
         new CaseStatusChanged(instance, "RUNNING", "SUSPENDED"));
 
     assertThat(OutcomeCapturingObserver.capturedEvents)
