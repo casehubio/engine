@@ -20,12 +20,14 @@ import io.casehub.ledger.service.CaseLedgerEventCapture;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.enterprise.event.ObservesAsync;
 import jakarta.inject.Inject;
+import jakarta.transaction.Transactional;
 
 @ApplicationScoped
 public class CaseLedgerEventCaptureAdapter {
 
   @Inject CaseLedgerEventCapture capture;
 
+  @Transactional
   void onCaseLifecycleEvent(@ObservesAsync CaseLifecycleEvent event) {
     capture.onCaseLifecycleEvent(event);
   }

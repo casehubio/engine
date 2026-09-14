@@ -20,12 +20,14 @@ import io.casehub.ledger.service.WorkerDecisionEventCapture;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.enterprise.event.ObservesAsync;
 import jakarta.inject.Inject;
+import jakarta.transaction.Transactional;
 
 @ApplicationScoped
 public class WorkerDecisionEventCaptureAdapter {
 
   @Inject WorkerDecisionEventCapture capture;
 
+  @Transactional
   void onWorkerDecisionEvent(@ObservesAsync WorkerDecisionEvent event) {
     capture.onWorkerDecisionEvent(event);
   }
