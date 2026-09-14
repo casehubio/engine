@@ -40,7 +40,6 @@ import org.junit.jupiter.api.Test;
  * the real repository and database to verify end-to-end correctness.
  */
 @QuarkusTest
-@Transactional
 class CaseLedgerEventCaptureTest {
 
   @Inject Event<CaseLifecycleEvent> lifecycleEvents;
