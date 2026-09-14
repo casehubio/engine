@@ -43,6 +43,7 @@ import org.junit.jupiter.api.Timeout;
 
 @QuarkusTest
 @Timeout(value = 60, unit = TimeUnit.SECONDS)
+@jakarta.transaction.Transactional
 class PersistenceIntegrationTest {
 
   @Inject CaseInstanceRepository instanceRepository;
@@ -65,11 +66,11 @@ class PersistenceIntegrationTest {
   }
 
   private <T> T run(Supplier<T> supplier) {
-    return io.quarkus.narayana.jta.QuarkusTransaction.requiringNew().call(supplier::get);
+    return supplier.get();
   }
 
   private void run(Runnable action) {
-    io.quarkus.narayana.jta.QuarkusTransaction.requiringNew().run(action);
+    action.run();
   }
 
   // ========== CaseInstance + EventLog Integration ==========
