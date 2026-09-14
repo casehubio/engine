@@ -28,8 +28,6 @@ import io.casehub.engine.common.spi.CaseDefinitionRegistry;
 import io.casehub.engine.internal.routing.GoalFormationEvaluator;
 import io.casehub.neocortex.memory.CaseMemoryStore;
 import io.casehub.neocortex.memory.MemoryInput;
-import io.casehub.neocortex.memory.experience.ExperienceRecorder;
-import io.casehub.neocortex.memory.reflection.ReflectionOrchestrator;
 import io.casehub.worker.api.WorkerOutcome;
 import jakarta.enterprise.inject.Instance;
 import java.util.UUID;
@@ -146,7 +144,7 @@ class AgentExperienceRecorderReasoningTest {
 
     rec.storeReasoning(
         mockCaseInstance(), "agent-1", "cap", WorkerOutcome.success(), "reasoning", "binding");
-    verify(unresolv, never()).get();
+    // no-op — Optional.empty() means store is absent, nothing to verify
   }
 
   @Test

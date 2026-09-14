@@ -30,7 +30,6 @@ import io.casehub.neocortex.memory.experience.ExperienceRecorder;
 import io.casehub.neocortex.memory.experience.Outcome;
 import io.casehub.neocortex.memory.reflection.ReflectionOrchestrator;
 import io.casehub.worker.api.WorkerOutcome;
-import jakarta.enterprise.inject.Instance;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;

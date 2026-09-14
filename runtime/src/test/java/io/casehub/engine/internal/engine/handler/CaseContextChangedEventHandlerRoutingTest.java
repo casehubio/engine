@@ -303,8 +303,7 @@ class CaseContextChangedEventHandlerRoutingTest {
     inst.setCaseMetaModel(metaModel);
     inst.setCaseContext(ctx);
 
-    handler.handle(
-        new CaseContextChangedEvent(inst, ctx, "extracted"));
+    handler.handle(new CaseContextChangedEvent(inst, ctx, "extracted"));
 
     verify(eventBus).publish(eq(EventBusAddresses.WORKER_SCHEDULE), any(WorkerScheduleEvent.class));
   }
@@ -368,8 +367,7 @@ class CaseContextChangedEventHandlerRoutingTest {
     inst.setCaseMetaModel(metaModel);
     inst.setCaseContext(ctx);
 
-    handler.handle(
-        new CaseContextChangedEvent(inst, ctx, ContextLayer.WORKING));
+    handler.handle(new CaseContextChangedEvent(inst, ctx, ContextLayer.WORKING));
 
     verify(eventBus, never())
         .publish(eq(EventBusAddresses.WORKER_SCHEDULE), any(WorkerScheduleEvent.class));
@@ -444,8 +442,7 @@ class CaseContextChangedEventHandlerRoutingTest {
 
     caseInstance.setCaseContext(ctx);
 
-    handler.handle(
-        new CaseContextChangedEvent(caseInstance, ctx, ContextLayer.WORKING));
+    handler.handle(new CaseContextChangedEvent(caseInstance, ctx, ContextLayer.WORKING));
 
     verify(eventBus, never())
         .publish(eq(EventBusAddresses.WORKER_SCHEDULE), any(WorkerScheduleEvent.class));

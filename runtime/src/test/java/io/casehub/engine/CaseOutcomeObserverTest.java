@@ -66,8 +66,7 @@ class CaseOutcomeObserverTest {
     instance.setCaseContext(new CaseContextImpl(Map.of("result", "done")));
     instance.tenancyId = "test-tenant";
 
-    statusChangedHandler.handle(
-        new CaseStatusChanged(instance, "RUNNING", "COMPLETED"));
+    statusChangedHandler.handle(new CaseStatusChanged(instance, "RUNNING", "COMPLETED"));
 
     assertThat(OutcomeCapturingObserver.capturedEvents)
         .as("CaseOutcomeObserver.onOutcome() must be called when case COMPLETES — engine#477")
@@ -96,8 +95,7 @@ class CaseOutcomeObserverTest {
     instance.setCaseContext(new CaseContextImpl(Map.of("error", "timeout")));
     instance.tenancyId = "test-tenant";
 
-    statusChangedHandler.handle(
-        new CaseStatusChanged(instance, "RUNNING", "FAULTED"));
+    statusChangedHandler.handle(new CaseStatusChanged(instance, "RUNNING", "FAULTED"));
 
     assertThat(OutcomeCapturingObserver.capturedEvents).hasSize(1);
     assertThat(OutcomeCapturingObserver.capturedEvents.get(0).outcomeLabel()).isEqualTo("FAULTED");
@@ -111,8 +109,7 @@ class CaseOutcomeObserverTest {
     instance.setCaseContext(new CaseContextImpl());
     instance.tenancyId = "test-tenant";
 
-    statusChangedHandler.handle(
-        new CaseStatusChanged(instance, "RUNNING", "SUSPENDED"));
+    statusChangedHandler.handle(new CaseStatusChanged(instance, "RUNNING", "SUSPENDED"));
 
     assertThat(OutcomeCapturingObserver.capturedEvents)
         .as("CaseOutcomeObserver must NOT be called for non-terminal state transitions")

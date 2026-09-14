@@ -234,9 +234,34 @@ class CaseContextChangedEventHandlerConcurrencyTest {
     }
   }
 
-  private static CaseContextChangedEventHandler newHandler(PlanItemStore store, DispatchBudget budget) {
+  private static CaseContextChangedEventHandler newHandler(
+      PlanItemStore store, DispatchBudget budget) {
     return new CaseContextChangedEventHandler(
-        null, null, null, null, null, null, null, null, null, null, null, null, null, null, null,
-        null, null, null, null, null, null, null, budget, store, null, java.util.Optional.empty());
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        budget,
+        store,
+        null,
+        java.util.Optional.empty());
   }
 }

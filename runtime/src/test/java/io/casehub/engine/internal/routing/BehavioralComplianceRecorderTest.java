@@ -334,7 +334,8 @@ class BehavioralComplianceRecorderTest {
   @Test
   void planItemStoreUnavailable_skipsDelegation() {
     var recorderNoPlanItems =
-        new BehavioralComplianceRecorder(Optional.of(signalStore), registry, Optional.empty(), vocabularyRegistry);
+        new BehavioralComplianceRecorder(
+            Optional.of(signalStore), registry, Optional.empty(), vocabularyRegistry);
 
     AgentDescriptor delegating =
         AgentDescriptor.builder()

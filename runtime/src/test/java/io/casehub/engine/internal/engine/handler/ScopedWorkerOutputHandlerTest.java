@@ -33,14 +33,13 @@ import com.fasterxml.jackson.databind.node.ObjectNode;
 import io.casehub.api.model.CaseStatus;
 import io.casehub.api.model.event.CaseHubEventType;
 import io.casehub.api.model.event.EventStreamType;
+import io.casehub.api.spi.event.EventDispatcher;
 import io.casehub.engine.common.internal.event.CaseContextChangedEvent;
-import io.casehub.engine.common.internal.event.EventBusAddresses;
 import io.casehub.engine.common.internal.event.ScopedWorkerOutputEvent;
 import io.casehub.engine.common.internal.history.EventLog;
 import io.casehub.engine.common.internal.model.CaseInstance;
 import io.casehub.engine.common.internal.model.CaseMetaModel;
 import io.casehub.engine.common.spi.EventLogRepository;
-import io.casehub.api.spi.event.EventDispatcher;
 import java.util.Map;
 import java.util.UUID;
 import org.junit.jupiter.api.BeforeEach;
@@ -68,7 +67,13 @@ class ScopedWorkerOutputHandlerTest {
     agentExperienceRecorder = mock(io.casehub.engine.internal.memory.AgentExperienceRecorder.class);
     caseDefinitionRegistry = mock(io.casehub.engine.common.spi.CaseDefinitionRegistry.class);
 
-    handler = new ScopedWorkerOutputHandler(applier, eventLogRepository, eventDispatcher, agentExperienceRecorder, caseDefinitionRegistry);
+    handler =
+        new ScopedWorkerOutputHandler(
+            applier,
+            eventLogRepository,
+            eventDispatcher,
+            agentExperienceRecorder,
+            caseDefinitionRegistry);
 
     CaseMetaModel metaModel = new CaseMetaModel();
     metaModel.setNamespace("ns");

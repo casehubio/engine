@@ -107,8 +107,7 @@ public class WorkerIdempotencyTest {
 
     // Send the same WorkerScheduleEvent three times in rapid succession
     for (int i = 0; i < 3; i++) {
-      handler.handle(
-          new WorkerScheduleEvent(instance, bean.worker(), bean.capability()));
+      handler.handle(new WorkerScheduleEvent(instance, bean.worker(), bean.capability()));
     }
 
     await()
@@ -287,8 +286,7 @@ public class WorkerIdempotencyTest {
 
     // Five handler invocations for the same input hash
     for (int i = 0; i < 5; i++) {
-      handler.handle(
-          new WorkerScheduleEvent(instance, bean.worker(), bean.capability()));
+      handler.handle(new WorkerScheduleEvent(instance, bean.worker(), bean.capability()));
     }
 
     await()
@@ -334,8 +332,7 @@ public class WorkerIdempotencyTest {
             inputDataHash,
             Map.of("op", "VERIFY")));
 
-    handler.handle(
-        new WorkerScheduleEvent(instance, bean.worker(), bean.capability()));
+    handler.handle(new WorkerScheduleEvent(instance, bean.worker(), bean.capability()));
 
     Awaitility.await()
         .during(2, TimeUnit.SECONDS)
@@ -409,14 +406,10 @@ public class WorkerIdempotencyTest {
             Map.of("task", Map.of("op", "PARALLEL"), "taskId", taskId));
 
     // Fire four schedule events concurrently (no await between them)
-    handler.handle(
-        new WorkerScheduleEvent(instance, bean.worker(), bean.capability()));
-    handler.handle(
-        new WorkerScheduleEvent(instance, bean.worker(), bean.capability()));
-    handler.handle(
-        new WorkerScheduleEvent(instance, bean.worker(), bean.capability()));
-    handler.handle(
-        new WorkerScheduleEvent(instance, bean.worker(), bean.capability()));
+    handler.handle(new WorkerScheduleEvent(instance, bean.worker(), bean.capability()));
+    handler.handle(new WorkerScheduleEvent(instance, bean.worker(), bean.capability()));
+    handler.handle(new WorkerScheduleEvent(instance, bean.worker(), bean.capability()));
+    handler.handle(new WorkerScheduleEvent(instance, bean.worker(), bean.capability()));
 
     await()
         .atMost(10, TimeUnit.SECONDS)

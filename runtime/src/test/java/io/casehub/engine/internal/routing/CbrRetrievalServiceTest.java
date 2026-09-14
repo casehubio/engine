@@ -46,7 +46,6 @@ import io.casehub.neocortex.memory.cbr.ResolutionStep;
 import io.casehub.neocortex.memory.cbr.ResolvedCase;
 import io.casehub.neocortex.memory.cbr.ScoredCbrCase;
 import io.casehub.neocortex.memory.cbr.TemporalDecay;
-
 import java.time.Duration;
 import java.util.List;
 import java.util.Map;
