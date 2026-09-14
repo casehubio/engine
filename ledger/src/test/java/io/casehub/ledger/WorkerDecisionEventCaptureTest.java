@@ -43,6 +43,7 @@ import org.junit.jupiter.api.Test;
  * appears in the ledger with correct actor, capability, and subject fields.
  */
 @QuarkusTest
+@jakarta.transaction.Transactional
 class WorkerDecisionEventCaptureTest {
 
   @Inject Event<WorkerDecisionEvent> workerDecisionEvents;
