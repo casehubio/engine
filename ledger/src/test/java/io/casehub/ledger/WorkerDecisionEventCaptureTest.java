@@ -43,12 +43,16 @@ import org.junit.jupiter.api.Test;
  * appears in the ledger with correct actor, capability, and subject fields.
  */
 @QuarkusTest
-@jakarta.enterprise.context.control.ActivateRequestContext
 class WorkerDecisionEventCaptureTest {
 
   @Inject Event<WorkerDecisionEvent> workerDecisionEvents;
 
   @Inject CaseLedgerEntryRepository repository;
+
+  private List<io.casehub.ledger.model.WorkerDecisionEntry> findDecisionsInTx(UUID caseId) {
+    return io.quarkus.narayana.jta.QuarkusTransaction.requiringNew()
+        .call(() -> repository.findWorkerDecisionsByCaseId(caseId));
+  }
 
   @Inject TrustScoreSource trustScoreSource;
 
@@ -69,7 +73,7 @@ class WorkerDecisionEventCaptureTest {
         .untilAsserted(
             () -> {
               final List<WorkerDecisionEntry> entries =
-                  repository.findWorkerDecisionsByCaseId(caseId);
+                  findDecisionsInTx(caseId);
               assertThat(entries).hasSize(1);
               final WorkerDecisionEntry entry = entries.get(0);
               assertThat(entry.workerId).isEqualTo(workerId);
@@ -102,7 +106,7 @@ class WorkerDecisionEventCaptureTest {
         .untilAsserted(
             () -> {
               final List<WorkerDecisionEntry> entries =
-                  repository.findWorkerDecisionsByCaseId(caseId);
+                  findDecisionsInTx(caseId);
               assertThat(entries).hasSize(1);
               assertThat(entries.get(0).capabilityTag).isNull();
               assertThat(entries.get(0).actorType).isEqualTo(ActorType.SYSTEM);
@@ -131,7 +135,7 @@ class WorkerDecisionEventCaptureTest {
         .untilAsserted(
             () -> {
               final List<WorkerDecisionEntry> entries =
-                  repository.findWorkerDecisionsByCaseId(caseId);
+                  findDecisionsInTx(caseId);
               assertThat(entries).hasSize(1);
               final WorkerDecisionEntry entry = entries.get(0);
               assertThat(entry.trustScoreAtRouting).isEqualTo(0.85);
@@ -155,7 +159,7 @@ class WorkerDecisionEventCaptureTest {
         .untilAsserted(
             () -> {
               final List<WorkerDecisionEntry> entries =
-                  repository.findWorkerDecisionsByCaseId(caseId);
+                  findDecisionsInTx(caseId);
               assertThat(entries).hasSize(1);
               assertThat(entries.get(0).sequenceNumber).isEqualTo(1);
             });
@@ -180,7 +184,7 @@ class WorkerDecisionEventCaptureTest {
         .untilAsserted(
             () -> {
               final List<WorkerDecisionEntry> entries =
-                  repository.findWorkerDecisionsByCaseId(caseId);
+                  findDecisionsInTx(caseId);
               assertThat(entries).hasSize(1);
               final WorkerDecisionEntry entry = entries.get(0);
               assertThat(entry.domainData).isNotNull();
@@ -202,7 +206,7 @@ class WorkerDecisionEventCaptureTest {
         .untilAsserted(
             () -> {
               final List<WorkerDecisionEntry> entries =
-                  repository.findWorkerDecisionsByCaseId(caseId);
+                  findDecisionsInTx(caseId);
               assertThat(entries).hasSize(1);
               assertThat(entries.get(0).domainData).isNull();
             });
@@ -222,7 +226,7 @@ class WorkerDecisionEventCaptureTest {
         .untilAsserted(
             () -> {
               final List<WorkerDecisionEntry> entries =
-                  repository.findWorkerDecisionsByCaseId(caseId);
+                  findDecisionsInTx(caseId);
               assertThat(entries).hasSize(1);
               final String stored = (String) entries.get(0).domainData.get("reasoning");
               assertThat(stored).isNotNull();
