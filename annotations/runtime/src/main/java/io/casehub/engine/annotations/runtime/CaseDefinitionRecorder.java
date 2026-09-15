@@ -406,6 +406,32 @@ public class CaseDefinitionRecorder {
       }
     }
 
+    if (descriptor.cbr() != null) {
+      CbrDescriptor cbr = descriptor.cbr();
+      io.casehub.api.model.cbr.CbrConfig.Builder cbrBuilder =
+          io.casehub.api.model.cbr.CbrConfig.builder();
+      cbr.features().forEach(cbrBuilder::feature);
+      cbr.weights().forEach(cbrBuilder::weight);
+      cbrBuilder
+          .topK(cbr.topK())
+          .minSimilarity(cbr.minSimilarity())
+          .vectorWeight(cbr.vectorWeight())
+          .crossType(cbr.crossType());
+      if (!cbr.domain().isEmpty()) cbrBuilder.domain(cbr.domain());
+      if (!cbr.caseType().isEmpty()) cbrBuilder.caseType(cbr.caseType());
+      if (!cbr.cbrType().isEmpty()) cbrBuilder.cbrType(cbr.cbrType());
+      if (!cbr.problemDescription().isEmpty())
+        cbrBuilder.problemDescription(cbr.problemDescription());
+      if (!cbr.timing().isEmpty())
+        cbrBuilder.timing(
+            io.casehub.api.model.cbr.CbrConfig.CbrRetrievalTiming.valueOf(
+                cbr.timing().toUpperCase().replace("-", "_")));
+      if (cbr.temporalDecayHalfLifeDays() > 0)
+        cbrBuilder.temporalDecayHalfLifeDays(cbr.temporalDecayHalfLifeDays());
+      if (cbr.minCostSamples() > 0) cbrBuilder.minCostSamples(cbr.minCostSamples());
+      builder.cbrConfig(cbrBuilder.build());
+    }
+
     return builder.build();
   }
 }

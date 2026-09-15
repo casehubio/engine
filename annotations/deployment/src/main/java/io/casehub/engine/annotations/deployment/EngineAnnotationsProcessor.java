@@ -85,6 +85,7 @@ public class EngineAnnotationsProcessor {
       DotName.createSimple("io.casehub.engine.annotations.SubCase");
   private static final DotName JUDGMENT =
       DotName.createSimple("io.casehub.engine.annotations.Judgment");
+  private static final DotName CBR = DotName.createSimple("io.casehub.engine.annotations.Cbr");
 
   @BuildStep
   @Record(ExecutionTime.RUNTIME_INIT)
@@ -393,6 +394,37 @@ public class EngineAnnotationsProcessor {
 
     String implClassName = caseClass.name().toString() + "_CaseHubImpl";
 
+    io.casehub.engine.annotations.runtime.CbrDescriptor cbrDescriptor = null;
+    AnnotationInstance cbrAnn = caseClass.annotation(CBR);
+    if (cbrAnn != null) {
+      java.util.LinkedHashMap<String, String> cbrFeatures = new java.util.LinkedHashMap<>();
+      for (AnnotationInstance feat : cbrAnn.value("features").asNestedArray()) {
+        cbrFeatures.put(feat.value("name").asString(), feat.value("expression").asString());
+      }
+      java.util.LinkedHashMap<String, Double> cbrWeights = new java.util.LinkedHashMap<>();
+      org.jboss.jandex.AnnotationValue weightsValue = cbrAnn.value("weights");
+      if (weightsValue != null) {
+        for (AnnotationInstance w : weightsValue.asNestedArray()) {
+          cbrWeights.put(w.value("name").asString(), w.value("value").asDouble());
+        }
+      }
+      cbrDescriptor =
+          new io.casehub.engine.annotations.runtime.CbrDescriptor(
+              cbrFeatures,
+              cbrWeights,
+              intValueOrDefault(cbrAnn, index, "topK", 5),
+              doubleValueOrDefault(cbrAnn, index, "minSimilarity", 0),
+              stringValueOrDefault(cbrAnn, index, "domain", ""),
+              stringValueOrDefault(cbrAnn, index, "caseType", ""),
+              doubleValueOrDefault(cbrAnn, index, "vectorWeight", 0),
+              stringValueOrDefault(cbrAnn, index, "timing", "per-evaluation"),
+              stringValueOrDefault(cbrAnn, index, "cbrType", ""),
+              intValueOrDefault(cbrAnn, index, "temporalDecayHalfLifeDays", -1),
+              intValueOrDefault(cbrAnn, index, "minCostSamples", -1),
+              booleanValueOrDefault(cbrAnn, index, "crossType", false),
+              stringValueOrDefault(cbrAnn, index, "problemDescription", ""));
+    }
+
     return new CaseDescriptor(
         namespace,
         name,
@@ -413,7 +445,8 @@ public class EngineAnnotationsProcessor {
         standaloneCapabilities.isEmpty() ? null : standaloneCapabilities,
         compoundDescriptors.isEmpty() ? null : compoundDescriptors,
         subCaseDescriptors.isEmpty() ? null : subCaseDescriptors,
-        judgmentDescriptors.isEmpty() ? null : judgmentDescriptors);
+        judgmentDescriptors.isEmpty() ? null : judgmentDescriptors,
+        cbrDescriptor);
   }
 
   private void processWorkerMethod(
@@ -664,5 +697,19 @@ public class EngineAnnotationsProcessor {
     AnnotationValue value = ann.valueWithDefault(index, name);
     if (value == null) return defaultValue;
     return value.asBoolean();
+  }
+
+  private static int intValueOrDefault(
+      AnnotationInstance ann, IndexView index, String name, int defaultValue) {
+    AnnotationValue value = ann.valueWithDefault(index, name);
+    if (value == null) return defaultValue;
+    return value.asInt();
+  }
+
+  private static double doubleValueOrDefault(
+      AnnotationInstance ann, IndexView index, String name, double defaultValue) {
+    AnnotationValue value = ann.valueWithDefault(index, name);
+    if (value == null) return defaultValue;
+    return value.asDouble();
   }
 }

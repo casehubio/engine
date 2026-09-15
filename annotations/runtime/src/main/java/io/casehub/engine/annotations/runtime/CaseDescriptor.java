@@ -38,4 +38,5 @@ public record CaseDescriptor(
     List<String> standaloneCapabilities,
     List<CompoundDescriptor> compounds,
     List<SubCaseDescriptor> subCases,
-    List<JudgmentDescriptor> judgments) {}
+    List<JudgmentDescriptor> judgments,
+    CbrDescriptor cbr) {}
