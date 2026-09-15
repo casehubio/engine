@@ -35,6 +35,7 @@ import io.casehub.api.model.CaseStatus;
 import io.casehub.api.model.ContextChangeTrigger;
 import io.casehub.api.spi.routing.AgentRoutingStrategy;
 import io.casehub.api.spi.routing.CandidateMatchingStrategy;
+import io.casehub.api.spi.routing.CbrRetrievalResult;
 import io.casehub.api.spi.routing.EscalationReason;
 import io.casehub.api.spi.routing.RoutingResult;
 import io.casehub.eidos.api.CapabilityHealth;
@@ -192,7 +193,7 @@ class CaseContextChangedEventHandlerRoutingTest {
 
     when(loopControl.select(any(), any())).thenReturn(List.of(binding));
     when(traceIdProvider.currentTraceId()).thenReturn(java.util.Optional.empty());
-    when(cbrRetrievalService.retrieve(any(), any())).thenReturn(List.of());
+    when(cbrRetrievalService.retrieve(any(), any())).thenReturn(CbrRetrievalResult.empty());
     when(dispatchBudget.availableCapacity(any())).thenReturn(Integer.MAX_VALUE);
   }
 

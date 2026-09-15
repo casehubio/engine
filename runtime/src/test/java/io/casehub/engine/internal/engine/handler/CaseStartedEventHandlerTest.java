@@ -26,6 +26,7 @@ import io.casehub.api.model.CaseDefinition;
 import io.casehub.api.model.CaseStatus;
 import io.casehub.api.model.cbr.CbrConfig;
 import io.casehub.api.spi.CaseChannelProvider;
+import io.casehub.api.spi.routing.CbrRetrievalResult;
 import io.casehub.api.spi.routing.RetrievedExperience;
 import io.casehub.engine.common.internal.event.CaseStartedEvent;
 import io.casehub.engine.common.internal.model.CaseInstance;
@@ -121,7 +122,7 @@ class CaseStartedEventHandlerTest {
             List.of(),
             Map.of());
     when(cbrRetrievalService.retrieve(eq(definition), eq(instance)))
-        .thenReturn(List.of(experience));
+        .thenReturn(new CbrRetrievalResult(List.of(experience), null));
 
     handler.onCaseStarted(new CaseStartedEvent(instance));
 
@@ -180,7 +181,7 @@ class CaseStartedEventHandlerTest {
     CaseInstance instance = createCaseInstance(metaModel);
 
     when(caseDefinitionRegistry.getCaseDefinition(metaModel)).thenReturn(definition);
-    when(cbrRetrievalService.retrieve(definition, instance)).thenReturn(List.of());
+    when(cbrRetrievalService.retrieve(definition, instance)).thenReturn(CbrRetrievalResult.empty());
 
     handler.onCaseStarted(new CaseStartedEvent(instance));
 
@@ -219,7 +220,7 @@ class CaseStartedEventHandlerTest {
         new RetrievedExperience(
             "problem3", "solution3", "FAULTED", 0.7, 0.65, Map.of(), List.of(), Map.of());
     when(cbrRetrievalService.retrieve(eq(definition), eq(instance)))
-        .thenReturn(List.of(exp1, exp2, exp3));
+        .thenReturn(new CbrRetrievalResult(List.of(exp1, exp2, exp3), null));
 
     handler.onCaseStarted(new CaseStartedEvent(instance));
 
@@ -249,7 +250,7 @@ class CaseStartedEventHandlerTest {
     metaModel.setVersion("1.0");
     CaseInstance instance = createCaseInstance(metaModel);
     when(caseDefinitionRegistry.getCaseDefinition(metaModel)).thenReturn(definition);
-    when(cbrRetrievalService.retrieve(definition, instance)).thenReturn(List.of());
+    when(cbrRetrievalService.retrieve(definition, instance)).thenReturn(CbrRetrievalResult.empty());
 
     handler.onCaseStarted(new CaseStartedEvent(instance));
 
@@ -286,7 +287,7 @@ class CaseStartedEventHandlerTest {
         new RetrievedExperience(
             "problem2", "solution2", null, null, 0.80, Map.of(), List.of(), Map.of());
     when(cbrRetrievalService.retrieve(eq(definition), eq(instance)))
-        .thenReturn(List.of(exp1, exp2));
+        .thenReturn(new CbrRetrievalResult(List.of(exp1, exp2), null));
 
     handler.onCaseStarted(new CaseStartedEvent(instance));
 
