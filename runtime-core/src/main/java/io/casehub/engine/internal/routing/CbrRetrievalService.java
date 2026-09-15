@@ -31,6 +31,7 @@ import io.casehub.api.spi.routing.ConsensusScope;
 import io.casehub.api.spi.routing.EnsembleConsensus;
 import io.casehub.api.spi.routing.ExperienceAnalyser;
 import io.casehub.api.spi.routing.ExperiencePlanStep;
+import io.casehub.api.spi.routing.ResolutionSourceType;
 import io.casehub.api.spi.routing.RetrievedExperience;
 import io.casehub.api.spi.routing.RoutingOutcome;
 import io.casehub.api.spi.routing.StepConsensusEntry;
@@ -49,7 +50,6 @@ import io.casehub.neocortex.memory.cbr.FeatureValue;
 import io.casehub.neocortex.memory.cbr.FeatureVectorCbrCase;
 import io.casehub.neocortex.memory.cbr.PlanAdapter;
 import io.casehub.neocortex.memory.cbr.PlanEnsembleAnalyzer;
-import io.casehub.neocortex.memory.cbr.GuidanceStep;
 import io.casehub.neocortex.memory.cbr.ResolutionGuide;
 import io.casehub.neocortex.memory.cbr.ResolutionStep;
 import io.casehub.neocortex.memory.cbr.ResolvedCase;
@@ -671,31 +671,19 @@ public class CbrRetrievalService {
     String resultCaseType = scored.caseType();
 
     if (c instanceof ResolutionGuide guide) {
-      List<DocumentStep> docSteps =
-          guide.steps() != null
-              ? guide.steps().stream()
-                  .map(
-                      s ->
-                          new DocumentStep(
-                              s.description(),
-                              s.preconditions(),
-                              s.expectedOutcome(),
-                              s.automationHint()))
-                  .toList()
-              : null;
       return new RetrievedExperience(
-          c.problem(),
-          c.solution(),
-          c.outcome(),
-          c.confidence() != null ? c.confidence().value() : null,
+          guide.problem(),
+          guide.solution(),
+          guide.outcome(),
+          guide.confidence() != null ? guide.confidence().value() : null,
           scored.score(),
           new LinkedHashMap<>(c.features()),
           List.of(),
           scored.featureSimilarities(),
           resultCaseType,
           ResolutionSourceType.RESOLUTION_GUIDE,
-          c.solution(),
-          docSteps,
+          guide.solution(),
+          null,
           scored.caseId());
     }
 

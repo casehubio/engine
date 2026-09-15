@@ -42,7 +42,6 @@ import io.casehub.neocortex.memory.cbr.CbrFeatureSchema;
 import io.casehub.neocortex.memory.cbr.CbrQuery;
 import io.casehub.neocortex.memory.cbr.EnsemblePlan;
 import io.casehub.neocortex.memory.cbr.FeatureValue;
-import io.casehub.neocortex.memory.cbr.GuidanceStep;
 import io.casehub.neocortex.memory.cbr.PlanAdapter;
 import io.casehub.neocortex.memory.cbr.PlanEnsembleAnalyzer;
 import io.casehub.neocortex.memory.cbr.ResolutionGuide;
@@ -303,13 +302,6 @@ class CbrRetrievalServiceTest {
             "1. Isolate mailbox 2. Reset credentials",
             null,
             null,
-            Map.of("category", FeatureValue.string("phishing")),
-            List.of(
-                new GuidanceStep(
-                    "Isolate mailbox",
-                    "Exchange admin access",
-                    "Mailbox isolated",
-                    "exchange:disable")),
             null,
             null);
     cbrStore.setResult(List.of(new ScoredCbrCase<>(guide, "textual", 0.82)));
@@ -323,12 +315,7 @@ class CbrRetrievalServiceTest {
     assertEquals(
         io.casehub.api.spi.routing.ResolutionSourceType.RESOLUTION_GUIDE, exp.sourceType());
     assertEquals("1. Isolate mailbox 2. Reset credentials", exp.documentContent());
-    assertNotNull(exp.documentSteps());
-    assertEquals(1, exp.documentSteps().size());
-    assertEquals("Isolate mailbox", exp.documentSteps().get(0).description());
-    assertEquals("Exchange admin access", exp.documentSteps().get(0).preconditions());
-    assertEquals("Mailbox isolated", exp.documentSteps().get(0).expectedOutcome());
-    assertEquals("exchange:disable", exp.documentSteps().get(0).automationHint());
+    assertNull(exp.documentSteps());
     assertTrue(exp.planTrace().isEmpty());
     assertEquals("textual", exp.caseType());
   }
@@ -359,8 +346,6 @@ class CbrRetrievalServiceTest {
             "guide solution",
             null,
             null,
-            Map.of("f1", FeatureValue.string("v1")),
-            List.of(),
             null,
             null);
 

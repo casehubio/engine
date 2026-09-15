@@ -28,7 +28,6 @@ import io.casehub.neocortex.memory.cbr.CbrCaseMemoryStore;
 import io.casehub.neocortex.memory.cbr.CbrFeatureSchema;
 import io.casehub.neocortex.memory.cbr.CbrQuery;
 import io.casehub.neocortex.memory.cbr.FeatureValue;
-import io.casehub.neocortex.memory.cbr.GuidanceStep;
 import io.casehub.neocortex.memory.cbr.ResolutionGuide;
 import io.casehub.neocortex.memory.cbr.ScoredCbrCase;
 import io.casehub.platform.api.path.Path;
@@ -73,10 +72,6 @@ class ResolutionIngestionServiceTest {
     var guide = (ResolutionGuide) store.storedCases.get(0);
     assertThat(guide.problem()).isEqualTo("Phishing runbook");
     assertThat(guide.solution()).isEqualTo("1. Isolate 2. Reset");
-    assertThat(guide.steps()).hasSize(1);
-    assertThat(guide.steps().get(0).description()).isEqualTo("Isolate mailbox");
-    assertThat(guide.features()).containsEntry("category", FeatureValue.string("phishing"));
-    assertThat(guide.steps().get(0)).isInstanceOf(GuidanceStep.class);
     assertThat(store.storedDomains.get(0).name()).isEqualTo("soc-domain");
     assertThat(store.storedTenantIds.get(0)).isEqualTo("tenant-1");
   }
