@@ -55,6 +55,12 @@ per-action cost multipliers (1.0 = no adjustment); empty map on cold start
 - `actionNames` (`java.util.Set<java.lang.String>`)
 - `minSamples` (`int`)
 
+### `public static double outcomeConsistency(java.util.List<io.casehub.api.spi.routing.RetrievedExperience> experiences)`
+
+#### Parameters
+
+- `experiences` (`java.util.List<io.casehub.api.spi.routing.RetrievedExperience>`)
+
 ### `public static java.util.Map<java.lang.String,java.lang.Double> workerSuccessRates(java.util.List<io.casehub.api.spi.routing.RetrievedExperience> experiences, java.util.Set<java.lang.String> eligibleWorkerIds, java.lang.String capabilityName, java.util.Map<io.casehub.api.spi.routing.RoutingOutcome,java.lang.Double> outcomeWeights)`
 
 Computes per-worker success rates, filtering plan trace steps by capability name.

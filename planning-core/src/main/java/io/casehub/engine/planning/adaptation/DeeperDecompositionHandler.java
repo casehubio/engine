@@ -140,7 +140,8 @@ public class DeeperDecompositionHandler {
     List<RetrievedExperience> experiences = List.of();
     if (cbrRetrievalServiceInstance.isPresent() && definition.getCbrConfig() != null) {
       try {
-        experiences = cbrRetrievalServiceInstance.get().retrieve(definition, instance);
+        experiences =
+            cbrRetrievalServiceInstance.get().retrieve(definition, instance).experiences();
       } catch (Exception e) {
         LOG.debugf("CBR retrieval for deeper decomposition failed — proceeding without");
       }

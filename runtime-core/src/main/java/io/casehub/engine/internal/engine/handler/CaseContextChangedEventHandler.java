@@ -283,7 +283,8 @@ public class CaseContextChangedEventHandler {
       eligible.add(binding);
     }
 
-    List<RetrievedExperience> experiences = cbrRetrievalService.retrieve(definition, caseInstance);
+    List<RetrievedExperience> experiences =
+        cbrRetrievalService.retrieve(definition, caseInstance).experiences();
 
     final PlanExecutionContext planCtx =
         new PlanExecutionContext(

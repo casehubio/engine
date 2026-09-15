@@ -42,6 +42,20 @@ public final class ExperienceAnalyser {
 
   private ExperienceAnalyser() {}
 
+  public static double outcomeConsistency(List<RetrievedExperience> experiences) {
+    if (experiences.isEmpty()) return 0.0;
+    Map<String, Long> freq =
+        experiences.stream()
+            .map(RetrievedExperience::outcome)
+            .filter(java.util.Objects::nonNull)
+            .collect(
+                java.util.stream.Collectors.groupingBy(
+                    java.util.function.Function.identity(),
+                    java.util.stream.Collectors.counting()));
+    if (freq.isEmpty()) return 0.0;
+    return (double) java.util.Collections.max(freq.values()) / experiences.size();
+  }
+
   /**
    * Computes per-worker success rates using a caller-supplied step filter predicate.
    *

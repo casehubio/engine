@@ -1200,6 +1200,12 @@ $defs:
       minCostSamples:
         type: integer
         minimum: 1
+      crossType:
+        type: boolean
+        default: false
+      problemDescription:
+        type: string
+        description: "JQ expression evaluated against context to produce problem description for CBR case"
   Agent:
     type: object
     unevaluatedProperties: false

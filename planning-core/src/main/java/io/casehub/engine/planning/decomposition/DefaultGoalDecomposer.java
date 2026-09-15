@@ -146,7 +146,8 @@ public class DefaultGoalDecomposer implements io.casehub.engine.common.spi.GoalD
         java.util.List.of();
     if (cbrRetrievalServiceInstance.isPresent() && definition.getCbrConfig() != null) {
       try {
-        experiences = cbrRetrievalServiceInstance.get().retrieve(definition, instance);
+        experiences =
+            cbrRetrievalServiceInstance.get().retrieve(definition, instance).experiences();
       } catch (Exception e) {
         LOG.debugf("CBR retrieval for decomposition failed — proceeding without learned costs");
       }

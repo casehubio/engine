@@ -25,37 +25,56 @@ import io.casehub.api.model.cbr.CbrConfig;
 import io.casehub.api.model.cbr.CbrConfig.CbrRetrievalTiming;
 import io.casehub.api.model.cbr.JqFeatureExtractor;
 import io.casehub.api.model.cbr.LambdaFeatureExtractor;
+import io.casehub.api.spi.routing.AgreementLevel;
+import io.casehub.api.spi.routing.CbrRetrievalResult;
+import io.casehub.api.spi.routing.ConsensusScope;
+import io.casehub.api.spi.routing.EnsembleConsensus;
+import io.casehub.api.spi.routing.ExperienceAnalyser;
 import io.casehub.api.spi.routing.ExperiencePlanStep;
 import io.casehub.api.spi.routing.RetrievedExperience;
 import io.casehub.api.spi.routing.RoutingOutcome;
+import io.casehub.api.spi.routing.StepConsensusEntry;
 import io.casehub.engine.common.internal.jq.JQEvaluator;
 import io.casehub.engine.common.internal.jq.ValidationResult;
 import io.casehub.engine.common.internal.model.CaseInstance;
 import io.casehub.neocortex.memory.MemoryDomain;
 import io.casehub.neocortex.memory.cbr.AdaptationAction;
 import io.casehub.neocortex.memory.cbr.AdaptedPlan;
+import io.casehub.neocortex.memory.cbr.AdaptedStep;
 import io.casehub.neocortex.memory.cbr.CbrCase;
 import io.casehub.neocortex.memory.cbr.CbrCaseMemoryStore;
 import io.casehub.neocortex.memory.cbr.CbrQuery;
+import io.casehub.neocortex.memory.cbr.EnsemblePlan;
 import io.casehub.neocortex.memory.cbr.FeatureValue;
 import io.casehub.neocortex.memory.cbr.FeatureVectorCbrCase;
 import io.casehub.neocortex.memory.cbr.PlanAdapter;
+import io.casehub.neocortex.memory.cbr.PlanEnsembleAnalyzer;
 import io.casehub.neocortex.memory.cbr.ResolutionGuide;
 import io.casehub.neocortex.memory.cbr.ResolutionStep;
 import io.casehub.neocortex.memory.cbr.ResolvedCase;
 import io.casehub.neocortex.memory.cbr.ScoredCbrCase;
 import io.casehub.neocortex.memory.cbr.TemporalDecay;
 import java.time.Duration;
+import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
+import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
+import java.util.stream.Collectors;
 import org.jboss.logging.Logger;
 
 public class CbrRetrievalService {
 
   static final int MAX_CACHE_SIZE = 1000;
+  static final long DEFAULT_ENSEMBLE_TIMEOUT_MS = 5000L;
   private static final Logger LOG = Logger.getLogger(CbrRetrievalService.class);
   private static final Map<String, Class<? extends CbrCase>> BUILT_IN_TYPES =
       Map.of(
@@ -63,31 +82,57 @@ public class CbrRetrievalService {
           "feature-vector", FeatureVectorCbrCase.class,
           "textual", ResolutionGuide.class);
 
-  private final ConcurrentHashMap<UUID, List<RetrievedExperience>> cache =
-      new ConcurrentHashMap<>();
+  private final ConcurrentHashMap<UUID, CbrRetrievalResult> cache = new ConcurrentHashMap<>();
 
   private final JQEvaluator jqEvaluator;
   private final CbrCaseMemoryStore cbrStore;
   private final PlanAdapter planAdapter;
+  private final PlanEnsembleAnalyzer ensembleAnalyzer;
   private final Map<String, Class<? extends CbrCase>> typeMap;
+  private final long ensembleTimeoutMs;
+
+  record AdaptationResult(AdaptedPlan adaptedPlan, List<ExperiencePlanStep> steps) {}
 
   public CbrRetrievalService(
       JQEvaluator jqEvaluator,
       CbrCaseMemoryStore cbrStore,
       PlanAdapter planAdapter,
-      List<CbrCaseTypeRegistration> registrations) {
+      PlanEnsembleAnalyzer ensembleAnalyzer,
+      List<CbrCaseTypeRegistration> registrations,
+      long ensembleTimeoutMs) {
     this.jqEvaluator = jqEvaluator;
     this.cbrStore = cbrStore;
     this.planAdapter = planAdapter;
+    this.ensembleAnalyzer = ensembleAnalyzer;
     this.typeMap = buildTypeMap(registrations);
+    this.ensembleTimeoutMs = ensembleTimeoutMs;
   }
 
   CbrRetrievalService(
-      JQEvaluator jqEvaluator, CbrCaseMemoryStore cbrStore, PlanAdapter planAdapter) {
+      JQEvaluator jqEvaluator,
+      CbrCaseMemoryStore cbrStore,
+      PlanAdapter planAdapter,
+      PlanEnsembleAnalyzer ensembleAnalyzer) {
     this.jqEvaluator = jqEvaluator;
     this.cbrStore = cbrStore;
     this.planAdapter = planAdapter;
+    this.ensembleAnalyzer = ensembleAnalyzer;
     this.typeMap = Map.copyOf(BUILT_IN_TYPES);
+    this.ensembleTimeoutMs = DEFAULT_ENSEMBLE_TIMEOUT_MS;
+  }
+
+  CbrRetrievalService(
+      JQEvaluator jqEvaluator,
+      CbrCaseMemoryStore cbrStore,
+      PlanAdapter planAdapter,
+      PlanEnsembleAnalyzer ensembleAnalyzer,
+      long ensembleTimeoutMs) {
+    this.jqEvaluator = jqEvaluator;
+    this.cbrStore = cbrStore;
+    this.planAdapter = planAdapter;
+    this.ensembleAnalyzer = ensembleAnalyzer;
+    this.typeMap = Map.copyOf(BUILT_IN_TYPES);
+    this.ensembleTimeoutMs = ensembleTimeoutMs;
   }
 
   private static Map<String, Class<? extends CbrCase>> buildTypeMap(
@@ -130,11 +175,11 @@ public class CbrRetrievalService {
     return node.toString();
   }
 
-  public List<RetrievedExperience> retrieve(CaseDefinition definition, CaseInstance instance) {
+  public CbrRetrievalResult retrieve(CaseDefinition definition, CaseInstance instance) {
     try {
       CbrConfig config = definition.getCbrConfig();
       if (config == null) {
-        return List.of();
+        return CbrRetrievalResult.empty();
       }
       String cbrType = config.cbrType() != null ? config.cbrType() : "plan";
       Class<? extends CbrCase> caseClass = typeMap.get(cbrType);
@@ -147,11 +192,11 @@ public class CbrRetrievalService {
           failure,
           "CBR retrieval failed for case definition '%s' — proceeding without experiences",
           definition.getName());
-      return List.of();
+      return CbrRetrievalResult.empty();
     }
   }
 
-  public <C extends CbrCase> List<RetrievedExperience> retrieve(
+  public <C extends CbrCase> CbrRetrievalResult retrieve(
       CaseDefinition definition, CaseInstance instance, Class<C> caseClass) {
     return retrieveInternal(definition, instance, caseClass);
   }
@@ -201,16 +246,102 @@ public class CbrRetrievalService {
     }
   }
 
-  private <C extends CbrCase> List<RetrievedExperience> retrieveInternal(
+  public CbrRetrievalResult retrieveForSelectionWithEnsemble(
+      String tenancyId,
+      String domain,
+      Map<String, FeatureValue> features,
+      int topK,
+      double minSimilarity,
+      Map<String, Double> weights,
+      String caseType) {
+    return retrieveForSelectionWithEnsemble(
+        tenancyId, domain, features, topK, minSimilarity, weights, caseType, ResolvedCase.class);
+  }
+
+  @SuppressWarnings("unchecked")
+  public <C extends CbrCase> CbrRetrievalResult retrieveForSelectionWithEnsemble(
+      String tenancyId,
+      String domain,
+      Map<String, FeatureValue> features,
+      int topK,
+      double minSimilarity,
+      Map<String, Double> weights,
+      String caseType,
+      Class<C> caseClass) {
+    try {
+      if (features.isEmpty()) {
+        return CbrRetrievalResult.empty();
+      }
+
+      CbrQuery query =
+          CbrQuery.crossType(
+                  tenancyId,
+                  new MemoryDomain(domain),
+                  io.casehub.platform.api.path.Path.root(),
+                  features,
+                  topK)
+              .withMinSimilarity(minSimilarity)
+              .withWeights(weights);
+
+      List<ScoredCbrCase<C>> scoredCases = cbrStore.retrieveSimilar(query, caseClass);
+      List<RetrievedExperience> experiences = List.copyOf(mapResults(scoredCases, features));
+
+      if (experiences.size() < 2) {
+        return new CbrRetrievalResult(experiences, null);
+      }
+
+      List<ScoredCbrCase<ResolvedCase>> planCases = new ArrayList<>();
+      List<AdaptedPlan> rawAdaptedPlans = new ArrayList<>();
+      for (ScoredCbrCase<C> sc : scoredCases) {
+        if (sc.cbrCase() instanceof ResolvedCase rc) {
+          planCases.add((ScoredCbrCase<ResolvedCase>) (ScoredCbrCase<?>) sc);
+          List<AdaptedStep> retainedSteps =
+              rc.resolutionStep().stream()
+                  .map(
+                      step ->
+                          new AdaptedStep(
+                              step.bindingName(),
+                              step.capabilityName(),
+                              step.workerName(),
+                              step.stepOutcome(),
+                              step.priority(),
+                              step.parameters(),
+                              AdaptationAction.RETAINED,
+                              null))
+                  .toList();
+          rawAdaptedPlans.add(new AdaptedPlan(retainedSteps));
+        }
+      }
+
+      EnsembleConsensus ensemble;
+      if (caseType != null && planCases.size() >= 2) {
+        ensemble = invokeEnsembleAnalyzer(caseType, planCases, rawAdaptedPlans, features);
+      } else {
+        ensemble = buildOutcomeOnlyConsensus(experiences, scoredCases);
+      }
+
+      return new CbrRetrievalResult(experiences, ensemble);
+    } catch (Exception failure) {
+      LOG.warnf(
+          failure,
+          "CBR selection retrieval with ensemble failed for domain '%s'"
+              + " — proceeding without experiences",
+          domain);
+      return CbrRetrievalResult.empty();
+    }
+  }
+
+  @SuppressWarnings("unchecked")
+  private <C extends CbrCase> CbrRetrievalResult retrieveInternal(
       CaseDefinition definition, CaseInstance instance, Class<C> caseClass) {
     try {
       CbrConfig config = definition.getCbrConfig();
       if (config == null) {
-        return List.of();
+        return CbrRetrievalResult.empty();
       }
 
       if (config.timing() == CbrRetrievalTiming.CASE_LIFETIME) {
-        List<RetrievedExperience> cached = cache.get(instance.getUuid());
+        CbrRetrievalResult cached = cache.get(instance.getUuid());
         if (cached != null) {
           return cached;
         }
@@ -218,15 +349,16 @@ public class CbrRetrievalService {
 
       Map<String, FeatureValue> features = extractFeatures(config, instance.getCaseContext());
       if (features.isEmpty()) {
-        return List.of();
+        return CbrRetrievalResult.empty();
       }
 
       String resolvedDomain = resolveDomain(config, definition);
       if (resolvedDomain == null) {
         LOG.warnf(
-            "CbrConfig present but domain unresolvable for case definition '%s' — CBR retrieval skipped",
+            "CbrConfig present but domain unresolvable for case definition '%s'"
+                + " — CBR retrieval skipped",
             definition.getName());
-        return List.of();
+        return CbrRetrievalResult.empty();
       }
 
       CbrQuery baseQuery;
@@ -263,7 +395,51 @@ public class CbrRetrievalService {
               : baseQuery;
 
       List<ScoredCbrCase<C>> scoredCases = cbrStore.retrieveSimilar(query, caseClass);
-      List<RetrievedExperience> result = List.copyOf(mapResults(scoredCases, features));
+
+      List<ScoredCbrCase<ResolvedCase>> planCases = new ArrayList<>();
+      List<AdaptationResult> planAdaptations = new ArrayList<>();
+      List<RetrievedExperience> experiences = new ArrayList<>(scoredCases.size());
+
+      for (ScoredCbrCase<C> scored : scoredCases) {
+        CbrCase c = scored.cbrCase();
+        String resultCaseType = scored.caseType();
+        List<ExperiencePlanStep> trace;
+
+        if (c instanceof ResolvedCase) {
+          ScoredCbrCase<ResolvedCase> planScored = (ScoredCbrCase<ResolvedCase>) scored;
+          AdaptationResult adaptation = adaptPlan(planScored, resultCaseType, features);
+          planCases.add(planScored);
+          planAdaptations.add(adaptation);
+          trace = adaptation.steps();
+        } else {
+          trace = List.of();
+        }
+
+        experiences.add(
+            new RetrievedExperience(
+                c.problem(),
+                c.solution(),
+                c.outcome(),
+                c.confidence() != null ? c.confidence().value() : null,
+                scored.score(),
+                new LinkedHashMap<>(c.features()),
+                trace,
+                scored.featureSimilarities(),
+                resultCaseType));
+      }
+
+      List<RetrievedExperience> immutableExperiences = List.copyOf(experiences);
+      EnsembleConsensus ensemble =
+          computeEnsemble(
+              config,
+              definition,
+              immutableExperiences,
+              planCases,
+              planAdaptations,
+              scoredCases,
+              features);
+
+      CbrRetrievalResult result = new CbrRetrievalResult(immutableExperiences, ensemble);
 
       if (config.timing() == CbrRetrievalTiming.CASE_LIFETIME) {
         cacheIfUnderBound(instance.getUuid(), result);
@@ -275,11 +451,147 @@ public class CbrRetrievalService {
           failure,
           "CBR retrieval failed for case definition '%s' — proceeding without experiences",
           definition.getName());
-      return List.of();
+      return CbrRetrievalResult.empty();
     }
   }
 
-  synchronized void cacheIfUnderBound(UUID caseId, List<RetrievedExperience> result) {
+  private <C extends CbrCase> EnsembleConsensus computeEnsemble(
+      CbrConfig config,
+      CaseDefinition definition,
+      List<RetrievedExperience> experiences,
+      List<ScoredCbrCase<ResolvedCase>> planCases,
+      List<AdaptationResult> planAdaptations,
+      List<ScoredCbrCase<C>> allScoredCases,
+      Map<String, FeatureValue> features) {
+    if (experiences.size() < 2) {
+      return null;
+    }
+
+    if (planCases.size() >= 2) {
+      Set<String> distinctCaseTypes =
+          planCases.stream().map(ScoredCbrCase::caseType).collect(Collectors.toSet());
+
+      if (distinctCaseTypes.size() == 1) {
+        String caseType = config.caseType() != null ? config.caseType() : definition.getName();
+        List<AdaptedPlan> adaptedPlans =
+            planAdaptations.stream().map(AdaptationResult::adaptedPlan).toList();
+        return invokeEnsembleAnalyzer(caseType, planCases, adaptedPlans, features);
+      }
+    }
+
+    return buildOutcomeOnlyConsensus(experiences, allScoredCases);
+  }
+
+  private EnsembleConsensus invokeEnsembleAnalyzer(
+      String caseType,
+      List<ScoredCbrCase<ResolvedCase>> planCases,
+      List<AdaptedPlan> adaptedPlans,
+      Map<String, FeatureValue> features) {
+    try {
+      ExecutorService executor = Executors.newVirtualThreadPerTaskExecutor();
+      Future<EnsemblePlan> future =
+          executor.submit(
+              () -> ensembleAnalyzer.analyze(caseType, planCases, adaptedPlans, features));
+      EnsemblePlan plan;
+      try {
+        plan = future.get(ensembleTimeoutMs, TimeUnit.MILLISECONDS);
+      } catch (TimeoutException te) {
+        future.cancel(true);
+        LOG.warnf(
+            "PlanEnsembleAnalyzer.analyze() timed out after %dms"
+                + " — proceeding without ensemble",
+            ensembleTimeoutMs);
+        return null;
+      } finally {
+        executor.shutdownNow();
+      }
+
+      if (plan.inputPlanCount() < 2) {
+        return null;
+      }
+
+      return mapEnsemblePlan(plan);
+    } catch (Exception e) {
+      LOG.warnf(e, "PlanEnsembleAnalyzer.analyze() failed — proceeding without ensemble");
+      return null;
+    }
+  }
+
+  private EnsembleConsensus mapEnsemblePlan(EnsemblePlan plan) {
+    List<StepConsensusEntry> entries =
+        plan.stepAnalysis().stream()
+            .map(
+                sc ->
+                    new StepConsensusEntry(
+                        sc.bindingName(),
+                        sc.capabilityName(),
+                        sc.occurrenceCount(),
+                        sc.totalPlans(),
+                        sc.workerDistribution(),
+                        sc.outcomeDistribution(),
+                        sc.priorityDistribution(),
+                        sc.contributingCaseIds(),
+                        AgreementLevel.valueOf(sc.agreement().name())))
+            .toList();
+    return new EnsembleConsensus(
+        ConsensusScope.STEP_LEVEL,
+        entries,
+        plan.ensembleConfidence(),
+        plan.inputPlanCount(),
+        plan.sourceCaseIds());
+  }
+
+  private <C extends CbrCase> EnsembleConsensus buildOutcomeOnlyConsensus(
+      List<RetrievedExperience> experiences, List<ScoredCbrCase<C>> scoredCases) {
+    double confidence = ExperienceAnalyser.outcomeConsistency(experiences);
+    List<String> caseIds =
+        scoredCases.stream().map(ScoredCbrCase::caseId).filter(Objects::nonNull).toList();
+    return new EnsembleConsensus(
+        ConsensusScope.OUTCOME_ONLY, List.of(), confidence, experiences.size(), caseIds);
+  }
+
+  private AdaptationResult adaptPlan(
+      ScoredCbrCase<ResolvedCase> scored, String caseType, Map<String, FeatureValue> features) {
+    try {
+      AdaptedPlan adapted = planAdapter.adapt(caseType, scored, features);
+      List<ExperiencePlanStep> steps =
+          adapted.steps().stream()
+              .filter(s -> s.action() != AdaptationAction.REMOVED)
+              .map(
+                  s ->
+                      new ExperiencePlanStep(
+                          s.bindingName(),
+                          s.capabilityName(),
+                          s.workerName(),
+                          parseOutcome(s.stepOutcome()),
+                          s.priority(),
+                          s.parameters(),
+                          s.action().name(),
+                          s.reason()))
+              .toList();
+      return new AdaptationResult(adapted, steps);
+    } catch (Exception e) {
+      LOG.warnf(e, "PlanAdapter.adapt() failed — falling back to raw plan trace");
+      List<ExperiencePlanStep> fallbackSteps = mapResolutionStep(scored.cbrCase().resolutionStep());
+      List<AdaptedStep> retainedSteps =
+          scored.cbrCase().resolutionStep().stream()
+              .map(
+                  rs ->
+                      new AdaptedStep(
+                          rs.bindingName(),
+                          rs.capabilityName(),
+                          rs.workerName(),
+                          rs.stepOutcome(),
+                          rs.priority(),
+                          rs.parameters(),
+                          AdaptationAction.RETAINED,
+                          null))
+              .toList();
+      return new AdaptationResult(new AdaptedPlan(retainedSteps), fallbackSteps);
+    }
+  }
+
+  synchronized void cacheIfUnderBound(UUID caseId, CbrRetrievalResult result) {
     if (cache.size() < MAX_CACHE_SIZE) {
       cache.putIfAbsent(caseId, result);
     }

@@ -53,6 +53,7 @@ public class AnnotationValidationStep {
   private static final DotName COST = DotName.createSimple("io.casehub.engine.annotations.Cost");
   private static final DotName GOAP_WORLD_STATE =
       DotName.createSimple("io.casehub.engine.plan.goap.GoapWorldState");
+  private static final DotName CBR = DotName.createSimple("io.casehub.engine.annotations.Cbr");
 
   @BuildStep
   @Produce(ServiceStartBuildItem.class)
@@ -86,6 +87,14 @@ public class AnnotationValidationStep {
         validateCompletion(method, index, completionKinds, errors);
         validateSystemPromptConflict(method, errors);
         validateCostMethod(method, workerCapabilities, index, errors, warnings, isGoap);
+      }
+
+      AnnotationInstance cbrAnn = caseClass.annotation(CBR);
+      if (cbrAnn != null) {
+        AnnotationValue featuresValue = cbrAnn.value("features");
+        if (featuresValue == null || featuresValue.asNestedArray().length == 0) {
+          errors.add(caseClass.name() + ": @Cbr requires at least one @Feature");
+        }
       }
     }
 

@@ -142,6 +142,8 @@
         <module>examples/sequential-dsl</module>
         <module>examples/goap-dsl</module>
         <module>examples/goap-annotated</module>
+        <module>examples/cbr-ensemble-dsl</module>
+        <module>examples/cbr-ensemble-annotated</module>
         <module>examples/llm-decomposition-dsl</module>
         <module>examples/llm-decomposition-annotated</module>
         <module>examples/humantask-dsl</module>
