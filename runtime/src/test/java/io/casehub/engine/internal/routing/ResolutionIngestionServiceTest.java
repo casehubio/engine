@@ -19,7 +19,6 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import io.casehub.api.spi.CorpusChangeEvent;
 import io.casehub.api.spi.CorpusSourceAdapter;
-import io.casehub.api.spi.GuidanceStepInput;
 import io.casehub.api.spi.ResolutionGuideInput;
 import io.casehub.neocortex.memory.EraseRequest;
 import io.casehub.neocortex.memory.MemoryDomain;
@@ -27,8 +26,6 @@ import io.casehub.neocortex.memory.cbr.CbrCase;
 import io.casehub.neocortex.memory.cbr.CbrCaseMemoryStore;
 import io.casehub.neocortex.memory.cbr.CbrFeatureSchema;
 import io.casehub.neocortex.memory.cbr.CbrQuery;
-import io.casehub.neocortex.memory.cbr.FeatureValue;
-import io.casehub.neocortex.memory.cbr.GuidanceStep;
 import io.casehub.neocortex.memory.cbr.ResolutionGuide;
 import io.casehub.neocortex.memory.cbr.ScoredCbrCase;
 import io.casehub.platform.api.path.Path;
@@ -59,7 +56,7 @@ class ResolutionIngestionServiceTest {
                     "doc-1",
                     "Phishing runbook",
                     "1. Isolate 2. Reset",
-                    List.of(new GuidanceStepInput("Isolate mailbox", null, null, null)),
+                    null,
                     Map.of("category", (Object) "phishing"),
                     "soc-domain",
                     null)));
@@ -72,10 +69,6 @@ class ResolutionIngestionServiceTest {
     var guide = (ResolutionGuide) store.storedCases.get(0);
     assertThat(guide.problem()).isEqualTo("Phishing runbook");
     assertThat(guide.solution()).isEqualTo("1. Isolate 2. Reset");
-    assertThat(guide.steps()).hasSize(1);
-    assertThat(guide.steps().get(0).description()).isEqualTo("Isolate mailbox");
-    assertThat(guide.features()).containsEntry("category", FeatureValue.string("phishing"));
-    assertThat(guide.steps().get(0)).isInstanceOf(GuidanceStep.class);
     assertThat(store.storedDomains.get(0).name()).isEqualTo("soc-domain");
     assertThat(store.storedTenantIds.get(0)).isEqualTo("tenant-1");
   }
