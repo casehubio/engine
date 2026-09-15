@@ -14,6 +14,8 @@
 
 ### `model` (`ChatModel`)
 
+### `modelId` (`java.lang.String`)
+
 ### `modelType` (`io.casehub.api.model.ai.ModelType`)
 
 ### `outputProjection` (`java.lang.String`)
@@ -67,6 +69,12 @@ Supply a custom input transformer instead of a jq expression string.
 #### Parameters
 
 - `modelType` (`io.casehub.api.model.ai.ModelType`)
+
+### `public io.casehub.api.model.ai.AgentBuilder modelId(java.lang.String modelId)`
+
+#### Parameters
+
+- `modelId` (`java.lang.String`)
 
 ### `public io.casehub.api.model.ai.AgentBuilder outputProjection(java.lang.String jqExpression)`
 
