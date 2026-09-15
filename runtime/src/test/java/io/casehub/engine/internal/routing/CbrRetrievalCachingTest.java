@@ -23,7 +23,6 @@ import io.casehub.api.model.CaseDefinition;
 import io.casehub.api.model.CaseStatus;
 import io.casehub.api.model.cbr.CbrConfig;
 import io.casehub.api.model.cbr.CbrConfig.CbrRetrievalTiming;
-import io.casehub.api.spi.routing.RetrievedExperience;
 import io.casehub.engine.common.internal.event.CaseStatusChanged;
 import io.casehub.engine.common.internal.jq.JQEvaluator;
 import io.casehub.engine.common.internal.model.CaseInstance;
@@ -65,7 +64,10 @@ class CbrRetrievalCachingTest {
     cbrStore = new CountingCbrStore();
     service =
         new CbrRetrievalService(
-            jqEvaluator, cbrStore, new io.casehub.neocortex.memory.cbr.runtime.NoOpPlanAdapter(), new io.casehub.neocortex.memory.cbr.runtime.NoOpPlanEnsembleAnalyzer());
+            jqEvaluator,
+            cbrStore,
+            new io.casehub.neocortex.memory.cbr.runtime.NoOpPlanAdapter(),
+            new io.casehub.neocortex.memory.cbr.runtime.NoOpPlanEnsembleAnalyzer());
     evictionHandler = new CbrCacheEvictionHandler(service);
   }
 

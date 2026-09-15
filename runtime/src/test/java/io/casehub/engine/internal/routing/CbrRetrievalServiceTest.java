@@ -26,6 +26,7 @@ import io.casehub.api.model.CaseDefinition;
 import io.casehub.api.model.EpisodicMemoryConfig;
 import io.casehub.api.model.cbr.CbrConfig;
 import io.casehub.api.spi.routing.CbrRetrievalResult;
+import io.casehub.api.spi.routing.ConsensusScope;
 import io.casehub.api.spi.routing.RetrievedExperience;
 import io.casehub.engine.common.internal.jq.JQEvaluator;
 import io.casehub.engine.common.internal.model.CaseInstance;
@@ -39,16 +40,18 @@ import io.casehub.neocortex.memory.cbr.CbrCase;
 import io.casehub.neocortex.memory.cbr.CbrCaseMemoryStore;
 import io.casehub.neocortex.memory.cbr.CbrFeatureSchema;
 import io.casehub.neocortex.memory.cbr.CbrQuery;
+import io.casehub.neocortex.memory.cbr.EnsemblePlan;
 import io.casehub.neocortex.memory.cbr.FeatureValue;
 import io.casehub.neocortex.memory.cbr.GuidanceStep;
 import io.casehub.neocortex.memory.cbr.PlanAdapter;
-import io.casehub.neocortex.memory.cbr.runtime.NoOpPlanEnsembleAnalyzer;
+import io.casehub.neocortex.memory.cbr.PlanEnsembleAnalyzer;
 import io.casehub.neocortex.memory.cbr.ResolutionGuide;
 import io.casehub.neocortex.memory.cbr.ResolutionStep;
 import io.casehub.neocortex.memory.cbr.ResolvedCase;
 import io.casehub.neocortex.memory.cbr.ScoredCbrCase;
+import io.casehub.neocortex.memory.cbr.StepConsensus;
 import io.casehub.neocortex.memory.cbr.TemporalDecay;
-import java.lang.reflect.Method;
+import io.casehub.neocortex.memory.cbr.runtime.NoOpPlanEnsembleAnalyzer;
 import java.time.Duration;
 import java.util.List;
 import java.util.Map;
@@ -64,15 +67,13 @@ class CbrRetrievalServiceTest {
   private RecordingPlanAdapter planAdapter;
 
   @BeforeEach
-  void setUp() throws Exception {
-    jqEvaluator = new JQEvaluator();
-    Method init = JQEvaluator.class.getDeclaredMethod("init");
-    init.setAccessible(true);
-    init.invoke(jqEvaluator);
+  void setUp() {
+    jqEvaluator = new JQEvaluator(null, null);
 
     cbrStore = new RecordingCbrStore();
     planAdapter = new RecordingPlanAdapter();
-    service = new CbrRetrievalService(jqEvaluator, cbrStore, planAdapter, new NoOpPlanEnsembleAnalyzer());
+    service =
+        new CbrRetrievalService(jqEvaluator, cbrStore, planAdapter, new NoOpPlanEnsembleAnalyzer());
   }
 
   @Test
@@ -396,7 +397,7 @@ class CbrRetrievalServiceTest {
             null,
             null);
     cbrStore.setResult(List.of(new ScoredCbrCase<>(fvCase, "feature-vector", 0.75)));
-    List<RetrievedExperience> result =
+    CbrRetrievalResult result =
         service.retrieve(
             def, buildInstance(), io.casehub.neocortex.memory.cbr.FeatureVectorCbrCase.class);
     assertEquals(1, result.experiences().size());
@@ -624,7 +625,8 @@ class CbrRetrievalServiceTest {
                   Map<String, FeatureValue> currentFeatures) {
                 throw new RuntimeException("adapter explosion");
               }
-            });
+            },
+            new NoOpPlanEnsembleAnalyzer());
 
     CbrRetrievalResult result = service.retrieve(def, buildInstance());
 
@@ -884,5 +886,169 @@ class CbrRetrievalServiceTest {
                           null))
               .toList());
     }
+  }
+
+  static class RecordingPlanEnsembleAnalyzer implements PlanEnsembleAnalyzer {
+    private boolean called;
+    private EnsemblePlan result;
+
+    void setResult(EnsemblePlan result) {
+      this.result = result;
+    }
+
+    boolean wasCalled() {
+      return called;
+    }
+
+    @Override
+    public EnsemblePlan analyze(
+        String caseType,
+        List<ScoredCbrCase<ResolvedCase>> scoredCases,
+        List<AdaptedPlan> adaptedPlans,
+        Map<String, FeatureValue> currentFeatures) {
+      called = true;
+      if (result != null) return result;
+      List<StepConsensus> steps =
+          List.of(
+              new StepConsensus(
+                  "triage",
+                  "triage",
+                  2,
+                  2,
+                  Map.of("w1", 2),
+                  Map.of("SUCCESS", 2),
+                  Map.of(1, 2),
+                  List.of("c1", "c2"),
+                  io.casehub.neocortex.memory.cbr.StepAgreement.UNANIMOUS));
+      return new EnsemblePlan(null, steps, List.of("c1", "c2"), 0.9, 2);
+    }
+  }
+
+  @Test
+  void retrieveForSelectionWithEnsemble_invokes_ensemble_for_plan_type() {
+    var analyzer = new RecordingPlanEnsembleAnalyzer();
+    service = new CbrRetrievalService(jqEvaluator, cbrStore, planAdapter, analyzer);
+
+    ResolutionStep step1 =
+        new ResolutionStep("triage", "triage", "w1", "SUCCESS", 1, Map.of(), null);
+    ResolvedCase case1 =
+        new ResolvedCase(
+            "p1",
+            "s1",
+            "COMPLETED",
+            io.casehub.neocortex.cognitive.Confidence.inferred(0.9, java.time.Instant.now()),
+            Map.of("severity", FeatureValue.string("HIGH")),
+            List.of(step1),
+            null,
+            null);
+    ResolvedCase case2 =
+        new ResolvedCase(
+            "p2",
+            "s2",
+            "COMPLETED",
+            io.casehub.neocortex.cognitive.Confidence.inferred(0.8, java.time.Instant.now()),
+            Map.of("severity", FeatureValue.string("HIGH")),
+            List.of(step1),
+            null,
+            null);
+    cbrStore.setResult(
+        List.of(
+            new ScoredCbrCase<>(case1, "TestCase", 0.9),
+            new ScoredCbrCase<>(case2, "TestCase", 0.8)));
+
+    CbrRetrievalResult result =
+        service.retrieveForSelectionWithEnsemble(
+            "tenant-1",
+            "test-domain",
+            Map.of("severity", FeatureValue.string("HIGH")),
+            5,
+            0.0,
+            Map.of(),
+            "TestCase");
+
+    assertTrue(analyzer.wasCalled());
+    assertNotNull(result.ensemble());
+    assertEquals(ConsensusScope.STEP_LEVEL, result.ensemble().scope());
+    assertEquals(2, result.experiences().size());
+  }
+
+  @Test
+  void retrieveForSelectionWithEnsemble_null_caseType_returns_outcome_only() {
+    service =
+        new CbrRetrievalService(jqEvaluator, cbrStore, planAdapter, new NoOpPlanEnsembleAnalyzer());
+
+    ResolutionStep step1 =
+        new ResolutionStep("triage", "triage", "w1", "SUCCESS", 1, Map.of(), null);
+    ResolvedCase case1 =
+        new ResolvedCase(
+            "p1",
+            "s1",
+            "COMPLETED",
+            io.casehub.neocortex.cognitive.Confidence.inferred(0.9, java.time.Instant.now()),
+            Map.of("severity", FeatureValue.string("HIGH")),
+            List.of(step1),
+            null,
+            null);
+    ResolvedCase case2 =
+        new ResolvedCase(
+            "p2",
+            "s2",
+            "COMPLETED",
+            io.casehub.neocortex.cognitive.Confidence.inferred(0.8, java.time.Instant.now()),
+            Map.of("severity", FeatureValue.string("HIGH")),
+            List.of(step1),
+            null,
+            null);
+    cbrStore.setResult(
+        List.of(
+            new ScoredCbrCase<>(case1, "TestCase", 0.9),
+            new ScoredCbrCase<>(case2, "TestCase", 0.8)));
+
+    CbrRetrievalResult result =
+        service.retrieveForSelectionWithEnsemble(
+            "tenant-1",
+            "test-domain",
+            Map.of("severity", FeatureValue.string("HIGH")),
+            5,
+            0.0,
+            Map.of(),
+            null);
+
+    assertNotNull(result.ensemble());
+    assertEquals(ConsensusScope.OUTCOME_ONLY, result.ensemble().scope());
+    assertEquals(2, result.experiences().size());
+  }
+
+  @Test
+  void retrieveForSelectionWithEnsemble_single_result_returns_null_ensemble() {
+    service =
+        new CbrRetrievalService(jqEvaluator, cbrStore, planAdapter, new NoOpPlanEnsembleAnalyzer());
+
+    ResolutionStep step1 =
+        new ResolutionStep("triage", "triage", "w1", "SUCCESS", 1, Map.of(), null);
+    ResolvedCase case1 =
+        new ResolvedCase(
+            "p1",
+            "s1",
+            "COMPLETED",
+            io.casehub.neocortex.cognitive.Confidence.inferred(0.9, java.time.Instant.now()),
+            Map.of("severity", FeatureValue.string("HIGH")),
+            List.of(step1),
+            null,
+            null);
+    cbrStore.setResult(List.of(new ScoredCbrCase<>(case1, "TestCase", 0.9)));
+
+    CbrRetrievalResult result =
+        service.retrieveForSelectionWithEnsemble(
+            "tenant-1",
+            "test-domain",
+            Map.of("severity", FeatureValue.string("HIGH")),
+            5,
+            0.0,
+            Map.of(),
+            "TestCase");
+
+    assertNull(result.ensemble());
+    assertEquals(1, result.experiences().size());
   }
 }

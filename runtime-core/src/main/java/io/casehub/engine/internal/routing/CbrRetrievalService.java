@@ -246,6 +246,91 @@ public class CbrRetrievalService {
     }
   }
 
+  public CbrRetrievalResult retrieveForSelectionWithEnsemble(
+      String tenancyId,
+      String domain,
+      Map<String, FeatureValue> features,
+      int topK,
+      double minSimilarity,
+      Map<String, Double> weights,
+      String caseType) {
+    return retrieveForSelectionWithEnsemble(
+        tenancyId, domain, features, topK, minSimilarity, weights, caseType, ResolvedCase.class);
+  }
+
+  @SuppressWarnings("unchecked")
+  public <C extends CbrCase> CbrRetrievalResult retrieveForSelectionWithEnsemble(
+      String tenancyId,
+      String domain,
+      Map<String, FeatureValue> features,
+      int topK,
+      double minSimilarity,
+      Map<String, Double> weights,
+      String caseType,
+      Class<C> caseClass) {
+    try {
+      if (features.isEmpty()) {
+        return CbrRetrievalResult.empty();
+      }
+
+      CbrQuery query =
+          CbrQuery.crossType(
+                  tenancyId,
+                  new MemoryDomain(domain),
+                  io.casehub.platform.api.path.Path.root(),
+                  features,
+                  topK)
+              .withMinSimilarity(minSimilarity)
+              .withWeights(weights);
+
+      List<ScoredCbrCase<C>> scoredCases = cbrStore.retrieveSimilar(query, caseClass);
+      List<RetrievedExperience> experiences = List.copyOf(mapResults(scoredCases, features));
+
+      if (experiences.size() < 2) {
+        return new CbrRetrievalResult(experiences, null);
+      }
+
+      List<ScoredCbrCase<ResolvedCase>> planCases = new ArrayList<>();
+      List<AdaptedPlan> rawAdaptedPlans = new ArrayList<>();
+      for (ScoredCbrCase<C> sc : scoredCases) {
+        if (sc.cbrCase() instanceof ResolvedCase rc) {
+          planCases.add((ScoredCbrCase<ResolvedCase>) (ScoredCbrCase<?>) sc);
+          List<AdaptedStep> retainedSteps =
+              rc.resolutionStep().stream()
+                  .map(
+                      step ->
+                          new AdaptedStep(
+                              step.bindingName(),
+                              step.capabilityName(),
+                              step.workerName(),
+                              step.stepOutcome(),
+                              step.priority(),
+                              step.parameters(),
+                              AdaptationAction.RETAINED,
+                              null))
+                  .toList();
+          rawAdaptedPlans.add(new AdaptedPlan(retainedSteps));
+        }
+      }
+
+      EnsembleConsensus ensemble;
+      if (caseType != null && planCases.size() >= 2) {
+        ensemble = invokeEnsembleAnalyzer(caseType, planCases, rawAdaptedPlans, features);
+      } else {
+        ensemble = buildOutcomeOnlyConsensus(experiences, scoredCases);
+      }
+
+      return new CbrRetrievalResult(experiences, ensemble);
+    } catch (Exception failure) {
+      LOG.warnf(
+          failure,
+          "CBR selection retrieval with ensemble failed for domain '%s'"
+              + " — proceeding without experiences",
+          domain);
+      return CbrRetrievalResult.empty();
+    }
+  }
+
   @SuppressWarnings("unchecked")
   private <C extends CbrCase> CbrRetrievalResult retrieveInternal(
       CaseDefinition definition, CaseInstance instance, Class<C> caseClass) {
