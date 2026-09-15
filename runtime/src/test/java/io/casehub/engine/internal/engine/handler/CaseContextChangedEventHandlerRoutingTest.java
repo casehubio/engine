@@ -41,7 +41,7 @@ import io.casehub.api.spi.routing.RoutingResult;
 import io.casehub.eidos.api.CapabilityHealth;
 import io.casehub.engine.common.internal.event.AgentRoutingEscalationEvent;
 import io.casehub.engine.common.internal.event.CaseContextChangedEvent;
-import io.casehub.engine.common.internal.event.EventBusAddresses;
+
 import io.casehub.engine.common.internal.event.OutcomeDisposition;
 import io.casehub.engine.common.internal.event.WorkerOutcomeResolvedEvent;
 import io.casehub.engine.common.internal.event.WorkerScheduleEvent;
@@ -55,7 +55,7 @@ import io.casehub.worker.api.Capability;
 import io.casehub.worker.api.Worker;
 import io.casehub.worker.api.WorkerFunction;
 import io.casehub.worker.api.WorkerResult;
-import io.vertx.mutiny.core.eventbus.EventBus;
+
 import java.util.List;
 import java.util.UUID;
 import org.junit.jupiter.api.BeforeEach;
@@ -76,7 +76,7 @@ import org.mockito.quality.Strictness;
 @MockitoSettings(strictness = Strictness.LENIENT)
 class CaseContextChangedEventHandlerRoutingTest {
 
-  @Mock EventBus eventBus;
+  @Mock io.casehub.api.spi.event.EventDispatcher eventDispatcher;
   @Mock JQEvaluator jqEvaluator;
   @Mock CaseDefinitionRegistry caseDefinitionRegistry;
   @Mock ExpressionEngineRegistry expressionEngineRegistry;
@@ -94,20 +94,24 @@ class CaseContextChangedEventHandlerRoutingTest {
   @Mock io.casehub.api.spi.WorkerProvisioner workerProvisioner;
 
   @Mock
-  jakarta.enterprise.event.Event<io.casehub.engine.common.spi.event.CaseLifecycleEvent>
-      lifecycleEvents;
+  java.util.function.Consumer<io.casehub.engine.common.spi.event.CaseLifecycleEvent>
+      lifecycleEventConsumer;
 
   @Mock io.casehub.ledger.api.spi.LedgerTraceIdProvider traceIdProvider;
 
   @Mock io.casehub.engine.internal.routing.CbrRetrievalService cbrRetrievalService;
+
+  @Mock io.casehub.engine.common.internal.context.BridgeResolver bridgeResolver;
+
+  @Mock io.casehub.engine.internal.engine.SignalSettlementTracker settlementTracker;
 
   @Mock io.casehub.engine.internal.engine.CaseEvaluationSerializer evaluationSerializer;
 
   @Mock io.casehub.engine.common.internal.worker.scope.ScopedWorkerRegistry scopedWorkerRegistry;
 
   @Mock
-  jakarta.enterprise.event.Event<io.casehub.engine.common.spi.event.CaseContextUpdatedEvent>
-      caseContextUpdatedEvents;
+  java.util.function.Consumer<io.casehub.engine.common.spi.event.CaseContextUpdatedEvent>
+      caseContextUpdatedEventConsumer;
 
   @Mock io.casehub.engine.internal.acl.WorkerGrantOrchestrator workerGrantOrchestrator;
 
@@ -116,6 +120,9 @@ class CaseContextChangedEventHandlerRoutingTest {
   @Mock io.casehub.engine.internal.routing.SelectionContextStore selectionContextStore;
   @Mock io.casehub.api.spi.DispatchBudget dispatchBudget;
   @Mock io.casehub.engine.common.spi.PlanItemStore planItemStore;
+  @Mock java.util.concurrent.ExecutorService virtualThreads;
+  java.util.Optional<io.casehub.engine.common.spi.JudgmentScheduler> judgmentScheduler =
+      java.util.Optional.empty();
 
   @InjectMocks CaseContextChangedEventHandler handler;
 
@@ -206,8 +213,8 @@ class CaseContextChangedEventHandlerRoutingTest {
         new CaseContextChangedEvent(
             caseInstance, caseInstance.getCaseContext(), ContextLayer.WORKING));
 
-    verify(eventBus).publish(eq(EventBusAddresses.WORKER_SCHEDULE), any(WorkerScheduleEvent.class));
-    verify(eventBus, never()).publish(eq(EventBusAddresses.AGENT_ROUTING_ESCALATION), any());
+    verify(eventDispatcher).dispatch(any(WorkerScheduleEvent.class));
+    verify(eventDispatcher, never()).dispatch(any(AgentRoutingEscalationEvent.class));
   }
 
   @Test
@@ -221,9 +228,8 @@ class CaseContextChangedEventHandlerRoutingTest {
         new CaseContextChangedEvent(
             caseInstance, caseInstance.getCaseContext(), ContextLayer.WORKING));
 
-    verify(eventBus, never())
-        .publish(eq(EventBusAddresses.WORKER_SCHEDULE), any(WorkerScheduleEvent.class));
-    verify(eventBus, never()).publish(eq(EventBusAddresses.AGENT_ROUTING_ESCALATION), any());
+    verify(eventDispatcher, never()).dispatch(any(WorkerScheduleEvent.class));
+    verify(eventDispatcher, never()).dispatch(any(AgentRoutingEscalationEvent.class));
   }
 
   @Test
@@ -237,11 +243,8 @@ class CaseContextChangedEventHandlerRoutingTest {
         new CaseContextChangedEvent(
             caseInstance, caseInstance.getCaseContext(), ContextLayer.WORKING));
 
-    verify(eventBus, never())
-        .publish(eq(EventBusAddresses.WORKER_SCHEDULE), any(WorkerScheduleEvent.class));
-    verify(eventBus)
-        .publish(
-            eq(EventBusAddresses.AGENT_ROUTING_ESCALATION), any(AgentRoutingEscalationEvent.class));
+    verify(eventDispatcher, never()).dispatch(any(WorkerScheduleEvent.class));
+    verify(eventDispatcher).dispatch(any(AgentRoutingEscalationEvent.class));
   }
 
   @Test
@@ -306,7 +309,7 @@ class CaseContextChangedEventHandlerRoutingTest {
 
     handler.handle(new CaseContextChangedEvent(inst, ctx, "extracted"));
 
-    verify(eventBus).publish(eq(EventBusAddresses.WORKER_SCHEDULE), any(WorkerScheduleEvent.class));
+    verify(eventDispatcher).dispatch(any(WorkerScheduleEvent.class));
   }
 
   @Test
@@ -370,8 +373,7 @@ class CaseContextChangedEventHandlerRoutingTest {
 
     handler.handle(new CaseContextChangedEvent(inst, ctx, ContextLayer.WORKING));
 
-    verify(eventBus, never())
-        .publish(eq(EventBusAddresses.WORKER_SCHEDULE), any(WorkerScheduleEvent.class));
+    verify(eventDispatcher, never()).dispatch(any(WorkerScheduleEvent.class));
   }
 
   @Test
@@ -406,8 +408,8 @@ class CaseContextChangedEventHandlerRoutingTest {
         new CaseContextChangedEvent(
             caseInstance, caseInstance.getCaseContext(), ContextLayer.WORKING));
 
-    verify(lifecycleEvents)
-        .fireAsync(
+    verify(lifecycleEventConsumer)
+        .accept(
             argThat(
                 e ->
                     caseInstance.getUuid().equals(e.caseId())
@@ -415,8 +417,7 @@ class CaseContextChangedEventHandlerRoutingTest {
                         && "ProvisionWorker".equals(e.commandType())
                         && "RUNNING".equals(e.caseStatus())
                         && "System".equals(e.actorRole())));
-    verify(eventBus, never())
-        .publish(eq(EventBusAddresses.WORKER_SCHEDULE), any(WorkerScheduleEvent.class));
+    verify(eventDispatcher, never()).dispatch(any(WorkerScheduleEvent.class));
   }
 
   @Test
@@ -445,11 +446,9 @@ class CaseContextChangedEventHandlerRoutingTest {
 
     handler.handle(new CaseContextChangedEvent(caseInstance, ctx, ContextLayer.WORKING));
 
-    verify(eventBus, never())
-        .publish(eq(EventBusAddresses.WORKER_SCHEDULE), any(WorkerScheduleEvent.class));
-    verify(eventBus)
-        .publish(
-            eq(EventBusAddresses.WORKER_OUTCOME_RESOLVED),
+    verify(eventDispatcher, never()).dispatch(any(WorkerScheduleEvent.class));
+    verify(eventDispatcher)
+        .dispatch(
             argThat(
                 (WorkerOutcomeResolvedEvent e) ->
                     e.bindingName().equals("research-binding")

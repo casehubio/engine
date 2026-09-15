@@ -26,7 +26,6 @@ import io.casehub.platform.api.identity.ActorType;
 import io.quarkus.test.junit.QuarkusTest;
 import jakarta.enterprise.event.Event;
 import jakarta.inject.Inject;
-import jakarta.transaction.Transactional;
 import java.util.List;
 import java.util.UUID;
 import java.util.concurrent.TimeUnit;
@@ -273,8 +272,9 @@ class CaseLedgerEventCaptureTest {
         .atMost(5, TimeUnit.SECONDS)
         .untilAsserted(
             () -> {
-              final var latest = io.quarkus.narayana.jta.QuarkusTransaction.requiringNew()
-                  .call(() -> repository.findLatestByCaseId(caseId));
+              final var latest =
+                  io.quarkus.narayana.jta.QuarkusTransaction.requiringNew()
+                      .call(() -> repository.findLatestByCaseId(caseId));
               assertThat(latest).isPresent();
               assertThat(latest.get().sequenceNumber).isEqualTo(2);
               assertThat(latest.get().eventType).isEqualTo("CaseCompleted");

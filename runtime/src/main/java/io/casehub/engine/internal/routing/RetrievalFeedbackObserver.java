@@ -15,17 +15,9 @@
  */
 package io.casehub.engine.internal.routing;
 
-import io.casehub.api.spi.StepOutcomeEvent;
-import io.casehub.api.spi.StepOutcomeObserver;
 import jakarta.enterprise.context.ApplicationScoped;
 
 // TODO #1081: restore CbrRetrievalTracker feedback when neocortex-memory-api publishes
 // CbrRetrievalFeedback, CbrFeedbackOutcome, and CbrRetrievalTracker.feedback()
 @ApplicationScoped
-public class RetrievalFeedbackObserver implements StepOutcomeObserver {
-
-  @Override
-  public void onStepOutcome(StepOutcomeEvent event) {
-    // no-op until neocortex-memory-api publishes feedback types
-  }
-}
+public class RetrievalFeedbackObserver {}

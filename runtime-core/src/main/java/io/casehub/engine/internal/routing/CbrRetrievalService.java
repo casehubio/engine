@@ -49,6 +49,7 @@ import io.casehub.neocortex.memory.cbr.FeatureValue;
 import io.casehub.neocortex.memory.cbr.FeatureVectorCbrCase;
 import io.casehub.neocortex.memory.cbr.PlanAdapter;
 import io.casehub.neocortex.memory.cbr.PlanEnsembleAnalyzer;
+import io.casehub.neocortex.memory.cbr.GuidanceStep;
 import io.casehub.neocortex.memory.cbr.ResolutionGuide;
 import io.casehub.neocortex.memory.cbr.ResolutionStep;
 import io.casehub.neocortex.memory.cbr.ResolvedCase;
@@ -668,6 +669,36 @@ public class CbrRetrievalService {
       ScoredCbrCase<C> scored, Map<String, FeatureValue> features) {
     CbrCase c = scored.cbrCase();
     String resultCaseType = scored.caseType();
+
+    if (c instanceof ResolutionGuide guide) {
+      List<DocumentStep> docSteps =
+          guide.steps() != null
+              ? guide.steps().stream()
+                  .map(
+                      s ->
+                          new DocumentStep(
+                              s.description(),
+                              s.preconditions(),
+                              s.expectedOutcome(),
+                              s.automationHint()))
+                  .toList()
+              : null;
+      return new RetrievedExperience(
+          c.problem(),
+          c.solution(),
+          c.outcome(),
+          c.confidence() != null ? c.confidence().value() : null,
+          scored.score(),
+          new LinkedHashMap<>(c.features()),
+          List.of(),
+          scored.featureSimilarities(),
+          resultCaseType,
+          ResolutionSourceType.RESOLUTION_GUIDE,
+          c.solution(),
+          docSteps,
+          scored.caseId());
+    }
+
     List<ExperiencePlanStep> trace;
     if (c instanceof ResolvedCase) {
       trace =
@@ -684,7 +715,11 @@ public class CbrRetrievalService {
         new LinkedHashMap<>(c.features()),
         trace,
         scored.featureSimilarities(),
-        resultCaseType);
+        resultCaseType,
+        ResolutionSourceType.PLAN_TRACE,
+        null,
+        null,
+        scored.caseId());
   }
 
   private List<ExperiencePlanStep> adaptAndMapResolutionStep(
