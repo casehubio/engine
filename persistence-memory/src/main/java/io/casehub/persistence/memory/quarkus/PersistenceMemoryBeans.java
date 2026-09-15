@@ -36,6 +36,7 @@ public class PersistenceMemoryBeans {
   }
 
   @Produces
+  @ApplicationScoped
   @Alternative
   InMemoryCaseInstanceRepository inMemoryCaseInstanceRepository(
       EventLogRepository eventLogRepository) {
@@ -43,24 +44,28 @@ public class PersistenceMemoryBeans {
   }
 
   @Produces
+  @ApplicationScoped
   @Alternative
   InMemoryCaseMetaModelRepository inMemoryCaseMetaModelRepository() {
     return new InMemoryCaseMetaModelRepository();
   }
 
   @Produces
+  @ApplicationScoped
   @Alternative
   InMemoryEventLogRepository inMemoryEventLogRepository() {
     return new InMemoryEventLogRepository();
   }
 
   @Produces
+  @ApplicationScoped
   @Alternative
   InMemoryPlanItemStore inMemoryPlanItemStore() {
     return new InMemoryPlanItemStore();
   }
 
   @Produces
+  @ApplicationScoped
   @Alternative
   InMemorySubCaseGroupRepository inMemorySubCaseGroupRepository() {
     return new InMemorySubCaseGroupRepository();
