@@ -431,4 +431,25 @@ class AgentTest {
 
     assertThat(result.output()).containsEntry("result", "ok");
   }
+
+  @Test
+  void modelId_returns_configured_value() {
+    Agent agent =
+        Agent.builder()
+            .systemPrompt("test")
+            .model(fixedResponseModel("{\"result\":\"ok\"}"))
+            .modelId("claude-sonnet-4-20250514")
+            .build();
+    assertThat(agent.modelId()).isEqualTo("claude-sonnet-4-20250514");
+  }
+
+  @Test
+  void modelId_defaults_to_null() {
+    Agent agent =
+        Agent.builder()
+            .systemPrompt("test")
+            .model(fixedResponseModel("{\"result\":\"ok\"}"))
+            .build();
+    assertThat(agent.modelId()).isNull();
+  }
 }

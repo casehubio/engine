@@ -20,11 +20,13 @@ import static org.assertj.core.api.Assertions.assertThatCode;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
+import io.casehub.api.model.AgentWorkerFunction;
 import io.casehub.api.model.Binding;
 import io.casehub.api.model.CapabilityTarget;
 import io.casehub.api.model.CaseDefinition;
 import io.casehub.api.model.JudgmentTarget;
 import io.casehub.api.model.TaskStatus;
+import io.casehub.api.model.ai.Agent;
 import io.casehub.api.model.cbr.CbrConfig;
 import io.casehub.api.spi.CaseOutcomeEvent;
 import io.casehub.engine.common.internal.jq.JQEvaluator;
@@ -44,6 +46,7 @@ import io.casehub.neocortex.memory.cbr.FeatureValue;
 import io.casehub.neocortex.memory.cbr.ResolvedCase;
 import io.casehub.neocortex.memory.cbr.ScoredCbrCase;
 import io.casehub.worker.api.Capability;
+import io.casehub.worker.api.Worker;
 import jakarta.enterprise.inject.Instance;
 import java.time.Instant;
 import java.util.ArrayList;
@@ -396,6 +399,64 @@ class CbrCaseRetainObserverTest {
     assertThat(traces).hasSize(2);
     assertThat(traces.get(0).priority()).isEqualTo(0);
     assertThat(traces.get(1).priority()).isEqualTo(1);
+  }
+
+  @Test
+  void resolution_step_parameters_contain_modelId_for_agent_worker() {
+    Agent agent =
+        Agent.builder()
+            .systemPrompt("test")
+            .model(
+                new dev.langchain4j.model.chat.ChatModel() {
+                  @Override
+                  public dev.langchain4j.model.chat.response.ChatResponse doChat(
+                      dev.langchain4j.model.chat.request.ChatRequest request) {
+                    return dev.langchain4j.model.chat.response.ChatResponse.builder()
+                        .aiMessage(dev.langchain4j.data.message.AiMessage.from("{}"))
+                        .build();
+                  }
+                })
+            .modelId("claude-sonnet-4-20250514")
+            .build();
+    Worker worker =
+        Worker.builder()
+            .name("agent-1")
+            .capabilityName("risk-assessment")
+            .function(new AgentWorkerFunction(agent))
+            .build();
+    var configBuilder = CbrConfig.builder();
+    configBuilder.feature("k", ".k");
+    configBuilder.domain("dom");
+    CaseDefinition def =
+        CaseDefinition.builder()
+            .name("model-case")
+            .namespace("test")
+            .version("1.0.0")
+            .cbrConfig(configBuilder.build())
+            .bindings(capBinding("assess", "risk-assessment"))
+            .workers(worker)
+            .build();
+    registry.register(def);
+    planItemStore.items = List.of(planItem("assess", "agent-1", TaskStatus.COMPLETED));
+
+    observer.onOutcome(event("model-case", "COMPLETED", Map.of("k", "v")));
+
+    assertThat(store.storedCases).hasSize(1);
+    var step = store.storedCases.get(0).resolutionStep().get(0);
+    assertThat(step.parameters()).containsEntry("modelId", "claude-sonnet-4-20250514");
+  }
+
+  @Test
+  void resolution_step_parameters_empty_for_non_agent_worker() {
+    registry.register(
+        defWithJqCbr("plain-case", "dom", Map.of("k", ".k"), capBinding("b1", "cap1")));
+    planItemStore.items = List.of(planItem("b1", "w1", TaskStatus.COMPLETED));
+
+    observer.onOutcome(event("plain-case", "COMPLETED", Map.of("k", "v")));
+
+    assertThat(store.storedCases).hasSize(1);
+    var step = store.storedCases.get(0).resolutionStep().get(0);
+    assertThat(step.parameters()).isEmpty();
   }
 
   @Test

@@ -18,6 +18,7 @@ package io.casehub.engine.internal.memory;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.casehub.api.engine.ExpressionEngineRegistry;
+import io.casehub.api.model.AgentWorkerFunction;
 import io.casehub.api.model.Binding;
 import io.casehub.api.model.CapabilityTarget;
 import io.casehub.api.model.CaseDefinition;
@@ -158,7 +159,7 @@ public class CbrCaseRetainObserver implements CaseOutcomeObserver {
 
     List<ResolutionStep> traces = new ArrayList<>(sorted.size());
     for (int i = 0; i < sorted.size(); i++) {
-      traces.add(toResolutionStep(sorted.get(i), capabilityNameMap, i));
+      traces.add(toResolutionStep(sorted.get(i), capabilityNameMap, i, definition));
     }
 
     if (traces.isEmpty()) {
@@ -333,15 +334,31 @@ public class CbrCaseRetainObserver implements CaseOutcomeObserver {
   }
 
   private ResolutionStep toResolutionStep(
-      PlanItemRecord record, Map<String, String> capabilityNameMap, int priority) {
+      PlanItemRecord record, Map<String, String> capabilityNameMap, int priority,
+      CaseDefinition definition) {
     return new ResolutionStep(
         record.bindingName(),
         capabilityNameMap.get(record.bindingName()),
         record.executorName(),
         OUTCOME_MAP.getOrDefault(record.status(), RoutingOutcome.FAILURE).name(),
         priority,
-        Map.of(),
+        resolveParameters(record, definition),
         record.variantId());
+  }
+
+  private Map<String, Object> resolveParameters(
+      PlanItemRecord record, CaseDefinition definition) {
+    if (record.executorName() == null) {
+      return Map.of();
+    }
+    return definition.getWorkers().stream()
+        .filter(w -> w.name().equals(record.executorName()))
+        .findFirst()
+        .filter(w -> w.function() instanceof AgentWorkerFunction)
+        .map(w -> ((AgentWorkerFunction) w.function()).agent().modelId())
+        .filter(java.util.Objects::nonNull)
+        .map(id -> Map.<String, Object>of("modelId", id))
+        .orElse(Map.of());
   }
 
   private static Object unwrap(JsonNode node) {
