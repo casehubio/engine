@@ -1,0 +1,137 @@
+##
+## Example: CBR Ensemble Consensus
+##
+## Scenario: An incident triage system retrieves past incident responses
+## via CBR. The PlanEnsembleAnalyzer classifies step-level agreement
+## across retrieved plans. The triage agent reads .cbrEnsemble from the
+## case context to identify CONTESTED steps and adjust its approach.
+##
+## Pathway: YAML (pure — no Java required)
+## See also: examples/cbr-ensemble-annotated/ (annotations)
+##           examples/cbr-ensemble-dsl/ (DSL)
+##
+## Key features demonstrated:
+##   - cbr: block with feature extraction, domain, caseType
+##   - crossType and problemDescription
+##   - Agent worker reading .cbrEnsemble.stepAnalysis from context
+##   - JQ queries for CONTESTED/UNANIMOUS step classification
+##
+
+dsl: "1.0.0"
+namespace: example
+name: ensemble-triage
+version: "1.0.0"
+title: "Ensemble Triage"
+summary: "Incident triage informed by CBR ensemble consensus — identifies agreed and contested response steps"
+types:
+  - example/cbr
+labels:
+  - example/ensemble
+
+spec:
+
+  ## ─── CBR Configuration ────────────────────────────────────────────
+  ## Feature extraction defines how the current incident maps to past
+  ## cases. Domain scopes retrieval to incident-triage history.
+  cbr:
+    features:
+      severity: ".incident.severity"
+      category: ".incident.category"
+      affectedSystem: ".incident.affectedSystem"
+    domain: incident-triage
+    caseType: ensemble-triage
+    topK: 5
+    minSimilarity: 0.3
+    problemDescription: ".incident.summary"
+
+  ## ─── Capabilities ─────────────────────────────────────────────────
+  capabilities:
+    - name: triage
+      description: "Triages incident using ensemble consensus from past responses"
+      inputProjection: |
+        {
+          incident: .incident,
+          ensemble: .cbrEnsemble
+        }
+      outputProjection: |
+        {
+          triageResult: {
+            severity: .severity,
+            approach: .approach,
+            contestedSteps: .contestedSteps,
+            confidence: .confidence
+          }
+        }
+
+    - name: respond
+      description: "Executes the triage-recommended response"
+      inputProjection: "{ incident: .incident, triageResult: .triageResult }"
+      outputProjection: "{ responseResult: { status: .status, actions: .actions } }"
+
+  ## ─── Workers ──────────────────────────────────────────────────────
+  workers:
+    - name: triage-analyst
+      description: "Analyses incident with CBR ensemble context"
+      capabilities:
+        - triage
+      agent:
+        model:
+          anthropic:
+            modelName: claude-sonnet-4-20250514
+        systemPrompt: |
+          You are an incident triage analyst. You receive an incident and
+          CBR ensemble consensus from past similar incidents.
+
+          Check .cbrEnsemble.scope — if "STEP_LEVEL", examine stepAnalysis:
+          - UNANIMOUS steps: high confidence — follow these
+          - CONSENSUS steps: reasonable confidence — follow with monitoring
+          - CONTESTED steps: disagreement — flag for human review
+          - MINORITY/UNIQUE steps: low evidence — skip unless clearly relevant
+
+          JQ to find contested steps:
+            .cbrEnsemble.stepAnalysis[] | select(.agreement == "CONTESTED")
+
+          Return your triage assessment with severity, recommended approach,
+          any contested steps that need human attention, and confidence level.
+        inputProjection: "."
+        outputProjection: "."
+
+    - name: responder
+      description: "Executes the recommended response actions"
+      capabilities:
+        - respond
+      agent:
+        model:
+          anthropic:
+            modelName: claude-sonnet-4-20250514
+        systemPrompt: |
+          You are an incident responder. Execute the triage-recommended
+          response actions for this incident.
+        inputProjection: "."
+        outputProjection: "."
+
+  ## ─── Bindings ─────────────────────────────────────────────────────
+  bindings:
+    - name: triage-on-incident
+      capability: triage
+      on:
+        contextChange:
+          filter: '.incident != null and .triageResult == null'
+
+    - name: respond-after-triage
+      capability: respond
+      on:
+        contextChange:
+          filter: '.triageResult != null and .responseResult == null'
+
+  ## ─── Goals & Completion ───────────────────────────────────────────
+  goals:
+    - name: incidentResolved
+      description: "Incident has been triaged and responded to"
+      condition: '.responseResult != null'
+      kind: success
+
+  completion:
+    success:
+      allOf:
+        - incidentResolved
