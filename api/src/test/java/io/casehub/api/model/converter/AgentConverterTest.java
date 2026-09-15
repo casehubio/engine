@@ -177,4 +177,28 @@ class AgentConverterTest {
     Agent result = AgentConverter.toApiAgent(node);
     assertThat(result).isNotNull();
   }
+
+  @Test
+  void toApiAgent_openai_setsModelId() throws Exception {
+    JsonNode node =
+        JSON.readTree(
+            """
+                        {"model":"openai","modelName":"gpt-4","apiKey":"sk-test",
+                         "systemPrompt":"You are a test agent"}""");
+    Agent result = AgentConverter.toApiAgent(node);
+    assertThat(result).isNotNull();
+    assertThat(result.modelId()).isEqualTo("gpt-4");
+  }
+
+  @Test
+  void toApiAgent_noModelName_modelIdIsNull() throws Exception {
+    JsonNode node =
+        JSON.readTree(
+            """
+                        {"model":"openai","apiKey":"sk-test",
+                         "systemPrompt":"You are a test agent"}""");
+    Agent result = AgentConverter.toApiAgent(node);
+    assertThat(result).isNotNull();
+    assertThat(result.modelId()).isNull();
+  }
 }

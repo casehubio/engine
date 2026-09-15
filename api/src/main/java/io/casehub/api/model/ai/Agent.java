@@ -46,6 +46,7 @@ public final class Agent {
   private final ChatModel model;
   private final JsonSchema responseSchema;
   private final Function<Map<String, Object>, PlannedAction> plannedActionExtractor;
+  private final String modelId;
 
   Agent(
       String systemPrompt,
@@ -54,7 +55,8 @@ public final class Agent {
       UnaryOperator<JsonNode> outputTransformer,
       ChatModel model,
       JsonSchema responseSchema,
-      Function<Map<String, Object>, PlannedAction> plannedActionExtractor) {
+      Function<Map<String, Object>, PlannedAction> plannedActionExtractor,
+      String modelId) {
     this.systemPrompt = systemPrompt;
     this.userMessageTemplate = userMessageTemplate;
     this.inputTransformer = inputTransformer;
@@ -62,6 +64,11 @@ public final class Agent {
     this.model = model;
     this.responseSchema = responseSchema;
     this.plannedActionExtractor = plannedActionExtractor;
+    this.modelId = modelId;
+  }
+
+  public String modelId() {
+    return modelId;
   }
 
   public static AgentBuilder builder() {

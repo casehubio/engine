@@ -50,11 +50,15 @@ public class AgentConverter {
     }
     ChatModelProvider modelProvider = toChatModelProviderFromNode(providerConfigNode, providerType);
 
+    String modelNameForId =
+        providerConfigNode.has("modelName") ? providerConfigNode.get("modelName").asText() : null;
+
     AgentBuilder builder =
         io.casehub.api.model.ai.Agent.builder()
             .systemPrompt(
                 agentNode.has("systemPrompt") ? agentNode.get("systemPrompt").asText() : null)
-            .model(modelProvider);
+            .model(modelProvider)
+            .modelId(modelNameForId);
 
     if (agentNode.has("inputProjection")) {
       builder.inputProjection(agentNode.get("inputProjection").asText());

@@ -43,6 +43,7 @@ public final class AgentBuilder {
   private java.util.function.Function<
           java.util.Map<String, Object>, io.casehub.worker.api.PlannedAction>
       plannedActionExtractor;
+  private String modelId;
 
   AgentBuilder() {}
 
@@ -121,6 +122,11 @@ public final class AgentBuilder {
     return this;
   }
 
+  public AgentBuilder modelId(String modelId) {
+    this.modelId = modelId;
+    return this;
+  }
+
   public Agent build() {
     if (systemPrompt == null) {
       throw new IllegalStateException("systemPrompt is required");
@@ -169,6 +175,7 @@ public final class AgentBuilder {
         resolvedOutput,
         resolvedModel,
         responseSchema,
-        plannedActionExtractor);
+        plannedActionExtractor,
+        modelId);
   }
 }
