@@ -29,7 +29,6 @@ import io.casehub.api.model.GoalExpression;
 import io.casehub.api.model.GoalKind;
 import io.casehub.api.spi.ActionRiskClassifier;
 import io.casehub.api.spi.ClassificationContext;
-import io.casehub.api.spi.RiskClassifier;
 import io.casehub.api.spi.RiskDecision;
 import io.casehub.api.spi.RiskDecision.Autonomous;
 import io.casehub.api.spi.RiskDecision.GateRequired;
@@ -262,7 +261,6 @@ class ActionGateIntegrationTest {
    * Configurable classifier — returns Autonomous by default; tests set nextDecision before starting
    * a case.
    */
-  @RiskClassifier
   @Alternative
   @Priority(1)
   @ApplicationScoped

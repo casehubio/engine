@@ -29,7 +29,7 @@ import io.casehub.api.model.GoalExpression;
 import io.casehub.api.model.GoalKind;
 import io.casehub.api.spi.ActionRiskClassifier;
 import io.casehub.api.spi.ClassificationContext;
-import io.casehub.api.spi.RiskClassifier;
+
 import io.casehub.api.spi.RiskDecision;
 import io.casehub.api.spi.RiskDecision.GateRequired;
 import io.casehub.api.spi.routing.StaticSetStrategy;
@@ -192,7 +192,6 @@ class ActionGateResolutionTest {
 
   // --- Supporting CDI beans ---
 
-  @RiskClassifier
   @Alternative
   @Priority(1)
   @ApplicationScoped
