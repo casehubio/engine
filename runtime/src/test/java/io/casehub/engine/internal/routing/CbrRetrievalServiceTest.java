@@ -298,12 +298,7 @@ class CbrRetrievalServiceTest {
     CaseDefinition def = buildDefinition(config);
     var guide =
         new ResolutionGuide(
-            "phishing runbook",
-            "1. Isolate mailbox 2. Reset credentials",
-            null,
-            null,
-            null,
-            null);
+            "phishing runbook", "1. Isolate mailbox 2. Reset credentials", null, null, null, null);
     cbrStore.setResult(List.of(new ScoredCbrCase<>(guide, "textual", 0.82)));
 
     CbrRetrievalResult result = service.retrieve(def, buildInstance());
@@ -340,14 +335,7 @@ class CbrRetrievalServiceTest {
             List.of(new ResolutionStep("b1", "c1", "w1", "SUCCESS", 0, Map.of(), null)),
             null,
             null);
-    var guideCase =
-        new ResolutionGuide(
-            "guide problem",
-            "guide solution",
-            null,
-            null,
-            null,
-            null);
+    var guideCase = new ResolutionGuide("guide problem", "guide solution", null, null, null, null);
 
     @SuppressWarnings("unchecked")
     var mixed =
@@ -910,7 +898,8 @@ class CbrRetrievalServiceTest {
   }
 
   @Test
-  @org.junit.jupiter.api.Disabled("TODO #1081: EnsemblePlan SNAPSHOT API change — null scope rejected")
+  @org.junit.jupiter.api.Disabled(
+      "TODO #1081: EnsemblePlan SNAPSHOT API change — null scope rejected")
   void retrieveForSelectionWithEnsemble_invokes_ensemble_for_plan_type() {
     var analyzer = new RecordingPlanEnsembleAnalyzer();
     service = new CbrRetrievalService(jqEvaluator, cbrStore, planAdapter, analyzer);
