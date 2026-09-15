@@ -13,21 +13,29 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.casehub.ledger.quarkus;
+package io.casehub.ledger;
 
-import io.casehub.engine.common.spi.event.CaseLifecycleEvent;
-import io.casehub.ledger.service.CaseLedgerEventCapture;
-import io.quarkus.narayana.jta.QuarkusTransaction;
+import io.casehub.platform.api.preferences.PreferenceSchemaDescriptor;
+import io.casehub.platform.api.preferences.PreferenceSchemaRegistry;
+import io.quarkus.arc.DefaultBean;
 import jakarta.enterprise.context.ApplicationScoped;
-import jakarta.enterprise.event.ObservesAsync;
-import jakarta.inject.Inject;
+import java.util.Optional;
+import java.util.Set;
 
+@DefaultBean
 @ApplicationScoped
-public class CaseLedgerEventCaptureAdapter {
+public class NoOpPreferenceSchemaRegistry implements PreferenceSchemaRegistry {
 
-  @Inject CaseLedgerEventCapture capture;
+  @Override
+  public void register(PreferenceSchemaDescriptor descriptor) {}
 
-  void onCaseLifecycleEvent(@ObservesAsync CaseLifecycleEvent event) {
-    QuarkusTransaction.requiringNew().run(() -> capture.onCaseLifecycleEvent(event));
+  @Override
+  public Optional<PreferenceSchemaDescriptor> resolve(String qualifiedName) {
+    return Optional.empty();
+  }
+
+  @Override
+  public Set<PreferenceSchemaDescriptor> discover() {
+    return Set.of();
   }
 }

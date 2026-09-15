@@ -27,10 +27,10 @@ import io.casehub.neocortex.memory.CaseMemoryStore;
 import io.casehub.neocortex.memory.Memory;
 import io.casehub.neocortex.memory.MemoryDomain;
 import io.casehub.neocortex.memory.MemoryQuery;
-import jakarta.enterprise.inject.Instance;
 import java.time.Instant;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -41,13 +41,9 @@ class AgentMemoryRetrieverTest {
   private AgentMemoryRetriever retriever;
 
   @BeforeEach
-  @SuppressWarnings("unchecked")
   void setUp() {
     store = mock(CaseMemoryStore.class);
-    Instance<CaseMemoryStore> storeInstance = mock(Instance.class);
-    when(storeInstance.isResolvable()).thenReturn(true);
-    when(storeInstance.get()).thenReturn(store);
-    retriever = new AgentMemoryRetriever(storeInstance);
+    retriever = new AgentMemoryRetriever(Optional.of(store));
   }
 
   @Test
@@ -142,11 +138,8 @@ class AgentMemoryRetrieverTest {
   }
 
   @Test
-  @SuppressWarnings("unchecked")
   void returnsEmptyWhenStoreUnavailable() {
-    Instance<CaseMemoryStore> unavailable = mock(Instance.class);
-    when(unavailable.isResolvable()).thenReturn(false);
-    var noopRetriever = new AgentMemoryRetriever(unavailable);
+    var noopRetriever = new AgentMemoryRetriever(Optional.empty());
 
     var def =
         CaseDefinition.builder()

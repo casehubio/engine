@@ -13,21 +13,22 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.casehub.ledger.quarkus;
+package io.casehub.engine;
 
-import io.casehub.engine.common.spi.event.CaseLifecycleEvent;
-import io.casehub.ledger.service.CaseLedgerEventCapture;
-import io.quarkus.narayana.jta.QuarkusTransaction;
+import io.casehub.persistence.memory.DefaultTestPrincipal;
+import io.casehub.platform.api.identity.CurrentPrincipal;
+import jakarta.annotation.Priority;
 import jakarta.enterprise.context.ApplicationScoped;
-import jakarta.enterprise.event.ObservesAsync;
-import jakarta.inject.Inject;
+import jakarta.enterprise.inject.Alternative;
+import jakarta.enterprise.inject.Produces;
 
 @ApplicationScoped
-public class CaseLedgerEventCaptureAdapter {
+public class TestCurrentPrincipalProvider {
 
-  @Inject CaseLedgerEventCapture capture;
-
-  void onCaseLifecycleEvent(@ObservesAsync CaseLifecycleEvent event) {
-    QuarkusTransaction.requiringNew().run(() -> capture.onCaseLifecycleEvent(event));
+  @Produces
+  @Alternative
+  @Priority(100)
+  CurrentPrincipal currentPrincipal() {
+    return new DefaultTestPrincipal();
   }
 }

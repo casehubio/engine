@@ -33,14 +33,13 @@ import com.fasterxml.jackson.databind.node.ObjectNode;
 import io.casehub.api.model.CaseStatus;
 import io.casehub.api.model.event.CaseHubEventType;
 import io.casehub.api.model.event.EventStreamType;
+import io.casehub.api.spi.event.EventDispatcher;
 import io.casehub.engine.common.internal.event.CaseContextChangedEvent;
-import io.casehub.engine.common.internal.event.EventBusAddresses;
 import io.casehub.engine.common.internal.event.ScopedWorkerOutputEvent;
 import io.casehub.engine.common.internal.history.EventLog;
 import io.casehub.engine.common.internal.model.CaseInstance;
 import io.casehub.engine.common.internal.model.CaseMetaModel;
 import io.casehub.engine.common.spi.EventLogRepository;
-import io.vertx.mutiny.core.eventbus.EventBus;
 import java.util.Map;
 import java.util.UUID;
 import org.junit.jupiter.api.BeforeEach;
@@ -54,7 +53,7 @@ class ScopedWorkerOutputHandlerTest {
   private ScopedWorkerOutputHandler handler;
   private ContextOutputApplier applier;
   private EventLogRepository eventLogRepository;
-  private EventBus eventBus;
+  private EventDispatcher eventDispatcher;
   private io.casehub.engine.internal.memory.AgentExperienceRecorder agentExperienceRecorder;
   private io.casehub.engine.common.spi.CaseDefinitionRegistry caseDefinitionRegistry;
 
@@ -64,16 +63,17 @@ class ScopedWorkerOutputHandlerTest {
   void setUp() {
     applier = mock(ContextOutputApplier.class);
     eventLogRepository = mock(EventLogRepository.class);
-    eventBus = mock(EventBus.class);
+    eventDispatcher = mock(EventDispatcher.class);
     agentExperienceRecorder = mock(io.casehub.engine.internal.memory.AgentExperienceRecorder.class);
     caseDefinitionRegistry = mock(io.casehub.engine.common.spi.CaseDefinitionRegistry.class);
 
-    handler = new ScopedWorkerOutputHandler();
-    handler.contextOutputApplier = applier;
-    handler.eventLogRepository = eventLogRepository;
-    handler.eventBus = eventBus;
-    handler.agentExperienceRecorder = agentExperienceRecorder;
-    handler.caseDefinitionRegistry = caseDefinitionRegistry;
+    handler =
+        new ScopedWorkerOutputHandler(
+            applier,
+            eventLogRepository,
+            eventDispatcher,
+            agentExperienceRecorder,
+            caseDefinitionRegistry);
 
     CaseMetaModel metaModel = new CaseMetaModel();
     metaModel.setNamespace("ns");
@@ -96,7 +96,7 @@ class ScopedWorkerOutputHandlerTest {
     var event =
         new ScopedWorkerOutputEvent(
             instance, "worker1", Map.of("key1", "value1"), "binding1", null);
-    handler.onScopedWorkerOutput(event);
+    handler.handle(event);
 
     verify(applier).apply(instance, Map.of("key1", "value1"), "binding1");
 
@@ -107,8 +107,7 @@ class ScopedWorkerOutputHandlerTest {
     assertEquals(EventStreamType.CASE, log.getStreamType());
     assertEquals("worker1", log.getWorkerId());
 
-    verify(eventBus)
-        .publish(eq(EventBusAddresses.CONTEXT_CHANGED), any(CaseContextChangedEvent.class));
+    verify(eventDispatcher).dispatch(any(CaseContextChangedEvent.class));
   }
 
   @Test
@@ -118,10 +117,10 @@ class ScopedWorkerOutputHandlerTest {
     var event =
         new ScopedWorkerOutputEvent(
             instance, "worker1", Map.of("key1", "value1"), "binding1", null);
-    handler.onScopedWorkerOutput(event);
+    handler.handle(event);
 
     verify(eventLogRepository, never()).append(any(), anyString());
-    verify(eventBus, never()).publish(anyString(), any());
+    verify(eventDispatcher, never()).dispatch(any());
   }
 
   @Test
@@ -131,11 +130,11 @@ class ScopedWorkerOutputHandlerTest {
     var event =
         new ScopedWorkerOutputEvent(
             instance, "worker1", Map.of("key1", "value1"), "binding1", null);
-    handler.onScopedWorkerOutput(event);
+    handler.handle(event);
 
     verify(applier, never()).apply(any(), anyMap(), anyString());
     verify(eventLogRepository, never()).append(any(), anyString());
-    verify(eventBus, never()).publish(anyString(), any());
+    verify(eventDispatcher, never()).dispatch(any());
   }
 
   @Test
@@ -145,7 +144,7 @@ class ScopedWorkerOutputHandlerTest {
     var event =
         new ScopedWorkerOutputEvent(
             instance, "worker1", Map.of("key1", "value1"), "binding1", null);
-    handler.onScopedWorkerOutput(event);
+    handler.handle(event);
 
     verify(applier, never()).apply(any(), anyMap(), anyString());
   }
@@ -157,7 +156,7 @@ class ScopedWorkerOutputHandlerTest {
     var event =
         new ScopedWorkerOutputEvent(
             instance, "worker1", Map.of("key1", "value1"), "binding1", null);
-    handler.onScopedWorkerOutput(event);
+    handler.handle(event);
 
     verify(applier, never()).apply(any(), anyMap(), anyString());
   }
@@ -169,7 +168,7 @@ class ScopedWorkerOutputHandlerTest {
 
     var event =
         new ScopedWorkerOutputEvent(instance, "worker1", Map.of("key1", "value1"), null, null);
-    handler.onScopedWorkerOutput(event);
+    handler.handle(event);
 
     verify(applier).apply(instance, Map.of("key1", "value1"), null);
     verify(eventLogRepository).append(any(), eq("tenant-1"));
@@ -183,7 +182,7 @@ class ScopedWorkerOutputHandlerTest {
     var event =
         new ScopedWorkerOutputEvent(
             instance, "worker1", Map.of("key1", "v1", "key2", "v2"), "binding1", null);
-    handler.onScopedWorkerOutput(event);
+    handler.handle(event);
 
     ArgumentCaptor<EventLog> logCaptor = ArgumentCaptor.forClass(EventLog.class);
     verify(eventLogRepository).append(logCaptor.capture(), anyString());
@@ -201,7 +200,7 @@ class ScopedWorkerOutputHandlerTest {
         new ScopedWorkerOutputEvent(
             instance, "worker1", Map.of("key1", "value1"), "binding1", null);
 
-    assertDoesNotThrow(() -> handler.onScopedWorkerOutput(event));
+    assertDoesNotThrow(() -> handler.handle(event));
   }
 
   @Test
@@ -227,7 +226,7 @@ class ScopedWorkerOutputHandlerTest {
             "check-security",
             null,
             "I chose this because...");
-    handler.onScopedWorkerOutput(event);
+    handler.handle(event);
 
     verify(agentExperienceRecorder)
         .storeReasoning(
@@ -248,7 +247,7 @@ class ScopedWorkerOutputHandlerTest {
     var event =
         new ScopedWorkerOutputEvent(
             instance, "worker1", Map.of("k", "v"), null, null, "reasoning text");
-    handler.onScopedWorkerOutput(event);
+    handler.handle(event);
 
     verify(agentExperienceRecorder)
         .storeReasoning(

@@ -34,10 +34,10 @@ import io.casehub.api.spi.routing.GoalFormationProposal;
 import io.casehub.eidos.api.AgentGoal;
 import io.casehub.eidos.api.GoalPriority;
 import io.casehub.eidos.api.Visibility;
-import jakarta.enterprise.inject.Instance;
 import java.time.Instant;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import org.junit.jupiter.api.Test;
 
 class LlmGoalFormationStrategyTest {
@@ -76,12 +76,9 @@ class LlmGoalFormationStrategyTest {
     assertThat(proposal.goals().get(0).suggestedPriority()).isNull();
   }
 
-  @SuppressWarnings("unchecked")
   @Test
   void failsWhenChatModelProviderAbsent() {
-    Instance<ChatModelProvider> absent = mock(Instance.class);
-    when(absent.isUnsatisfied()).thenReturn(true);
-    LlmGoalFormationStrategy strategy = new LlmGoalFormationStrategy(absent);
+    LlmGoalFormationStrategy strategy = new LlmGoalFormationStrategy(Optional.empty());
 
     try {
       strategy.propose(buildContext());
@@ -103,7 +100,6 @@ class LlmGoalFormationStrategyTest {
     }
   }
 
-  @SuppressWarnings("unchecked")
   private LlmGoalFormationStrategy strategyWithResponse(String response) {
     ChatModel chatModel = mock(ChatModel.class);
     when(chatModel.chat(any(ChatRequest.class)))
@@ -120,10 +116,7 @@ class LlmGoalFormationStrategyTest {
             return chatModel;
           }
         };
-    Instance<ChatModelProvider> instance = mock(Instance.class);
-    when(instance.isUnsatisfied()).thenReturn(false);
-    when(instance.get()).thenReturn(provider);
-    return new LlmGoalFormationStrategy(instance);
+    return new LlmGoalFormationStrategy(Optional.of(provider));
   }
 
   private GoalFormationContext buildContext() {

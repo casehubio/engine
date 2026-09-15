@@ -22,7 +22,7 @@ import io.casehub.actorstate.LedgerActorStateContributor;
 import io.casehub.actorstate.QhorusActorStateContributor;
 import io.casehub.actorstate.WorkActorStateContributor;
 import io.casehub.engine.common.spi.scheduler.WorkerExecutionManager;
-import io.casehub.ledger.runtime.service.TrustGateService;
+import io.casehub.ledger.core.trust.TrustGateService;
 import io.casehub.platform.api.actor.ActorStateContributor;
 import io.casehub.qhorus.api.store.ChannelStore;
 import io.casehub.qhorus.api.store.CommitmentStore;

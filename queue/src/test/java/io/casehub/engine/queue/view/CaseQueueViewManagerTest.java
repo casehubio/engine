@@ -46,8 +46,11 @@ class CaseQueueViewManagerTest {
     when(prefs.getOrDefault(any(io.casehub.platform.api.preferences.PreferenceKey.class)))
         .thenReturn(io.casehub.platform.api.preferences.IntPreference.of(300));
     when(prefProvider.resolve(any())).thenReturn(prefs);
-    SubjectViewOrchestrator orchestrator =
-        new SubjectViewOrchestrator(evaluator, viewStore, tracker, prefProvider);
+    SubjectViewOrchestrator orchestrator = new SubjectViewOrchestrator();
+    setField(orchestrator, "evaluator", evaluator);
+    setField(orchestrator, "viewStore", viewStore);
+    setField(orchestrator, "tracker", tracker);
+    setField(orchestrator, "preferenceProvider", prefProvider);
     manager = new CaseQueueViewManager(orchestrator, viewStore);
   }
 
@@ -84,5 +87,15 @@ class CaseQueueViewManagerTest {
   @Test
   void deleteQueueView_notFound_returnsFalse() {
     assertThat(manager.deleteQueueView(UUID.randomUUID())).isFalse();
+  }
+
+  private static void setField(Object target, String fieldName, Object value) {
+    try {
+      var field = target.getClass().getDeclaredField(fieldName);
+      field.setAccessible(true);
+      field.set(target, value);
+    } catch (Exception e) {
+      throw new RuntimeException("Failed to set field " + fieldName, e);
+    }
   }
 }

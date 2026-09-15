@@ -29,8 +29,8 @@ import io.casehub.eidos.api.AgentDescriptor;
 import io.casehub.eidos.api.AgentGoal;
 import io.casehub.eidos.api.GoalPriority;
 import io.casehub.eidos.api.Visibility;
-import jakarta.enterprise.inject.Instance;
 import java.util.List;
+import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
 import org.junit.jupiter.api.BeforeEach;
@@ -41,14 +41,10 @@ class GoalSignalProviderTest {
   private GoalSignalProvider provider;
   private GoalAbandonmentEvaluator mockEvaluator;
 
-  @SuppressWarnings("unchecked")
   @BeforeEach
   void setUp() {
     mockEvaluator = mock(GoalAbandonmentEvaluator.class);
-    Instance<GoalAbandonmentEvaluator> instance = mock(Instance.class);
-    when(instance.isResolvable()).thenReturn(true);
-    when(instance.get()).thenReturn(mockEvaluator);
-    provider = new GoalSignalProvider(instance);
+    provider = new GoalSignalProvider(Optional.of(mockEvaluator));
   }
 
   @Test
@@ -127,10 +123,7 @@ class GoalSignalProviderTest {
     var goal2 = goal("goal2");
     var descriptor = descriptorWithGoals("agent1", List.of(goal1, goal2));
     var candidate = candidateWithDescriptor("a", descriptor);
-    @SuppressWarnings("unchecked")
-    Instance<GoalAbandonmentEvaluator> emptyInstance = mock(Instance.class);
-    when(emptyInstance.isResolvable()).thenReturn(false);
-    var providerWithoutEvaluator = new GoalSignalProvider(emptyInstance);
+    var providerWithoutEvaluator = new GoalSignalProvider(Optional.empty());
 
     var result = providerWithoutEvaluator.evaluate(ctx(), List.of(candidate));
 

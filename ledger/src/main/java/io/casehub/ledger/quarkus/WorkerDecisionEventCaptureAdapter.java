@@ -17,6 +17,7 @@ package io.casehub.ledger.quarkus;
 
 import io.casehub.engine.common.spi.event.WorkerDecisionEvent;
 import io.casehub.ledger.service.WorkerDecisionEventCapture;
+import io.quarkus.narayana.jta.QuarkusTransaction;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.enterprise.event.ObservesAsync;
 import jakarta.inject.Inject;
@@ -27,6 +28,6 @@ public class WorkerDecisionEventCaptureAdapter {
   @Inject WorkerDecisionEventCapture capture;
 
   void onWorkerDecisionEvent(@ObservesAsync WorkerDecisionEvent event) {
-    capture.onWorkerDecisionEvent(event);
+    QuarkusTransaction.requiringNew().run(() -> capture.onWorkerDecisionEvent(event));
   }
 }

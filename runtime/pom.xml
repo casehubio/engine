@@ -265,6 +265,8 @@
                     <systemPropertyVariables>
                         <java.util.logging.manager>org.jboss.logmanager.LogManager</java.util.logging.manager>
                         <maven.home>${maven.home}</maven.home>
+                        <quarkus.arc.selected-alternatives>io.casehub.persistence.memory.quarkus.PersistenceMemoryBeans,io.casehub.persistence.memory.InMemoryCaseMetaModelRepository,io.casehub.persistence.memory.InMemoryCaseInstanceRepository,io.casehub.persistence.memory.InMemoryEventLogRepository,io.casehub.persistence.memory.InMemoryPlanItemStore,io.casehub.persistence.memory.InMemorySubCaseGroupRepository,io.casehub.neocortex.memory.cbr.inmem.InMemoryCbrCaseMemoryStore</quarkus.arc.selected-alternatives>
+                        <quarkus.arc.exclude-types>io.casehub.work.core.strategy.RoundRobinStrategy,io.casehub.platform.mock.MockCurrentPrincipal,io.casehub.ledger.service.CaseLedgerEventCapture,io.casehub.ledger.service.WorkerDecisionEventCapture,io.casehub.actorstate.ActorStateResource</quarkus.arc.exclude-types>
                     </systemPropertyVariables>
                 </configuration>
             </plugin>

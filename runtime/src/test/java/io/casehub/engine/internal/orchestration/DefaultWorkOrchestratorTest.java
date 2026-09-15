@@ -32,6 +32,7 @@ import io.casehub.api.model.WorkResult;
 import io.casehub.api.spi.routing.AgentCandidate;
 import io.casehub.api.spi.routing.AgentRoutingStrategy;
 import io.casehub.api.spi.routing.CandidateMatchingStrategy;
+import io.casehub.api.spi.routing.CbrRetrievalResult;
 import io.casehub.api.spi.routing.EscalationReason;
 import io.casehub.api.spi.routing.RoutingResult;
 import io.casehub.eidos.api.AgentDescriptor;
@@ -123,14 +124,16 @@ class DefaultWorkOrchestratorTest {
     executionManager = mock(WorkerExecutionManager.class);
     capabilityHealth = mock(CapabilityHealth.class);
     eventBus = mock(EventBus.class);
-    registry = new PendingWorkRegistry();
+    registry =
+        new PendingWorkRegistry(
+            mock(io.casehub.engine.common.spi.CrossTenantEventLogRepository.class));
     caseDefinitionRegistry = mock(CaseDefinitionRegistry.class);
     caseInstanceRepository = mock(CaseInstanceRepository.class);
     eventLogRepository = mock(EventLogRepository.class);
     jqEvaluator = mock(JQEvaluator.class);
     cbrRetrievalService = mock(CbrRetrievalService.class);
 
-    when(cbrRetrievalService.retrieve(any(), any())).thenReturn(List.of());
+    when(cbrRetrievalService.retrieve(any(), any())).thenReturn(CbrRetrievalResult.empty());
     when(capabilityHealth.probe(any(), any(), any()))
         .thenReturn(new CapabilityHealth.CapabilityStatus.Ready());
     when(executionManager.getActiveWorkCount(any())).thenReturn(0);

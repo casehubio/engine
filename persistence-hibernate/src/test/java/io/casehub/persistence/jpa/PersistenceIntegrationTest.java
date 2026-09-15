@@ -43,6 +43,7 @@ import org.junit.jupiter.api.Timeout;
 
 @QuarkusTest
 @Timeout(value = 60, unit = TimeUnit.SECONDS)
+@jakarta.transaction.Transactional
 class PersistenceIntegrationTest {
 
   @Inject CaseInstanceRepository instanceRepository;

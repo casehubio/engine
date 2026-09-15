@@ -28,8 +28,6 @@ import io.casehub.engine.common.spi.CaseDefinitionRegistry;
 import io.casehub.engine.internal.routing.GoalFormationEvaluator;
 import io.casehub.neocortex.memory.CaseMemoryStore;
 import io.casehub.neocortex.memory.MemoryInput;
-import io.casehub.neocortex.memory.experience.ExperienceRecorder;
-import io.casehub.neocortex.memory.reflection.ReflectionOrchestrator;
 import io.casehub.worker.api.WorkerOutcome;
 import jakarta.enterprise.inject.Instance;
 import java.util.UUID;
@@ -55,21 +53,15 @@ class AgentExperienceRecorderReasoningTest {
     when(storeInstance.isResolvable()).thenReturn(true);
     when(storeInstance.get()).thenReturn(store);
 
-    Instance<ExperienceRecorder> expInstance = mock(Instance.class);
-    when(expInstance.isResolvable()).thenReturn(false);
-
-    Instance<ReflectionOrchestrator> reflInstance = mock(Instance.class);
-    when(reflInstance.isResolvable()).thenReturn(false);
-
     recorder =
         new AgentExperienceRecorder(
-            expInstance,
-            reflInstance,
+            java.util.Optional.empty(),
+            java.util.Optional.empty(),
             mock(CaseDefinitionRegistry.class),
             mock(GoalFormationEvaluator.class),
-            storeInstance,
-            mock(Instance.class));
-    recorder.reasoningEnabled = true;
+            java.util.Optional.of(store),
+            java.util.Optional.empty(),
+            true);
   }
 
   @Test
@@ -123,31 +115,36 @@ class AgentExperienceRecorderReasoningTest {
 
   @Test
   void storeReasoningNoOpWhenDisabled() {
-    recorder.reasoningEnabled = false;
-    recorder.storeReasoning(
+    var disabledRecorder =
+        new AgentExperienceRecorder(
+            java.util.Optional.empty(),
+            java.util.Optional.empty(),
+            mock(CaseDefinitionRegistry.class),
+            mock(GoalFormationEvaluator.class),
+            java.util.Optional.of(store),
+            java.util.Optional.empty(),
+            false);
+    disabledRecorder.storeReasoning(
         mockCaseInstance(), "agent-1", "cap", WorkerOutcome.success(), "reasoning text", "binding");
-    verify(storeInstance, never()).get();
+    verify(store, never()).store(any());
   }
 
   @SuppressWarnings("unchecked")
   @Test
   void storeReasoningNoOpWhenStoreNotResolvable() {
-    Instance<CaseMemoryStore> unresolv = mock(Instance.class);
-    when(unresolv.isResolvable()).thenReturn(false);
-
     var rec =
         new AgentExperienceRecorder(
-            mock(Instance.class),
-            mock(Instance.class),
+            java.util.Optional.empty(),
+            java.util.Optional.empty(),
             mock(CaseDefinitionRegistry.class),
             mock(GoalFormationEvaluator.class),
-            unresolv,
-            mock(Instance.class));
-    rec.reasoningEnabled = true;
+            java.util.Optional.empty(),
+            java.util.Optional.empty(),
+            true);
 
     rec.storeReasoning(
         mockCaseInstance(), "agent-1", "cap", WorkerOutcome.success(), "reasoning", "binding");
-    verify(unresolv, never()).get();
+    // no-op — Optional.empty() means store is absent, nothing to verify
   }
 
   @Test

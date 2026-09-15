@@ -16,18 +16,21 @@
 package io.casehub.testing;
 
 import io.casehub.engine.common.spi.CaseInstanceRepository;
+import io.casehub.engine.common.spi.EventLogRepository;
 import io.casehub.persistence.memory.InMemoryCaseInstanceRepository;
 import jakarta.annotation.Priority;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.enterprise.inject.Alternative;
+import jakarta.inject.Inject;
 
 /** Auto-selected in-memory {@link CaseInstanceRepository} for {@code @QuarkusTest}. */
 @Alternative
 @Priority(1)
 @ApplicationScoped
 public class TestCaseInstanceRepository extends InMemoryCaseInstanceRepository {
-  public TestCaseInstanceRepository(
-      io.casehub.engine.common.spi.EventLogRepository eventLogRepository) {
+
+  @Inject
+  public TestCaseInstanceRepository(EventLogRepository eventLogRepository) {
     super(eventLogRepository);
   }
 }

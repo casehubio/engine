@@ -145,7 +145,7 @@ class EngineStrategyResolverTest {
 
   @Test
   void resolvesDataChannelFactoryDefault() {
-    var factory = new io.casehub.engine.common.internal.channel.InMemoryDataChannelFactory();
+    var factory = new io.casehub.engine.common.internal.channel.InMemoryDataChannelFactory(5000L);
     var resolver = buildResolver(List.of(handle(factory, true)));
 
     var result = resolver.resolve(io.casehub.api.spi.DataChannelFactory.class, null);

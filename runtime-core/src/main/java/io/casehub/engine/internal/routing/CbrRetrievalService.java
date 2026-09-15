@@ -31,6 +31,7 @@ import io.casehub.api.spi.routing.ConsensusScope;
 import io.casehub.api.spi.routing.EnsembleConsensus;
 import io.casehub.api.spi.routing.ExperienceAnalyser;
 import io.casehub.api.spi.routing.ExperiencePlanStep;
+import io.casehub.api.spi.routing.ResolutionSourceType;
 import io.casehub.api.spi.routing.RetrievedExperience;
 import io.casehub.api.spi.routing.RoutingOutcome;
 import io.casehub.api.spi.routing.StepConsensusEntry;
@@ -668,6 +669,24 @@ public class CbrRetrievalService {
       ScoredCbrCase<C> scored, Map<String, FeatureValue> features) {
     CbrCase c = scored.cbrCase();
     String resultCaseType = scored.caseType();
+
+    if (c instanceof ResolutionGuide guide) {
+      return new RetrievedExperience(
+          guide.problem(),
+          guide.solution(),
+          guide.outcome(),
+          guide.confidence() != null ? guide.confidence().value() : null,
+          scored.score(),
+          new LinkedHashMap<>(c.features()),
+          List.of(),
+          scored.featureSimilarities(),
+          resultCaseType,
+          ResolutionSourceType.RESOLUTION_GUIDE,
+          guide.solution(),
+          null,
+          scored.caseId());
+    }
+
     List<ExperiencePlanStep> trace;
     if (c instanceof ResolvedCase) {
       trace =
@@ -684,7 +703,11 @@ public class CbrRetrievalService {
         new LinkedHashMap<>(c.features()),
         trace,
         scored.featureSimilarities(),
-        resultCaseType);
+        resultCaseType,
+        ResolutionSourceType.PLAN_TRACE,
+        null,
+        null,
+        scored.caseId());
   }
 
   private List<ExperiencePlanStep> adaptAndMapResolutionStep(

@@ -77,7 +77,7 @@ import io.casehub.engine.work.cloudevent.CloudEventHumanTaskScheduler;
 import io.casehub.engine.work.cloudevent.CloudEventJudgmentScheduler;
 import io.casehub.engine.work.cloudevent.WorkIntegrationConflictDetector;
 import io.casehub.engine.work.cloudevent.WorkItemLifecycleCloudEventConsumer;
-import io.casehub.ledger.runtime.service.TrustGateService;
+import io.casehub.ledger.core.trust.TrustGateService;
 import io.casehub.persistence.memory.DefaultTestPrincipal;
 import io.casehub.persistence.memory.InMemoryCaseInstanceRepository;
 import io.casehub.persistence.memory.InMemoryCaseMetaModelRepository;

@@ -37,7 +37,6 @@ import io.casehub.neocortex.memory.cbr.FeatureValue;
 import io.casehub.neocortex.memory.cbr.ResolutionStep;
 import io.casehub.neocortex.memory.cbr.ResolvedCase;
 import io.casehub.neocortex.memory.cbr.ScoredCbrCase;
-import java.lang.reflect.Method;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
@@ -56,10 +55,7 @@ class CbrRetrievalCachingTest {
 
   @BeforeEach
   void setUp() throws Exception {
-    JQEvaluator jqEvaluator = new JQEvaluator();
-    Method init = JQEvaluator.class.getDeclaredMethod("init");
-    init.setAccessible(true);
-    init.invoke(jqEvaluator);
+    JQEvaluator jqEvaluator = new JQEvaluator(null, null);
 
     cbrStore = new CountingCbrStore();
     service =
@@ -118,7 +114,7 @@ class CbrRetrievalCachingTest {
     // Evict via terminal status event
     CaseStatusChanged event =
         new CaseStatusChanged(instance, CaseStatus.RUNNING.name(), CaseStatus.COMPLETED.name());
-    evictionHandler.onCaseStatusChanged(event);
+    evictionHandler.handle(event);
 
     assertEquals(0, service.cacheSize(), "cache should be empty after eviction");
 
@@ -136,7 +132,7 @@ class CbrRetrievalCachingTest {
     service.retrieve(def, instance);
     CaseStatusChanged event =
         new CaseStatusChanged(instance, CaseStatus.RUNNING.name(), CaseStatus.FAULTED.name());
-    evictionHandler.onCaseStatusChanged(event);
+    evictionHandler.handle(event);
 
     assertEquals(0, service.cacheSize());
   }
@@ -150,7 +146,7 @@ class CbrRetrievalCachingTest {
     service.retrieve(def, instance);
     CaseStatusChanged event =
         new CaseStatusChanged(instance, CaseStatus.RUNNING.name(), CaseStatus.CANCELLED.name());
-    evictionHandler.onCaseStatusChanged(event);
+    evictionHandler.handle(event);
 
     assertEquals(0, service.cacheSize());
   }
@@ -164,7 +160,7 @@ class CbrRetrievalCachingTest {
     service.retrieve(def, instance);
     CaseStatusChanged event =
         new CaseStatusChanged(instance, CaseStatus.STARTING.name(), CaseStatus.RUNNING.name());
-    evictionHandler.onCaseStatusChanged(event);
+    evictionHandler.handle(event);
 
     assertEquals(1, service.cacheSize(), "non-terminal status should not evict");
     assertEquals(1, cbrStore.callCount());

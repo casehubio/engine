@@ -76,6 +76,7 @@ import org.junit.jupiter.api.Timeout;
 @QuarkusTest
 @TestProfile(RlsIntegrationTest.RlsProfile.class)
 @Timeout(value = 60, unit = TimeUnit.SECONDS)
+@jakarta.transaction.Transactional
 class RlsIntegrationTest {
 
   public static class RlsProfile implements QuarkusTestProfile {

@@ -36,8 +36,6 @@ import io.casehub.engine.common.internal.model.CaseInstance;
 import io.casehub.engine.common.internal.model.CaseMetaModel;
 import io.casehub.engine.common.spi.CaseDefinitionRegistry;
 import io.casehub.engine.common.spi.EventLogRepository;
-import io.casehub.neocortex.memory.CaseMemoryStore;
-import jakarta.enterprise.inject.Instance;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
@@ -57,7 +55,6 @@ class GoalFormationEvaluatorTest {
 
   private final List<AgentDescriptor> registeredDescriptors = new ArrayList<>();
 
-  @SuppressWarnings("unchecked")
   @BeforeEach
   void setUp() {
     agentRegistry = mock(AgentRegistry.class);
@@ -68,18 +65,8 @@ class GoalFormationEvaluatorTest {
 
     registeredDescriptors.clear();
 
-    Instance<AgentRegistry> registryInstance = mock(Instance.class);
-    when(registryInstance.isResolvable()).thenReturn(true);
-    when(registryInstance.get()).thenReturn(agentRegistry);
-
-    Instance<CaseMemoryStore> memoryInstance = mock(Instance.class);
-    when(memoryInstance.isResolvable()).thenReturn(false);
-
     GoalFormationService formationService =
         new DefaultGoalFormationService(agentRegistry, eventLogRepository);
-    Instance<GoalFormationService> formationServiceInstance = mock(Instance.class);
-    when(formationServiceInstance.isResolvable()).thenReturn(true);
-    when(formationServiceInstance.get()).thenReturn(formationService);
 
     try {
       when(strategyResolver.resolve(GoalFormationStrategy.class, "llm")).thenReturn(strategy);
@@ -89,9 +76,9 @@ class GoalFormationEvaluatorTest {
 
     evaluator =
         new GoalFormationEvaluator(
-            registryInstance,
-            formationServiceInstance,
-            memoryInstance,
+            Optional.of(agentRegistry),
+            Optional.of(formationService),
+            Optional.empty(),
             caseDefinitionRegistry,
             strategyResolver,
             eventLogRepository,
@@ -105,17 +92,11 @@ class GoalFormationEvaluatorTest {
 
   @Test
   void skipsWhenNotEnabled() {
-    @SuppressWarnings("unchecked")
-    Instance<AgentRegistry> ri = mock(Instance.class);
-    @SuppressWarnings("unchecked")
-    Instance<GoalFormationService> fsi = mock(Instance.class);
-    @SuppressWarnings("unchecked")
-    Instance<CaseMemoryStore> mi = mock(Instance.class);
     var disabled =
         new GoalFormationEvaluator(
-            ri,
-            fsi,
-            mi,
+            Optional.of(agentRegistry),
+            Optional.empty(),
+            Optional.empty(),
             caseDefinitionRegistry,
             strategyResolver,
             eventLogRepository,
@@ -127,21 +108,16 @@ class GoalFormationEvaluatorTest {
             20);
 
     disabled.evaluate("worker-1", buildCaseInstance("tenant-1"), List.of("insight"));
-    verify(ri, never()).isResolvable();
+    verify(caseDefinitionRegistry, never()).getCaseDefinition(any());
   }
 
-  @SuppressWarnings("unchecked")
   @Test
   void skipsWhenAgentRegistryNotResolvable() {
-    Instance<AgentRegistry> absent = mock(Instance.class);
-    when(absent.isResolvable()).thenReturn(false);
-    Instance<GoalFormationService> fsi = mock(Instance.class);
-    Instance<CaseMemoryStore> mi = mock(Instance.class);
     var eval =
         new GoalFormationEvaluator(
-            absent,
-            fsi,
-            mi,
+            Optional.empty(),
+            Optional.empty(),
+            Optional.empty(),
             caseDefinitionRegistry,
             strategyResolver,
             eventLogRepository,
@@ -219,21 +195,11 @@ class GoalFormationEvaluatorTest {
 
   @Test
   void autoApproveDisabledWritesProposedButDoesNotRegister() throws Exception {
-    @SuppressWarnings("unchecked")
-    Instance<AgentRegistry> ri = mock(Instance.class);
-    when(ri.isResolvable()).thenReturn(true);
-    when(ri.get()).thenReturn(agentRegistry);
-    @SuppressWarnings("unchecked")
-    Instance<CaseMemoryStore> mi = mock(Instance.class);
-    when(mi.isResolvable()).thenReturn(false);
-
-    Instance<GoalFormationService> fsi = mock(Instance.class);
-
     var noApprove =
         new GoalFormationEvaluator(
-            ri,
-            fsi,
-            mi,
+            Optional.of(agentRegistry),
+            Optional.empty(),
+            Optional.empty(),
             caseDefinitionRegistry,
             strategyResolver,
             eventLogRepository,
@@ -406,24 +372,13 @@ class GoalFormationEvaluatorTest {
 
   @Test
   void cooldownPreventsImmediateReformation() throws Exception {
-    @SuppressWarnings("unchecked")
-    Instance<AgentRegistry> ri = mock(Instance.class);
-    when(ri.isResolvable()).thenReturn(true);
-    when(ri.get()).thenReturn(agentRegistry);
-    @SuppressWarnings("unchecked")
-    Instance<CaseMemoryStore> mi = mock(Instance.class);
-    when(mi.isResolvable()).thenReturn(false);
-
     GoalFormationService fs = new DefaultGoalFormationService(agentRegistry, eventLogRepository);
-    Instance<GoalFormationService> fsi = mock(Instance.class);
-    when(fsi.isResolvable()).thenReturn(true);
-    when(fsi.get()).thenReturn(fs);
 
     var withCooldown =
         new GoalFormationEvaluator(
-            ri,
-            fsi,
-            mi,
+            Optional.of(agentRegistry),
+            Optional.of(fs),
+            Optional.empty(),
             caseDefinitionRegistry,
             strategyResolver,
             eventLogRepository,

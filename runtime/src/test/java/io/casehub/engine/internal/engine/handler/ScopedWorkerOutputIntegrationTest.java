@@ -51,7 +51,7 @@ class ScopedWorkerOutputIntegrationTest {
         new ScopedWorkerOutputEvent(
             instance, "worker1", Map.of("result", "done"), "binding1", null);
 
-    handler.onScopedWorkerOutput(event);
+    handler.handle(event);
 
     assertEquals("done", instance.getCaseContext().get("result"));
   }
@@ -70,10 +70,10 @@ class ScopedWorkerOutputIntegrationTest {
     instance.setState(CaseStatus.RUNNING);
     instance.tenancyId = "test-tenant";
 
-    handler.onScopedWorkerOutput(
+    handler.handle(
         new ScopedWorkerOutputEvent(
             instance, "worker1", Map.of("step1", "done"), "binding1", null));
-    handler.onScopedWorkerOutput(
+    handler.handle(
         new ScopedWorkerOutputEvent(
             instance, "worker1", Map.of("step2", "done"), "binding1", null));
 

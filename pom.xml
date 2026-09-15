@@ -99,23 +99,28 @@
         <module>schema</module>
         <module>common-core</module>
         <module>common</module>
-        <module>common-spring</module>
+        <!-- common-spring disabled: requires casehub-platform-spring-generator plugin (not yet published) -->
+        <!-- <module>common-spring</module> -->
         <module>scheduler-quartz</module>
         <module>scheduler-dbscheduler</module>
         <module>persistence-memory</module>
         <module>persistence-hibernate</module>
         <module>runtime-core</module>
         <module>runtime</module>
-        <module>runtime-spring</module>
+        <!-- runtime-spring disabled: requires casehub-platform-spring-generator plugin (not yet published) -->
+        <!-- <module>runtime-spring</module> -->
         <module>planning-core</module>
         <module>planning</module>
-        <module>planning-spring</module>
+        <!-- planning-spring disabled: requires casehub-platform-spring-generator plugin (not yet published) -->
+        <!-- <module>planning-spring</module> -->
         <module>resilience-core</module>
         <module>resilience</module>
-        <module>resilience-spring</module>
+        <!-- resilience-spring disabled: requires casehub-platform-spring-generator plugin (not yet published) -->
+        <!-- <module>resilience-spring</module> -->
         <module>ledger-core</module>
         <module>ledger</module>
-        <module>ledger-spring</module>
+        <!-- ledger-spring disabled: requires casehub-platform-spring-generator plugin (not yet published) -->
+        <!-- <module>ledger-spring</module> -->
         <module>engine-support-core</module>
         <module>engine-support-spring</module>
         <module>testing</module>
