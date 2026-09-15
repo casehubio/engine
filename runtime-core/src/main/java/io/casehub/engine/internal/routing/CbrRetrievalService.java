@@ -404,8 +404,27 @@ public class CbrRetrievalService {
       for (ScoredCbrCase<C> scored : scoredCases) {
         CbrCase c = scored.cbrCase();
         String resultCaseType = scored.caseType();
-        List<ExperiencePlanStep> trace;
 
+        if (c instanceof ResolutionGuide guide) {
+          experiences.add(
+              new RetrievedExperience(
+                  guide.problem(),
+                  guide.solution(),
+                  guide.outcome(),
+                  guide.confidence() != null ? guide.confidence().value() : null,
+                  scored.score(),
+                  new LinkedHashMap<>(c.features()),
+                  List.of(),
+                  scored.featureSimilarities(),
+                  resultCaseType,
+                  ResolutionSourceType.RESOLUTION_GUIDE,
+                  guide.solution(),
+                  null,
+                  scored.caseId()));
+          continue;
+        }
+
+        List<ExperiencePlanStep> trace;
         if (c instanceof ResolvedCase) {
           ScoredCbrCase<ResolvedCase> planScored = (ScoredCbrCase<ResolvedCase>) scored;
           AdaptationResult adaptation = adaptPlan(planScored, resultCaseType, features);
@@ -426,7 +445,11 @@ public class CbrRetrievalService {
                 new LinkedHashMap<>(c.features()),
                 trace,
                 scored.featureSimilarities(),
-                resultCaseType));
+                resultCaseType,
+                ResolutionSourceType.PLAN_TRACE,
+                null,
+                null,
+                scored.caseId()));
       }
 
       List<RetrievedExperience> immutableExperiences = List.copyOf(experiences);

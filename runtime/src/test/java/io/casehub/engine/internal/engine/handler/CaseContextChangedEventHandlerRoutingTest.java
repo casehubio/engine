@@ -59,7 +59,6 @@ import java.util.UUID;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.mockito.junit.jupiter.MockitoSettings;
@@ -122,13 +121,42 @@ class CaseContextChangedEventHandlerRoutingTest {
   java.util.Optional<io.casehub.engine.common.spi.JudgmentScheduler> judgmentScheduler =
       java.util.Optional.empty();
 
-  @InjectMocks CaseContextChangedEventHandler handler;
+  private CaseContextChangedEventHandler handler;
 
   private CaseInstance caseInstance;
   private CaseDefinition definition;
 
   @BeforeEach
   void setUp() {
+    handler =
+        new CaseContextChangedEventHandler(
+            eventDispatcher,
+            jqEvaluator,
+            caseDefinitionRegistry,
+            expressionEngineRegistry,
+            loopControl,
+            strategyResolver,
+            agentCandidateFactory,
+            executionManager,
+            capabilityHealth,
+            workerContextProvider,
+            workerProvisioner,
+            lifecycleEventConsumer,
+            traceIdProvider,
+            cbrRetrievalService,
+            bridgeResolver,
+            settlementTracker,
+            workerGrantOrchestrator,
+            virtualThreads,
+            evaluationSerializer,
+            quiescenceTracker,
+            scopedWorkerRegistry,
+            selectionContextStore,
+            dispatchBudget,
+            planItemStore,
+            caseContextUpdatedEventConsumer,
+            judgmentScheduler);
+
     final Capability capability =
         Capability.builder()
             .name("research")
