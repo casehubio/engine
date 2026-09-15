@@ -65,7 +65,7 @@ class CbrRetrievalCachingTest {
     cbrStore = new CountingCbrStore();
     service =
         new CbrRetrievalService(
-            jqEvaluator, cbrStore, new io.casehub.neocortex.memory.cbr.runtime.NoOpPlanAdapter());
+            jqEvaluator, cbrStore, new io.casehub.neocortex.memory.cbr.runtime.NoOpPlanAdapter(), new io.casehub.neocortex.memory.cbr.runtime.NoOpPlanEnsembleAnalyzer());
     evictionHandler = new CbrCacheEvictionHandler(service);
   }
 
@@ -75,12 +75,12 @@ class CbrRetrievalCachingTest {
     CaseInstance instance = buildInstance();
     cbrStore.setResult(List.of(scoredCase("problem1", "solution1")));
 
-    List<RetrievedExperience> first = service.retrieve(def, instance);
-    List<RetrievedExperience> second = service.retrieve(def, instance);
+    io.casehub.api.spi.routing.CbrRetrievalResult first = service.retrieve(def, instance);
+    io.casehub.api.spi.routing.CbrRetrievalResult second = service.retrieve(def, instance);
 
     assertEquals(1, cbrStore.callCount(), "store should be called only once");
     assertSame(first, second, "second call should return the cached instance");
-    assertEquals(1, first.size());
+    assertEquals(1, first.experiences().size());
   }
 
   @Test
@@ -199,11 +199,11 @@ class CbrRetrievalCachingTest {
     CaseInstance instance = buildInstance();
     cbrStore.setResult(List.of(scoredCase("problem1", "solution1")));
 
-    List<RetrievedExperience> result = service.retrieve(def, instance);
+    io.casehub.api.spi.routing.CbrRetrievalResult result = service.retrieve(def, instance);
 
     assertThrows(
         UnsupportedOperationException.class,
-        () -> result.add(null),
+        () -> result.experiences().add(null),
         "cached list should be immutable (List.copyOf)");
   }
 

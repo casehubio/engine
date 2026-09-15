@@ -25,6 +25,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import io.casehub.api.model.CaseDefinition;
 import io.casehub.api.model.EpisodicMemoryConfig;
 import io.casehub.api.model.cbr.CbrConfig;
+import io.casehub.api.spi.routing.CbrRetrievalResult;
 import io.casehub.api.spi.routing.RetrievedExperience;
 import io.casehub.engine.common.internal.jq.JQEvaluator;
 import io.casehub.engine.common.internal.model.CaseInstance;
@@ -41,6 +42,7 @@ import io.casehub.neocortex.memory.cbr.CbrQuery;
 import io.casehub.neocortex.memory.cbr.FeatureValue;
 import io.casehub.neocortex.memory.cbr.GuidanceStep;
 import io.casehub.neocortex.memory.cbr.PlanAdapter;
+import io.casehub.neocortex.memory.cbr.runtime.NoOpPlanEnsembleAnalyzer;
 import io.casehub.neocortex.memory.cbr.ResolutionGuide;
 import io.casehub.neocortex.memory.cbr.ResolutionStep;
 import io.casehub.neocortex.memory.cbr.ResolvedCase;
@@ -70,15 +72,15 @@ class CbrRetrievalServiceTest {
 
     cbrStore = new RecordingCbrStore();
     planAdapter = new RecordingPlanAdapter();
-    service = new CbrRetrievalService(jqEvaluator, cbrStore, planAdapter);
+    service = new CbrRetrievalService(jqEvaluator, cbrStore, planAdapter, new NoOpPlanEnsembleAnalyzer());
   }
 
   @Test
   void null_cbrConfig_returns_empty() {
     CaseDefinition def = buildDefinition(null);
     CaseInstance instance = buildInstance();
-    List<RetrievedExperience> result = service.retrieve(def, instance);
-    assertTrue(result.isEmpty());
+    CbrRetrievalResult result = service.retrieve(def, instance);
+    assertTrue(result.experiences().isEmpty());
     assertFalse(cbrStore.wasCalled());
   }
 
@@ -86,8 +88,8 @@ class CbrRetrievalServiceTest {
   void empty_features_returns_empty() {
     CbrConfig config = CbrConfig.builder().featureExtractor(ctx -> Map.of()).domain("test").build();
     CaseDefinition def = buildDefinition(config);
-    List<RetrievedExperience> result = service.retrieve(def, buildInstance());
-    assertTrue(result.isEmpty());
+    CbrRetrievalResult result = service.retrieve(def, buildInstance());
+    assertTrue(result.experiences().isEmpty());
     assertFalse(cbrStore.wasCalled());
   }
 
@@ -95,8 +97,8 @@ class CbrRetrievalServiceTest {
   void null_domain_no_episodic_returns_empty() {
     CbrConfig config = CbrConfig.builder().featureExtractor(ctx -> Map.of("f1", "v1")).build();
     CaseDefinition def = buildDefinition(config);
-    List<RetrievedExperience> result = service.retrieve(def, buildInstance());
-    assertTrue(result.isEmpty());
+    CbrRetrievalResult result = service.retrieve(def, buildInstance());
+    assertTrue(result.experiences().isEmpty());
     assertFalse(cbrStore.wasCalled());
   }
 
@@ -106,7 +108,7 @@ class CbrRetrievalServiceTest {
     CaseDefinition def = buildDefinition(config);
     def.setEpisodicMemoryConfig(EpisodicMemoryConfig.of("episodic-domain", ".id"));
     cbrStore.setResult(List.of());
-    List<RetrievedExperience> result = service.retrieve(def, buildInstance());
+    CbrRetrievalResult result = service.retrieve(def, buildInstance());
     assertTrue(cbrStore.wasCalled());
     assertEquals("episodic-domain", cbrStore.lastQuery().domain().name());
   }
@@ -171,8 +173,8 @@ class CbrRetrievalServiceTest {
             .build();
     CaseDefinition def = buildDefinition(config);
     CaseInstance instance = buildInstanceWithContext(Map.of());
-    List<RetrievedExperience> result = service.retrieve(def, instance);
-    assertTrue(result.isEmpty());
+    CbrRetrievalResult result = service.retrieve(def, instance);
+    assertTrue(result.experiences().isEmpty());
     assertFalse(cbrStore.wasCalled());
   }
 
@@ -210,10 +212,10 @@ class CbrRetrievalServiceTest {
             null);
     cbrStore.setResult(List.of(new ScoredCbrCase<>(cbrCase, "plan", 0.87)));
 
-    List<RetrievedExperience> result = service.retrieve(def, buildInstance());
+    CbrRetrievalResult result = service.retrieve(def, buildInstance());
 
-    assertEquals(1, result.size());
-    RetrievedExperience exp = result.get(0);
+    assertEquals(1, result.experiences().size());
+    RetrievedExperience exp = result.experiences().get(0);
     assertEquals("problem1", exp.problem());
     assertEquals("solution1", exp.solution());
     assertEquals("COMPLETED", exp.outcome());
@@ -230,8 +232,8 @@ class CbrRetrievalServiceTest {
     CaseDefinition def = buildDefinition(config);
     cbrStore.setFailure(new RuntimeException("Qdrant timeout"));
 
-    List<RetrievedExperience> result = service.retrieve(def, buildInstance());
-    assertTrue(result.isEmpty());
+    CbrRetrievalResult result = service.retrieve(def, buildInstance());
+    assertTrue(result.experiences().isEmpty());
   }
 
   @Test
@@ -255,8 +257,8 @@ class CbrRetrievalServiceTest {
             .domain("test")
             .build();
     CaseDefinition def = buildDefinition(config);
-    List<RetrievedExperience> result = service.retrieve(def, buildInstance());
-    assertTrue(result.isEmpty());
+    CbrRetrievalResult result = service.retrieve(def, buildInstance());
+    assertTrue(result.experiences().isEmpty());
     assertFalse(cbrStore.wasCalled());
   }
 
@@ -279,10 +281,10 @@ class CbrRetrievalServiceTest {
             null,
             null);
     cbrStore.setResult(List.of(new ScoredCbrCase<>(fvCase, "feature-vector", 0.85)));
-    List<RetrievedExperience> result = service.retrieve(def, buildInstance());
-    assertEquals(1, result.size());
-    assertEquals("problem1", result.get(0).problem());
-    assertTrue(result.get(0).planTrace().isEmpty());
+    CbrRetrievalResult result = service.retrieve(def, buildInstance());
+    assertEquals(1, result.experiences().size());
+    assertEquals("problem1", result.experiences().get(0).problem());
+    assertTrue(result.experiences().get(0).planTrace().isEmpty());
   }
 
   @Test
@@ -311,10 +313,10 @@ class CbrRetrievalServiceTest {
             null);
     cbrStore.setResult(List.of(new ScoredCbrCase<>(guide, "textual", 0.82)));
 
-    List<RetrievedExperience> result = service.retrieve(def, buildInstance());
+    CbrRetrievalResult result = service.retrieve(def, buildInstance());
 
-    assertEquals(1, result.size());
-    RetrievedExperience exp = result.get(0);
+    assertEquals(1, result.experiences().size());
+    RetrievedExperience exp = result.experiences().get(0);
     assertEquals("phishing runbook", exp.problem());
     assertEquals("1. Isolate mailbox 2. Reset credentials", exp.solution());
     assertEquals(
@@ -370,10 +372,10 @@ class CbrRetrievalServiceTest {
                     new ScoredCbrCase<>(guideCase, "textual", 0.8));
     cbrStore.setResult(mixed);
 
-    List<RetrievedExperience> result = service.retrieve(def, buildInstance());
+    CbrRetrievalResult result = service.retrieve(def, buildInstance());
 
-    assertEquals(2, result.size());
-    var sourceTypes = result.stream().map(RetrievedExperience::sourceType).toList();
+    assertEquals(2, result.experiences().size());
+    var sourceTypes = result.experiences().stream().map(RetrievedExperience::sourceType).toList();
     assertTrue(sourceTypes.contains(io.casehub.api.spi.routing.ResolutionSourceType.PLAN_TRACE));
     assertTrue(
         sourceTypes.contains(io.casehub.api.spi.routing.ResolutionSourceType.RESOLUTION_GUIDE));
@@ -397,8 +399,8 @@ class CbrRetrievalServiceTest {
     List<RetrievedExperience> result =
         service.retrieve(
             def, buildInstance(), io.casehub.neocortex.memory.cbr.FeatureVectorCbrCase.class);
-    assertEquals(1, result.size());
-    assertTrue(result.get(0).planTrace().isEmpty());
+    assertEquals(1, result.experiences().size());
+    assertTrue(result.experiences().get(0).planTrace().isEmpty());
   }
 
   @Test
@@ -410,8 +412,8 @@ class CbrRetrievalServiceTest {
             .cbrType("nonexistent")
             .build();
     CaseDefinition def = buildDefinition(config);
-    List<RetrievedExperience> result = service.retrieve(def, buildInstance());
-    assertTrue(result.isEmpty());
+    CbrRetrievalResult result = service.retrieve(def, buildInstance());
+    assertTrue(result.experiences().isEmpty());
   }
 
   @Test
@@ -436,10 +438,10 @@ class CbrRetrievalServiceTest {
             null,
             null);
     cbrStore.setResult(List.of(new ScoredCbrCase<>(planCase, "plan", 0.9)));
-    List<RetrievedExperience> result = service.retrieve(def, buildInstance());
-    assertEquals(1, result.size());
-    assertEquals(1, result.get(0).planTrace().size());
-    assertEquals("bind1", result.get(0).planTrace().get(0).bindingName());
+    CbrRetrievalResult result = service.retrieve(def, buildInstance());
+    assertEquals(1, result.experiences().size());
+    assertEquals(1, result.experiences().get(0).planTrace().size());
+    assertEquals("bind1", result.experiences().get(0).planTrace().get(0).bindingName());
   }
 
   @Test
@@ -493,12 +495,12 @@ class CbrRetrievalServiceTest {
             null);
     cbrStore.setResult(List.of(new ScoredCbrCase<>(planCase, "test-case", 0.87)));
 
-    List<RetrievedExperience> result = service.retrieve(def, buildInstance());
+    CbrRetrievalResult result = service.retrieve(def, buildInstance());
 
     assertTrue(planAdapter.wasCalled());
     assertEquals("test-case", planAdapter.lastCaseType());
-    assertEquals(1, result.size());
-    assertEquals("RETAINED", result.get(0).planTrace().get(0).adaptationAction());
+    assertEquals(1, result.experiences().size());
+    assertEquals("RETAINED", result.experiences().get(0).planTrace().get(0).adaptationAction());
   }
 
   @Test
@@ -561,10 +563,10 @@ class CbrRetrievalServiceTest {
                     AdaptationAction.REMOVED,
                     "irrelevant to current case"))));
 
-    List<RetrievedExperience> result = service.retrieve(def, buildInstance());
+    CbrRetrievalResult result = service.retrieve(def, buildInstance());
 
-    assertEquals(1, result.get(0).planTrace().size());
-    assertEquals("b1", result.get(0).planTrace().get(0).bindingName());
+    assertEquals(1, result.experiences().get(0).planTrace().size());
+    assertEquals("b1", result.experiences().get(0).planTrace().get(0).bindingName());
   }
 
   @Test
@@ -624,11 +626,11 @@ class CbrRetrievalServiceTest {
               }
             });
 
-    List<RetrievedExperience> result = service.retrieve(def, buildInstance());
+    CbrRetrievalResult result = service.retrieve(def, buildInstance());
 
-    assertEquals(1, result.size());
-    assertEquals("b1", result.get(0).planTrace().get(0).bindingName());
-    assertNull(result.get(0).planTrace().get(0).adaptationAction());
+    assertEquals(1, result.experiences().size());
+    assertEquals("b1", result.experiences().get(0).planTrace().get(0).bindingName());
+    assertNull(result.experiences().get(0).planTrace().get(0).adaptationAction());
   }
 
   @Test
@@ -650,12 +652,12 @@ class CbrRetrievalServiceTest {
             null);
     cbrStore.setResult(List.of(new ScoredCbrCase<>(cbrCase, "plan", 0.87)));
 
-    List<RetrievedExperience> result = service.retrieve(def, buildInstance());
+    CbrRetrievalResult result = service.retrieve(def, buildInstance());
 
-    assertEquals(1, result.size());
+    assertEquals(1, result.experiences().size());
     assertEquals(
         io.casehub.api.spi.routing.RoutingOutcome.DECLINED,
-        result.get(0).planTrace().get(0).stepOutcome());
+        result.experiences().get(0).planTrace().get(0).stepOutcome());
   }
 
   @Test
@@ -677,12 +679,12 @@ class CbrRetrievalServiceTest {
             null);
     cbrStore.setResult(List.of(new ScoredCbrCase<>(cbrCase, "plan", 0.87)));
 
-    List<RetrievedExperience> result = service.retrieve(def, buildInstance());
+    CbrRetrievalResult result = service.retrieve(def, buildInstance());
 
-    assertEquals(1, result.size());
+    assertEquals(1, result.experiences().size());
     assertEquals(
         io.casehub.api.spi.routing.RoutingOutcome.FAILURE,
-        result.get(0).planTrace().get(0).stepOutcome());
+        result.experiences().get(0).planTrace().get(0).stepOutcome());
   }
 
   private CaseDefinition buildDefinition(CbrConfig config) {

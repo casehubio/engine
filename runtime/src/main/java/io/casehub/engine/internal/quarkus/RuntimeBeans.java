@@ -587,13 +587,20 @@ public class RuntimeBeans {
       io.casehub.engine.common.internal.jq.JQEvaluator jqEvaluator,
       io.casehub.neocortex.memory.cbr.CbrCaseMemoryStore cbrStore,
       io.casehub.neocortex.memory.cbr.PlanAdapter planAdapter,
+      io.casehub.neocortex.memory.cbr.PlanEnsembleAnalyzer ensembleAnalyzer,
       @io.quarkus.arc.All
-          Instance<io.casehub.api.model.cbr.CbrCaseTypeRegistration> registrations) {
+          Instance<io.casehub.api.model.cbr.CbrCaseTypeRegistration> registrations,
+      @org.eclipse.microprofile.config.inject.ConfigProperty(
+              name = "casehub.engine.cbr.ensemble-timeout-ms",
+              defaultValue = "5000")
+          long ensembleTimeoutMs) {
     return new io.casehub.engine.internal.routing.CbrRetrievalService(
         jqEvaluator,
         cbrStore,
         planAdapter,
-        StreamSupport.stream(registrations.spliterator(), false).toList());
+        ensembleAnalyzer,
+        StreamSupport.stream(registrations.spliterator(), false).toList(),
+        ensembleTimeoutMs);
   }
 
   @Produces

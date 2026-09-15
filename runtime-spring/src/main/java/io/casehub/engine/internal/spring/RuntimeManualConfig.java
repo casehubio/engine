@@ -105,6 +105,7 @@ import io.casehub.ledger.api.spi.LedgerTraceIdProvider;
 import io.casehub.neocortex.memory.CaseMemoryStore;
 import io.casehub.neocortex.memory.cbr.CbrCaseMemoryStore;
 import io.casehub.neocortex.memory.cbr.PlanAdapter;
+import io.casehub.neocortex.memory.cbr.PlanEnsembleAnalyzer;
 import io.casehub.platform.api.routing.StrategyResolver;
 import io.micrometer.core.instrument.MeterRegistry;
 import java.time.Duration;
@@ -329,8 +330,13 @@ public class RuntimeManualConfig {
       JQEvaluator jqEvaluator,
       CbrCaseMemoryStore cbrStore,
       PlanAdapter planAdapter,
-      List<CbrCaseTypeRegistration> registrations) {
-    return new CbrRetrievalService(jqEvaluator, cbrStore, planAdapter, registrations);
+      PlanEnsembleAnalyzer ensembleAnalyzer,
+      List<CbrCaseTypeRegistration> registrations,
+      @org.springframework.beans.factory.annotation.Value(
+              "${casehub.engine.cbr.ensemble-timeout-ms:5000}")
+          long ensembleTimeoutMs) {
+    return new CbrRetrievalService(
+        jqEvaluator, cbrStore, planAdapter, ensembleAnalyzer, registrations, ensembleTimeoutMs);
   }
 
   @Bean
