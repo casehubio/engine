@@ -40,6 +40,8 @@ public final class AgentCardBridge {
                             null,
                             null,
                             null,
+                            null,
+                            null,
                             null))
                 .toList()
             : List.of();

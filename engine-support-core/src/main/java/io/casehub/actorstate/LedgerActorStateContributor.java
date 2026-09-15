@@ -15,7 +15,7 @@
  */
 package io.casehub.actorstate;
 
-import io.casehub.ledger.runtime.service.TrustGateService;
+import io.casehub.ledger.core.trust.TrustGateService;
 import io.casehub.platform.api.actor.ActorStateAccumulator;
 import io.casehub.platform.api.actor.ActorStateContributor;
 import java.util.Map;
