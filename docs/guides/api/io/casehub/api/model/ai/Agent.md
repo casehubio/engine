@@ -14,6 +14,8 @@
 
 ### `model` (`ChatModel`)
 
+### `modelId` (`java.lang.String`)
+
 ### `outputTransformer` (`java.util.function.UnaryOperator<JsonNode>`)
 
 ### `plannedActionExtractor` (`java.util.function.Function<java.util.Map<java.lang.String,java.lang.Object>,PlannedAction>`)
@@ -26,7 +28,7 @@
 
 ## Constructors
 
-### `Agent(java.lang.String systemPrompt, java.lang.String userMessageTemplate, java.util.function.UnaryOperator<JsonNode> inputTransformer, java.util.function.UnaryOperator<JsonNode> outputTransformer, ChatModel model, JsonSchema responseSchema, java.util.function.Function<java.util.Map<java.lang.String,java.lang.Object>,PlannedAction> plannedActionExtractor)`
+### `Agent(java.lang.String systemPrompt, java.lang.String userMessageTemplate, java.util.function.UnaryOperator<JsonNode> inputTransformer, java.util.function.UnaryOperator<JsonNode> outputTransformer, ChatModel model, JsonSchema responseSchema, java.util.function.Function<java.util.Map<java.lang.String,java.lang.Object>,PlannedAction> plannedActionExtractor, java.lang.String modelId)`
 
 #### Parameters
 
@@ -37,6 +39,7 @@
 - `model` (`ChatModel`)
 - `responseSchema` (`JsonSchema`)
 - `plannedActionExtractor` (`java.util.function.Function<java.util.Map<java.lang.String,java.lang.Object>,PlannedAction>`)
+- `modelId` (`java.lang.String`)
 
 ## Methods
 
@@ -63,3 +66,5 @@ not report it.
 #### Parameters
 
 - `input` (`java.util.Map<java.lang.String,java.lang.Object>`)
+
+### `public java.lang.String modelId()`
