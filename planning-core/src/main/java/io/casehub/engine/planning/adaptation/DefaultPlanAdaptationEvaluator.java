@@ -582,7 +582,7 @@ public class DefaultPlanAdaptationEvaluator implements PlanAdaptationEvaluator {
       return List.of();
     }
     try {
-      return cbrRetrievalService.get().retrieve(definition, instance);
+      return cbrRetrievalService.get().retrieve(definition, instance).experiences();
     } catch (Exception e) {
       LOG.debugf(e, "CBR retrieval failed during adaptation — continuing without experiences");
       return List.of();

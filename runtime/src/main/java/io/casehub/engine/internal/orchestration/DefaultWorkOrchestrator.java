@@ -162,7 +162,7 @@ public class DefaultWorkOrchestrator implements WorkOrchestrator {
 
     // 3. Route via AgentRoutingStrategy (blocking await — not on Vert.x IO thread)
     final java.util.List<RetrievedExperience> experiences =
-        cbrRetrievalService.retrieve(definition, instance);
+        cbrRetrievalService.retrieve(definition, instance).experiences();
     final AgentRoutingContext ctx =
         new AgentRoutingContext(
             instance.getUuid(),

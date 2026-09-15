@@ -24,6 +24,7 @@ import io.casehub.api.model.CaseStatus;
 import io.casehub.api.model.event.CaseHubEventType;
 import io.casehub.api.model.event.EventStreamType;
 import io.casehub.api.spi.CaseChannelProvider;
+import io.casehub.api.spi.routing.ExperienceAnalyser;
 import io.casehub.api.spi.routing.RetrievedExperience;
 import io.casehub.engine.common.internal.event.CaseContextChangedEvent;
 import io.casehub.engine.common.internal.event.CaseStartedEvent;
@@ -80,18 +81,7 @@ public class CaseStartedEventHandler {
   jakarta.enterprise.inject.Instance<io.casehub.engine.common.spi.GoalDecomposer> goalDecomposer;
 
   private static double computeOutcomeConsistency(List<RetrievedExperience> experiences) {
-    Map<String, Long> freq =
-        experiences.stream()
-            .map(RetrievedExperience::outcome)
-            .filter(java.util.Objects::nonNull)
-            .collect(
-                java.util.stream.Collectors.groupingBy(
-                    java.util.function.Function.identity(),
-                    java.util.stream.Collectors.counting()));
-    if (freq.isEmpty()) {
-      return 0.0;
-    }
-    return (double) java.util.Collections.max(freq.values()) / experiences.size();
+    return ExperienceAnalyser.outcomeConsistency(experiences);
   }
 
   public void onCaseStarted(CaseStartedEvent event) {
@@ -181,7 +171,9 @@ public class CaseStartedEventHandler {
     if (definition == null || definition.getCbrConfig() == null) {
       return;
     }
-    List<RetrievedExperience> experiences = cbrRetrievalService.retrieve(definition, instance);
+    io.casehub.api.spi.routing.CbrRetrievalResult result =
+        cbrRetrievalService.retrieve(definition, instance);
+    List<RetrievedExperience> experiences = result.experiences();
     if (!experiences.isEmpty()) {
       List<Map<String, Object>> serialised =
           OBJECT_MAPPER.convertValue(
@@ -195,6 +187,12 @@ public class CaseStartedEventHandler {
           experiences.stream().mapToDouble(RetrievedExperience::similarityScore).max().orElse(0.0));
       layer.engineSet("cbrMatchCount", experiences.size());
       layer.engineSet("cbrOutcomeConsistency", computeOutcomeConsistency(experiences));
+      if (result.ensemble() != null) {
+        Map<String, Object> ensembleMap =
+            OBJECT_MAPPER.convertValue(
+                result.ensemble(), new TypeReference<Map<String, Object>>() {});
+        layer.engineSet("cbrEnsemble", ensembleMap);
+      }
     }
   }
 }

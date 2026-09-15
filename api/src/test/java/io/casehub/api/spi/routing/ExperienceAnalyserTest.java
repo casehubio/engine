@@ -549,4 +549,37 @@ class ExperienceAnalyserTest {
         ExperienceAnalyser.actionFailureRates(List.of(), Set.of("cap-a"), 1);
     assertThat(rates).isEmpty();
   }
+
+  @Test
+  void outcomeConsistency_majority_outcome() {
+    var experiences =
+        List.of(
+            experienceWithOutcome("SUCCESS"),
+            experienceWithOutcome("SUCCESS"),
+            experienceWithOutcome("FAILURE"));
+    assertThat(ExperienceAnalyser.outcomeConsistency(experiences))
+        .isCloseTo(2.0 / 3.0, within(0.001));
+  }
+
+  @Test
+  void outcomeConsistency_all_same() {
+    var experiences = List.of(experienceWithOutcome("SUCCESS"), experienceWithOutcome("SUCCESS"));
+    assertThat(ExperienceAnalyser.outcomeConsistency(experiences)).isCloseTo(1.0, within(0.001));
+  }
+
+  @Test
+  void outcomeConsistency_all_null_outcomes() {
+    var experiences = List.of(experienceWithOutcome(null), experienceWithOutcome(null));
+    assertThat(ExperienceAnalyser.outcomeConsistency(experiences)).isCloseTo(0.0, within(0.001));
+  }
+
+  @Test
+  void outcomeConsistency_empty_list() {
+    assertThat(ExperienceAnalyser.outcomeConsistency(List.of())).isCloseTo(0.0, within(0.001));
+  }
+
+  private static RetrievedExperience experienceWithOutcome(String outcome) {
+    return new RetrievedExperience(
+        "problem", "solution", outcome, 1.0, 0.8, Map.of(), List.of(), Map.of());
+  }
 }
