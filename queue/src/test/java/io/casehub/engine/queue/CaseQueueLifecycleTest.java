@@ -100,8 +100,8 @@ class CaseQueueLifecycleTest {
             definitionRegistry, caseInstanceRepo, orchestrator, evaluatorQueueEvents::fire);
 
     Event<io.casehub.engine.queue.event.CaseQueueEntryRevoked> revokedBus = mock(Event.class);
-    entryManager = new CaseQueueEntryManager(entryStore, revokedBus::fireAsync);
     doAnswer(inv -> null).when(revokedBus).fireAsync(any());
+    entryManager = new CaseQueueEntryManager(entryStore, revokedBus::fireAsync);
 
     doAnswer(
             inv -> {
@@ -115,12 +115,12 @@ class CaseQueueLifecycleTest {
     Event<io.casehub.engine.queue.event.CaseQueueEntryClaimed> claimedBus = mock(Event.class);
     Event<io.casehub.engine.queue.event.CaseQueueEntryReleased> releasedBus = mock(Event.class);
     Event<io.casehub.engine.queue.event.CaseQueueEntryEscalated> escalatedBus = mock(Event.class);
-    queueService =
-        new CaseQueueService(
-            entryStore, claimedBus::fireAsync, releasedBus::fireAsync, escalatedBus::fireAsync);
     doAnswer(inv -> null).when(claimedBus).fireAsync(any());
     doAnswer(inv -> null).when(releasedBus).fireAsync(any());
     doAnswer(inv -> null).when(escalatedBus).fireAsync(any());
+    queueService =
+        new CaseQueueService(
+            entryStore, claimedBus::fireAsync, releasedBus::fireAsync, escalatedBus::fireAsync);
   }
 
   @Test
