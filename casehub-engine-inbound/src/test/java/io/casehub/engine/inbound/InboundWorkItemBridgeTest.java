@@ -26,7 +26,6 @@ import io.casehub.qhorus.api.gateway.MessageReceivedEvent;
 import io.casehub.qhorus.api.message.MessageType;
 import io.casehub.work.api.WorkItem;
 import io.casehub.work.api.WorkItemCreateRequest;
-import io.casehub.work.api.spi.TenantContextExecutor;
 import io.casehub.work.api.spi.WorkItemStore;
 import io.casehub.work.api.spi.WorkloadProvider;
 import io.casehub.work.memory.InMemoryWorkItemStore;
@@ -84,23 +83,6 @@ class InboundWorkItemBridgeTest {
   @Alternative
   @Priority(1)
   @ApplicationScoped
-  static class RecordingTenantContextRunner implements TenantContextExecutor {
-    static volatile String lastTenancyId;
-
-    static void reset() {
-      lastTenancyId = null;
-    }
-
-    @Override
-    public void runInTenantContext(final String tenancyId, final Runnable work) {
-      lastTenancyId = tenancyId;
-      work.run();
-    }
-  }
-
-  @Alternative
-  @Priority(1)
-  @ApplicationScoped
   static class StubWorkloadProvider implements WorkloadProvider {
     @Override
     public int getActiveWorkCount(final String workerId) {
@@ -127,7 +109,6 @@ class InboundWorkItemBridgeTest {
   @BeforeEach
   void setUp() {
     RecordingPolicy.reset();
-    RecordingTenantContextRunner.reset();
     if (workItemStore instanceof InMemoryWorkItemStore mem) {
       mem.clear();
     }
@@ -178,15 +159,6 @@ class InboundWorkItemBridgeTest {
     assertThat(workItemStore.scanAll())
         .extracting(wi -> wi.createdBy())
         .containsExactly("casehub-engine-inbound");
-  }
-
-  @Test
-  void decide_returnsRequest_tenancyIdThreadedToTenantContextRunner() {
-    RecordingPolicy.willReturn(minimalRequest());
-
-    bridge.onMessage(commandEvent("tenant-xyz"));
-
-    assertThat(RecordingTenantContextRunner.lastTenancyId).isEqualTo("tenant-xyz");
   }
 
   // ── Policy filtering ──────────────────────────────────────────────────────

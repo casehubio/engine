@@ -15,7 +15,7 @@
  */
 package io.casehub.actorstate;
 
-import io.casehub.ledger.runtime.service.TrustGateService;
+import io.casehub.ledger.api.spi.TrustScoreSource;
 import io.casehub.platform.api.actor.ActorStateAccumulator;
 import io.casehub.platform.api.actor.ActorStateContributor;
 import java.util.Map;
@@ -24,10 +24,10 @@ import java.util.OptionalDouble;
 /** Contributes global and capability trust scores from casehub-ledger. */
 public class LedgerActorStateContributor implements ActorStateContributor {
 
-  private final TrustGateService trustGateService;
+  private final TrustScoreSource trustScoreSource;
 
-  public LedgerActorStateContributor(TrustGateService trustGateService) {
-    this.trustGateService = trustGateService;
+  public LedgerActorStateContributor(TrustScoreSource trustScoreSource) {
+    this.trustScoreSource = trustScoreSource;
   }
 
   @Override
@@ -40,9 +40,9 @@ public class LedgerActorStateContributor implements ActorStateContributor {
     // Atomic: collect all data before calling accumulator methods.
     // currentScore() returns OptionalDouble — box to Double; null means no score yet,
     // distinct from 0.0 (zero trust).
-    final OptionalDouble rawScore = trustGateService.currentScore(actorId);
+    final OptionalDouble rawScore = trustScoreSource.globalScore(actorId);
     final Double globalScore = rawScore.isPresent() ? rawScore.getAsDouble() : null;
-    final Map<String, Double> capScores = trustGateService.allCapabilityScores(actorId);
+    final Map<String, Double> capScores = trustScoreSource.allCapabilityScores(actorId);
     acc.trustScore(globalScore);
     capScores.forEach(acc::capabilityScore);
   }
