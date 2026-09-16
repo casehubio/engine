@@ -30,4 +30,8 @@ public interface WorkerRuntime extends io.casehub.worker.api.WorkerScope {
   CaseContext awaitCase(UUID childCaseId, Duration timeout);
 
   CaseContext spawnAndAwaitCase(String caseType, Map<String, Object> input, Duration timeout);
+
+  default boolean registerObserver(io.casehub.api.spi.observation.EnvironmentObserver observer) {
+    return false;
+  }
 }
