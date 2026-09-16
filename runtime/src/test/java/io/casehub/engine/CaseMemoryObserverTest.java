@@ -25,7 +25,7 @@ import static org.mockito.Mockito.verify;
 
 import io.casehub.engine.common.spi.event.CaseLifecycleEvent;
 import io.casehub.engine.internal.memory.CaseMemoryObserver;
-import io.casehub.memory.runtime.MemoryEmitter;
+import io.casehub.memory.runtime.MemoryEmitterCore;
 import io.casehub.neocortex.memory.MemoryInput;
 import java.util.UUID;
 import org.junit.jupiter.api.BeforeEach;
@@ -33,12 +33,12 @@ import org.junit.jupiter.api.Test;
 
 class CaseMemoryObserverTest {
 
-  private MemoryEmitter emitter;
+  private MemoryEmitterCore emitter;
   private CaseMemoryObserver observer;
 
   @BeforeEach
   void setUp() {
-    emitter = mock(MemoryEmitter.class);
+    emitter = mock(MemoryEmitterCore.class);
     observer = new CaseMemoryObserver(emitter);
   }
 
