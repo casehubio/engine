@@ -95,6 +95,11 @@ public class AnnotationValidationStep {
         if (featuresValue == null || featuresValue.asNestedArray().length == 0) {
           errors.add(caseClass.name() + ": @Cbr requires at least one @Feature");
         }
+        boolean crossType = boolOr(cbrAnn, index, "crossType", false);
+        String caseType = stringOr(cbrAnn, index, "caseType", "");
+        if (crossType && !caseType.isEmpty()) {
+          errors.add(caseClass.name() + ": @Cbr crossType and caseType are mutually exclusive");
+        }
       }
     }
 
