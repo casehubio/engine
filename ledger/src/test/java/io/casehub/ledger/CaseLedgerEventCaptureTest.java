@@ -20,13 +20,11 @@ import static org.assertj.core.api.Assertions.assertThat;
 import io.casehub.engine.common.spi.event.CaseLifecycleEvent;
 import io.casehub.ledger.api.model.LedgerEntryType;
 import io.casehub.ledger.model.CaseLedgerEntry;
-import io.casehub.ledger.repository.CaseLedgerEntryRepository;
 import io.casehub.ledger.runtime.service.LedgerVerificationService;
 import io.casehub.platform.api.identity.ActorType;
 import io.quarkus.test.junit.QuarkusTest;
 import jakarta.enterprise.event.Event;
 import jakarta.inject.Inject;
-import jakarta.transaction.Transactional;
 import java.util.List;
 import java.util.UUID;
 import java.util.concurrent.TimeUnit;
@@ -44,7 +42,7 @@ class CaseLedgerEventCaptureTest {
 
   @Inject Event<CaseLifecycleEvent> lifecycleEvents;
 
-  @Inject CaseLedgerEntryRepository repository;
+  @Inject TransactionalLedgerReader reader;
 
   @Inject LedgerVerificationService verificationService;
 
@@ -60,7 +58,7 @@ class CaseLedgerEventCaptureTest {
         .atMost(5, TimeUnit.SECONDS)
         .untilAsserted(
             () -> {
-              final List<CaseLedgerEntry> entries = repository.findByCaseId(caseId);
+              final List<CaseLedgerEntry> entries = reader.findByCaseId(caseId);
               assertThat(entries).hasSize(1);
               final CaseLedgerEntry entry = entries.get(0);
               assertThat(entry.caseId).isEqualTo(caseId);
@@ -119,7 +117,7 @@ class CaseLedgerEventCaptureTest {
         .atMost(5, TimeUnit.SECONDS)
         .untilAsserted(
             () -> {
-              final List<CaseLedgerEntry> entries = repository.findByCaseId(caseId);
+              final List<CaseLedgerEntry> entries = reader.findByCaseId(caseId);
               assertThat(entries).hasSize(3);
               assertThat(entries.get(0).sequenceNumber).isEqualTo(1);
               assertThat(entries.get(1).sequenceNumber).isEqualTo(2);
@@ -162,10 +160,10 @@ class CaseLedgerEventCaptureTest {
         .atMost(5, TimeUnit.SECONDS)
         .untilAsserted(
             () -> {
-              assertThat(repository.findByCaseId(caseA)).hasSize(2);
-              assertThat(repository.findByCaseId(caseB)).hasSize(1);
-              assertThat(repository.findByCaseId(caseA).get(1).sequenceNumber).isEqualTo(2);
-              assertThat(repository.findByCaseId(caseB).get(0).sequenceNumber).isEqualTo(1);
+              assertThat(reader.findByCaseId(caseA)).hasSize(2);
+              assertThat(reader.findByCaseId(caseB)).hasSize(1);
+              assertThat(reader.findByCaseId(caseA).get(1).sequenceNumber).isEqualTo(2);
+              assertThat(reader.findByCaseId(caseB).get(0).sequenceNumber).isEqualTo(1);
             });
   }
 
@@ -188,7 +186,7 @@ class CaseLedgerEventCaptureTest {
         .atMost(5, TimeUnit.SECONDS)
         .untilAsserted(
             () -> {
-              final List<CaseLedgerEntry> entries = repository.findByCaseId(caseId);
+              final List<CaseLedgerEntry> entries = reader.findByCaseId(caseId);
               assertThat(entries).hasSize(1);
               assertThat(entries.get(0).actorType).isEqualTo(ActorType.AGENT);
               assertThat(entries.get(0).actorId).isEqualTo("claude:casehub-agent@v1");
@@ -215,7 +213,7 @@ class CaseLedgerEventCaptureTest {
         .atMost(5, TimeUnit.SECONDS)
         .untilAsserted(
             () -> {
-              final List<CaseLedgerEntry> entries = repository.findByCaseId(caseId);
+              final List<CaseLedgerEntry> entries = reader.findByCaseId(caseId);
               assertThat(entries).hasSize(1);
               assertThat(entries.get(0).actorType).isEqualTo(ActorType.HUMAN);
             });
@@ -233,7 +231,7 @@ class CaseLedgerEventCaptureTest {
         .atMost(5, TimeUnit.SECONDS)
         .untilAsserted(
             () -> {
-              final List<CaseLedgerEntry> entries = repository.findByCaseId(caseId);
+              final List<CaseLedgerEntry> entries = reader.findByCaseId(caseId);
               assertThat(entries).hasSize(1);
               // digest is set when casehub.ledger.hash-chain.enabled=true (default)
               assertThat(entries.get(0).digest).isNotNull().isNotEmpty();
@@ -268,7 +266,7 @@ class CaseLedgerEventCaptureTest {
         .atMost(5, TimeUnit.SECONDS)
         .untilAsserted(
             () -> {
-              final var latest = repository.findLatestByCaseId(caseId);
+              final var latest = reader.findLatestByCaseId(caseId);
               assertThat(latest).isPresent();
               assertThat(latest.get().sequenceNumber).isEqualTo(2);
               assertThat(latest.get().eventType).isEqualTo("CaseCompleted");
@@ -287,7 +285,7 @@ class CaseLedgerEventCaptureTest {
         .atMost(5, TimeUnit.SECONDS)
         .untilAsserted(
             () -> {
-              final List<CaseLedgerEntry> entries = repository.findByCaseId(caseId);
+              final List<CaseLedgerEntry> entries = reader.findByCaseId(caseId);
               assertThat(entries).hasSize(1);
               assertThat(entries.get(0).caseStatus).isNull();
             });
@@ -295,14 +293,13 @@ class CaseLedgerEventCaptureTest {
 
   @Test
   void robustness_unknownCaseId_returnsEmptyList() {
-    final List<CaseLedgerEntry> entries = repository.findByCaseId(UUID.randomUUID());
+    final List<CaseLedgerEntry> entries = reader.findByCaseId(UUID.randomUUID());
     assertThat(entries).isEmpty();
   }
 
   @Test
-  @Transactional
   void robustness_findLatest_emptyForUnknownCase() {
-    assertThat(repository.findLatestByCaseId(UUID.randomUUID())).isEmpty();
+    assertThat(reader.findLatestByCaseId(UUID.randomUUID())).isEmpty();
   }
 
   @Test
@@ -325,7 +322,7 @@ class CaseLedgerEventCaptureTest {
         .atMost(5, TimeUnit.SECONDS)
         .untilAsserted(
             () -> {
-              final List<CaseLedgerEntry> entries = repository.findByCaseId(caseId);
+              final List<CaseLedgerEntry> entries = reader.findByCaseId(caseId);
               assertThat(entries).hasSize(1);
               final CaseLedgerEntry entry = entries.get(0);
               assertThat(entry.commandType).isEqualTo("ExecuteWorker");
@@ -358,7 +355,7 @@ class CaseLedgerEventCaptureTest {
         .atMost(5, TimeUnit.SECONDS)
         .untilAsserted(
             () -> {
-              final List<CaseLedgerEntry> entries = repository.findByCaseId(caseId);
+              final List<CaseLedgerEntry> entries = reader.findByCaseId(caseId);
               assertThat(entries).hasSize(1);
               final CaseLedgerEntry entry = entries.get(0);
               assertThat(entry.commandType).isEqualTo("ExecuteWorker");
@@ -385,7 +382,7 @@ class CaseLedgerEventCaptureTest {
 
     Awaitility.await()
         .atMost(5, TimeUnit.SECONDS)
-        .untilAsserted(() -> assertThat(repository.findByCaseId(caseId)).hasSize(1));
+        .untilAsserted(() -> assertThat(reader.findByCaseId(caseId)).hasSize(1));
 
     assertThat(verificationService.verify(caseId, "test-tenant"))
         .as("Merkle chain must be intact after a single event")
@@ -431,7 +428,7 @@ class CaseLedgerEventCaptureTest {
 
     Awaitility.await()
         .atMost(5, TimeUnit.SECONDS)
-        .untilAsserted(() -> assertThat(repository.findByCaseId(caseId)).hasSize(3));
+        .untilAsserted(() -> assertThat(reader.findByCaseId(caseId)).hasSize(3));
 
     assertThat(verificationService.verify(caseId, "test-tenant"))
         .as("Merkle chain must be intact after three events")
@@ -464,7 +461,7 @@ class CaseLedgerEventCaptureTest {
         .atMost(5, TimeUnit.SECONDS)
         .untilAsserted(
             () -> {
-              final List<CaseLedgerEntry> entries = repository.findByCaseId(caseId);
+              final List<CaseLedgerEntry> entries = reader.findByCaseId(caseId);
               assertThat(entries).hasSize(1);
               assertThat(entries.get(0).traceId)
                   .as("traceId must be propagated from CaseLifecycleEvent to the ledger entry")
@@ -487,7 +484,7 @@ class CaseLedgerEventCaptureTest {
         .atMost(5, TimeUnit.SECONDS)
         .untilAsserted(
             () -> {
-              final List<CaseLedgerEntry> entries = repository.findByCaseId(caseId);
+              final List<CaseLedgerEntry> entries = reader.findByCaseId(caseId);
               assertThat(entries).hasSize(1);
               // null traceId — TraceIdEnricher will also find nothing; entry stays null
               assertThat(entries.get(0).traceId).isNull();
