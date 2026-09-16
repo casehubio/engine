@@ -63,8 +63,7 @@ class WorkerDecisionEventCaptureTest {
         .atMost(5, TimeUnit.SECONDS)
         .untilAsserted(
             () -> {
-              final List<WorkerDecisionEntry> entries =
-                  reader.findWorkerDecisionsByCaseId(caseId);
+              final List<WorkerDecisionEntry> entries = reader.findWorkerDecisionsByCaseId(caseId);
               assertThat(entries).hasSize(1);
               final WorkerDecisionEntry entry = entries.get(0);
               assertThat(entry.workerId).isEqualTo(workerId);
@@ -96,8 +95,7 @@ class WorkerDecisionEventCaptureTest {
         .atMost(5, TimeUnit.SECONDS)
         .untilAsserted(
             () -> {
-              final List<WorkerDecisionEntry> entries =
-                  reader.findWorkerDecisionsByCaseId(caseId);
+              final List<WorkerDecisionEntry> entries = reader.findWorkerDecisionsByCaseId(caseId);
               assertThat(entries).hasSize(1);
               assertThat(entries.get(0).capabilityTag).isNull();
               assertThat(entries.get(0).actorType).isEqualTo(ActorType.SYSTEM);
@@ -125,8 +123,7 @@ class WorkerDecisionEventCaptureTest {
         .atMost(5, TimeUnit.SECONDS)
         .untilAsserted(
             () -> {
-              final List<WorkerDecisionEntry> entries =
-                  reader.findWorkerDecisionsByCaseId(caseId);
+              final List<WorkerDecisionEntry> entries = reader.findWorkerDecisionsByCaseId(caseId);
               assertThat(entries).hasSize(1);
               final WorkerDecisionEntry entry = entries.get(0);
               assertThat(entry.trustScoreAtRouting).isEqualTo(0.85);
@@ -149,8 +146,7 @@ class WorkerDecisionEventCaptureTest {
         .atMost(5, TimeUnit.SECONDS)
         .untilAsserted(
             () -> {
-              final List<WorkerDecisionEntry> entries =
-                  reader.findWorkerDecisionsByCaseId(caseId);
+              final List<WorkerDecisionEntry> entries = reader.findWorkerDecisionsByCaseId(caseId);
               assertThat(entries).hasSize(1);
               assertThat(entries.get(0).sequenceNumber).isEqualTo(1);
             });
@@ -174,8 +170,7 @@ class WorkerDecisionEventCaptureTest {
         .atMost(5, TimeUnit.SECONDS)
         .untilAsserted(
             () -> {
-              final List<WorkerDecisionEntry> entries =
-                  reader.findWorkerDecisionsByCaseId(caseId);
+              final List<WorkerDecisionEntry> entries = reader.findWorkerDecisionsByCaseId(caseId);
               assertThat(entries).hasSize(1);
               final WorkerDecisionEntry entry = entries.get(0);
               assertThat(entry.domainData).isNotNull();
@@ -196,8 +191,7 @@ class WorkerDecisionEventCaptureTest {
         .atMost(5, TimeUnit.SECONDS)
         .untilAsserted(
             () -> {
-              final List<WorkerDecisionEntry> entries =
-                  reader.findWorkerDecisionsByCaseId(caseId);
+              final List<WorkerDecisionEntry> entries = reader.findWorkerDecisionsByCaseId(caseId);
               assertThat(entries).hasSize(1);
               assertThat(entries.get(0).domainData).isNull();
             });
@@ -216,8 +210,7 @@ class WorkerDecisionEventCaptureTest {
         .atMost(5, TimeUnit.SECONDS)
         .untilAsserted(
             () -> {
-              final List<WorkerDecisionEntry> entries =
-                  reader.findWorkerDecisionsByCaseId(caseId);
+              final List<WorkerDecisionEntry> entries = reader.findWorkerDecisionsByCaseId(caseId);
               assertThat(entries).hasSize(1);
               final String stored = (String) entries.get(0).domainData.get("reasoning");
               assertThat(stored).isNotNull();

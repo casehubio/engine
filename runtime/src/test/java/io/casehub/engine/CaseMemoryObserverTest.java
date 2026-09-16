@@ -22,11 +22,13 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
 
 import io.casehub.engine.common.spi.event.CaseLifecycleEvent;
 import io.casehub.engine.internal.memory.CaseMemoryObserver;
 import io.casehub.memory.runtime.MemoryEmitterCore;
 import io.casehub.neocortex.memory.MemoryInput;
+import jakarta.enterprise.inject.Instance;
 import java.util.UUID;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -36,10 +38,14 @@ class CaseMemoryObserverTest {
   private MemoryEmitterCore emitter;
   private CaseMemoryObserver observer;
 
+  @SuppressWarnings("unchecked")
   @BeforeEach
   void setUp() {
     emitter = mock(MemoryEmitterCore.class);
-    observer = new CaseMemoryObserver(emitter);
+    Instance<MemoryEmitterCore> instance = mock(Instance.class);
+    when(instance.isResolvable()).thenReturn(true);
+    when(instance.get()).thenReturn(emitter);
+    observer = new CaseMemoryObserver(instance);
   }
 
   @Test
