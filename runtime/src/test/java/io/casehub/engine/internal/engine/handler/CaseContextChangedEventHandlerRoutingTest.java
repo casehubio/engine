@@ -192,7 +192,8 @@ class CaseContextChangedEventHandlerRoutingTest {
 
     when(loopControl.select(any(), any())).thenReturn(List.of(binding));
     when(traceIdProvider.currentTraceId()).thenReturn(java.util.Optional.empty());
-    when(cbrRetrievalService.retrieve(any(), any())).thenReturn(List.of());
+    when(cbrRetrievalService.retrieve(any(), any()))
+        .thenReturn(io.casehub.api.spi.routing.CbrRetrievalResult.empty());
     when(dispatchBudget.availableCapacity(any())).thenReturn(Integer.MAX_VALUE);
   }
 
@@ -201,7 +202,7 @@ class CaseContextChangedEventHandlerRoutingTest {
     when(agentRoutingStrategy.select(any(), any()))
         .thenReturn(RoutingResult.assigned("analyst-worker", "selected by test"));
 
-    handler.onCaseStateContextChangedEventHandler(
+    handler.handle(
         new CaseContextChangedEvent(
             caseInstance, caseInstance.getCaseContext(), ContextLayer.WORKING));
 
@@ -216,7 +217,7 @@ class CaseContextChangedEventHandlerRoutingTest {
     // tryProvision requires a provisioner that has the capability — no-op provisioner won't trigger
     when(workerProvisioner.getCapabilities()).thenReturn(java.util.Set.of());
 
-    handler.onCaseStateContextChangedEventHandler(
+    handler.handle(
         new CaseContextChangedEvent(
             caseInstance, caseInstance.getCaseContext(), ContextLayer.WORKING));
 
@@ -232,7 +233,7 @@ class CaseContextChangedEventHandlerRoutingTest {
             RoutingResult.escalate(
                 "research", EscalationReason.BORDERLINE_STALEMATE, "all candidates borderline"));
 
-    handler.onCaseStateContextChangedEventHandler(
+    handler.handle(
         new CaseContextChangedEvent(
             caseInstance, caseInstance.getCaseContext(), ContextLayer.WORKING));
 
@@ -303,8 +304,7 @@ class CaseContextChangedEventHandlerRoutingTest {
     inst.setCaseMetaModel(metaModel);
     inst.setCaseContext(ctx);
 
-    handler.onCaseStateContextChangedEventHandler(
-        new CaseContextChangedEvent(inst, ctx, "extracted"));
+    handler.handle(new CaseContextChangedEvent(inst, ctx, "extracted"));
 
     verify(eventBus).publish(eq(EventBusAddresses.WORKER_SCHEDULE), any(WorkerScheduleEvent.class));
   }
@@ -368,8 +368,7 @@ class CaseContextChangedEventHandlerRoutingTest {
     inst.setCaseMetaModel(metaModel);
     inst.setCaseContext(ctx);
 
-    handler.onCaseStateContextChangedEventHandler(
-        new CaseContextChangedEvent(inst, ctx, ContextLayer.WORKING));
+    handler.handle(new CaseContextChangedEvent(inst, ctx, ContextLayer.WORKING));
 
     verify(eventBus, never())
         .publish(eq(EventBusAddresses.WORKER_SCHEDULE), any(WorkerScheduleEvent.class));
@@ -403,7 +402,7 @@ class CaseContextChangedEventHandlerRoutingTest {
                 java.time.Instant.now().plusSeconds(3600),
                 java.time.Instant.now()));
 
-    handler.onCaseStateContextChangedEventHandler(
+    handler.handle(
         new CaseContextChangedEvent(
             caseInstance, caseInstance.getCaseContext(), ContextLayer.WORKING));
 
@@ -444,8 +443,7 @@ class CaseContextChangedEventHandlerRoutingTest {
 
     caseInstance.setCaseContext(ctx);
 
-    handler.onCaseStateContextChangedEventHandler(
-        new CaseContextChangedEvent(caseInstance, ctx, ContextLayer.WORKING));
+    handler.handle(new CaseContextChangedEvent(caseInstance, ctx, ContextLayer.WORKING));
 
     verify(eventBus, never())
         .publish(eq(EventBusAddresses.WORKER_SCHEDULE), any(WorkerScheduleEvent.class));

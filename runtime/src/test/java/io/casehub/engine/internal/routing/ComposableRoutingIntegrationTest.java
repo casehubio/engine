@@ -30,9 +30,9 @@ import io.casehub.eidos.api.AgentDescriptor;
 import io.casehub.eidos.api.AgentDisposition;
 import io.casehub.eidos.api.DispositionHealth;
 import io.casehub.eidos.api.DispositionValue;
-import jakarta.enterprise.inject.Instance;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
 import org.junit.jupiter.api.Test;
@@ -190,8 +190,7 @@ class ComposableRoutingIntegrationTest {
         id, Set.of("entity-resolution"), runningJobs, AgentHealth.READY, descriptor, null, null);
   }
 
-  @SuppressWarnings("unchecked")
-  private static Instance<DispositionHealth> healthReturning() {
+  private static Optional<DispositionHealth> healthReturning() {
     DispositionHealth health =
         (descriptor, ctx) -> {
           var profile = descriptor.disposition().dispositionProfile();
@@ -201,10 +200,7 @@ class ComposableRoutingIntegrationTest {
           }
           return new DispositionHealth.DispositionStatus.Aligned(weights);
         };
-    Instance<DispositionHealth> inst = org.mockito.Mockito.mock(Instance.class);
-    org.mockito.Mockito.when(inst.get()).thenReturn(health);
-    org.mockito.Mockito.when(inst.isResolvable()).thenReturn(true);
-    return inst;
+    return Optional.of(health);
   }
 
   private static AgentRoutingContext context(CognitiveDemand demand, Map<String, Double> weights) {
