@@ -35,9 +35,9 @@ import io.casehub.eidos.api.AgentGoal;
 import io.casehub.eidos.api.GoalOutcomeCounts;
 import io.casehub.eidos.api.GoalPriority;
 import io.casehub.eidos.api.Visibility;
-import jakarta.enterprise.inject.Instance;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.concurrent.atomic.AtomicReference;
 import org.junit.jupiter.api.Test;
 
@@ -193,11 +193,7 @@ class LlmGoalRevisionStrategyTest {
             return chatModel;
           }
         };
-    @SuppressWarnings("unchecked")
-    Instance<ChatModelProvider> instance = mock(Instance.class);
-    when(instance.isUnsatisfied()).thenReturn(false);
-    when(instance.get()).thenReturn(provider);
-    LlmGoalRevisionStrategy strategy = new LlmGoalRevisionStrategy(instance);
+    LlmGoalRevisionStrategy strategy = new LlmGoalRevisionStrategy(Optional.of(provider));
 
     strategy.revise(buildContext());
 
@@ -210,11 +206,8 @@ class LlmGoalRevisionStrategyTest {
   }
 
   @Test
-  @SuppressWarnings("unchecked")
   void failsWhenChatModelProviderAbsent() {
-    Instance<ChatModelProvider> absent = mock(Instance.class);
-    when(absent.isUnsatisfied()).thenReturn(true);
-    LlmGoalRevisionStrategy strategy = new LlmGoalRevisionStrategy(absent);
+    LlmGoalRevisionStrategy strategy = new LlmGoalRevisionStrategy(Optional.empty());
 
     try {
       strategy.revise(buildContext());
@@ -253,11 +246,7 @@ class LlmGoalRevisionStrategyTest {
             return chatModel;
           }
         };
-    @SuppressWarnings("unchecked")
-    Instance<ChatModelProvider> instance = mock(Instance.class);
-    when(instance.isUnsatisfied()).thenReturn(false);
-    when(instance.get()).thenReturn(provider);
-    return new LlmGoalRevisionStrategy(instance);
+    return new LlmGoalRevisionStrategy(Optional.of(provider));
   }
 
   private GoalRevisionContext buildContext() {

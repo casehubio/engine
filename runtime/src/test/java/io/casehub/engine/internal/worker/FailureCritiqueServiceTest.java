@@ -33,7 +33,7 @@ class FailureCritiqueServiceTest {
 
   @Test
   void transientFailureReturnsReasonDirectly() {
-    var service = new FailureCritiqueService();
+    var service = new FailureCritiqueService(java.util.Optional.empty());
     var diag =
         FailureDiagnosis.of(
             new FailureCategory.Transient("connection timeout"), "w1", "EXPIRED", Instant.now());
@@ -42,7 +42,7 @@ class FailureCritiqueServiceTest {
 
   @Test
   void infeasibleFailureReturnsReasonDirectly() {
-    var service = new FailureCritiqueService();
+    var service = new FailureCritiqueService(java.util.Optional.empty());
     var diag =
         FailureDiagnosis.of(
             new FailureCategory.Infeasible("all agents exhausted"), "w1", "FAILED", Instant.now());
@@ -51,7 +51,7 @@ class FailureCritiqueServiceTest {
 
   @Test
   void knowledgeFailureWithoutChatModelReturnsReason() {
-    var service = new FailureCritiqueService();
+    var service = new FailureCritiqueService(java.util.Optional.empty());
     var diag =
         FailureDiagnosis.of(
             new FailureCategory.Knowledge("missing data", "accountId"),
@@ -63,7 +63,7 @@ class FailureCritiqueServiceTest {
 
   @Test
   void nullWorkingLayerHandledGracefully() {
-    var service = new FailureCritiqueService();
+    var service = new FailureCritiqueService(java.util.Optional.empty());
     var diag =
         FailureDiagnosis.of(
             new FailureCategory.Knowledge("missing data", null), "w1", "DECLINED", Instant.now());

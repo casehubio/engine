@@ -25,8 +25,6 @@ import io.casehub.api.context.MapBridge;
 import io.casehub.api.model.CaseDefinition;
 import io.casehub.worker.api.Worker;
 import io.casehub.worker.api.WorkerResult;
-import jakarta.enterprise.inject.Instance;
-import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import org.junit.jupiter.api.Test;
@@ -37,7 +35,7 @@ class BridgeResolverTest {
 
   @Test
   void resolvesMapBridgeForMapInputType() {
-    var resolver = new BridgeResolver(emptyInstance(), noOpRegistry());
+    var resolver = new BridgeResolver(List.of(), noOpRegistry());
     var worker =
         Worker.builder()
             .name("w")
@@ -52,7 +50,7 @@ class BridgeResolverTest {
 
   @Test
   void resolvesJacksonPojoBridgeForUnknownClass() {
-    var resolver = new BridgeResolver(emptyInstance(), noOpRegistry());
+    var resolver = new BridgeResolver(List.of(), noOpRegistry());
     var worker =
         Worker.builder()
             .name("w")
@@ -91,7 +89,7 @@ class BridgeResolverTest {
             return TestPojo.class;
           }
         };
-    var resolver = new BridgeResolver(instanceOf(customBridge), noOpRegistry());
+    var resolver = new BridgeResolver(List.of(customBridge), noOpRegistry());
     var worker =
         Worker.builder()
             .name("w")
@@ -115,7 +113,7 @@ class BridgeResolverTest {
             .version("1.0")
             .defaultWorkerBridge(defaultBridge)
             .build();
-    var resolver = new BridgeResolver(emptyInstance(), noOpRegistry());
+    var resolver = new BridgeResolver(List.of(), noOpRegistry());
     var worker =
         Worker.builder()
             .name("w")
@@ -139,7 +137,7 @@ class BridgeResolverTest {
             .version("1.0")
             .defaultWorkerBridge(defaultBridge)
             .build();
-    var resolver = new BridgeResolver(emptyInstance(), noOpRegistry());
+    var resolver = new BridgeResolver(List.of(), noOpRegistry());
     var worker =
         Worker.builder()
             .name("w")
@@ -154,7 +152,7 @@ class BridgeResolverTest {
 
   @Test
   void resolveByTypeNameFallsBackToMapBridgeForNull() {
-    var resolver = new BridgeResolver(emptyInstance(), noOpRegistry());
+    var resolver = new BridgeResolver(List.of(), noOpRegistry());
     assertThat(resolver.resolveByTypeName(null)).isInstanceOf(MapBridge.class);
   }
 
@@ -182,7 +180,7 @@ class BridgeResolverTest {
             return TestPojo.class;
           }
         };
-    var resolver = new BridgeResolver(instanceOf(customBridge), noOpRegistry());
+    var resolver = new BridgeResolver(List.of(customBridge), noOpRegistry());
 
     ContextBridge<?> bridge = resolver.resolveByTypeName(TestPojo.class.getName());
     assertThat(bridge).isSameAs(customBridge);
@@ -190,7 +188,7 @@ class BridgeResolverTest {
 
   @Test
   void resolveByTypeNameCreatesJacksonBridgeForKnownClass() {
-    var resolver = new BridgeResolver(emptyInstance(), noOpRegistry());
+    var resolver = new BridgeResolver(List.of(), noOpRegistry());
     ContextBridge<?> bridge = resolver.resolveByTypeName(TestPojo.class.getName());
     assertThat(bridge).isInstanceOf(JacksonPojoBridge.class);
     assertThat(bridge.contextType()).isEqualTo(TestPojo.class);
@@ -198,7 +196,7 @@ class BridgeResolverTest {
 
   @Test
   void resolveByTypeNameFallsBackToMapBridgeForUnknownClass() {
-    var resolver = new BridgeResolver(emptyInstance(), noOpRegistry());
+    var resolver = new BridgeResolver(List.of(), noOpRegistry());
     assertThat(resolver.resolveByTypeName("com.nonexistent.FooBar")).isInstanceOf(MapBridge.class);
   }
 
@@ -213,7 +211,7 @@ class BridgeResolverTest {
             .version("1.0")
             .defaultWorkerBridge(defPojoBridge)
             .build();
-    var resolver = new BridgeResolver(instanceOf(cdiPojoBridge), noOpRegistry());
+    var resolver = new BridgeResolver(List.of(cdiPojoBridge), noOpRegistry());
     var worker =
         Worker.builder()
             .name("w")
@@ -227,82 +225,7 @@ class BridgeResolverTest {
     assertThat(bridge).isSameAs(defPojoBridge);
   }
 
-  @SuppressWarnings("unchecked")
-  private static Instance<ContextBridge<?>> emptyInstance() {
-    return new SimpleInstance<>(List.of());
-  }
-
-  @SuppressWarnings("unchecked")
-  private static Instance<ContextBridge<?>> instanceOf(ContextBridge<?>... bridges) {
-    return new SimpleInstance<>(List.of(bridges));
-  }
-
-  private static class SimpleInstance<T> implements Instance<T> {
-    private final List<T> items;
-
-    SimpleInstance(List<T> items) {
-      this.items = items;
-    }
-
-    @Override
-    public Iterator<T> iterator() {
-      return items.iterator();
-    }
-
-    @Override
-    public Instance<T> select(java.lang.annotation.Annotation... qualifiers) {
-      return this;
-    }
-
-    @Override
-    public <U extends T> Instance<U> select(
-        Class<U> subtype, java.lang.annotation.Annotation... qualifiers) {
-      return (Instance<U>) this;
-    }
-
-    @Override
-    public <U extends T> Instance<U> select(
-        jakarta.enterprise.util.TypeLiteral<U> subtype,
-        java.lang.annotation.Annotation... qualifiers) {
-      return (Instance<U>) this;
-    }
-
-    @Override
-    public boolean isUnsatisfied() {
-      return items.isEmpty();
-    }
-
-    @Override
-    public boolean isAmbiguous() {
-      return items.size() > 1;
-    }
-
-    @Override
-    public boolean isResolvable() {
-      return items.size() == 1;
-    }
-
-    @Override
-    public void destroy(T instance) {}
-
-    @Override
-    public Handle<T> getHandle() {
-      return null;
-    }
-
-    @Override
-    public Iterable<? extends Handle<T>> handles() {
-      return List.of();
-    }
-
-    @Override
-    public T get() {
-      return items.isEmpty() ? null : items.get(0);
-    }
-  }
-
-  @SuppressWarnings("unchecked")
   private static DataRefRegistry noOpRegistry() {
-    return new DataRefRegistry(new SimpleInstance<>(List.of()));
+    return new DataRefRegistry(List.of());
   }
 }

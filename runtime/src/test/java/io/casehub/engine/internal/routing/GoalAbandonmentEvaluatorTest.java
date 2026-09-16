@@ -16,18 +16,15 @@
 package io.casehub.engine.internal.routing;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.when;
 
 import io.casehub.eidos.api.AgentDescriptor;
 import io.casehub.eidos.api.AgentGoal;
 import io.casehub.eidos.api.GoalOutcome;
 import io.casehub.eidos.api.GoalPriority;
-import io.casehub.eidos.api.GoalSignalStore;
 import io.casehub.eidos.api.InMemoryGoalSignalStore;
 import io.casehub.eidos.api.Visibility;
-import jakarta.enterprise.inject.Instance;
 import java.util.List;
+import java.util.Optional;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
@@ -36,14 +33,10 @@ class GoalAbandonmentEvaluatorTest {
   private InMemoryGoalSignalStore signalStore;
   private GoalAbandonmentEvaluator evaluator;
 
-  @SuppressWarnings("unchecked")
   @BeforeEach
   void setUp() {
     signalStore = new InMemoryGoalSignalStore();
-    Instance<GoalSignalStore> storeInstance = mock(Instance.class);
-    when(storeInstance.isResolvable()).thenReturn(true);
-    when(storeInstance.get()).thenReturn(signalStore);
-    evaluator = new GoalAbandonmentEvaluator(storeInstance, 5);
+    evaluator = new GoalAbandonmentEvaluator(Optional.of(signalStore), 5);
   }
 
   @Test
@@ -80,10 +73,7 @@ class GoalAbandonmentEvaluatorTest {
 
   @Test
   void noSignalStore_neverAbandoned() {
-    @SuppressWarnings("unchecked")
-    Instance<GoalSignalStore> absent = mock(Instance.class);
-    when(absent.isResolvable()).thenReturn(false);
-    var noStoreEvaluator = new GoalAbandonmentEvaluator(absent, 5);
+    var noStoreEvaluator = new GoalAbandonmentEvaluator(Optional.empty(), 5);
     assertThat(noStoreEvaluator.isAbandoned("agent-1", "tenant-1", "any")).isFalse();
   }
 

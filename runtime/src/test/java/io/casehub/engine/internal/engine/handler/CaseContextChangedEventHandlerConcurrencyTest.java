@@ -17,6 +17,7 @@ package io.casehub.engine.internal.engine.handler;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.CALLS_REAL_METHODS;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
@@ -38,7 +39,7 @@ class CaseContextChangedEventHandlerConcurrencyTest {
 
   @Test
   void applyDispatchBudget_caseCap_limits_dispatch_count() {
-    var handler = new CaseContextChangedEventHandler();
+    var handler = mock(CaseContextChangedEventHandler.class, CALLS_REAL_METHODS);
     var store = mock(PlanItemStore.class);
     var budget = mock(DispatchBudget.class);
 
@@ -69,7 +70,7 @@ class CaseContextChangedEventHandlerConcurrencyTest {
 
   @Test
   void applyDispatchBudget_allSlotsOccupied_returnsEmpty() {
-    var handler = new CaseContextChangedEventHandler();
+    var handler = mock(CaseContextChangedEventHandler.class, CALLS_REAL_METHODS);
     var store = mock(PlanItemStore.class);
     var budget = mock(DispatchBudget.class);
 
@@ -99,7 +100,7 @@ class CaseContextChangedEventHandlerConcurrencyTest {
 
   @Test
   void applyDispatchBudget_externalBudget_wins_when_lower() {
-    var handler = new CaseContextChangedEventHandler();
+    var handler = mock(CaseContextChangedEventHandler.class, CALLS_REAL_METHODS);
     var store = mock(PlanItemStore.class);
     var budget = mock(DispatchBudget.class);
 
@@ -126,7 +127,7 @@ class CaseContextChangedEventHandlerConcurrencyTest {
 
   @Test
   void applyDispatchBudget_nullMaxConcurrent_unlimited() {
-    var handler = new CaseContextChangedEventHandler();
+    var handler = mock(CaseContextChangedEventHandler.class, CALLS_REAL_METHODS);
     var store = mock(PlanItemStore.class);
     var budget = mock(DispatchBudget.class);
 
@@ -147,7 +148,7 @@ class CaseContextChangedEventHandlerConcurrencyTest {
 
   @Test
   void applyDispatchBudget_pendingPlanItems_notCounted() {
-    var handler = new CaseContextChangedEventHandler();
+    var handler = mock(CaseContextChangedEventHandler.class, CALLS_REAL_METHODS);
     var store = mock(PlanItemStore.class);
     var budget = mock(DispatchBudget.class);
 
@@ -179,7 +180,7 @@ class CaseContextChangedEventHandlerConcurrencyTest {
 
   @Test
   void applyDispatchBudget_emptySelected_returnsEmpty() {
-    var handler = new CaseContextChangedEventHandler();
+    var handler = mock(CaseContextChangedEventHandler.class, CALLS_REAL_METHODS);
     var store = mock(PlanItemStore.class);
     var budget = mock(DispatchBudget.class);
 

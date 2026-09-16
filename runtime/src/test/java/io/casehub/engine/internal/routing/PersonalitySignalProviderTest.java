@@ -28,9 +28,9 @@ import io.casehub.eidos.api.AgentDescriptor;
 import io.casehub.eidos.api.AgentDisposition;
 import io.casehub.eidos.api.DispositionHealth;
 import io.casehub.eidos.api.DispositionValue;
-import jakarta.enterprise.inject.Instance;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
 import org.junit.jupiter.api.Test;
@@ -114,24 +114,14 @@ class PersonalitySignalProviderTest {
 
   // --- helpers ---
 
-  @SuppressWarnings("unchecked")
-  private static Instance<DispositionHealth> noOpHealth() {
-    DispositionHealth health =
-        (descriptor, ctx) -> new DispositionHealth.DispositionStatus.Aligned(Map.of());
-    Instance<DispositionHealth> inst = org.mockito.Mockito.mock(Instance.class);
-    org.mockito.Mockito.when(inst.get()).thenReturn(health);
-    org.mockito.Mockito.when(inst.isResolvable()).thenReturn(true);
-    return inst;
+  private static Optional<DispositionHealth> noOpHealth() {
+    return Optional.of(
+        (descriptor, ctx) -> new DispositionHealth.DispositionStatus.Aligned(Map.of()));
   }
 
-  @SuppressWarnings("unchecked")
-  private static Instance<DispositionHealth> mockHealth(Map<String, Double> effectiveWeights) {
-    DispositionHealth health =
-        (descriptor, ctx) -> new DispositionHealth.DispositionStatus.Aligned(effectiveWeights);
-    Instance<DispositionHealth> inst = org.mockito.Mockito.mock(Instance.class);
-    org.mockito.Mockito.when(inst.get()).thenReturn(health);
-    org.mockito.Mockito.when(inst.isResolvable()).thenReturn(true);
-    return inst;
+  private static Optional<DispositionHealth> mockHealth(Map<String, Double> effectiveWeights) {
+    return Optional.of(
+        (descriptor, ctx) -> new DispositionHealth.DispositionStatus.Aligned(effectiveWeights));
   }
 
   private static AgentCandidate candidateWithProfile(String id, Map<String, Double> weights) {

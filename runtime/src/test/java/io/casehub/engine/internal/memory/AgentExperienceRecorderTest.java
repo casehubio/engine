@@ -30,9 +30,9 @@ import io.casehub.neocortex.memory.experience.ExperienceRecorder;
 import io.casehub.neocortex.memory.experience.Outcome;
 import io.casehub.neocortex.memory.reflection.ReflectionOrchestrator;
 import io.casehub.worker.api.WorkerOutcome;
-import jakarta.enterprise.inject.Instance;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Optional;
 import java.util.UUID;
 import java.util.concurrent.atomic.AtomicInteger;
 import org.junit.jupiter.api.BeforeEach;
@@ -89,27 +89,16 @@ class AgentExperienceRecorderTest {
     when(registry.getCaseDefinition(org.mockito.ArgumentMatchers.any(CaseMetaModel.class)))
         .thenReturn(definition);
 
-    Instance<ExperienceRecorder> expInstance = mock(Instance.class);
-    when(expInstance.isResolvable()).thenReturn(true);
-    when(expInstance.get()).thenReturn(expRecorder);
-
-    Instance<ReflectionOrchestrator> reflInstance = mock(Instance.class);
-    when(reflInstance.isResolvable()).thenReturn(true);
-    when(reflInstance.get()).thenReturn(orchestrator);
-
     GoalFormationEvaluator goalFormationEvaluator = mock(GoalFormationEvaluator.class);
-    Instance caseMemoryStoreInstance = mock(Instance.class);
-    when(caseMemoryStoreInstance.isResolvable()).thenReturn(false);
-    Instance meterRegistryInstance = mock(Instance.class);
-    when(meterRegistryInstance.isResolvable()).thenReturn(false);
     recorder =
         new AgentExperienceRecorder(
-            expInstance,
-            reflInstance,
+            Optional.of(expRecorder),
+            Optional.of(orchestrator),
             registry,
             goalFormationEvaluator,
-            caseMemoryStoreInstance,
-            meterRegistryInstance);
+            Optional.empty(),
+            Optional.empty(),
+            false);
   }
 
   @Test
@@ -204,24 +193,16 @@ class AgentExperienceRecorderTest {
   @Test
   @SuppressWarnings("unchecked")
   void noopWhenExperienceRecorderUnavailable() {
-    Instance<ExperienceRecorder> unavailable = mock(Instance.class);
-    when(unavailable.isResolvable()).thenReturn(false);
-    Instance<ReflectionOrchestrator> reflInstance = mock(Instance.class);
-    when(reflInstance.isResolvable()).thenReturn(false);
-
     GoalFormationEvaluator goalFormationEvaluator = mock(GoalFormationEvaluator.class);
-    Instance caseMemoryStore = mock(Instance.class);
-    when(caseMemoryStore.isResolvable()).thenReturn(false);
-    Instance meterRegistry = mock(Instance.class);
-    when(meterRegistry.isResolvable()).thenReturn(false);
     var noopRecorder =
         new AgentExperienceRecorder(
-            unavailable,
-            reflInstance,
+            Optional.empty(),
+            Optional.empty(),
             registry,
             goalFormationEvaluator,
-            caseMemoryStore,
-            meterRegistry);
+            Optional.empty(),
+            Optional.empty(),
+            false);
     noopRecorder.record(createInstance(), "agent-1", "cap", new WorkerOutcome.Success<>(null), "b");
     assertThat(recorded).isEmpty();
   }

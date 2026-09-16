@@ -28,10 +28,8 @@ import io.casehub.engine.common.spi.CaseDefinitionRegistry;
 import io.casehub.engine.internal.routing.GoalFormationEvaluator;
 import io.casehub.neocortex.memory.CaseMemoryStore;
 import io.casehub.neocortex.memory.MemoryInput;
-import io.casehub.neocortex.memory.experience.ExperienceRecorder;
-import io.casehub.neocortex.memory.reflection.ReflectionOrchestrator;
 import io.casehub.worker.api.WorkerOutcome;
-import jakarta.enterprise.inject.Instance;
+import java.util.Optional;
 import java.util.UUID;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
@@ -42,34 +40,22 @@ import org.mockito.ArgumentCaptor;
 class AgentExperienceRecorderReasoningTest {
 
   private CaseMemoryStore store;
-  private Instance<CaseMemoryStore> storeInstance;
   private AgentExperienceRecorder recorder;
 
-  @SuppressWarnings("unchecked")
   @BeforeEach
   void setUp() {
     store = mock(CaseMemoryStore.class);
     when(store.store(any())).thenReturn("mem-1");
 
-    storeInstance = mock(Instance.class);
-    when(storeInstance.isResolvable()).thenReturn(true);
-    when(storeInstance.get()).thenReturn(store);
-
-    Instance<ExperienceRecorder> expInstance = mock(Instance.class);
-    when(expInstance.isResolvable()).thenReturn(false);
-
-    Instance<ReflectionOrchestrator> reflInstance = mock(Instance.class);
-    when(reflInstance.isResolvable()).thenReturn(false);
-
     recorder =
         new AgentExperienceRecorder(
-            expInstance,
-            reflInstance,
+            Optional.empty(),
+            Optional.empty(),
             mock(CaseDefinitionRegistry.class),
             mock(GoalFormationEvaluator.class),
-            storeInstance,
-            mock(Instance.class));
-    recorder.reasoningEnabled = true;
+            Optional.of(store),
+            Optional.empty(),
+            true);
   }
 
   @Test
@@ -111,43 +97,45 @@ class AgentExperienceRecorderReasoningTest {
   void storeReasoningNoOpWhenNull() {
     recorder.storeReasoning(
         mockCaseInstance(), "agent-1", "cap", WorkerOutcome.success(), null, "binding");
-    verify(storeInstance, never()).get();
+    verify(store, never()).store(any());
   }
 
   @Test
   void storeReasoningNoOpWhenBlank() {
     recorder.storeReasoning(
         mockCaseInstance(), "agent-1", "cap", WorkerOutcome.success(), "  ", "binding");
-    verify(storeInstance, never()).get();
+    verify(store, never()).store(any());
   }
 
   @Test
   void storeReasoningNoOpWhenDisabled() {
-    recorder.reasoningEnabled = false;
-    recorder.storeReasoning(
-        mockCaseInstance(), "agent-1", "cap", WorkerOutcome.success(), "reasoning text", "binding");
-    verify(storeInstance, never()).get();
-  }
-
-  @SuppressWarnings("unchecked")
-  @Test
-  void storeReasoningNoOpWhenStoreNotResolvable() {
-    Instance<CaseMemoryStore> unresolv = mock(Instance.class);
-    when(unresolv.isResolvable()).thenReturn(false);
-
-    var rec =
+    var disabledRecorder =
         new AgentExperienceRecorder(
-            mock(Instance.class),
-            mock(Instance.class),
+            Optional.empty(),
+            Optional.empty(),
             mock(CaseDefinitionRegistry.class),
             mock(GoalFormationEvaluator.class),
-            unresolv,
-            mock(Instance.class));
-    rec.reasoningEnabled = true;
+            Optional.of(store),
+            Optional.empty(),
+            false);
+    disabledRecorder.storeReasoning(
+        mockCaseInstance(), "agent-1", "cap", WorkerOutcome.success(), "reasoning text", "binding");
+    verify(store, never()).store(any());
+  }
 
+  @Test
+  void storeReasoningNoOpWhenStoreNotResolvable() {
+    var rec =
+        new AgentExperienceRecorder(
+            Optional.empty(),
+            Optional.empty(),
+            mock(CaseDefinitionRegistry.class),
+            mock(GoalFormationEvaluator.class),
+            Optional.empty(),
+            Optional.empty(),
+            true);
     rec.storeReasoning(
         mockCaseInstance(), "agent-1", "cap", WorkerOutcome.success(), "reasoning", "binding");
-    verify(unresolv, never()).get();
   }
 
   @Test

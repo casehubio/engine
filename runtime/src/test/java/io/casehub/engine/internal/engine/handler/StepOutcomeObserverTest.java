@@ -87,7 +87,7 @@ class StepOutcomeObserverTest {
     Worker worker =
         Worker.builder().name("momentum-agent").capabilityName("analysis").noFunction().build();
 
-    handler.onWorkflowExecutionCompletedHandler(
+    handler.handle(
         new WorkflowExecutionCompleted(
             instance,
             worker,
@@ -143,7 +143,7 @@ class StepOutcomeObserverTest {
     Worker worker =
         Worker.builder().name("risk-agent").capabilityName("assessment").noFunction().build();
 
-    handler.onWorkflowExecutionCompletedHandler(
+    handler.handle(
         new WorkflowExecutionCompleted(
             instance,
             worker,
@@ -195,7 +195,7 @@ class StepOutcomeObserverTest {
         Worker.builder().name("checker").capabilityName("checking").noFunction().build();
 
     // Should not throw — exception is caught and logged
-    handler.onWorkflowExecutionCompletedHandler(
+    handler.handle(
         new WorkflowExecutionCompleted(
             instance, worker, "idem-3", Map.of("ok", true), "check", WorkerOutcome.success()));
   }
