@@ -31,15 +31,11 @@ public interface WorkerRuntime extends io.casehub.worker.api.WorkerScope {
 
   CaseContext spawnAndAwaitCase(String caseType, Map<String, Object> input, Duration timeout);
 
-  default boolean registerObserver(io.casehub.api.spi.observation.EnvironmentObserver observer) {
-    return false;
+  default SignalSpace signals() {
+    return SignalSpace.NOOP;
   }
 
-  default void depositSignal(String name, double strength) {}
-
-  default void depositSignal(String name, double strength, java.time.Duration halfLife) {}
-
-  default java.util.Map<String, io.casehub.api.model.signal.PerceivedSignal> perceiveSignals() {
-    return java.util.Map.of();
+  default InterestSpace interests() {
+    return InterestSpace.NOOP;
   }
 }
