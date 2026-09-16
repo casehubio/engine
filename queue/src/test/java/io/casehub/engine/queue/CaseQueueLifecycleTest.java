@@ -94,18 +94,13 @@ class CaseQueueLifecycleTest {
         new io.casehub.engine.queue.store.InMemoryCaseQueueEntryStore();
     entryStore = memStore;
 
-    evaluator = new CaseLabelEvaluator();
-    inject(evaluator, "definitionRegistry", definitionRegistry);
-    inject(evaluator, "caseInstanceRepository", caseInstanceRepo);
-    inject(evaluator, "views", orchestrator);
-
     Event<CaseQueueEvent> evaluatorQueueEvents = mock(Event.class);
-    inject(evaluator, "queueEvents", evaluatorQueueEvents);
+    evaluator =
+        new CaseLabelEvaluator(
+            definitionRegistry, caseInstanceRepo, orchestrator, evaluatorQueueEvents::fire);
 
-    entryManager = new CaseQueueEntryManager();
-    inject(entryManager, "store", entryStore);
     Event<io.casehub.engine.queue.event.CaseQueueEntryRevoked> revokedBus = mock(Event.class);
-    inject(entryManager, "revokedEvents", revokedBus);
+    entryManager = new CaseQueueEntryManager(entryStore, revokedBus::fireAsync);
     doAnswer(inv -> null).when(revokedBus).fireAsync(any());
 
     doAnswer(
@@ -117,14 +112,12 @@ class CaseQueueLifecycleTest {
         .when(evaluatorQueueEvents)
         .fire(any());
 
-    queueService = new CaseQueueService();
-    inject(queueService, "store", entryStore);
     Event<io.casehub.engine.queue.event.CaseQueueEntryClaimed> claimedBus = mock(Event.class);
     Event<io.casehub.engine.queue.event.CaseQueueEntryReleased> releasedBus = mock(Event.class);
     Event<io.casehub.engine.queue.event.CaseQueueEntryEscalated> escalatedBus = mock(Event.class);
-    inject(queueService, "claimedEvents", claimedBus);
-    inject(queueService, "releasedEvents", releasedBus);
-    inject(queueService, "escalatedEvents", escalatedBus);
+    queueService =
+        new CaseQueueService(
+            entryStore, claimedBus::fireAsync, releasedBus::fireAsync, escalatedBus::fireAsync);
     doAnswer(inv -> null).when(claimedBus).fireAsync(any());
     doAnswer(inv -> null).when(releasedBus).fireAsync(any());
     doAnswer(inv -> null).when(escalatedBus).fireAsync(any());
