@@ -71,8 +71,10 @@ public class CaseStatusChangedHandler {
   private final io.casehub.engine.common.internal.channel.DataChannelRegistry dataChannelRegistry;
   private final CaseRecoveryStateRegistry recoveryStateRegistry;
   private final CompoundLockRegistry compoundLockRegistry;
-  private final io.casehub.engine.common.internal.observation.ObservationRegistry observationRegistry;
-  private final io.casehub.engine.common.internal.observation.ContextHistoryBuffer contextHistoryBuffer;
+  private final io.casehub.engine.common.internal.observation.ObservationRegistry
+      observationRegistry;
+  private final io.casehub.engine.common.internal.observation.ContextHistoryBuffer
+      contextHistoryBuffer;
 
   public CaseStatusChangedHandler(
       EventDispatcher eventDispatcher,

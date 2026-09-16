@@ -27,7 +27,8 @@ public class ScopedWorkerTerminationHandler {
 
   private final ScopedWorkerRegistry scopedWorkerRegistry;
   private final DataChannelRegistry dataChannelRegistry;
-  private final io.casehub.engine.common.internal.observation.ObservationRegistry observationRegistry;
+  private final io.casehub.engine.common.internal.observation.ObservationRegistry
+      observationRegistry;
 
   public ScopedWorkerTerminationHandler(
       ScopedWorkerRegistry scopedWorkerRegistry,
