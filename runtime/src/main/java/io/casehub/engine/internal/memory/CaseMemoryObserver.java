@@ -21,8 +21,10 @@ import io.casehub.neocortex.memory.MemoryDomain;
 import io.casehub.neocortex.memory.MemoryInput;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.enterprise.event.ObservesAsync;
+import jakarta.enterprise.inject.Instance;
 import jakarta.inject.Inject;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
 
 @ApplicationScoped
@@ -33,15 +35,15 @@ public class CaseMemoryObserver {
   private static final Set<String> CAPTURED_EVENTS =
       Set.of("CaseCompleted", "CaseCancelled", "CaseFailed");
 
-  private final MemoryEmitterCore emitter;
+  private final Optional<MemoryEmitterCore> emitter;
 
   @Inject
-  public CaseMemoryObserver(final MemoryEmitterCore emitter) {
-    this.emitter = emitter;
+  public CaseMemoryObserver(final Instance<MemoryEmitterCore> emitter) {
+    this.emitter = emitter.isResolvable() ? Optional.of(emitter.get()) : Optional.empty();
   }
 
   public void onCaseLifecycleEvent(@ObservesAsync final CaseLifecycleEvent event) {
-    if (!CAPTURED_EVENTS.contains(event.eventType())) {
+    if (emitter.isEmpty() || !CAPTURED_EVENTS.contains(event.eventType())) {
       return;
     }
 
@@ -58,7 +60,7 @@ public class CaseMemoryObserver {
         new MemoryInput(
             caseIdStr, DOMAIN, event.tenancyId(), caseIdStr, text, attrs, null, null, null, null);
 
-    emitter.emit(input);
+    emitter.get().emit(input);
   }
 
   private Map<String, String> buildAttributes(final CaseLifecycleEvent event) {
