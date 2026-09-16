@@ -17,7 +17,6 @@ package io.casehub.engine.rest.service;
 
 import io.casehub.api.engine.CaseHubRuntime;
 import io.casehub.api.model.CaseStatus;
-import io.casehub.api.spi.EngineCaseApi;
 import io.casehub.api.view.CaseContextChangeEventView;
 import io.casehub.api.view.CaseInstanceView;
 import io.casehub.api.view.CaseLifecycleEventView;
@@ -37,6 +36,13 @@ import io.casehub.platform.api.acl.AccessControlProvider;
 import io.casehub.platform.api.acl.AclAction;
 import io.casehub.platform.api.acl.ResourceId;
 import io.casehub.platform.api.identity.CurrentPrincipal;
+import io.casehub.platform.api.mcp.McpDomain;
+import io.casehub.platform.api.mcp.PaginatedResponse;
+import io.casehub.platform.api.mcp.PathParam;
+import io.casehub.platform.api.mcp.PlatformMutation;
+import io.casehub.platform.api.mcp.PlatformQuery;
+import io.casehub.platform.api.mcp.PlatformStream;
+import io.casehub.platform.api.mcp.RestStatus;
 import io.smallrye.mutiny.Multi;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
@@ -45,7 +51,8 @@ import java.util.Map;
 import java.util.UUID;
 
 @ApplicationScoped
-public class DefaultEngineCaseApi implements EngineCaseApi {
+@McpDomain("engine/cases")
+public class DefaultEngineCaseApi {
 
   @Inject CaseService caseService;
   @Inject CaseHubRuntime runtime;
@@ -55,7 +62,8 @@ public class DefaultEngineCaseApi implements EngineCaseApi {
   @Inject AccessControlProvider accessControlProvider;
   @Inject CaseStreamBroadcaster caseStreamBroadcaster;
 
-  @Override
+  @PlatformQuery("List case instances with optional filtering")
+  @PaginatedResponse
   public CasePage listCases(
       CaseStatus status,
       String namespace,
@@ -90,13 +98,14 @@ public class DefaultEngineCaseApi implements EngineCaseApi {
     return new CasePage(items, total, total > (long) page * size + size);
   }
 
-  @Override
-  public CaseInstanceView getCaseById(UUID caseId, String tenancyId) {
+  @PlatformQuery("Get a case instance by ID")
+  public CaseInstanceView getCaseById(@PathParam UUID caseId, String tenancyId) {
     var instance = caseService.requireCaseAccess(caseId, AclAction.READ);
     return mapInstance(instance);
   }
 
-  @Override
+  @PlatformMutation("Start a new case instance")
+  @RestStatus(201)
   public CaseInstanceView startCase(StartCaseRequest request, String tenancyId) {
     String resolvedTenancyId = tenancyId != null ? tenancyId : currentPrincipal.tenancyId();
     var instance =
@@ -109,24 +118,25 @@ public class DefaultEngineCaseApi implements EngineCaseApi {
     return mapInstance(instance);
   }
 
-  @Override
   @SuppressWarnings("unchecked")
-  public Map<String, Object> getCaseContext(UUID caseId, String tenancyId) {
+  @PlatformQuery("Get full case context as JSON")
+  public Map<String, Object> getCaseContext(@PathParam UUID caseId, String tenancyId) {
     caseService.requireCaseAccess(caseId, AclAction.READ);
     Object context = runtime.query(caseId, ".");
     return context instanceof Map ? (Map<String, Object>) context : Map.of();
   }
 
-  @Override
   @SuppressWarnings("unchecked")
-  public Map<String, Object> getCaseContextPath(UUID caseId, String path, String tenancyId) {
+  @PlatformQuery("Get case context at a specific path")
+  public Map<String, Object> getCaseContextPath(
+      @PathParam UUID caseId, String path, String tenancyId) {
     caseService.requireCaseAccess(caseId, AclAction.READ);
     Object value = runtime.query(caseId, path);
     return value instanceof Map ? (Map<String, Object>) value : Map.of();
   }
 
-  @Override
-  public List<PlanItemView> getPlanItems(UUID caseId, String tenancyId) {
+  @PlatformQuery("Get plan items for a case")
+  public List<PlanItemView> getPlanItems(@PathParam UUID caseId, String tenancyId) {
     caseService.requireCaseAccess(caseId, AclAction.READ);
     String resolvedTenancyId = tenancyId != null ? tenancyId : currentPrincipal.tenancyId();
     return planItemStore.findByCaseId(caseId, resolvedTenancyId).stream()
@@ -134,24 +144,24 @@ public class DefaultEngineCaseApi implements EngineCaseApi {
         .toList();
   }
 
-  @Override
-  public GoalEvaluationView getGoals(UUID caseId, String tenancyId) {
+  @PlatformQuery("Evaluate goals against live case context")
+  public GoalEvaluationView getGoals(@PathParam UUID caseId, String tenancyId) {
     String resolvedTenancyId = tenancyId != null ? tenancyId : currentPrincipal.tenancyId();
     return caseService.evaluateGoals(caseId, resolvedTenancyId);
   }
 
-  @Override
-  public Multi<CaseStreamEventView> caseStream(UUID caseId) {
+  @PlatformStream("Live case event stream")
+  public Multi<CaseStreamEventView> caseStream(@PathParam UUID caseId) {
     return caseStreamBroadcaster.stream(caseId);
   }
 
-  @Override
-  public Multi<CaseLifecycleEventView> caseLifecycle(UUID caseId) {
+  @PlatformStream("Live case lifecycle events")
+  public Multi<CaseLifecycleEventView> caseLifecycle(@PathParam UUID caseId) {
     return Multi.createFrom().empty();
   }
 
-  @Override
-  public Multi<CaseContextChangeEventView> caseContextChange(UUID caseId) {
+  @PlatformStream("Live case context change events")
+  public Multi<CaseContextChangeEventView> caseContextChange(@PathParam UUID caseId) {
     return Multi.createFrom().empty();
   }
 

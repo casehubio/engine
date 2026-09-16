@@ -19,13 +19,16 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.casehub.api.model.event.CaseHubEventType;
 import io.casehub.api.model.event.EventStreamType;
-import io.casehub.api.spi.EngineEventLogApi;
 import io.casehub.api.view.EventLogEntryView;
 import io.casehub.api.view.EventLogPage;
 import io.casehub.engine.common.spi.EventLogRepository;
 import io.casehub.engine.common.spi.query.EventLogQuery;
 import io.casehub.platform.api.acl.AclAction;
 import io.casehub.platform.api.identity.CurrentPrincipal;
+import io.casehub.platform.api.mcp.McpDomain;
+import io.casehub.platform.api.mcp.PaginatedResponse;
+import io.casehub.platform.api.mcp.PathParam;
+import io.casehub.platform.api.mcp.PlatformQuery;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
 import java.util.Collections;
@@ -34,16 +37,18 @@ import java.util.Map;
 import java.util.UUID;
 
 @ApplicationScoped
-public class DefaultEngineEventLogApi implements EngineEventLogApi {
+@McpDomain("engine/events")
+public class DefaultEngineEventLogApi {
 
   @Inject CaseService caseService;
   @Inject EventLogRepository eventLogRepository;
   @Inject CurrentPrincipal currentPrincipal;
   @Inject ObjectMapper objectMapper;
 
-  @Override
+  @PlatformQuery("Get paginated and filtered event log for a case")
+  @PaginatedResponse
   public EventLogPage getEventLog(
-      UUID caseId,
+      @PathParam UUID caseId,
       String tenancyId,
       Integer offset,
       Integer limit,
