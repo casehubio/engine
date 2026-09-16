@@ -16,7 +16,6 @@
 package io.casehub.engine.rest.service;
 
 import io.casehub.api.model.CaseDefinition;
-import io.casehub.api.spi.EngineCaseDefinitionApi;
 import io.casehub.api.view.CaseDefinitionPage;
 import io.casehub.api.view.CaseDefinitionView;
 import io.casehub.engine.common.internal.model.CaseMetaModel;
@@ -28,6 +27,10 @@ import io.casehub.platform.api.acl.AccessControlProvider;
 import io.casehub.platform.api.acl.AclAction;
 import io.casehub.platform.api.acl.ResourceId;
 import io.casehub.platform.api.identity.CurrentPrincipal;
+import io.casehub.platform.api.mcp.McpDomain;
+import io.casehub.platform.api.mcp.PaginatedResponse;
+import io.casehub.platform.api.mcp.PathParam;
+import io.casehub.platform.api.mcp.PlatformQuery;
 import io.casehub.worker.api.Capability;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
@@ -35,14 +38,16 @@ import java.util.List;
 import java.util.Objects;
 
 @ApplicationScoped
-public class DefaultEngineCaseDefinitionApi implements EngineCaseDefinitionApi {
+@McpDomain("engine/definitions")
+public class DefaultEngineCaseDefinitionApi {
 
   @Inject CaseMetaModelRepository metaModelRepository;
   @Inject CaseDefinitionRegistry definitionRegistry;
   @Inject CurrentPrincipal currentPrincipal;
   @Inject AccessControlProvider accessControlProvider;
 
-  @Override
+  @PlatformQuery("List registered case definitions")
+  @PaginatedResponse
   public CaseDefinitionPage listDefinitions(String tenancyId, Integer offset, Integer limit) {
     String resolvedTenancyId = tenancyId != null ? tenancyId : currentPrincipal.tenancyId();
     int page = offset != null ? offset : 0;
@@ -70,9 +75,9 @@ public class DefaultEngineCaseDefinitionApi implements EngineCaseDefinitionApi {
     return new CaseDefinitionPage(items, items.size(), false);
   }
 
-  @Override
+  @PlatformQuery("Get definitions by namespace and name")
   public List<CaseDefinitionView> getDefinitionsByName(
-      String namespace, String name, String tenancyId) {
+      @PathParam String namespace, @PathParam String name, String tenancyId) {
     String resolvedTenancyId = tenancyId != null ? tenancyId : currentPrincipal.tenancyId();
     var query = CaseDefinitionQuery.builder().namespace(namespace).name(name).build();
     return metaModelRepository.query(query, resolvedTenancyId).stream()
@@ -85,9 +90,12 @@ public class DefaultEngineCaseDefinitionApi implements EngineCaseDefinitionApi {
         .toList();
   }
 
-  @Override
+  @PlatformQuery("Get a specific definition by namespace, name, and version")
   public CaseDefinitionView getDefinitionByKey(
-      String namespace, String name, String version, String tenancyId) {
+      @PathParam String namespace,
+      @PathParam String name,
+      @PathParam String version,
+      String tenancyId) {
     var meta =
         definitionRegistry
             .findByIdentity(namespace, name, version)
