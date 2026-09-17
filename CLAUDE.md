@@ -1344,6 +1344,41 @@ Declarative interest API for runtime observation registration (engine#1107). Age
 
 **Event types:** `RULE_REGISTERED`, `RULE_FIRED`. EventLog publishing deferred (same wiring pass as pheromone and interest events).
 
+## Convergence Detection & Termination
+
+Five-component system for detecting emergent convergence, enforcing resource budgets, and monitoring output structural similarity. Engine-internal, complementary to Watchdog (qhorus). Refs engine#1110.
+
+**ActivityTracker** (`common-core/internal/convergence/`, `@ApplicationScoped`, `Resettable`) — per-case cumulative metrics and sliding-window activity rates. Four metrics: `totalDispatches`, `totalSignalDeposits`, `totalContextMutations`, `totalEvaluationCycles`. Each has a `SlidingWindowCounter` (bounded circular buffer of timestamps) for wall-clock rate computation. Memory cap derived from `rateWindow` as `rateWindow.toSeconds() * 10` (default 600 entries). Instrumented at: `CaseContextChangedEventHandler.evaluateAndDispatch()` (evaluation cycles, context mutations), `CaseContextChangedEventHandler.publishWorkerSchedule()` (dispatches), `SignalRegistry.deposit()` (signal deposits — single source of truth via `Instance<ActivityTracker>` with `isResolvable()` guard).
+
+**BudgetEnforcer** (`runtime-core/internal/convergence/`) — checks cumulative counts against `BudgetConfig` caps. When any cap is exceeded, fires `BUDGET_EXHAUSTED` CaseHubEventType and faults the case. Caps are nullable — null means no limit (backward compatible). One-cycle overshoot accepted for context mutation budget (localRules writes after check).
+
+**ConvergenceDetector** (`runtime-core/internal/convergence/`, `@ApplicationScoped`, `Resettable`) — evaluates convergence during the 5th pipeline phase (`convergenceDetection()` after `localRules()`). Convergence condition: ALL four activity rates below their respective thresholds simultaneously for `stabilityWindow` duration. On detection: fires synthetic `GoalReachedEvent` with goal name `"_converged"` (engine-reserved, `_` prefix). Single firing per case lifetime. Async goal processing via existing `GoalReachedEventHandler` — CAS-safe for concurrent terminal transitions.
+
+**OutputConvergenceMonitor** (`runtime-core/internal/convergence/`, `@ApplicationScoped`, `Resettable`) — per-binding output structural similarity tracking via key-set Jaccard coefficient and SHA-256 value hashes. Records outputs on worker completion (injected into `WorkflowExecutionCompletedHandler` via `Instance<>` guard). Fires informational `OUTPUT_CONVERGENCE_DETECTED` — not a judgment, not anti-collusion. Semantic interpretation belongs in blocks.
+
+**Goal integration:** `_converged` goal fires with `StandardGoalKind.SUCCESS`. Case definitions opt in to convergence termination by including `_converged` in their `GoalBasedCompletion`:
+```yaml
+completion:
+  success:
+    anyOf: [case-resolved, _converged]
+```
+
+**Configuration:** Three independent config records on `CaseDefinition`:
+- `BudgetConfig(maxDispatches, maxSignalDeposits, maxContextMutations, maxEvaluationCycles)` — all nullable Integer
+- `ConvergenceThresholdConfig(dispatchRateThreshold, signalDepositRateThreshold, contextMutationRateThreshold, evaluationRateThreshold, stabilityWindow, rateWindow, maxWindowEntries)` — defaults: 0.1/0.1/0.1/0.5 rates/sec, 30s stability, 60s window
+- `OutputConvergenceConfig(convergenceThreshold, convergenceMinSamples, outputWindowSize)` — defaults: 0.9, 3, 10
+All nullable on CaseDefinition — null means disabled.
+
+**YAML:** `budgetConfig:`, `convergenceThresholdConfig:`, `outputConvergenceConfig:` blocks under `spec:`.
+
+**Event types:** `BUDGET_EXHAUSTED` (case faulted), `CONVERGENCE_DETECTED` (all rates quiesced), `OUTPUT_CONVERGENCE_DETECTED` (structural similarity).
+
+**Lifecycle:** `CaseStatusChangedHandler` calls `activityTracker.evictByCase()`, `convergenceDetector.evictByCase()`, `outputConvergenceMonitor.evictByCase()` on terminal status. All implement `Resettable`.
+
+**Pipeline order:** `rules()` → `goals()` → `observations()` → `localRules()` → `convergenceDetection()`.
+
+**Agent surfacing:** No WorkerRuntime facet. Convergence is a system-level supervisory function. Agents coordinate via signals, observations, interests, neighbors, and rules.
+
 ## Writing Style Guide
 
 **The writing style guide at `~/claude-workspace/writing-styles/blog-technical.md` is mandatory for all blog and diary entries.** Load it in full before drafting. Complete the pre-draft voice classification (I / we / Claude-named) before generating any prose. Do not show a draft without verifying it against the style guide.
