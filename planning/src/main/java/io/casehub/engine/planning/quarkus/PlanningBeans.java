@@ -74,12 +74,10 @@ import io.casehub.engine.planning.handler.WorkerOutcomeResolvedHandler;
 import io.casehub.engine.planning.handler.WorkerRetryExhaustionHandler;
 import io.casehub.engine.planning.registry.BlackboardRegistry;
 import io.casehub.engine.planning.snapshot.PlanningCasePlanModelSnapshotProvider;
-import io.casehub.engine.planning.store.NoOpPlanItemStore;
 import io.casehub.engine.planning.subcase.SubCaseCompletionService;
 import io.casehub.engine.planning.subcase.SubCaseExecutionHandler;
 import io.casehub.engine.planning.subcase.SubCaseGroupLifecycleEvent;
 import io.casehub.platform.api.routing.StrategyResolver;
-import io.quarkus.arc.DefaultBean;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.enterprise.event.Event;
 import jakarta.enterprise.inject.Instance;
@@ -461,14 +459,6 @@ public class PlanningBeans {
   PlanningCasePlanModelSnapshotProvider planningCasePlanModelSnapshotProvider(
       BlackboardRegistry registry) {
     return new PlanningCasePlanModelSnapshotProvider(registry);
-  }
-
-  // ── store ──
-
-  @Produces
-  @DefaultBean
-  NoOpPlanItemStore noOpPlanItemStore() {
-    return new NoOpPlanItemStore();
   }
 
   // ── subcase ──

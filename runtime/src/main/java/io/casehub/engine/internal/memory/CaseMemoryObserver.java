@@ -16,7 +16,7 @@
 package io.casehub.engine.internal.memory;
 
 import io.casehub.engine.common.spi.event.CaseLifecycleEvent;
-import io.casehub.memory.runtime.MemoryEmitter;
+import io.casehub.memory.runtime.MemoryEmitterCore;
 import io.casehub.neocortex.memory.MemoryDomain;
 import io.casehub.neocortex.memory.MemoryInput;
 import jakarta.enterprise.context.ApplicationScoped;
@@ -35,11 +35,15 @@ public class CaseMemoryObserver {
   private static final Set<String> CAPTURED_EVENTS =
       Set.of("CaseCompleted", "CaseCancelled", "CaseFailed");
 
-  private final Optional<MemoryEmitter> emitter;
+  private final Optional<MemoryEmitterCore> emitter;
 
   @Inject
-  public CaseMemoryObserver(final Instance<MemoryEmitter> emitter) {
+  public CaseMemoryObserver(final Instance<MemoryEmitterCore> emitter) {
     this.emitter = emitter.isResolvable() ? Optional.of(emitter.get()) : Optional.empty();
+  }
+
+  public CaseMemoryObserver(final MemoryEmitterCore emitter) {
+    this.emitter = Optional.ofNullable(emitter);
   }
 
   public void onCaseLifecycleEvent(@ObservesAsync final CaseLifecycleEvent event) {

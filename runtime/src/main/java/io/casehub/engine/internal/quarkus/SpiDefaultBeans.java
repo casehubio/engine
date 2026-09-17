@@ -15,6 +15,8 @@
  */
 package io.casehub.engine.internal.quarkus;
 
+import io.casehub.api.context.CaseContextStoreFactory;
+import io.casehub.api.engine.LoopControl;
 import io.casehub.api.spi.ActionRiskClassifier;
 import io.casehub.api.spi.CaseChannelProvider;
 import io.casehub.api.spi.ChainedActionRiskClassifier;
@@ -26,15 +28,24 @@ import io.casehub.api.spi.WorkerProvisioner;
 import io.casehub.api.spi.WorkerStatusListener;
 import io.casehub.api.spi.judgment.JudgmentEscalator;
 import io.casehub.api.spi.recovery.ErrorClassifier;
+import io.casehub.api.spi.routing.AgentRoutingStrategy;
+import io.casehub.api.spi.routing.ComposableAgentRoutingStrategy;
 import io.casehub.api.spi.routing.HumanTaskRoutingStrategy;
 import io.casehub.api.spi.routing.ImplementationRoutingStrategy;
+import io.casehub.api.spi.routing.RoutingSignalAssembler;
+import io.casehub.api.spi.routing.RoutingSignalProvider;
 import io.casehub.api.spi.routing.WorkloadDataProvider;
 import io.casehub.eidos.api.AgentRegistry;
 import io.casehub.eidos.api.CapabilityHealth;
 import io.casehub.eidos.api.VocabularyRegistry;
+import io.casehub.engine.common.spi.GoalDecomposer;
+import io.casehub.engine.common.spi.PlanAdaptationEvaluator;
 import io.casehub.engine.common.spi.PlanItemStore;
+import io.casehub.engine.common.spi.recovery.CompoundLockRegistry;
 import io.casehub.engine.common.spi.recovery.RecoveryCoordinator;
 import io.casehub.engine.common.spi.scheduler.WorkerExecutionRoutingStrategy;
+import io.casehub.engine.internal.context.InMemoryCaseContextStoreFactory;
+import io.casehub.engine.internal.engine.ChoreographyLoopControl;
 import io.casehub.engine.internal.routing.FirstSupportedRoutingStrategy;
 import io.casehub.engine.internal.routing.NoOpHumanTaskRoutingStrategy;
 import io.casehub.engine.internal.routing.NoOpImplementationRoutingStrategy;
@@ -47,6 +58,8 @@ import io.casehub.engine.internal.worker.NoOpAgentRegistry;
 import io.casehub.engine.internal.worker.NoOpCapabilityHealth;
 import io.casehub.engine.internal.worker.NoOpCaseChannelProvider;
 import io.casehub.engine.internal.worker.NoOpDispatchBudget;
+import io.casehub.engine.internal.worker.NoOpGoalDecomposer;
+import io.casehub.engine.internal.worker.NoOpPlanAdaptationEvaluator;
 import io.casehub.engine.internal.worker.NoOpPlanItemStore;
 import io.casehub.engine.internal.worker.NoOpRecoveryCoordinator;
 import io.casehub.engine.internal.worker.NoOpVocabularyRegistry;
@@ -136,6 +149,15 @@ public class SpiDefaultBeans {
     return new NoOpImplementationRoutingStrategy();
   }
 
+  @Produces
+  @DefaultBean
+  @ApplicationScoped
+  AgentRoutingStrategy composableAgentRoutingStrategy(
+      Instance<RoutingSignalProvider> signalProviders) {
+    return new ComposableAgentRoutingStrategy(
+        new RoutingSignalAssembler(signalProviders.stream().toList()));
+  }
+
   // --- Failure handling and recovery SPIs ---
 
   @Produces
@@ -190,6 +212,24 @@ public class SpiDefaultBeans {
     return new NoOpAgentRegistry();
   }
 
+  // --- Context ---
+
+  @Produces
+  @DefaultBean
+  @ApplicationScoped
+  CaseContextStoreFactory inMemoryCaseContextStoreFactory() {
+    return InMemoryCaseContextStoreFactory.INSTANCE;
+  }
+
+  // --- Loop control ---
+
+  @Produces
+  @DefaultBean
+  @ApplicationScoped
+  LoopControl choreographyLoopControl() {
+    return new ChoreographyLoopControl();
+  }
+
   // --- Planning SPIs ---
 
   @Produces
@@ -197,6 +237,27 @@ public class SpiDefaultBeans {
   @ApplicationScoped
   PlanItemStore noOpPlanItemStore() {
     return new NoOpPlanItemStore();
+  }
+
+  @Produces
+  @DefaultBean
+  @ApplicationScoped
+  PlanAdaptationEvaluator noOpPlanAdaptationEvaluator() {
+    return new NoOpPlanAdaptationEvaluator();
+  }
+
+  @Produces
+  @DefaultBean
+  @ApplicationScoped
+  GoalDecomposer noOpGoalDecomposer() {
+    return new NoOpGoalDecomposer();
+  }
+
+  @Produces
+  @DefaultBean
+  @ApplicationScoped
+  CompoundLockRegistry compoundLockRegistry() {
+    return new CompoundLockRegistry();
   }
 
   // --- Judgment SPIs ---

@@ -116,6 +116,7 @@ public class CommonBeans {
 
   @Produces
   @DefaultBean
+  @ApplicationScoped
   InMemoryPlanVersionStore inMemoryPlanVersionStore() {
     return new InMemoryPlanVersionStore();
   }
