@@ -1490,6 +1490,14 @@ final class SchemaPostProcessor {
     ObjectNode minCost = props.putObject("minCostSamples");
     minCost.put("type", "integer");
     minCost.put("minimum", 1);
+    ObjectNode crossType = props.putObject("crossType");
+    crossType.put("type", "boolean");
+    crossType.put("default", false);
+    ObjectNode problemDesc = props.putObject("problemDescription");
+    problemDesc.put("type", "string");
+    problemDesc.put(
+        "description",
+        "JQ expression evaluated against context to produce problem description for CBR case");
     return n;
   }
 
