@@ -222,8 +222,62 @@ types:
       - { name: presencePenalty, type: Double }
       - { name: version, type: String }
 
-  # YamlAgentDescriptor — hand-written (has 4 inner records referenced as
-  # YamlAgentDescriptor.YamlAgentGoal etc. by the converter)
+  YamlAgentDescriptor:
+    record: YamlAgentDescriptor
+    extra:
+      - { name: agentId, type: String }
+      - { name: name, type: String }
+      - { name: slot, type: String }
+      - { name: tenancyId, type: String }
+      - { name: briefing, type: String }
+      - { name: version, type: String }
+      - { name: provider, type: String }
+      - { name: modelFamily, type: String }
+      - { name: modelVersion, type: String }
+      - { name: jurisdiction, type: String }
+      - { name: dataHandlingPolicy, type: String }
+      - { name: goals, type: "List<YamlAgentGoal>" }
+      - { name: constraints, type: "List<YamlAgentConstraint>" }
+      - { name: disposition, type: YamlAgentDisposition }
+      - { name: capabilities, type: "List<YamlAgentCapability>" }
+
+  YamlAgentGoal:
+    record: YamlAgentGoal
+    extra:
+      - { name: name, type: String }
+      - { name: description, type: String }
+      - { name: priority, type: String }
+      - { name: visibility, type: String }
+      - { name: capabilities, type: "List<String>" }
+      - { name: attributes, type: "Map<String, String>" }
+
+  YamlAgentConstraint:
+    record: YamlAgentConstraint
+    extra:
+      - { name: name, type: String }
+      - { name: description, type: String }
+      - { name: visibility, type: String }
+      - { name: severity, type: String }
+
+  YamlAgentDisposition:
+    record: YamlAgentDisposition
+    extra:
+      - { name: socialOrient, type: String }
+      - { name: ruleFollowing, type: String }
+      - { name: riskAppetite, type: String }
+      - { name: autonomy, type: String }
+      - { name: conflictMode, type: String }
+      - { name: delegation, type: Boolean }
+
+  YamlAgentCapability:
+    record: YamlAgentCapability
+    extra:
+      - { name: name, type: String }
+      - { name: description, type: String }
+      - { name: qualityHint, type: Double }
+      - { name: latencyHintP50Ms, type: Long }
+      - { name: costHint, type: String }
+      - { name: tags, type: "List<String>" }
 
   YamlAuth:
     record: YamlAuth
