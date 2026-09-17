@@ -248,8 +248,8 @@ public class ReActWorkerFunctionHandler implements WorkerFunctionHandler {
     try {
       var json = new io.vertx.core.json.JsonObject(MAPPER.writeValueAsString(event));
       eventDispatcher.dispatch(json);
-    } catch (JsonProcessingException e) {
-      LOG.log(System.Logger.Level.WARNING, "Failed to serialize ReActCycleEvent", e);
+    } catch (Exception e) {
+      LOG.log(System.Logger.Level.WARNING, "Failed to publish ReActCycleEvent", e);
     }
   }
 

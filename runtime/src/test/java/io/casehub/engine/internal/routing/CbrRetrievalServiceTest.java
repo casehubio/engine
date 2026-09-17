@@ -889,7 +889,7 @@ class CbrRetrievalServiceTest {
                   Map.of(1, 2),
                   List.of("c1", "c2"),
                   io.casehub.neocortex.memory.cbr.StepAgreement.UNANIMOUS));
-      return new EnsemblePlan(null, steps, List.of("c1", "c2"), 0.9, 2);
+      return new EnsemblePlan(new AdaptedPlan(List.of()), steps, List.of("c1", "c2"), 0.9, 2);
     }
   }
 

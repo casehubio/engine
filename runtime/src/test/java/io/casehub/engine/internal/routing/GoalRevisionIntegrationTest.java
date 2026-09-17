@@ -159,8 +159,8 @@ class GoalRevisionIntegrationTest {
     @Override
     public Map<String, String> getConfigOverrides() {
       return Map.of(
-          "casehub.engine.goal.revision.enabled", "true",
-          "casehub.engine.goal.revision.min-outcomes", "3");
+          "casehub.goal-revision.enabled", "true",
+          "casehub.goal-revision.min-outcomes", "3");
     }
   }
 

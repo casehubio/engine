@@ -23,20 +23,25 @@ import io.casehub.engine.common.internal.event.ActionGateWorkerFaultedEvent;
 import io.casehub.engine.common.internal.event.AgentRoutingEscalationEvent;
 import io.casehub.engine.common.internal.event.CaseContextChangedEvent;
 import io.casehub.engine.common.internal.event.CaseStatusChanged;
+import io.casehub.engine.common.internal.event.CompoundActivatedEvent;
 import io.casehub.engine.common.internal.event.CompoundCompletedEvent;
 import io.casehub.engine.common.internal.event.ContextSignalEvent;
 import io.casehub.engine.common.internal.event.EventBusAddresses;
 import io.casehub.engine.common.internal.event.ExpectationViolationEvent;
 import io.casehub.engine.common.internal.event.GoalReachedEvent;
+import io.casehub.engine.common.internal.event.JudgmentEscalatedEvent;
 import io.casehub.engine.common.internal.event.JudgmentFaultEvent;
 import io.casehub.engine.common.internal.event.JudgmentReDispatchEvent;
 import io.casehub.engine.common.internal.event.MilestoneActivatedEvent;
 import io.casehub.engine.common.internal.event.MilestoneCompletedEvent;
 import io.casehub.engine.common.internal.event.MilestoneSLAViolatedEvent;
+import io.casehub.engine.common.internal.event.ScopedWorkerOutputEvent;
 import io.casehub.engine.common.internal.event.SubCaseScheduleEvent;
 import io.casehub.engine.common.internal.event.WorkerOutcomeResolvedEvent;
+import io.casehub.engine.common.internal.event.WorkerRetriesExhaustedEvent;
 import io.casehub.engine.common.internal.event.WorkerScheduleEvent;
 import io.casehub.engine.common.internal.event.WorkflowExecutionCompleted;
+import io.vertx.core.json.JsonObject;
 import io.vertx.mutiny.core.eventbus.EventBus;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
@@ -64,6 +69,7 @@ public class VertxEventDispatcher implements EventDispatcher {
               Map.entry(ContextSignalEvent.class, EventBusAddresses.CONTEXT_SIGNAL),
               Map.entry(
                   WorkerOutcomeResolvedEvent.class, EventBusAddresses.WORKER_OUTCOME_RESOLVED),
+              Map.entry(CompoundActivatedEvent.class, EventBusAddresses.COMPOUND_ACTIVATED),
               Map.entry(CompoundCompletedEvent.class, EventBusAddresses.COMPOUND_COMPLETED),
               Map.entry(ActionGateCancelledEvent.class, EventBusAddresses.ACTION_GATE_CANCELLED),
               Map.entry(
@@ -71,8 +77,13 @@ public class VertxEventDispatcher implements EventDispatcher {
               Map.entry(ExpectationViolationEvent.class, EventBusAddresses.EXPECTATION_VIOLATED),
               Map.entry(JudgmentReDispatchEvent.class, EventBusAddresses.JUDGMENT_RE_DISPATCH),
               Map.entry(JudgmentFaultEvent.class, EventBusAddresses.JUDGMENT_FAULT),
+              Map.entry(JudgmentEscalatedEvent.class, EventBusAddresses.JUDGMENT_ESCALATED),
               Map.entry(CaseCompletedEvent.class, EventBusAddresses.CASE_COMPLETED),
-              Map.entry(CaseFaultedEvent.class, EventBusAddresses.CASE_FAULTED)));
+              Map.entry(CaseFaultedEvent.class, EventBusAddresses.CASE_FAULTED),
+              Map.entry(
+                  WorkerRetriesExhaustedEvent.class, EventBusAddresses.WORKER_RETRIES_EXHAUSTED),
+              Map.entry(ScopedWorkerOutputEvent.class, EventBusAddresses.SCOPED_WORKER_OUTPUT),
+              Map.entry(JsonObject.class, EventBusAddresses.REACT_CYCLE)));
 
   @Inject EventBus eventBus;
 

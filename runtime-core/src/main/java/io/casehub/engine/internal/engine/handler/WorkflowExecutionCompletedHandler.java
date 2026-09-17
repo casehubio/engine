@@ -114,7 +114,7 @@ public class WorkflowExecutionCompletedHandler {
   private final SelectionContextStore selectionContextStore;
   private final Optional<io.casehub.api.spi.routing.RoutingOutcomeRecorder> outcomeRecorder;
   private final Optional<io.casehub.engine.common.spi.ActionGateScheduler> actionGateScheduler;
-  private final Optional<io.casehub.api.spi.StepOutcomeObserver> stepOutcomeObserver;
+  private final List<io.casehub.api.spi.StepOutcomeObserver> stepOutcomeObservers;
 
   public WorkflowExecutionCompletedHandler(
       EventDispatcher eventDispatcher,
@@ -145,7 +145,7 @@ public class WorkflowExecutionCompletedHandler {
       SelectionContextStore selectionContextStore,
       Optional<io.casehub.api.spi.routing.RoutingOutcomeRecorder> outcomeRecorder,
       Optional<io.casehub.engine.common.spi.ActionGateScheduler> actionGateScheduler,
-      Optional<io.casehub.api.spi.StepOutcomeObserver> stepOutcomeObserver) {
+      List<io.casehub.api.spi.StepOutcomeObserver> stepOutcomeObservers) {
     this.eventDispatcher = eventDispatcher;
     this.lifecycleEventConsumer = lifecycleEventConsumer;
     this.workerDecisionEventConsumer = workerDecisionEventConsumer;
@@ -174,7 +174,7 @@ public class WorkflowExecutionCompletedHandler {
     this.selectionContextStore = selectionContextStore;
     this.outcomeRecorder = outcomeRecorder;
     this.actionGateScheduler = actionGateScheduler;
-    this.stepOutcomeObserver = stepOutcomeObserver;
+    this.stepOutcomeObservers = stepOutcomeObservers;
   }
 
   private static Long extractDurationMs(WorkflowExecutionCompleted event) {
@@ -1082,7 +1082,7 @@ public class WorkflowExecutionCompletedHandler {
       io.casehub.api.spi.routing.RoutingOutcome outcome,
       Map<String, Object> contextSnapshot,
       Long executionDurationMs) {
-    if (stepOutcomeObserver.isEmpty()) {
+    if (stepOutcomeObservers.isEmpty()) {
       return;
     }
     String capabilityName = extractCapabilityTag(caseInstance, worker, bindingName);
@@ -1099,18 +1099,17 @@ public class WorkflowExecutionCompletedHandler {
             outcome,
             contextSnapshot,
             duration);
-    stepOutcomeObserver.ifPresent(
-        observer -> {
-          try {
-            observer.onStepOutcome(event);
-          } catch (Exception err) {
-            LOG.warnf(
-                err,
-                "Step outcome observation failed for caseId=%s worker=%s binding=%s",
-                caseInstance.getUuid(),
-                worker.name(),
-                bindingName);
-          }
-        });
+    for (io.casehub.api.spi.StepOutcomeObserver observer : stepOutcomeObservers) {
+      try {
+        observer.onStepOutcome(event);
+      } catch (Exception err) {
+        LOG.warnf(
+            err,
+            "Step outcome observation failed for caseId=%s worker=%s binding=%s",
+            caseInstance.getUuid(),
+            worker.name(),
+            bindingName);
+      }
+    }
   }
 }

@@ -825,9 +825,7 @@ public class RuntimeBeans {
         actionGateScheduler.isResolvable()
             ? java.util.Optional.of(actionGateScheduler.get())
             : java.util.Optional.empty(),
-        stepOutcomeObserver.isResolvable()
-            ? java.util.Optional.of(stepOutcomeObserver.get())
-            : java.util.Optional.empty());
+        StreamSupport.stream(stepOutcomeObserver.spliterator(), false).toList());
   }
 
   @Produces

@@ -28,9 +28,11 @@ import io.casehub.api.model.cbr.LambdaFeatureExtractor;
 import io.casehub.api.spi.routing.AgreementLevel;
 import io.casehub.api.spi.routing.CbrRetrievalResult;
 import io.casehub.api.spi.routing.ConsensusScope;
+import io.casehub.api.spi.routing.DocumentStep;
 import io.casehub.api.spi.routing.EnsembleConsensus;
 import io.casehub.api.spi.routing.ExperienceAnalyser;
 import io.casehub.api.spi.routing.ExperiencePlanStep;
+import io.casehub.api.spi.routing.ResolutionSourceType;
 import io.casehub.api.spi.routing.RetrievedExperience;
 import io.casehub.api.spi.routing.RoutingOutcome;
 import io.casehub.api.spi.routing.StepConsensusEntry;
@@ -47,6 +49,7 @@ import io.casehub.neocortex.memory.cbr.CbrQuery;
 import io.casehub.neocortex.memory.cbr.EnsemblePlan;
 import io.casehub.neocortex.memory.cbr.FeatureValue;
 import io.casehub.neocortex.memory.cbr.FeatureVectorCbrCase;
+import io.casehub.neocortex.memory.cbr.GuidanceStep;
 import io.casehub.neocortex.memory.cbr.PlanAdapter;
 import io.casehub.neocortex.memory.cbr.PlanEnsembleAnalyzer;
 import io.casehub.neocortex.memory.cbr.ResolutionGuide;
@@ -415,17 +418,7 @@ public class CbrRetrievalService {
           trace = List.of();
         }
 
-        experiences.add(
-            new RetrievedExperience(
-                c.problem(),
-                c.solution(),
-                c.outcome(),
-                c.confidence() != null ? c.confidence().value() : null,
-                scored.score(),
-                new LinkedHashMap<>(c.features()),
-                trace,
-                scored.featureSimilarities(),
-                resultCaseType));
+        experiences.add(buildExperience(c, scored, trace, resultCaseType));
       }
 
       List<RetrievedExperience> immutableExperiences = List.copyOf(experiences);
@@ -675,16 +668,7 @@ public class CbrRetrievalService {
     } else {
       trace = List.of();
     }
-    return new RetrievedExperience(
-        c.problem(),
-        c.solution(),
-        c.outcome(),
-        c.confidence() != null ? c.confidence().value() : null,
-        scored.score(),
-        new LinkedHashMap<>(c.features()),
-        trace,
-        scored.featureSimilarities(),
-        resultCaseType);
+    return buildExperience(c, scored, trace, resultCaseType);
   }
 
   private List<ExperiencePlanStep> adaptAndMapResolutionStep(
@@ -722,6 +706,43 @@ public class CbrRetrievalService {
                     parseOutcome(t.stepOutcome()),
                     t.priority(),
                     t.parameters()))
+        .toList();
+  }
+
+  private <C extends CbrCase> RetrievedExperience buildExperience(
+      CbrCase c, ScoredCbrCase<C> scored, List<ExperiencePlanStep> trace, String resultCaseType) {
+    ResolutionSourceType sourceType;
+    String documentContent = null;
+    List<DocumentStep> documentSteps = null;
+    if (c instanceof ResolutionGuide guide) {
+      sourceType = ResolutionSourceType.RESOLUTION_GUIDE;
+      documentContent = guide.solution();
+      documentSteps = mapGuidanceSteps(guide.steps());
+    } else {
+      sourceType = ResolutionSourceType.PLAN_TRACE;
+    }
+    return new RetrievedExperience(
+        c.problem(),
+        c.solution(),
+        c.outcome(),
+        c.confidence() != null ? c.confidence().value() : null,
+        scored.score(),
+        new LinkedHashMap<>(c.features()),
+        trace,
+        scored.featureSimilarities(),
+        resultCaseType,
+        sourceType,
+        documentContent,
+        documentSteps);
+  }
+
+  private List<DocumentStep> mapGuidanceSteps(List<GuidanceStep> steps) {
+    if (steps == null || steps.isEmpty()) return null;
+    return steps.stream()
+        .map(
+            s ->
+                new DocumentStep(
+                    s.description(), s.preconditions(), s.expectedOutcome(), s.automationHint()))
         .toList();
   }
 

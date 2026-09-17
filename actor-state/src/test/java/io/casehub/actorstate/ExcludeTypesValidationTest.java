@@ -47,8 +47,8 @@ class ExcludeTypesValidationTest {
     List<String> missing = new ArrayList<>();
     for (String entry : excludeTypes.split(",")) {
       String className = entry.trim();
-      if (className.isEmpty() || className.startsWith("/")) {
-        continue; // skip empty entries and regex patterns
+      if (className.isEmpty() || className.startsWith("/") || className.contains("*")) {
+        continue; // skip empty entries, regex patterns and glob patterns
       }
       try {
         Class.forName(className, false, getClass().getClassLoader());

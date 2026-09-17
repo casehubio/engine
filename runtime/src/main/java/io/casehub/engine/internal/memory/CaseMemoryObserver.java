@@ -42,6 +42,10 @@ public class CaseMemoryObserver {
     this.emitter = emitter.isResolvable() ? Optional.of(emitter.get()) : Optional.empty();
   }
 
+  public CaseMemoryObserver(final MemoryEmitterCore emitter) {
+    this.emitter = Optional.ofNullable(emitter);
+  }
+
   public void onCaseLifecycleEvent(@ObservesAsync final CaseLifecycleEvent event) {
     if (emitter.isEmpty() || !CAPTURED_EVENTS.contains(event.eventType())) {
       return;

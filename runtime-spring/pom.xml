@@ -95,9 +95,7 @@
                         <id>generate</id>
                         <goals><goal>generate</goal></goals>
                         <configuration>
-                            <quarkusModules>
-                                <quarkusModule>${project.basedir}/../api</quarkusModule>
-                            </quarkusModules>
+                            <quarkusModule>${project.basedir}/../api</quarkusModule>
                         </configuration>
                     </execution>
                     <execution>
@@ -105,9 +103,7 @@
                         <goals><goal>verify</goal></goals>
                         <phase>verify</phase>
                         <configuration>
-                            <quarkusModules>
-                                <quarkusModule>${project.basedir}/../api</quarkusModule>
-                            </quarkusModules>
+                            <quarkusModule>${project.basedir}/../api</quarkusModule>
                         </configuration>
                     </execution>
                 </executions>

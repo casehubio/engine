@@ -15,6 +15,8 @@
  */
 package io.casehub.engine.internal.engine;
 
+import io.casehub.api.spi.event.CaseCompletedEvent;
+import io.casehub.api.spi.event.CaseFaultedEvent;
 import io.casehub.engine.common.internal.event.WorkerOutcomeResolvedEvent;
 import io.casehub.engine.common.internal.model.CaseInstance;
 import io.quarkus.runtime.StartupEvent;
@@ -42,6 +44,8 @@ public class RuntimeEventCodecRegistrar {
     var bus = vertx.getDelegate().eventBus();
     registerIfAbsent(bus, CaseInstance.class, "CaseInstance");
     registerIfAbsent(bus, WorkerOutcomeResolvedEvent.class, "WorkerOutcomeResolved");
+    registerIfAbsent(bus, CaseCompletedEvent.class, "CaseCompletedEvent");
+    registerIfAbsent(bus, CaseFaultedEvent.class, "CaseFaultedEvent");
   }
 
   private <T> void registerIfAbsent(
