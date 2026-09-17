@@ -59,11 +59,11 @@ hand-coded deserializers and post-processor.
 - `registry` (`io.casehub.api.engine.ExpressionEngineRegistry`)
 - `providers` (`io.casehub.api.spi.WorkerFunctionProviderRegistry`)
 
-### `static AgentDescriptor convertAgentDescriptor(io.casehub.api.model.converter.yaml.YamlAgentDescriptor yad, java.lang.String workerName)`
+### `static AgentDescriptor convertAgentDescriptor(YamlAgentDescriptor yad, java.lang.String workerName)`
 
 #### Parameters
 
-- `yad` (`io.casehub.api.model.converter.yaml.YamlAgentDescriptor`)
+- `yad` (`YamlAgentDescriptor`)
 - `workerName` (`java.lang.String`)
 
 ### `private static void convertBindings(java.util.List<YamlBinding> yamlBindings, io.casehub.api.model.CaseDefinition def, java.util.Map<java.lang.String,io.casehub.api.model.CapabilityTarget> capTargetMap)`
