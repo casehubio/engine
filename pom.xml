@@ -156,6 +156,7 @@
         <module>examples/wildfire-response-annotated</module>
         <module>annotations</module>
         <module>generator</module>
+        <module>eidos-routing</module>
     </modules>
 
     <repositories>
