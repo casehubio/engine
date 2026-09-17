@@ -53,7 +53,11 @@ import io.casehub.api.model.SubCase;
 import io.casehub.api.model.Use;
 import io.casehub.api.model.WorkerFunctions;
 import io.casehub.api.model.ai.Agent;
+import io.casehub.api.model.converter.yaml.YamlAgentCapability;
+import io.casehub.api.model.converter.yaml.YamlAgentConstraint;
 import io.casehub.api.model.converter.yaml.YamlAgentDescriptor;
+import io.casehub.api.model.converter.yaml.YamlAgentDisposition;
+import io.casehub.api.model.converter.yaml.YamlAgentGoal;
 import io.casehub.api.model.converter.yaml.YamlBinding;
 import io.casehub.api.model.converter.yaml.YamlCapability;
 import io.casehub.api.model.converter.yaml.YamlCaseDefinition;
@@ -691,7 +695,7 @@ public final class YamlCaseDefinitionConverter {
 
     if (!yad.goals().isEmpty()) {
       List<AgentGoal> goals = new ArrayList<>();
-      for (YamlAgentDescriptor.YamlAgentGoal yag : yad.goals()) {
+      for (YamlAgentGoal yag : yad.goals()) {
         String priority = yag.priority() != null ? yag.priority() : "PRIMARY";
         String visibility = yag.visibility() != null ? yag.visibility() : "PUBLIC";
         goals.add(
@@ -708,7 +712,7 @@ public final class YamlCaseDefinitionConverter {
 
     if (!yad.constraints().isEmpty()) {
       List<AgentConstraint> constraints = new ArrayList<>();
-      for (YamlAgentDescriptor.YamlAgentConstraint yac : yad.constraints()) {
+      for (YamlAgentConstraint yac : yad.constraints()) {
         constraints.add(
             new AgentConstraint(
                 yac.name(),
@@ -722,7 +726,7 @@ public final class YamlCaseDefinitionConverter {
     }
 
     if (yad.disposition() != null) {
-      YamlAgentDescriptor.YamlAgentDisposition yd = yad.disposition();
+      YamlAgentDisposition yd = yad.disposition();
       var db = AgentDisposition.builder();
       if (yd.socialOrient() != null) db.socialOrient(yd.socialOrient());
       if (yd.ruleFollowing() != null) db.ruleFollowing(yd.ruleFollowing());
@@ -735,7 +739,7 @@ public final class YamlCaseDefinitionConverter {
 
     if (!yad.capabilities().isEmpty()) {
       List<AgentCapability> caps = new ArrayList<>();
-      for (YamlAgentDescriptor.YamlAgentCapability yac : yad.capabilities()) {
+      for (YamlAgentCapability yac : yad.capabilities()) {
         var cb = AgentCapability.builder();
         cb.name(yac.name());
         if (yac.description() != null) cb.description(yac.description());
