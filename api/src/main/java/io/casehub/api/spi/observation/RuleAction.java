@@ -29,4 +29,6 @@ public sealed interface RuleAction {
   record DeregisterInterest(String interestId) implements RuleAction {}
 
   record WriteContext(String key, JsonNode value) implements RuleAction {}
+
+  record Leave() implements RuleAction {}
 }
