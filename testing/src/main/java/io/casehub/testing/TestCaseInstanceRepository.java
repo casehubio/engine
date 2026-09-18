@@ -26,6 +26,11 @@ import jakarta.enterprise.inject.Alternative;
 @Priority(1)
 @ApplicationScoped
 public class TestCaseInstanceRepository extends InMemoryCaseInstanceRepository {
+  protected TestCaseInstanceRepository() {
+    super(null);
+  }
+
+  @jakarta.inject.Inject
   public TestCaseInstanceRepository(
       io.casehub.engine.common.spi.EventLogRepository eventLogRepository) {
     super(eventLogRepository);
