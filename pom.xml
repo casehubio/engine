@@ -156,6 +156,8 @@
         <module>examples/wildfire-response-annotated</module>
         <module>annotations</module>
         <module>generator</module>
+        <module>eidos-routing</module>
+        <module>work-adapter</module>
     </modules>
 
     <repositories>
@@ -306,6 +308,11 @@
             <dependency>
                 <groupId>io.casehub</groupId>
                 <artifactId>casehub-work</artifactId>
+                <version>${version.io.casehub}</version>
+            </dependency>
+            <dependency>
+                <groupId>io.casehub</groupId>
+                <artifactId>casehub-work-persistence-memory</artifactId>
                 <version>${version.io.casehub}</version>
             </dependency>
             <dependency>
