@@ -22,6 +22,7 @@ import io.casehub.ledger.api.spi.LedgerEntryRepository;
 import io.casehub.ledger.runtime.model.PlainLedgerEntry;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.enterprise.event.ObservesAsync;
+import jakarta.enterprise.inject.Instance;
 import jakarta.inject.Inject;
 import java.util.UUID;
 
@@ -32,12 +33,14 @@ public class TrustEventRecorder {
   private final LedgerEntryRepository ledgerRepo;
 
   @Inject
-  public TrustEventRecorder(TrustEvolutionConfig config, LedgerEntryRepository ledgerRepo) {
-    this.config = config;
+  public TrustEventRecorder(
+      Instance<TrustEvolutionConfig> config, LedgerEntryRepository ledgerRepo) {
+    this.config = config.isResolvable() ? config.get() : null;
     this.ledgerRepo = ledgerRepo;
   }
 
   public void onTrustRelevantAction(@ObservesAsync TrustRelevantAction event) {
+    if (config == null) return;
     var mapping = config.findMapping(event.actionType());
     if (mapping.isEmpty()) return;
 
