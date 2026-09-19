@@ -27,4 +27,10 @@ public class TestActorStateBeans {
   ActorStateAggregator actorStateAggregator() {
     return new ActorStateAggregator(List.of());
   }
+
+  @Produces
+  @ApplicationScoped
+  ActorStateResource actorStateResource(ActorStateAggregator aggregator) {
+    return new ActorStateResource(aggregator);
+  }
 }
