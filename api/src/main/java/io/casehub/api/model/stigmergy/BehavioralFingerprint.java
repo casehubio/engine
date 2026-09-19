@@ -34,6 +34,7 @@ public record BehavioralFingerprint(
   }
 
   public static double cosineSimilarity(Map<String, Double> a, Map<String, Double> b) {
+    if (a.isEmpty() && b.isEmpty()) return 1.0;
     if (a.isEmpty() || b.isEmpty()) return 0.0;
     double dot = 0.0, magA = 0.0, magB = 0.0;
     for (var entry : a.entrySet()) {
