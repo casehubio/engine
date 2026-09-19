@@ -18,5 +18,6 @@ package io.casehub.api.spi.routing;
 public enum GoalRevisionAction {
   REVISE,
   ABANDON,
-  COMPLETE
+  COMPLETE,
+  REPRIORITIZE
 }

@@ -28,7 +28,8 @@ public record GoalRevisionProposal(List<RevisedGoal> revisions, String rationale
       String goalName,
       GoalRevisionAction action,
       String revisedDescription,
-      String revisionReason) {
+      String revisionReason,
+      Double newPriority) {
     public RevisedGoal {
       Objects.requireNonNull(goalName, "goalName must not be null");
       Objects.requireNonNull(action, "action must not be null");
@@ -36,6 +37,17 @@ public record GoalRevisionProposal(List<RevisedGoal> revisions, String rationale
       if (action == GoalRevisionAction.REVISE && revisedDescription == null) {
         throw new IllegalArgumentException("revisedDescription is required for REVISE action");
       }
+      if (action == GoalRevisionAction.REPRIORITIZE && newPriority == null) {
+        throw new IllegalArgumentException("newPriority is required for REPRIORITIZE action");
+      }
+    }
+
+    public RevisedGoal(
+        String goalName,
+        GoalRevisionAction action,
+        String revisedDescription,
+        String revisionReason) {
+      this(goalName, action, revisedDescription, revisionReason, null);
     }
   }
 }

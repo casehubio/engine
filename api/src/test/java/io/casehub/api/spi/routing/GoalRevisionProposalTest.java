@@ -117,4 +117,31 @@ class GoalRevisionProposalTest {
     var proposal = new GoalRevisionProposal(List.of(), "no changes needed");
     assertTrue(proposal.revisions().isEmpty());
   }
+
+  @Test
+  void reprioritizeActionRequiresNewPriority() {
+    assertThrows(
+        IllegalArgumentException.class,
+        () ->
+            new GoalRevisionProposal.RevisedGoal(
+                "g1", GoalRevisionAction.REPRIORITIZE, null, "needs higher priority", null));
+  }
+
+  @Test
+  void reprioritizeActionWithPriority() {
+    var revision =
+        new GoalRevisionProposal.RevisedGoal(
+            "g1", GoalRevisionAction.REPRIORITIZE, null, "urgent need", 0.9);
+    assertEquals(GoalRevisionAction.REPRIORITIZE, revision.action());
+    assertEquals(0.9, revision.newPriority());
+    assertNull(revision.revisedDescription());
+  }
+
+  @Test
+  void backwardCompatConstructorSetsNullPriority() {
+    var revision =
+        new GoalRevisionProposal.RevisedGoal(
+            "g1", GoalRevisionAction.ABANDON, null, "no longer relevant");
+    assertNull(revision.newPriority());
+  }
 }
