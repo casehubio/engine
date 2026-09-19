@@ -18,4 +18,6 @@ package io.casehub.api.model.stigmergy;
 import jakarta.annotation.Nullable;
 
 public record StigmergyConfig(
-    @Nullable StigmergyDefaults defaults, @Nullable CoordinationConfig coordination) {}
+    @Nullable StigmergyDefaults defaults,
+    @Nullable CoordinationConfig coordination,
+    @Nullable SwarmConfig swarm) {}
