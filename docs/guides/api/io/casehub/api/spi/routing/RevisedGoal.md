@@ -10,6 +10,8 @@
 
 ### `goalName` (`java.lang.String`)
 
+### `newPriority` (`java.lang.Double`)
+
 ### `revisedDescription` (`java.lang.String`)
 
 ### `revisionReason` (`java.lang.String`)
@@ -19,6 +21,8 @@
 ### `action` (`io.casehub.api.spi.routing.GoalRevisionAction`)
 
 ### `goalName` (`java.lang.String`)
+
+### `newPriority` (`java.lang.Double`)
 
 ### `revisedDescription` (`java.lang.String`)
 
@@ -35,6 +39,16 @@
 - `revisedDescription` (`java.lang.String`)
 - `revisionReason` (`java.lang.String`)
 
+### `public RevisedGoal(java.lang.String goalName, io.casehub.api.spi.routing.GoalRevisionAction action, java.lang.String revisedDescription, java.lang.String revisionReason, java.lang.Double newPriority)`
+
+#### Parameters
+
+- `goalName` (`java.lang.String`)
+- `action` (`io.casehub.api.spi.routing.GoalRevisionAction`)
+- `revisedDescription` (`java.lang.String`)
+- `revisionReason` (`java.lang.String`)
+- `newPriority` (`java.lang.Double`)
+
 ## Methods
 
 ### `public io.casehub.api.spi.routing.GoalRevisionAction action()`
@@ -48,6 +62,8 @@
 ### `public java.lang.String goalName()`
 
 ### `public final int hashCode()`
+
+### `public java.lang.Double newPriority()`
 
 ### `public java.lang.String revisedDescription()`
 

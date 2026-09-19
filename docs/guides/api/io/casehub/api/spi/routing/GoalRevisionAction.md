@@ -10,6 +10,8 @@
 
 ### `COMPLETE` (`io.casehub.api.spi.routing.GoalRevisionAction`)
 
+### `REPRIORITIZE` (`io.casehub.api.spi.routing.GoalRevisionAction`)
+
 ### `REVISE` (`io.casehub.api.spi.routing.GoalRevisionAction`)
 
 ## Constructors
