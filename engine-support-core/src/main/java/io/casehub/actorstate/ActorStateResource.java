@@ -31,6 +31,7 @@ import jakarta.ws.rs.core.MediaType;
  * via security context; qhorus is single-tenant; trust scores are by actorId only; Quartz is
  * in-memory without tenancy).
  */
+@jakarta.enterprise.inject.Vetoed
 @PermitAll
 @Path("/actors")
 @Produces(MediaType.APPLICATION_JSON)

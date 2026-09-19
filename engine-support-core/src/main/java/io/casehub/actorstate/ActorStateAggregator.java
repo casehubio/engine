@@ -33,6 +33,7 @@ import org.jboss.logging.Logger;
  *
  * <p>Active only when {@code casehub.qhorus.reactive.enabled} is false or absent (default).
  */
+@jakarta.enterprise.inject.Vetoed
 public class ActorStateAggregator {
 
   private static final Logger LOG = Logger.getLogger(ActorStateAggregator.class);
