@@ -1,0 +1,195 @@
+/*
+ * Copyright 2026-Present The Case Hub Authors
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ * http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+package io.casehub.persistence.spring;
+
+import io.casehub.api.model.TaskStatus;
+import io.casehub.engine.common.internal.model.PlanItemRecord;
+import io.casehub.engine.common.internal.model.PlanItemSaveRequest;
+import io.casehub.engine.common.internal.model.PlanItemType;
+import io.casehub.engine.common.spi.PlanItemStore;
+import io.casehub.persistence.jpa.PlanItemEntity;
+import io.casehub.persistence.jpa.TenantContextManager;
+import jakarta.persistence.EntityManager;
+import java.util.List;
+import java.util.UUID;
+import org.springframework.transaction.annotation.Transactional;
+
+@Transactional
+class SpringJpaPlanItemStore implements PlanItemStore {
+
+  private final EntityManager em;
+  private final TenantContextManager tcm;
+
+  SpringJpaPlanItemStore(EntityManager em, TenantContextManager tcm) {
+    this.em = em;
+    this.tcm = tcm;
+  }
+
+  @Override
+  public void save(PlanItemSaveRequest request, String tenancyId) {
+    tcm.setTenantContext(tenancyId);
+    PlanItemEntity e = new PlanItemEntity();
+    e.tenancyId = tenancyId;
+    e.caseId = request.caseId();
+    e.planItemId = request.planItemId();
+    e.bindingName = request.bindingName();
+    e.status = request.status();
+    e.createdAt = request.createdAt();
+    e.completedAt = null;
+    e.targetType = request.targetType();
+    e.outputMappingExpression = request.outputMappingExpression();
+    e.description = request.description();
+    e.executorName = request.executorName();
+    e.executorDescription = request.executorDescription();
+    e.lifecycleScope = request.lifecycleScope();
+    e.activationContext =
+        request.activationContext() != null ? request.activationContext().toString() : null;
+    em.persist(e);
+  }
+
+  @Override
+  public void updateStatus(String planItemId, TaskStatus status) {
+    tcm.setCrossTenantContext();
+    em.flush();
+    if (status.isTerminal()) {
+      em.createQuery(
+              "UPDATE PlanItemEntity SET status = :status, completedAt = :completedAt WHERE planItemId = :planItemId")
+          .setParameter("status", status)
+          .setParameter("completedAt", java.time.Instant.now())
+          .setParameter("planItemId", planItemId)
+          .executeUpdate();
+    } else {
+      em.createQuery("UPDATE PlanItemEntity SET status = :status WHERE planItemId = :planItemId")
+          .setParameter("status", status)
+          .setParameter("planItemId", planItemId)
+          .executeUpdate();
+    }
+  }
+
+  @Override
+  public void updateStatus(String planItemId, TaskStatus status, String tenancyId) {
+    tcm.setTenantContext(tenancyId);
+    em.flush();
+    if (status.isTerminal()) {
+      em.createQuery(
+              "UPDATE PlanItemEntity SET status = :status, completedAt = :completedAt WHERE planItemId = :planItemId")
+          .setParameter("status", status)
+          .setParameter("completedAt", java.time.Instant.now())
+          .setParameter("planItemId", planItemId)
+          .executeUpdate();
+    } else {
+      em.createQuery("UPDATE PlanItemEntity SET status = :status WHERE planItemId = :planItemId")
+          .setParameter("status", status)
+          .setParameter("planItemId", planItemId)
+          .executeUpdate();
+    }
+  }
+
+  @Override
+  public List<PlanItemRecord> findByCaseId(UUID caseId, String tenancyId) {
+    tcm.setTenantContext(tenancyId);
+    return em
+        .createQuery(
+            "SELECT e FROM PlanItemEntity e WHERE e.caseId = :caseId AND e.tenancyId = :tenancyId",
+            PlanItemEntity.class)
+        .setParameter("caseId", caseId)
+        .setParameter("tenancyId", tenancyId)
+        .getResultList()
+        .stream()
+        .map(this::toRecord)
+        .toList();
+  }
+
+  @Override
+  public List<PlanItemRecord> findDelegated(UUID caseId, String tenancyId) {
+    tcm.setTenantContext(tenancyId);
+    return em
+        .createQuery(
+            "SELECT e FROM PlanItemEntity e WHERE e.caseId = :caseId AND e.status = :status AND e.tenancyId = :tenancyId",
+            PlanItemEntity.class)
+        .setParameter("caseId", caseId)
+        .setParameter("status", TaskStatus.DELEGATED)
+        .setParameter("tenancyId", tenancyId)
+        .getResultList()
+        .stream()
+        .map(this::toRecord)
+        .toList();
+  }
+
+  @Override
+  public List<PlanItemRecord> findDelegatedCrossTenant(UUID caseId) {
+    tcm.setCrossTenantContext();
+    return em
+        .createQuery(
+            "SELECT e FROM PlanItemEntity e WHERE e.caseId = :caseId AND e.status = :status",
+            PlanItemEntity.class)
+        .setParameter("caseId", caseId)
+        .setParameter("status", TaskStatus.DELEGATED)
+        .getResultList()
+        .stream()
+        .map(this::toRecord)
+        .toList();
+  }
+
+  @Override
+  public List<PlanItemRecord> findAllDelegated() {
+    tcm.setCrossTenantContext();
+    return em
+        .createQuery(
+            "SELECT e FROM PlanItemEntity e WHERE e.status = :status", PlanItemEntity.class)
+        .setParameter("status", TaskStatus.DELEGATED)
+        .getResultList()
+        .stream()
+        .map(this::toRecord)
+        .toList();
+  }
+
+  private PlanItemRecord toRecord(PlanItemEntity e) {
+    return new PlanItemRecord(
+        e.caseId,
+        e.planItemId,
+        e.bindingName,
+        e.status,
+        e.createdAt,
+        e.completedAt,
+        e.targetType,
+        e.outputMappingExpression,
+        e.tenancyId,
+        e.description,
+        e.executorName,
+        e.executorDescription,
+        PlanItemType.PRIMITIVE,
+        null,
+        null,
+        null,
+        false,
+        null,
+        e.lifecycleScope,
+        parseJsonNode(e.activationContext),
+        null);
+  }
+
+  private static com.fasterxml.jackson.databind.JsonNode parseJsonNode(String json) {
+    if (json == null || json.isBlank()) {
+      return null;
+    }
+    try {
+      return new com.fasterxml.jackson.databind.ObjectMapper().readTree(json);
+    } catch (Exception e) {
+      return null;
+    }
+  }
+}
