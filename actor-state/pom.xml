@@ -56,13 +56,6 @@
             <artifactId>casehub-qhorus-api</artifactId>
             <version>${version.io.casehub}</version>
         </dependency>
-        <!-- @QuarkusTest needs JPA store implementations on test classpath -->
-        <dependency>
-            <groupId>io.casehub</groupId>
-            <artifactId>casehub-qhorus</artifactId>
-            <version>${version.io.casehub}</version>
-            <scope>test</scope>
-        </dependency>
 
         <!-- ManagedExecutor — CDI-context-safe parallel contributor execution -->
         <dependency>
@@ -89,11 +82,6 @@
         <dependency>
             <groupId>org.mockito</groupId>
             <artifactId>mockito-core</artifactId>
-            <scope>test</scope>
-        </dependency>
-        <dependency>
-            <groupId>io.rest-assured</groupId>
-            <artifactId>rest-assured</artifactId>
             <scope>test</scope>
         </dependency>
         <dependency>

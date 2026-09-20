@@ -23,6 +23,8 @@ import io.casehub.engine.common.spi.PlanItemStore;
 import jakarta.annotation.Priority;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.enterprise.inject.Alternative;
+import jakarta.inject.Inject;
+import jakarta.persistence.EntityManager;
 import jakarta.transaction.Transactional;
 import java.util.List;
 import java.util.UUID;
@@ -30,12 +32,21 @@ import java.util.UUID;
 @Alternative
 @Priority(2)
 @ApplicationScoped
-public class JpaPlanItemStore extends TenantAwareRepository implements PlanItemStore {
+public class JpaPlanItemStore implements PlanItemStore {
+
+  private final EntityManager em;
+  private final TenantContextManager tcm;
+
+  @Inject
+  JpaPlanItemStore(EntityManager em, TenantContextManager tcm) {
+    this.em = em;
+    this.tcm = tcm;
+  }
 
   @Override
   @Transactional
   public void save(PlanItemSaveRequest request, String tenancyId) {
-    setTenantContext(tenancyId);
+    tcm.setTenantContext(tenancyId);
     PlanItemEntity e = new PlanItemEntity();
     e.tenancyId = tenancyId;
     e.caseId = request.caseId();
@@ -58,7 +69,7 @@ public class JpaPlanItemStore extends TenantAwareRepository implements PlanItemS
   @Override
   @Transactional
   public void updateStatus(String planItemId, TaskStatus status) {
-    setCrossTenantContext();
+    tcm.setCrossTenantContext();
     em.flush();
     if (status.isTerminal()) {
       em.createQuery(
@@ -78,7 +89,7 @@ public class JpaPlanItemStore extends TenantAwareRepository implements PlanItemS
   @Override
   @Transactional
   public void updateStatus(String planItemId, TaskStatus status, String tenancyId) {
-    setTenantContext(tenancyId);
+    tcm.setTenantContext(tenancyId);
     em.flush();
     if (status.isTerminal()) {
       em.createQuery(
@@ -98,7 +109,7 @@ public class JpaPlanItemStore extends TenantAwareRepository implements PlanItemS
   @Override
   @Transactional
   public List<PlanItemRecord> findByCaseId(UUID caseId, String tenancyId) {
-    setTenantContext(tenancyId);
+    tcm.setTenantContext(tenancyId);
     return em
         .createQuery(
             "SELECT e FROM PlanItemEntity e WHERE e.caseId = :caseId AND e.tenancyId = :tenancyId",
@@ -114,7 +125,7 @@ public class JpaPlanItemStore extends TenantAwareRepository implements PlanItemS
   @Override
   @Transactional
   public List<PlanItemRecord> findDelegated(UUID caseId, String tenancyId) {
-    setTenantContext(tenancyId);
+    tcm.setTenantContext(tenancyId);
     return em
         .createQuery(
             "SELECT e FROM PlanItemEntity e WHERE e.caseId = :caseId AND e.status = :status AND e.tenancyId = :tenancyId",
@@ -131,7 +142,7 @@ public class JpaPlanItemStore extends TenantAwareRepository implements PlanItemS
   @Override
   @Transactional
   public List<PlanItemRecord> findDelegatedCrossTenant(UUID caseId) {
-    setCrossTenantContext();
+    tcm.setCrossTenantContext();
     return em
         .createQuery(
             "SELECT e FROM PlanItemEntity e WHERE e.caseId = :caseId AND e.status = :status",
@@ -147,7 +158,7 @@ public class JpaPlanItemStore extends TenantAwareRepository implements PlanItemS
   @Override
   @Transactional
   public List<PlanItemRecord> findAllDelegated() {
-    setCrossTenantContext();
+    tcm.setCrossTenantContext();
     return em
         .createQuery(
             "SELECT e FROM PlanItemEntity e WHERE e.status = :status", PlanItemEntity.class)

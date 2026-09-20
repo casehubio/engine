@@ -334,7 +334,9 @@ public class CbrCaseRetainObserver implements CaseOutcomeObserver {
   }
 
   private ResolutionStep toResolutionStep(
-      PlanItemRecord record, Map<String, String> capabilityNameMap, int priority,
+      PlanItemRecord record,
+      Map<String, String> capabilityNameMap,
+      int priority,
       CaseDefinition definition) {
     return new ResolutionStep(
         record.bindingName(),
@@ -346,8 +348,7 @@ public class CbrCaseRetainObserver implements CaseOutcomeObserver {
         record.variantId());
   }
 
-  private Map<String, Object> resolveParameters(
-      PlanItemRecord record, CaseDefinition definition) {
+  private Map<String, Object> resolveParameters(PlanItemRecord record, CaseDefinition definition) {
     if (record.executorName() == null) {
       return Map.of();
     }

@@ -20,9 +20,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import io.casehub.engine.common.spi.event.WorkerDecisionEvent;
 import io.casehub.ledger.api.model.LedgerEntryType;
 import io.casehub.ledger.api.model.ScoreType;
-import io.casehub.ledger.api.spi.TrustScoreSource;
 import io.casehub.ledger.model.WorkerDecisionEntry;
-import io.casehub.ledger.repository.CaseLedgerEntryRepository;
 import io.casehub.ledger.runtime.model.ActorTrustScore;
 import io.casehub.ledger.runtime.service.CachedTrustScoreSource;
 import io.casehub.ledger.runtime.service.routing.TrustScoreFullPayload;
@@ -47,9 +45,7 @@ class WorkerDecisionEventCaptureTest {
 
   @Inject Event<WorkerDecisionEvent> workerDecisionEvents;
 
-  @Inject CaseLedgerEntryRepository repository;
-
-  @Inject TrustScoreSource trustScoreSource;
+  @Inject TransactionalLedgerReader reader;
 
   // Concrete type needed to call onFull() directly for test seeding
   @Inject CachedTrustScoreSource cachedTrustScoreSource;
@@ -67,8 +63,7 @@ class WorkerDecisionEventCaptureTest {
         .atMost(5, TimeUnit.SECONDS)
         .untilAsserted(
             () -> {
-              final List<WorkerDecisionEntry> entries =
-                  repository.findWorkerDecisionsByCaseId(caseId);
+              final List<WorkerDecisionEntry> entries = reader.findWorkerDecisionsByCaseId(caseId);
               assertThat(entries).hasSize(1);
               final WorkerDecisionEntry entry = entries.get(0);
               assertThat(entry.workerId).isEqualTo(workerId);
@@ -100,8 +95,7 @@ class WorkerDecisionEventCaptureTest {
         .atMost(5, TimeUnit.SECONDS)
         .untilAsserted(
             () -> {
-              final List<WorkerDecisionEntry> entries =
-                  repository.findWorkerDecisionsByCaseId(caseId);
+              final List<WorkerDecisionEntry> entries = reader.findWorkerDecisionsByCaseId(caseId);
               assertThat(entries).hasSize(1);
               assertThat(entries.get(0).capabilityTag).isNull();
               assertThat(entries.get(0).actorType).isEqualTo(ActorType.SYSTEM);
@@ -129,8 +123,7 @@ class WorkerDecisionEventCaptureTest {
         .atMost(5, TimeUnit.SECONDS)
         .untilAsserted(
             () -> {
-              final List<WorkerDecisionEntry> entries =
-                  repository.findWorkerDecisionsByCaseId(caseId);
+              final List<WorkerDecisionEntry> entries = reader.findWorkerDecisionsByCaseId(caseId);
               assertThat(entries).hasSize(1);
               final WorkerDecisionEntry entry = entries.get(0);
               assertThat(entry.trustScoreAtRouting).isEqualTo(0.85);
@@ -153,8 +146,7 @@ class WorkerDecisionEventCaptureTest {
         .atMost(5, TimeUnit.SECONDS)
         .untilAsserted(
             () -> {
-              final List<WorkerDecisionEntry> entries =
-                  repository.findWorkerDecisionsByCaseId(caseId);
+              final List<WorkerDecisionEntry> entries = reader.findWorkerDecisionsByCaseId(caseId);
               assertThat(entries).hasSize(1);
               assertThat(entries.get(0).sequenceNumber).isEqualTo(1);
             });
@@ -178,8 +170,7 @@ class WorkerDecisionEventCaptureTest {
         .atMost(5, TimeUnit.SECONDS)
         .untilAsserted(
             () -> {
-              final List<WorkerDecisionEntry> entries =
-                  repository.findWorkerDecisionsByCaseId(caseId);
+              final List<WorkerDecisionEntry> entries = reader.findWorkerDecisionsByCaseId(caseId);
               assertThat(entries).hasSize(1);
               final WorkerDecisionEntry entry = entries.get(0);
               assertThat(entry.domainData).isNotNull();
@@ -200,8 +191,7 @@ class WorkerDecisionEventCaptureTest {
         .atMost(5, TimeUnit.SECONDS)
         .untilAsserted(
             () -> {
-              final List<WorkerDecisionEntry> entries =
-                  repository.findWorkerDecisionsByCaseId(caseId);
+              final List<WorkerDecisionEntry> entries = reader.findWorkerDecisionsByCaseId(caseId);
               assertThat(entries).hasSize(1);
               assertThat(entries.get(0).domainData).isNull();
             });
@@ -220,8 +210,7 @@ class WorkerDecisionEventCaptureTest {
         .atMost(5, TimeUnit.SECONDS)
         .untilAsserted(
             () -> {
-              final List<WorkerDecisionEntry> entries =
-                  repository.findWorkerDecisionsByCaseId(caseId);
+              final List<WorkerDecisionEntry> entries = reader.findWorkerDecisionsByCaseId(caseId);
               assertThat(entries).hasSize(1);
               final String stored = (String) entries.get(0).domainData.get("reasoning");
               assertThat(stored).isNotNull();

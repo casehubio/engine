@@ -23,7 +23,6 @@ import io.casehub.engine.inbound.InboundSignalBridge;
 import io.casehub.engine.inbound.InboundWorkItemBridge;
 import io.casehub.engine.inbound.InboundWorkItemPolicy;
 import io.casehub.platform.api.routing.StrategyResolver;
-import io.casehub.work.api.spi.TenantContextExecutor;
 import io.casehub.work.api.spi.WorkItemOperations;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.enterprise.inject.Instance;
@@ -52,12 +51,8 @@ public class InboundBeans {
   @Produces
   @ApplicationScoped
   InboundWorkItemBridge inboundWorkItemBridge(
-      Instance<InboundWorkItemPolicy> policy,
-      WorkItemOperations workItemOperations,
-      TenantContextExecutor tenantContextExecutor) {
+      Instance<InboundWorkItemPolicy> policy, WorkItemOperations workItemOperations) {
     return new InboundWorkItemBridge(
-        policy.isResolvable() ? Optional.of(policy.get()) : Optional.empty(),
-        workItemOperations,
-        tenantContextExecutor);
+        policy.isResolvable() ? Optional.of(policy.get()) : Optional.empty(), workItemOperations);
   }
 }

@@ -397,12 +397,16 @@ public class CaseContextChangedEventHandler {
       return;
     }
 
+    final List<Goal> reachedGoals = new java.util.ArrayList<>();
     for (final Goal goal : goals) {
-      if (!expressionEngineRegistry.evaluate(goal.getCondition(), contextSnapshot)) {
-        continue;
+      if (expressionEngineRegistry.evaluate(goal.getCondition(), contextSnapshot)) {
+        LOG.infof("Goal '%s' REACHED!", goal.getName());
+        reachedGoals.add(goal);
       }
-      LOG.infof("Goal '%s' REACHED! Publishing GoalReachedEvent", goal.getName());
-      eventDispatcher.dispatch(new GoalReachedEvent(caseInstance, List.of(goal)));
+    }
+
+    if (!reachedGoals.isEmpty()) {
+      eventDispatcher.dispatch(new GoalReachedEvent(caseInstance, reachedGoals));
     }
   }
 

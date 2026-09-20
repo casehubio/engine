@@ -15,14 +15,18 @@
  */
 package io.casehub.actorstate;
 
-import static io.restassured.RestAssured.given;
-import static org.hamcrest.Matchers.equalTo;
-import static org.hamcrest.Matchers.hasItems;
-import static org.hamcrest.Matchers.notNullValue;
-import static org.hamcrest.Matchers.nullValue;
+import static org.assertj.core.api.Assertions.assertThat;
 
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import io.quarkus.test.InjectMock;
+import io.quarkus.test.common.http.TestHTTPResource;
 import io.quarkus.test.junit.QuarkusTest;
+import java.net.URI;
+import java.net.http.HttpClient;
+import java.net.http.HttpRequest;
+import java.net.http.HttpResponse;
 import java.time.Instant;
 import java.util.List;
 import java.util.Map;
@@ -33,7 +37,13 @@ import org.mockito.Mockito;
 @QuarkusTest
 class ActorStateResourceTest {
 
+  private static final ObjectMapper MAPPER =
+      new ObjectMapper().registerModule(new JavaTimeModule());
+
   @InjectMock ActorStateAggregator aggregator;
+
+  @TestHTTPResource("/actors/agent-x/state")
+  URI endpoint;
 
   private ActorStateResponse successResponse() {
     return new ActorStateResponse(
@@ -52,37 +62,43 @@ class ActorStateResourceTest {
         null);
   }
 
+  private HttpResponse<String> get() throws Exception {
+    try (var client = HttpClient.newHttpClient()) {
+      return client.send(
+          HttpRequest.newBuilder(endpoint).GET().build(), HttpResponse.BodyHandlers.ofString());
+    }
+  }
+
   @Test
-  void get_returnsOk_withCorrectShape() {
+  void get_returnsOk_withCorrectShape() throws Exception {
     Mockito.when(aggregator.forActor("agent-x")).thenReturn(successResponse());
 
-    given()
-        .when()
-        .get("/actors/agent-x/state")
-        .then()
-        .statusCode(200)
-        .contentType("application/json")
-        .body("actorId", equalTo("agent-x"))
-        .body("trustScore", equalTo(0.82f))
-        .body("sources", hasItems("ledger", "work", "qhorus", "engine"))
-        .body("retrievedAt", notNullValue())
-        .body("engineActiveCaseIds.size()", equalTo(1));
+    var response = get();
+    assertThat(response.statusCode()).isEqualTo(200);
+    assertThat(response.headers().firstValue("content-type"))
+        .hasValueSatisfying(ct -> assertThat(ct).contains("application/json"));
+
+    JsonNode body = MAPPER.readTree(response.body());
+    assertThat(body.get("actorId").asText()).isEqualTo("agent-x");
+    assertThat(body.get("trustScore").asDouble()).isEqualTo(0.82);
+    assertThat(body.get("retrievedAt").asText()).isNotEmpty();
+    assertThat(body.get("engineActiveCaseIds")).hasSize(1);
+    assertThat(body.get("sources")).hasSize(4);
   }
 
   @Test
-  void get_sourceWarnings_absentWhenAllSucceeded() {
+  void get_sourceWarnings_absentWhenAllSucceeded() throws Exception {
     Mockito.when(aggregator.forActor(Mockito.anyString())).thenReturn(successResponse());
 
-    given()
-        .when()
-        .get("/actors/agent-x/state")
-        .then()
-        .statusCode(200)
-        .body("sourceWarnings", nullValue());
+    var response = get();
+    assertThat(response.statusCode()).isEqualTo(200);
+
+    JsonNode body = MAPPER.readTree(response.body());
+    assertThat(body.has("sourceWarnings")).isFalse();
   }
 
   @Test
-  void get_sourceWarnings_presentWhenSourceFailed() {
+  void get_sourceWarnings_presentWhenSourceFailed() throws Exception {
     final var resp =
         new ActorStateResponse(
             "agent-x",
@@ -98,12 +114,11 @@ class ActorStateResourceTest {
             Map.of("work", "DB timeout"));
     Mockito.when(aggregator.forActor(Mockito.anyString())).thenReturn(resp);
 
-    given()
-        .when()
-        .get("/actors/agent-x/state")
-        .then()
-        .statusCode(200)
-        .body("sourceWarnings.work", equalTo("DB timeout"))
-        .body("sources.size()", equalTo(3));
+    var response = get();
+    assertThat(response.statusCode()).isEqualTo(200);
+
+    JsonNode body = MAPPER.readTree(response.body());
+    assertThat(body.get("sourceWarnings").get("work").asText()).isEqualTo("DB timeout");
+    assertThat(body.get("sources")).hasSize(3);
   }
 }

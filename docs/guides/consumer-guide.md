@@ -45,6 +45,25 @@ Implements the Blackboard Architecture (Hayes-Roth, 1985) with CMMN terminology.
 | `casehub-engine-persistence-memory` | In-memory thread-safe persistence for `@QuarkusTest` without Docker. Includes `DefaultTestPrincipal` |
 | `casehub-engine-testing` | `@Alternative @Priority(1)` wrappers over in-memory repos for automatic selection in `@QuarkusTest`. Includes `WorkResultSubmitter` test helper |
 
+**Spring Boot modules:**
+
+| Module | Purpose |
+|---|---|
+| `casehub-engine-persistence-jpa-common` | Shared JPA entities (7), Flyway migrations (V1.0–V1.11), `TenantContextManager` (framework-neutral PostgreSQL RLS tenant context), `RlsPolicySetup` (startup RLS policy application) |
+| `casehub-engine-persistence-spring-jpa` | Spring Data JPA implementations of all 9 persistence SPIs. `PersistenceAutoConfiguration` wires beans, `@EntityScan` discovers entities from jpa-common, `CommandLineRunner` applies RLS policies at startup. Displaces in-memory defaults via `@ConditionalOnMissingBean` |
+
+**Spring persistence configuration:**
+
+```properties
+# Enable PostgreSQL Row Level Security (default: false)
+casehub.rls.enabled=true
+
+# Flyway migration location (auto-detected from jpa-common classpath)
+spring.flyway.locations=classpath:db/migration
+```
+
+Add `casehub-engine-persistence-spring-jpa` to your Spring Boot application's dependencies. It auto-configures all 9 persistence SPIs and displaces the in-memory defaults from `casehub-engine-support-spring`.
+
 ---
 
 ## Key Abstractions

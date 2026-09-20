@@ -30,7 +30,10 @@ class PendingWorkRegistryTest {
 
   @Test
   void register_thenComplete_futureResolves() throws Exception {
-    PendingWorkRegistry registry = new PendingWorkRegistry();
+    PendingWorkRegistry registry =
+        new PendingWorkRegistry(
+            org.mockito.Mockito.mock(
+                io.casehub.engine.common.spi.CrossTenantEventLogRepository.class));
     CompletableFuture<WorkResult> future = registry.register("key-1");
 
     WorkResult result = WorkResult.completed("key-1", Map.of("output", "done"), "worker-a");
@@ -41,7 +44,10 @@ class PendingWorkRegistryTest {
 
   @Test
   void complete_withNoRegisteredFuture_doesNotThrow() {
-    PendingWorkRegistry registry = new PendingWorkRegistry();
+    PendingWorkRegistry registry =
+        new PendingWorkRegistry(
+            org.mockito.Mockito.mock(
+                io.casehub.engine.common.spi.CrossTenantEventLogRepository.class));
     WorkResult result = WorkResult.completed("unknown-key", Map.of(), "worker-a");
     registry.complete("unknown-key", result); // must not throw
   }
@@ -50,7 +56,10 @@ class PendingWorkRegistryTest {
 
   @Test
   void afterComplete_futureIsRemovedFromRegistry() throws Exception {
-    PendingWorkRegistry registry = new PendingWorkRegistry();
+    PendingWorkRegistry registry =
+        new PendingWorkRegistry(
+            org.mockito.Mockito.mock(
+                io.casehub.engine.common.spi.CrossTenantEventLogRepository.class));
     registry.register("key-2");
     registry.complete("key-2", WorkResult.completed("key-2", Map.of(), "w"));
 
@@ -59,7 +68,10 @@ class PendingWorkRegistryTest {
 
   @Test
   void multipleKeys_completedIndependently() throws Exception {
-    PendingWorkRegistry registry = new PendingWorkRegistry();
+    PendingWorkRegistry registry =
+        new PendingWorkRegistry(
+            org.mockito.Mockito.mock(
+                io.casehub.engine.common.spi.CrossTenantEventLogRepository.class));
     CompletableFuture<WorkResult> f1 = registry.register("key-a");
     CompletableFuture<WorkResult> f2 = registry.register("key-b");
 
@@ -74,7 +86,10 @@ class PendingWorkRegistryTest {
 
   @Test
   void registerSameKeyTwice_bothFuturesComplete() throws Exception {
-    PendingWorkRegistry registry = new PendingWorkRegistry();
+    PendingWorkRegistry registry =
+        new PendingWorkRegistry(
+            org.mockito.Mockito.mock(
+                io.casehub.engine.common.spi.CrossTenantEventLogRepository.class));
     CompletableFuture<WorkResult> f1 = registry.register("dup-key");
     CompletableFuture<WorkResult> f2 = registry.register("dup-key");
 

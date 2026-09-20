@@ -21,7 +21,6 @@ import static org.mockito.Mockito.verify;
 
 import io.casehub.qhorus.api.gateway.MessageReceivedEvent;
 import io.casehub.qhorus.api.message.MessageType;
-import io.casehub.work.api.spi.TenantContextExecutor;
 import io.casehub.work.api.spi.WorkItemOperations;
 import java.time.Instant;
 import java.util.Optional;
@@ -39,10 +38,9 @@ import org.mockito.junit.jupiter.MockitoExtension;
 class InboundWorkItemBridgeGuardTest {
 
   @Mock WorkItemOperations workItemOperations;
-  @Mock TenantContextExecutor tenantContextExecutor;
 
   private InboundWorkItemBridge bridge(Optional<InboundWorkItemPolicy> policy) {
-    return new InboundWorkItemBridge(policy, workItemOperations, tenantContextExecutor);
+    return new InboundWorkItemBridge(policy, workItemOperations);
   }
 
   private static MessageReceivedEvent anyEvent() {
@@ -66,6 +64,6 @@ class InboundWorkItemBridgeGuardTest {
   void noPolicy_messageReceived_silentlyIgnored() {
     bridge(Optional.empty()).onMessage(anyEvent());
 
-    verify(workItemOperations, never()).create(any());
+    verify(workItemOperations, never()).createInTenantContext(any(), any());
   }
 }

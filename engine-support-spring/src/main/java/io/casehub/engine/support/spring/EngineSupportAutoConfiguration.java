@@ -38,9 +38,11 @@ import io.casehub.engine.common.internal.jq.JQEvaluator;
 import io.casehub.engine.common.internal.judgment.JudgmentNodeExecutor;
 import io.casehub.engine.common.spi.CaseDefinitionRegistry;
 import io.casehub.engine.common.spi.CaseInstanceRepository;
+import io.casehub.engine.common.spi.CaseMetaModelRepository;
 import io.casehub.engine.common.spi.EventLogRepository;
 import io.casehub.engine.common.spi.HumanTaskScheduler;
 import io.casehub.engine.common.spi.PlanItemStore;
+import io.casehub.engine.common.spi.SubCaseGroupRepository;
 import io.casehub.engine.common.spi.WorkOrchestrator;
 import io.casehub.engine.common.spi.cache.CaseInstanceCache;
 import io.casehub.engine.common.spi.scheduler.WorkerExecutionManager;
@@ -77,7 +79,7 @@ import io.casehub.engine.work.cloudevent.CloudEventHumanTaskScheduler;
 import io.casehub.engine.work.cloudevent.CloudEventJudgmentScheduler;
 import io.casehub.engine.work.cloudevent.WorkIntegrationConflictDetector;
 import io.casehub.engine.work.cloudevent.WorkItemLifecycleCloudEventConsumer;
-import io.casehub.ledger.runtime.service.TrustGateService;
+import io.casehub.ledger.api.spi.TrustScoreSource;
 import io.casehub.persistence.memory.DefaultTestPrincipal;
 import io.casehub.persistence.memory.InMemoryCaseInstanceRepository;
 import io.casehub.persistence.memory.InMemoryCaseMetaModelRepository;
@@ -91,7 +93,6 @@ import io.casehub.platform.api.view.SubjectViewStore;
 import io.casehub.platform.view.SubjectViewOrchestrator;
 import io.casehub.qhorus.api.store.ChannelStore;
 import io.casehub.qhorus.api.store.CommitmentStore;
-import io.casehub.work.api.spi.TenantContextExecutor;
 import io.casehub.work.api.spi.WorkItemOperations;
 import io.casehub.work.api.spi.WorkItemStore;
 import io.serverlessworkflow.impl.WorkflowApplication;
@@ -186,10 +187,10 @@ public class EngineSupportAutoConfiguration {
   }
 
   @Bean
-  @ConditionalOnBean(TrustGateService.class)
+  @ConditionalOnBean(TrustScoreSource.class)
   public LedgerActorStateContributor ledgerActorStateContributor(
-      TrustGateService trustGateService) {
-    return new LedgerActorStateContributor(trustGateService);
+      TrustScoreSource trustScoreSource) {
+    return new LedgerActorStateContributor(trustScoreSource);
   }
 
   @Bean
@@ -215,6 +216,7 @@ public class EngineSupportAutoConfiguration {
 
   @Bean
   @Primary
+  @ConditionalOnMissingBean(CaseInstanceRepository.class)
   public InMemoryCaseInstanceRepository inMemoryCaseInstanceRepository(
       EventLogRepository eventLogRepository) {
     return new InMemoryCaseInstanceRepository(eventLogRepository);
@@ -222,24 +224,28 @@ public class EngineSupportAutoConfiguration {
 
   @Bean
   @Primary
+  @ConditionalOnMissingBean(CaseMetaModelRepository.class)
   public InMemoryCaseMetaModelRepository inMemoryCaseMetaModelRepository() {
     return new InMemoryCaseMetaModelRepository();
   }
 
   @Bean
   @Primary
+  @ConditionalOnMissingBean(EventLogRepository.class)
   public InMemoryEventLogRepository inMemoryEventLogRepository() {
     return new InMemoryEventLogRepository();
   }
 
   @Bean
   @Primary
+  @ConditionalOnMissingBean(PlanItemStore.class)
   public InMemoryPlanItemStore inMemoryPlanItemStore() {
     return new InMemoryPlanItemStore();
   }
 
   @Bean
   @Primary
+  @ConditionalOnMissingBean(SubCaseGroupRepository.class)
   public InMemorySubCaseGroupRepository inMemorySubCaseGroupRepository() {
     return new InMemorySubCaseGroupRepository();
   }
@@ -401,10 +407,8 @@ public class EngineSupportAutoConfiguration {
 
   @Bean
   public InboundWorkItemBridge inboundWorkItemBridge(
-      Optional<InboundWorkItemPolicy> policy,
-      WorkItemOperations workItemOperations,
-      TenantContextExecutor tenantContextExecutor) {
-    return new InboundWorkItemBridge(policy, workItemOperations, tenantContextExecutor);
+      Optional<InboundWorkItemPolicy> policy, WorkItemOperations workItemOperations) {
+    return new InboundWorkItemBridge(policy, workItemOperations);
   }
 
   // --- react ---

@@ -67,7 +67,7 @@ class DefaultWorkerRuntimeTest {
   @Test
   void createChannel_returnsChannelRef() {
     var registry = new io.casehub.engine.common.internal.channel.DataChannelRegistry();
-    var factory = new io.casehub.engine.common.internal.channel.InMemoryDataChannelFactory();
+    var factory = new io.casehub.engine.common.internal.channel.InMemoryDataChannelFactory(5000L);
     var rt =
         new DefaultWorkerRuntime(
             CASE_ID,
@@ -89,7 +89,7 @@ class DefaultWorkerRuntimeTest {
   @Test
   void channel_retrievesCreatedChannel() {
     var registry = new io.casehub.engine.common.internal.channel.DataChannelRegistry();
-    var factory = new io.casehub.engine.common.internal.channel.InMemoryDataChannelFactory();
+    var factory = new io.casehub.engine.common.internal.channel.InMemoryDataChannelFactory(5000L);
     var rt =
         new DefaultWorkerRuntime(
             CASE_ID,
@@ -113,7 +113,7 @@ class DefaultWorkerRuntimeTest {
   @Test
   void channel_sendReceive_throughRuntime() {
     var registry = new io.casehub.engine.common.internal.channel.DataChannelRegistry();
-    var factory = new io.casehub.engine.common.internal.channel.InMemoryDataChannelFactory();
+    var factory = new io.casehub.engine.common.internal.channel.InMemoryDataChannelFactory(5000L);
     var rt =
         new DefaultWorkerRuntime(
             CASE_ID,

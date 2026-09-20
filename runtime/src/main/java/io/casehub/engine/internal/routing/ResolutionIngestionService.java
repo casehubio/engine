@@ -17,12 +17,9 @@ package io.casehub.engine.internal.routing;
 
 import io.casehub.api.spi.CorpusChangeEvent;
 import io.casehub.api.spi.CorpusSourceAdapter;
-import io.casehub.api.spi.GuidanceStepInput;
 import io.casehub.api.spi.ResolutionGuideInput;
 import io.casehub.neocortex.memory.MemoryDomain;
 import io.casehub.neocortex.memory.cbr.CbrCaseMemoryStore;
-import io.casehub.neocortex.memory.cbr.FeatureValue;
-import io.casehub.neocortex.memory.cbr.GuidanceStep;
 import io.casehub.neocortex.memory.cbr.ResolutionGuide;
 import io.casehub.platform.api.path.Path;
 import jakarta.enterprise.context.ApplicationScoped;
@@ -30,7 +27,6 @@ import jakarta.enterprise.inject.Instance;
 import jakarta.inject.Inject;
 import java.nio.charset.StandardCharsets;
 import java.util.List;
-import java.util.Map;
 import java.util.UUID;
 import org.jboss.logging.Logger;
 
@@ -97,17 +93,8 @@ public class ResolutionIngestionService {
   private void ingestSingle(
       ResolutionGuideInput input, String tenancyId, CbrCaseMemoryStore store) {
     String caseId = deterministicCaseId(input.documentId());
-    List<GuidanceStep> steps = mapSteps(input.steps());
     ResolutionGuide guide =
-        new ResolutionGuide(
-            input.problem(),
-            input.solution(),
-            null,
-            null,
-            mapFeatures(input.features()),
-            steps,
-            null,
-            null);
+        new ResolutionGuide(input.problem(), input.solution(), null, null, null, null);
     store.supersedeAll(List.of(caseId), tenancyId, "corpus re-ingestion");
     store.store(
         guide,
@@ -117,33 +104,6 @@ public class ResolutionIngestionService {
         tenancyId,
         caseId,
         Path.root());
-  }
-
-  private static List<GuidanceStep> mapSteps(List<GuidanceStepInput> steps) {
-    if (steps == null || steps.isEmpty()) {
-      return List.of();
-    }
-    return steps.stream()
-        .map(
-            s ->
-                new GuidanceStep(
-                    s.description(), s.preconditions(), s.expectedOutcome(), s.automationHint()))
-        .toList();
-  }
-
-  private static Map<String, FeatureValue> mapFeatures(Map<String, Object> raw) {
-    if (raw == null || raw.isEmpty()) {
-      return Map.of();
-    }
-    var result = new java.util.LinkedHashMap<String, FeatureValue>();
-    for (var entry : raw.entrySet()) {
-      if (entry.getValue() instanceof FeatureValue fv) {
-        result.put(entry.getKey(), fv);
-      } else {
-        result.put(entry.getKey(), FeatureValue.of(entry.getValue()));
-      }
-    }
-    return Map.copyOf(result);
   }
 
   static String deterministicCaseId(String documentId) {

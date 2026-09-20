@@ -40,8 +40,10 @@ public final class AgentCardBridge {
                             null,
                             null,
                             null,
+                            null,
+                            null,
                             null))
-                .toList()
+                .<AgentCapability>toList()
             : List.of();
 
     return AgentDescriptor.builder()

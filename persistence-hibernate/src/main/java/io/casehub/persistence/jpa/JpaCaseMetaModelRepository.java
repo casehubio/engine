@@ -19,6 +19,8 @@ import io.casehub.engine.common.internal.model.CaseMetaModel;
 import io.casehub.engine.common.spi.CaseMetaModelRepository;
 import io.casehub.engine.common.spi.query.CaseDefinitionQuery;
 import jakarta.enterprise.context.ApplicationScoped;
+import jakarta.inject.Inject;
+import jakarta.persistence.EntityManager;
 import jakarta.transaction.Transactional;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
@@ -26,13 +28,21 @@ import java.util.List;
 
 /** Blocking JPA {@link CaseMetaModelRepository}. Direct EntityManager implementation. */
 @ApplicationScoped
-public class JpaCaseMetaModelRepository extends TenantAwareRepository
-    implements CaseMetaModelRepository {
+public class JpaCaseMetaModelRepository implements CaseMetaModelRepository {
+
+  private final EntityManager em;
+  private final TenantContextManager tcm;
+
+  @Inject
+  JpaCaseMetaModelRepository(EntityManager em, TenantContextManager tcm) {
+    this.em = em;
+    this.tcm = tcm;
+  }
 
   @Override
   @Transactional
   public CaseMetaModel findByKey(String namespace, String name, String version, String tenancyId) {
-    setTenantContext(tenancyId);
+    tcm.setTenantContext(tenancyId);
     List<CaseMetaModelEntity> results =
         em.createQuery(
                 "SELECT m FROM CaseMetaModelEntity m"
@@ -50,7 +60,7 @@ public class JpaCaseMetaModelRepository extends TenantAwareRepository
   @Override
   @Transactional
   public CaseMetaModel save(CaseMetaModel metaModel, String tenancyId) {
-    setTenantContext(tenancyId);
+    tcm.setTenantContext(tenancyId);
     CaseMetaModelEntity entity = toEntity(metaModel, tenancyId);
     entity.createdAt = Instant.now().truncatedTo(ChronoUnit.MICROS);
     em.persist(entity);
@@ -64,7 +74,7 @@ public class JpaCaseMetaModelRepository extends TenantAwareRepository
   @Override
   @Transactional
   public List<CaseMetaModel> query(CaseDefinitionQuery query, String tenancyId) {
-    setTenantContext(tenancyId);
+    tcm.setTenantContext(tenancyId);
     StringBuilder hql =
         new StringBuilder("SELECT m FROM CaseMetaModelEntity m WHERE m.tenancyId = :tid");
     java.util.Map<String, Object> params = new java.util.LinkedHashMap<>();
@@ -87,7 +97,7 @@ public class JpaCaseMetaModelRepository extends TenantAwareRepository
   @Override
   @Transactional
   public long count(CaseDefinitionQuery query, String tenancyId) {
-    setTenantContext(tenancyId);
+    tcm.setTenantContext(tenancyId);
     StringBuilder hql =
         new StringBuilder("SELECT COUNT(m) FROM CaseMetaModelEntity m WHERE m.tenancyId = :tid");
     java.util.Map<String, Object> params = new java.util.LinkedHashMap<>();

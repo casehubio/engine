@@ -71,7 +71,10 @@ class CbrCaseRetainObserverTest {
     store = new RecordingCbrStore();
     registry = new StubRegistry();
     planItemStore = new StubPlanItemStore();
-    jqEvaluator = new JQEvaluator();
+    jqEvaluator =
+        new JQEvaluator(
+            new io.casehub.engine.common.internal.config.NoOpSecretManager(),
+            new io.casehub.engine.common.internal.config.NoOpConfigManager());
     @SuppressWarnings("unchecked")
     Instance<PlanItemStore> planItemStoreInstance = mock(Instance.class);
     when(planItemStoreInstance.isUnsatisfied()).thenReturn(false);

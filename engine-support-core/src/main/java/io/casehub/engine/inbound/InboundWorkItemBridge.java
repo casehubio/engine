@@ -18,7 +18,6 @@ package io.casehub.engine.inbound;
 import io.casehub.qhorus.api.gateway.MessageObserver;
 import io.casehub.qhorus.api.gateway.MessageReceivedEvent;
 import io.casehub.work.api.WorkItemCreateRequest;
-import io.casehub.work.api.spi.TenantContextExecutor;
 import io.casehub.work.api.spi.WorkItemOperations;
 import java.util.Optional;
 import org.jboss.logging.Logger;
@@ -41,15 +40,9 @@ import org.jboss.logging.Logger;
  *
  * <p><strong>Exception handling:</strong> policy exceptions are caught and logged with channel
  * context; the bridge returns without creating a WorkItem. Infrastructure exceptions ({@code
- * TenantContextExecutor}, {@code WorkItemOperations}) propagate out of {@link #onMessage} to {@code
- * MessageObserverDispatcher}'s outer safety net, which catches and logs them at WARN — neither path
- * retries or produces a hard failure to the message sender.
- *
- * <p><strong>Request context:</strong> {@code TenantContextExecutor.runInTenantContext()} activates
- * a CDI request context if none is active (normal case in qhorus {@code afterCompletion}
- * callbacks), sets tenant identity, runs the work, then terminates the context. {@code
- * WorkItemOperations.create()} manages its own transaction boundary independently of the request
- * context lifecycle.
+ * WorkItemOperations}) propagate out of {@link #onMessage} to {@code MessageObserverDispatcher}'s
+ * outer safety net, which catches and logs them at WARN — neither path retries or produces a hard
+ * failure to the message sender.
  *
  * <p><strong>At-most-once delivery:</strong> {@code onMessage} runs in the qhorus JTA {@code
  * afterCompletion(STATUS_COMMITTED)} callback — the qhorus message is committed before observers
@@ -62,15 +55,11 @@ public class InboundWorkItemBridge implements MessageObserver {
 
   private final Optional<InboundWorkItemPolicy> policy;
   private final WorkItemOperations workItemOperations;
-  private final TenantContextExecutor tenantContextExecutor;
 
   public InboundWorkItemBridge(
-      Optional<InboundWorkItemPolicy> policy,
-      WorkItemOperations workItemOperations,
-      TenantContextExecutor tenantContextExecutor) {
+      Optional<InboundWorkItemPolicy> policy, WorkItemOperations workItemOperations) {
     this.policy = policy;
     this.workItemOperations = workItemOperations;
-    this.tenantContextExecutor = tenantContextExecutor;
   }
 
   @Override
@@ -91,9 +80,7 @@ public class InboundWorkItemBridge implements MessageObserver {
     }
 
     decision.ifPresent(
-        request ->
-            tenantContextExecutor.runInTenantContext(
-                event.tenancyId(), () -> workItemOperations.create(stamp(request))));
+        request -> workItemOperations.createInTenantContext(event.tenancyId(), stamp(request)));
   }
 
   private WorkItemCreateRequest stamp(final WorkItemCreateRequest request) {

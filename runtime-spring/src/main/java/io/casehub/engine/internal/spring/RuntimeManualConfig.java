@@ -430,7 +430,7 @@ public class RuntimeManualConfig {
       SelectionContextStore selectionContextStore,
       Optional<RoutingOutcomeRecorder> outcomeRecorder,
       Optional<ActionGateScheduler> actionGateScheduler,
-      Optional<StepOutcomeObserver> stepOutcomeObserver) {
+      List<StepOutcomeObserver> stepOutcomeObservers) {
     return new WorkflowExecutionCompletedHandler(
         eventDispatcher,
         event -> publisher.publishEvent(event),
@@ -460,7 +460,7 @@ public class RuntimeManualConfig {
         selectionContextStore,
         outcomeRecorder,
         actionGateScheduler,
-        stepOutcomeObserver);
+        stepOutcomeObservers);
   }
 
   @Bean

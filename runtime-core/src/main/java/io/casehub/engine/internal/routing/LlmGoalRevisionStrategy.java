@@ -102,8 +102,9 @@ public class LlmGoalRevisionStrategy implements GoalRevisionStrategy {
     }
 
     sb.append("\nRespond with JSON: {\"revisions\": [{\"goalName\": \"...\", ")
-        .append("\"action\": \"REVISE|ABANDON|COMPLETE\", ")
-        .append("\"revisedDescription\": \"...\"|null, \"revisionReason\": \"...\"}], ")
+        .append("\"action\": \"REVISE|ABANDON|COMPLETE|REPRIORITIZE\", ")
+        .append("\"revisedDescription\": \"...\"|null, \"revisionReason\": \"...\", ")
+        .append("\"newPriority\": 0.0-1.0|null}], ")
         .append("\"rationale\": \"...\"}");
     return sb.toString();
   }
@@ -135,8 +136,18 @@ public class LlmGoalRevisionStrategy implements GoalRevisionStrategy {
                 goalName);
             continue;
           }
+          Double newPriority =
+              node.has("newPriority") && !node.get("newPriority").isNull()
+                  ? node.get("newPriority").asDouble()
+                  : null;
+          if (action == GoalRevisionAction.REPRIORITIZE && newPriority == null) {
+            LOG.debugf(
+                "Skipping revision for goal %s: REPRIORITIZE requires newPriority", goalName);
+            continue;
+          }
           String reason = node.get("revisionReason").asText();
-          revisions.add(new GoalRevisionProposal.RevisedGoal(goalName, action, desc, reason));
+          revisions.add(
+              new GoalRevisionProposal.RevisedGoal(goalName, action, desc, reason, newPriority));
         } catch (Exception e) {
           LOG.debugf("Skipping malformed revision entry: %s", e.getMessage());
         }

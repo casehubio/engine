@@ -24,46 +24,49 @@ import io.casehub.persistence.memory.InMemoryPlanItemStore;
 import io.casehub.persistence.memory.InMemorySubCaseGroupRepository;
 import io.quarkus.arc.DefaultBean;
 import jakarta.enterprise.context.ApplicationScoped;
-import jakarta.enterprise.inject.Alternative;
 import jakarta.enterprise.inject.Produces;
 
 @ApplicationScoped
 public class PersistenceMemoryBeans {
 
   @Produces
-  @DefaultBean
+  @ApplicationScoped
   DefaultTestPrincipal defaultTestPrincipal() {
     return new DefaultTestPrincipal();
   }
 
   @Produces
-  @Alternative
+  @DefaultBean
+  @ApplicationScoped
   InMemoryCaseInstanceRepository inMemoryCaseInstanceRepository(
       EventLogRepository eventLogRepository) {
     return new InMemoryCaseInstanceRepository(eventLogRepository);
   }
 
   @Produces
-  @Alternative
+  @DefaultBean
+  @ApplicationScoped
   InMemoryCaseMetaModelRepository inMemoryCaseMetaModelRepository() {
     return new InMemoryCaseMetaModelRepository();
   }
 
   @Produces
-  @Alternative
+  @DefaultBean
+  @ApplicationScoped
   InMemoryEventLogRepository inMemoryEventLogRepository() {
     return new InMemoryEventLogRepository();
   }
 
   @Produces
-  @Alternative
-  InMemoryPlanItemStore inMemoryPlanItemStore() {
-    return new InMemoryPlanItemStore();
+  @DefaultBean
+  @ApplicationScoped
+  InMemorySubCaseGroupRepository inMemorySubCaseGroupRepository() {
+    return new InMemorySubCaseGroupRepository();
   }
 
   @Produces
-  @Alternative
-  InMemorySubCaseGroupRepository inMemorySubCaseGroupRepository() {
-    return new InMemorySubCaseGroupRepository();
+  @ApplicationScoped
+  InMemoryPlanItemStore inMemoryPlanItemStore() {
+    return new InMemoryPlanItemStore();
   }
 }

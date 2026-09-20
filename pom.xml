@@ -103,7 +103,9 @@
         <module>scheduler-quartz</module>
         <module>scheduler-dbscheduler</module>
         <module>persistence-memory</module>
+        <module>persistence-jpa-common</module>
         <module>persistence-hibernate</module>
+        <module>persistence-spring-jpa</module>
         <module>runtime-core</module>
         <module>runtime</module>
         <module>runtime-spring</module>
@@ -156,6 +158,8 @@
         <module>examples/wildfire-response-annotated</module>
         <module>annotations</module>
         <module>generator</module>
+        <module>eidos-routing</module>
+        <module>work-adapter</module>
     </modules>
 
     <repositories>
@@ -306,6 +310,11 @@
             <dependency>
                 <groupId>io.casehub</groupId>
                 <artifactId>casehub-work</artifactId>
+                <version>${version.io.casehub}</version>
+            </dependency>
+            <dependency>
+                <groupId>io.casehub</groupId>
+                <artifactId>casehub-work-persistence-memory</artifactId>
                 <version>${version.io.casehub}</version>
             </dependency>
             <dependency>
