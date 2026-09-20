@@ -127,7 +127,7 @@ public class ImprovementBudgetEnforcer implements Resettable {
         .incrementAndGet();
   }
 
-  public java.util.Map<UUID, ImprovementRequest> activeImprovementRequests(UUID caseId) {
+  public java.util.Map<UUID, ImprovementRequest> activeImprovementRequests() {
     return java.util.Map.copyOf(activeImprovements);
   }
 

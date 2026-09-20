@@ -118,7 +118,7 @@ public class ImprovementGoalFormationStrategy implements GoalFormationStrategy {
       var conflictCheck =
           conflictDetector.check(
               request,
-              budgetEnforcer.activeImprovementRequests(caseId),
+              budgetEnforcer.activeImprovementRequests(),
               config.effectiveConflictTrivialThreshold());
       if (conflictCheck instanceof ConflictDetector.ConflictCheck.Conflicting) {
         continue;

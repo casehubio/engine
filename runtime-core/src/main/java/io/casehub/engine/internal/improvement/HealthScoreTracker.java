@@ -57,11 +57,18 @@ public class HealthScoreTracker implements Resettable {
   }
 
   public void refresh(UUID caseId, HealthPolicy policy) {
-    double score = computeScore(caseId, policy);
+    var weights = policy.effectiveWeights();
     Map<String, Double> components = new LinkedHashMap<>();
+    double weightedSum = 0.0;
+    double totalWeight = 0.0;
     for (CapabilityArea area : areaRegistry.active()) {
-      components.put(area.id(), area.assess(caseId).healthScore());
+      double healthScore = area.assess(caseId).healthScore();
+      components.put(area.id(), healthScore);
+      double weight = weights.getOrDefault(area.id(), 0.1);
+      weightedSum += weight * healthScore;
+      totalWeight += weight;
     }
+    double score = totalWeight > 0 ? weightedSum / totalWeight : 0.0;
     var snapshot = new HealthSnapshot(score, Instant.now(), components);
     var deque = history.computeIfAbsent(caseId, k -> new ArrayDeque<>());
     deque.addLast(snapshot);

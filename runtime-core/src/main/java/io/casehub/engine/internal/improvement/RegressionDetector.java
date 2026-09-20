@@ -84,12 +84,10 @@ public class RegressionDetector implements Resettable {
     if (current == null) return;
 
     var windowDuration = Duration.ofMinutes(policy.effectiveRegressionWindowMinutes());
-    var iterator = caseMonitors.iterator();
-    while (iterator.hasNext()) {
-      var monitor = iterator.next();
-
+    var expired = new java.util.ArrayList<MonitoredImprovement>();
+    for (var monitor : caseMonitors) {
       if (Duration.between(monitor.mergedAt(), Instant.now()).compareTo(windowDuration) > 0) {
-        iterator.remove();
+        expired.add(monitor);
         continue;
       }
 
@@ -97,6 +95,7 @@ public class RegressionDetector implements Resettable {
         onMetricsDegraded(caseId, monitor, policy, monitor.baseline(), current);
       }
     }
+    caseMonitors.removeAll(expired);
   }
 
   private void onMetricsDegraded(
