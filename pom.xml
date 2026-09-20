@@ -103,6 +103,7 @@
         <module>scheduler-quartz</module>
         <module>scheduler-dbscheduler</module>
         <module>persistence-memory</module>
+        <module>persistence-jpa-common</module>
         <module>persistence-hibernate</module>
         <module>runtime-core</module>
         <module>runtime</module>
