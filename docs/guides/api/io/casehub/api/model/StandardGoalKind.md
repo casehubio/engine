@@ -14,6 +14,8 @@
 
 ### `FAILURE` (`io.casehub.api.model.StandardGoalKind`)
 
+### `SELF_IMPROVEMENT` (`io.casehub.api.model.StandardGoalKind`)
+
 ### `SUCCESS` (`io.casehub.api.model.StandardGoalKind`)
 
 ## Constructors

@@ -16,6 +16,8 @@
 
 ### `bindings` (`java.util.List<io.casehub.api.model.Binding>`)
 
+### `budgetConfig` (`io.casehub.api.model.convergence.BudgetConfig`)
+
 ### `candidateMatching` (`java.lang.String`)
 
 ### `capabilities` (`java.util.List<Capability>`)
@@ -33,6 +35,8 @@
 ### `contextStoreFactory` (`java.lang.String`)
 
 ### `contextType` (`java.lang.String`)
+
+### `convergenceThresholdConfig` (`io.casehub.api.model.convergence.ConvergenceThresholdConfig`)
 
 ### `decompositionStrategy` (`java.lang.String`)
 
@@ -90,6 +94,10 @@
 
 ### `namespace` (`java.lang.String`)
 
+### `observationConfig` (`io.casehub.api.spi.observation.ObservationConfig`)
+
+### `outputConvergenceConfig` (`io.casehub.api.model.convergence.OutputConvergenceConfig`)
+
 ### `planningConstraints` (`io.casehub.engine.plan.PlanningConstraints`)
 
 ### `planningStrategy` (`java.lang.String`)
@@ -102,9 +110,15 @@
 
 ### `routingSignalWeights` (`java.util.Map<java.lang.String,java.lang.Double>`)
 
+### `ruleConfig` (`io.casehub.api.spi.observation.RuleConfig`)
+
 ### `semanticData` (`java.util.Map<java.lang.String,java.lang.Object>`)
 
+### `signalConfig` (`io.casehub.api.model.signal.SignalConfig`)
+
 ### `signals` (`java.util.List<io.casehub.api.model.SignalType<?>>`)
+
+### `stigmergyConfig` (`io.casehub.api.model.stigmergy.StigmergyConfig`)
 
 ### `summary` (`java.lang.String`)
 
@@ -162,6 +176,8 @@
 
 ### `public java.util.List<io.casehub.api.model.Binding> getBindings()`
 
+### `public io.casehub.api.model.convergence.BudgetConfig getBudgetConfig()`
+
 ### `public java.lang.String getCandidateMatching()`
 
 ### `public java.util.List<Capability> getCapabilities()`
@@ -183,6 +199,8 @@
 ### `public java.lang.String getContextStoreFactory()`
 
 ### `public java.lang.String getContextType()`
+
+### `public io.casehub.api.model.convergence.ConvergenceThresholdConfig getConvergenceThresholdConfig()`
 
 ### `public java.lang.String getDecompositionStrategy()`
 
@@ -240,6 +258,10 @@
 
 ### `public java.lang.String getNamespace()`
 
+### `public io.casehub.api.spi.observation.ObservationConfig getObservationConfig()`
+
+### `public io.casehub.api.model.convergence.OutputConvergenceConfig getOutputConvergenceConfig()`
+
 ### `public io.casehub.engine.plan.PlanningConstraints getPlanningConstraints()`
 
 ### `public java.lang.String getPlanningStrategy()`
@@ -252,9 +274,15 @@
 
 ### `public java.util.Map<java.lang.String,java.lang.Double> getRoutingSignalWeights()`
 
+### `public io.casehub.api.spi.observation.RuleConfig getRuleConfig()`
+
 ### `public java.util.Map<java.lang.String,java.lang.Object> getSemanticData()`
 
+### `public io.casehub.api.model.signal.SignalConfig getSignalConfig()`
+
 ### `public java.util.List<io.casehub.api.model.SignalType<?>> getSignals()`
+
+### `public io.casehub.api.model.stigmergy.StigmergyConfig getStigmergyConfig()`
 
 ### `public java.lang.String getSummary()`
 
@@ -304,6 +332,12 @@
 
 - `authorization` (`java.util.Map<AclAction,java.util.List<java.lang.String>>`)
 
+### `public void setBudgetConfig(io.casehub.api.model.convergence.BudgetConfig budgetConfig)`
+
+#### Parameters
+
+- `budgetConfig` (`io.casehub.api.model.convergence.BudgetConfig`)
+
 ### `public void setCandidateMatching(java.lang.String candidateMatching)`
 
 #### Parameters
@@ -351,6 +385,12 @@
 #### Parameters
 
 - `contextType` (`java.lang.String`)
+
+### `public void setConvergenceThresholdConfig(io.casehub.api.model.convergence.ConvergenceThresholdConfig convergenceThresholdConfig)`
+
+#### Parameters
+
+- `convergenceThresholdConfig` (`io.casehub.api.model.convergence.ConvergenceThresholdConfig`)
 
 ### `public void setDecompositionStrategy(java.lang.String decompositionStrategy)`
 
@@ -496,6 +536,18 @@
 
 - `monitoringConfig` (`io.casehub.engine.plan.monitoring.MonitoringConfig`)
 
+### `public void setObservationConfig(io.casehub.api.spi.observation.ObservationConfig observationConfig)`
+
+#### Parameters
+
+- `observationConfig` (`io.casehub.api.spi.observation.ObservationConfig`)
+
+### `public void setOutputConvergenceConfig(io.casehub.api.model.convergence.OutputConvergenceConfig outputConvergenceConfig)`
+
+#### Parameters
+
+- `outputConvergenceConfig` (`io.casehub.api.model.convergence.OutputConvergenceConfig`)
+
 ### `public void setPlanningConstraints(io.casehub.engine.plan.PlanningConstraints planningConstraints)`
 
 #### Parameters
@@ -532,17 +584,35 @@
 
 - `routingSignalWeights` (`java.util.Map<java.lang.String,java.lang.Double>`)
 
+### `public void setRuleConfig(io.casehub.api.spi.observation.RuleConfig ruleConfig)`
+
+#### Parameters
+
+- `ruleConfig` (`io.casehub.api.spi.observation.RuleConfig`)
+
 ### `public void setSemanticData(java.util.Map<java.lang.String,java.lang.Object> semanticData)`
 
 #### Parameters
 
 - `semanticData` (`java.util.Map<java.lang.String,java.lang.Object>`)
 
+### `public void setSignalConfig(io.casehub.api.model.signal.SignalConfig signalConfig)`
+
+#### Parameters
+
+- `signalConfig` (`io.casehub.api.model.signal.SignalConfig`)
+
 ### `public void setSignals(java.util.List<io.casehub.api.model.SignalType<?>> signals)`
 
 #### Parameters
 
 - `signals` (`java.util.List<io.casehub.api.model.SignalType<?>>`)
+
+### `public void setStigmergyConfig(io.casehub.api.model.stigmergy.StigmergyConfig stigmergyConfig)`
+
+#### Parameters
+
+- `stigmergyConfig` (`io.casehub.api.model.stigmergy.StigmergyConfig`)
 
 ### `public void setSummary(java.lang.String summary)`
 
