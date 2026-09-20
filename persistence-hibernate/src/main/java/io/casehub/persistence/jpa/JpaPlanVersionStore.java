@@ -23,13 +23,24 @@ import io.casehub.engine.plan.execution.PlanVersion;
 import io.casehub.engine.plan.snapshot.PlanVersionDelta;
 import io.casehub.engine.plan.snapshot.PlanVersionTrigger;
 import jakarta.enterprise.context.ApplicationScoped;
+import jakarta.inject.Inject;
+import jakarta.persistence.EntityManager;
 import jakarta.transaction.Transactional;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
 @ApplicationScoped
-public class JpaPlanVersionStore extends TenantAwareRepository implements PlanVersionStore {
+public class JpaPlanVersionStore implements PlanVersionStore {
+
+  private final EntityManager em;
+  private final TenantContextManager tcm;
+
+  @Inject
+  JpaPlanVersionStore(EntityManager em, TenantContextManager tcm) {
+    this.em = em;
+    this.tcm = tcm;
+  }
 
   private static final ObjectMapper OBJECT_MAPPER =
       new ObjectMapper()
@@ -39,7 +50,7 @@ public class JpaPlanVersionStore extends TenantAwareRepository implements PlanVe
   @Override
   @Transactional
   public void store(PlanVersion version, String tenancyId) {
-    setTenantContext(tenancyId);
+    tcm.setTenantContext(tenancyId);
     PlanVersionEntity entity = new PlanVersionEntity();
     entity.caseId = version.caseId();
     entity.version = version.version();
@@ -54,7 +65,7 @@ public class JpaPlanVersionStore extends TenantAwareRepository implements PlanVe
   @Override
   @Transactional
   public List<PlanVersion> getHistory(UUID caseId, String tenancyId) {
-    setTenantContext(tenancyId);
+    tcm.setTenantContext(tenancyId);
     return em
         .createQuery(
             "SELECT e FROM PlanVersionEntity e WHERE e.caseId = :caseId AND e.tenancyId = :tid ORDER BY e.version",
@@ -70,7 +81,7 @@ public class JpaPlanVersionStore extends TenantAwareRepository implements PlanVe
   @Override
   @Transactional
   public Optional<PlanVersion> getVersion(UUID caseId, int version, String tenancyId) {
-    setTenantContext(tenancyId);
+    tcm.setTenantContext(tenancyId);
     return em
         .createQuery(
             "SELECT e FROM PlanVersionEntity e WHERE e.caseId = :caseId AND e.version = :ver AND e.tenancyId = :tid",
@@ -87,7 +98,7 @@ public class JpaPlanVersionStore extends TenantAwareRepository implements PlanVe
   @Override
   @Transactional
   public Optional<PlanVersion> getLatest(UUID caseId, String tenancyId) {
-    setTenantContext(tenancyId);
+    tcm.setTenantContext(tenancyId);
     return em
         .createQuery(
             "SELECT e FROM PlanVersionEntity e WHERE e.caseId = :caseId AND e.tenancyId = :tid ORDER BY e.version DESC",
@@ -104,7 +115,7 @@ public class JpaPlanVersionStore extends TenantAwareRepository implements PlanVe
   @Override
   @Transactional
   public void evict(UUID caseId) {
-    setCrossTenantContext();
+    tcm.setCrossTenantContext();
     em.createQuery("DELETE FROM PlanVersionEntity e WHERE e.caseId = :caseId")
         .setParameter("caseId", caseId)
         .executeUpdate();

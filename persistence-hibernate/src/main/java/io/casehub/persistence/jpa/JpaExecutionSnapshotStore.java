@@ -22,14 +22,24 @@ import io.casehub.engine.plan.execution.ExecutionSnapshotStore;
 import io.casehub.engine.plan.snapshot.DagPlanSnapshot;
 import io.casehub.engine.plan.snapshot.DecompositionSnapshot;
 import jakarta.enterprise.context.ApplicationScoped;
+import jakarta.inject.Inject;
+import jakarta.persistence.EntityManager;
 import jakarta.transaction.Transactional;
 import java.time.Instant;
 import java.util.Optional;
 import java.util.UUID;
 
 @ApplicationScoped
-public class JpaExecutionSnapshotStore extends TenantAwareRepository
-    implements ExecutionSnapshotStore {
+public class JpaExecutionSnapshotStore implements ExecutionSnapshotStore {
+
+  private final EntityManager em;
+  private final TenantContextManager tcm;
+
+  @Inject
+  JpaExecutionSnapshotStore(EntityManager em, TenantContextManager tcm) {
+    this.em = em;
+    this.tcm = tcm;
+  }
 
   private static final ObjectMapper OBJECT_MAPPER =
       new ObjectMapper()
@@ -39,7 +49,7 @@ public class JpaExecutionSnapshotStore extends TenantAwareRepository
   @Override
   @Transactional
   public void storeDecomposition(UUID caseId, String tenancyId, DecompositionSnapshot snapshot) {
-    setTenantContext(tenancyId);
+    tcm.setTenantContext(tenancyId);
     ExecutionSnapshotEntity entity = findOrCreate(caseId, tenancyId);
     entity.decompositionSnapshot = serialize(snapshot);
     entity.updatedAt = Instant.now();
@@ -49,7 +59,7 @@ public class JpaExecutionSnapshotStore extends TenantAwareRepository
   @Override
   @Transactional
   public void storeDagPlan(UUID caseId, String tenancyId, DagPlanSnapshot snapshot) {
-    setTenantContext(tenancyId);
+    tcm.setTenantContext(tenancyId);
     ExecutionSnapshotEntity entity = findOrCreate(caseId, tenancyId);
     entity.dagPlanSnapshot = serialize(snapshot);
     entity.updatedAt = Instant.now();
@@ -59,7 +69,7 @@ public class JpaExecutionSnapshotStore extends TenantAwareRepository
   @Override
   @Transactional
   public void storeDagResult(UUID caseId, String tenancyId, DagResultSnapshot snapshot) {
-    setTenantContext(tenancyId);
+    tcm.setTenantContext(tenancyId);
     ExecutionSnapshotEntity entity = findOrCreate(caseId, tenancyId);
     entity.dagResultSnapshot = serialize(snapshot);
     entity.updatedAt = Instant.now();
@@ -69,7 +79,7 @@ public class JpaExecutionSnapshotStore extends TenantAwareRepository
   @Override
   @Transactional
   public Optional<DecompositionSnapshot> getDecomposition(UUID caseId, String tenancyId) {
-    setTenantContext(tenancyId);
+    tcm.setTenantContext(tenancyId);
     return findEntity(caseId, tenancyId)
         .map(e -> deserialize(e.decompositionSnapshot, DecompositionSnapshot.class));
   }
@@ -77,7 +87,7 @@ public class JpaExecutionSnapshotStore extends TenantAwareRepository
   @Override
   @Transactional
   public Optional<DagPlanSnapshot> getDagPlan(UUID caseId, String tenancyId) {
-    setTenantContext(tenancyId);
+    tcm.setTenantContext(tenancyId);
     return findEntity(caseId, tenancyId)
         .map(e -> deserialize(e.dagPlanSnapshot, DagPlanSnapshot.class));
   }
@@ -85,7 +95,7 @@ public class JpaExecutionSnapshotStore extends TenantAwareRepository
   @Override
   @Transactional
   public Optional<DagResultSnapshot> getDagResult(UUID caseId, String tenancyId) {
-    setTenantContext(tenancyId);
+    tcm.setTenantContext(tenancyId);
     return findEntity(caseId, tenancyId)
         .map(e -> deserialize(e.dagResultSnapshot, DagResultSnapshot.class));
   }
@@ -93,7 +103,7 @@ public class JpaExecutionSnapshotStore extends TenantAwareRepository
   @Override
   @Transactional
   public void evict(UUID caseId) {
-    setCrossTenantContext();
+    tcm.setCrossTenantContext();
     em.createQuery("DELETE FROM ExecutionSnapshotEntity e WHERE e.caseId = :caseId")
         .setParameter("caseId", caseId)
         .executeUpdate();

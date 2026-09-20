@@ -19,6 +19,8 @@ import io.casehub.api.model.OnThresholdReached;
 import io.casehub.engine.common.internal.model.SubCaseGroup;
 import io.casehub.engine.common.spi.SubCaseGroupRepository;
 import jakarta.enterprise.context.ApplicationScoped;
+import jakarta.inject.Inject;
+import jakarta.persistence.EntityManager;
 import jakarta.transaction.Transactional;
 import java.util.List;
 import java.util.Optional;
@@ -26,8 +28,16 @@ import java.util.UUID;
 
 /** Blocking JPA {@link SubCaseGroupRepository}. Direct EntityManager implementation. */
 @ApplicationScoped
-public class JpaSubCaseGroupRepository extends TenantAwareRepository
-    implements SubCaseGroupRepository {
+public class JpaSubCaseGroupRepository implements SubCaseGroupRepository {
+
+  private final EntityManager em;
+  private final TenantContextManager tcm;
+
+  @Inject
+  JpaSubCaseGroupRepository(EntityManager em, TenantContextManager tcm) {
+    this.em = em;
+    this.tcm = tcm;
+  }
 
   @Override
   @Transactional
@@ -38,7 +48,7 @@ public class JpaSubCaseGroupRepository extends TenantAwareRepository
       int requiredCount,
       OnThresholdReached onThresholdReached,
       String tenancyId) {
-    setTenantContext(tenancyId);
+    tcm.setTenantContext(tenancyId);
     List<SubCaseGroupEntity> existing =
         em.createQuery(
                 "SELECT g FROM SubCaseGroupEntity g"
@@ -68,7 +78,7 @@ public class JpaSubCaseGroupRepository extends TenantAwareRepository
   @Transactional
   public SubCaseGroup registerChild(
       UUID parentCaseId, String groupId, UUID childCaseId, String tenancyId) {
-    setTenantContext(tenancyId);
+    tcm.setTenantContext(tenancyId);
     List<SubCaseGroupEntity> results =
         em.createQuery(
                 "SELECT g FROM SubCaseGroupEntity g"
@@ -89,7 +99,7 @@ public class JpaSubCaseGroupRepository extends TenantAwareRepository
   @Override
   @Transactional
   public SubCaseGroup incrementCompleted(UUID parentCaseId, String groupId, String tenancyId) {
-    setTenantContext(tenancyId);
+    tcm.setTenantContext(tenancyId);
     int count =
         em.createQuery(
                 "UPDATE SubCaseGroupEntity g SET g.completedCount = g.completedCount + 1"
@@ -120,7 +130,7 @@ public class JpaSubCaseGroupRepository extends TenantAwareRepository
   @Override
   @Transactional
   public SubCaseGroup incrementRejected(UUID parentCaseId, String groupId, String tenancyId) {
-    setTenantContext(tenancyId);
+    tcm.setTenantContext(tenancyId);
     int count =
         em.createQuery(
                 "UPDATE SubCaseGroupEntity g SET g.rejectedCount = g.rejectedCount + 1"
@@ -151,7 +161,7 @@ public class JpaSubCaseGroupRepository extends TenantAwareRepository
   @Override
   @Transactional
   public boolean markPolicyTriggered(UUID parentCaseId, String groupId, String tenancyId) {
-    setTenantContext(tenancyId);
+    tcm.setTenantContext(tenancyId);
     int count =
         em.createQuery(
                 "UPDATE SubCaseGroupEntity g SET g.policyTriggered = true"
@@ -167,7 +177,7 @@ public class JpaSubCaseGroupRepository extends TenantAwareRepository
   @Override
   @Transactional
   public Optional<SubCaseGroup> findByChildCaseId(UUID childCaseId, String tenancyId) {
-    setTenantContext(tenancyId);
+    tcm.setTenantContext(tenancyId);
     List<SubCaseGroupEntity> results =
         em.createQuery(
                 "SELECT g FROM SubCaseGroupEntity g"

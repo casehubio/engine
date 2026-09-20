@@ -21,6 +21,8 @@ import io.casehub.engine.common.internal.history.EventLog;
 import io.casehub.engine.common.spi.EventLogRepository;
 import io.casehub.engine.common.spi.query.EventLogQuery;
 import jakarta.enterprise.context.ApplicationScoped;
+import jakarta.inject.Inject;
+import jakarta.persistence.EntityManager;
 import jakarta.transaction.Transactional;
 import java.time.Instant;
 import java.util.Collection;
@@ -29,12 +31,21 @@ import java.util.UUID;
 
 /** Blocking JPA {@link EventLogRepository}. Direct EntityManager implementation. */
 @ApplicationScoped
-public class JpaEventLogRepository extends TenantAwareRepository implements EventLogRepository {
+public class JpaEventLogRepository implements EventLogRepository {
+
+  private final EntityManager em;
+  private final TenantContextManager tcm;
+
+  @Inject
+  JpaEventLogRepository(EntityManager em, TenantContextManager tcm) {
+    this.em = em;
+    this.tcm = tcm;
+  }
 
   @Override
   @Transactional
   public void append(EventLog eventLog, String tenancyId) {
-    setTenantContext(tenancyId);
+    tcm.setTenantContext(tenancyId);
     EventLogEntity entity = toEntity(eventLog, tenancyId);
     em.persist(entity);
     em.flush();
@@ -45,7 +56,7 @@ public class JpaEventLogRepository extends TenantAwareRepository implements Even
   @Override
   @Transactional
   public Long appendAndReturnId(EventLog eventLog, String tenancyId) {
-    setTenantContext(tenancyId);
+    tcm.setTenantContext(tenancyId);
     EventLogEntity entity = toEntity(eventLog, tenancyId);
     em.persist(entity);
     em.flush();
@@ -57,7 +68,7 @@ public class JpaEventLogRepository extends TenantAwareRepository implements Even
   @Override
   @Transactional
   public EventLog findById(Long id, String tenancyId) {
-    setTenantContext(tenancyId);
+    tcm.setTenantContext(tenancyId);
     List<EventLogEntity> results =
         em.createQuery(
                 "SELECT e FROM EventLogEntity e WHERE e.id = :id AND e.tenancyId = :tid",
@@ -72,7 +83,7 @@ public class JpaEventLogRepository extends TenantAwareRepository implements Even
   @Transactional
   public List<EventLog> findSchedulingEvents(
       UUID caseId, String workerId, Instant after, String tenancyId) {
-    setTenantContext(tenancyId);
+    tcm.setTenantContext(tenancyId);
     if (after == null) {
       return em
           .createQuery(
@@ -117,7 +128,7 @@ public class JpaEventLogRepository extends TenantAwareRepository implements Even
   @Transactional
   public List<EventLog> findByCaseAndTypes(
       UUID caseId, Collection<CaseHubEventType> types, String tenancyId) {
-    setTenantContext(tenancyId);
+    tcm.setTenantContext(tenancyId);
     return em
         .createQuery(
             "SELECT e FROM EventLogEntity e"
@@ -137,7 +148,7 @@ public class JpaEventLogRepository extends TenantAwareRepository implements Even
   @Transactional
   public List<EventLog> findByCaseAndWorkerAndType(
       UUID caseId, String workerId, CaseHubEventType type, String tenancyId) {
-    setTenantContext(tenancyId);
+    tcm.setTenantContext(tenancyId);
     return em
         .createQuery(
             "SELECT e FROM EventLogEntity e"
@@ -158,7 +169,7 @@ public class JpaEventLogRepository extends TenantAwareRepository implements Even
   @Transactional
   public List<EventLog> findByWorkerAndType(
       String workerId, CaseHubEventType type, String tenancyId) {
-    setTenantContext(tenancyId);
+    tcm.setTenantContext(tenancyId);
     return em
         .createQuery(
             "SELECT e FROM EventLogEntity e"
@@ -181,7 +192,7 @@ public class JpaEventLogRepository extends TenantAwareRepository implements Even
       Collection<CaseHubEventType> eventTypes,
       Collection<EventStreamType> streamTypes,
       String tenancyId) {
-    setTenantContext(tenancyId);
+    tcm.setTenantContext(tenancyId);
     StringBuilder query =
         new StringBuilder(
             "SELECT e FROM EventLogEntity e WHERE e.caseId = :caseId AND e.tenancyId = :tid");
@@ -205,7 +216,7 @@ public class JpaEventLogRepository extends TenantAwareRepository implements Even
   @Override
   @Transactional
   public List<EventLog> query(EventLogQuery query, String tenancyId) {
-    setTenantContext(tenancyId);
+    tcm.setTenantContext(tenancyId);
     StringBuilder hql =
         new StringBuilder(
             "SELECT e FROM EventLogEntity e WHERE e.tenancyId = :tid AND e.caseId = :caseId");
@@ -231,7 +242,7 @@ public class JpaEventLogRepository extends TenantAwareRepository implements Even
   @Override
   @Transactional
   public long count(EventLogQuery query, String tenancyId) {
-    setTenantContext(tenancyId);
+    tcm.setTenantContext(tenancyId);
     StringBuilder hql =
         new StringBuilder(
             "SELECT COUNT(e) FROM EventLogEntity e WHERE e.tenancyId = :tid AND e.caseId = :caseId");

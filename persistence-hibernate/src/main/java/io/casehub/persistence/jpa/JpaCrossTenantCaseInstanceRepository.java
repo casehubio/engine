@@ -19,6 +19,8 @@ import io.casehub.engine.common.internal.model.CaseInstance;
 import io.casehub.engine.common.internal.model.CaseMetaModel;
 import io.casehub.engine.common.spi.CrossTenantCaseInstanceRepository;
 import jakarta.enterprise.context.ApplicationScoped;
+import jakarta.inject.Inject;
+import jakarta.persistence.EntityManager;
 import jakarta.transaction.Transactional;
 import java.util.List;
 import java.util.UUID;
@@ -28,13 +30,21 @@ import java.util.UUID;
  * implementation.
  */
 @ApplicationScoped
-public class JpaCrossTenantCaseInstanceRepository extends TenantAwareRepository
-    implements CrossTenantCaseInstanceRepository {
+public class JpaCrossTenantCaseInstanceRepository implements CrossTenantCaseInstanceRepository {
+
+  private final EntityManager em;
+  private final TenantContextManager tcm;
+
+  @Inject
+  JpaCrossTenantCaseInstanceRepository(EntityManager em, TenantContextManager tcm) {
+    this.em = em;
+    this.tcm = tcm;
+  }
 
   @Override
   @Transactional
   public CaseInstance findByUuid(UUID caseId) {
-    setCrossTenantContext();
+    tcm.setCrossTenantContext();
     List<CaseInstanceEntity> results =
         em.createQuery(
                 "SELECT ci FROM CaseInstanceEntity ci JOIN FETCH ci.caseMetaModel"
