@@ -10,9 +10,9 @@ projects: [casehub-engine]
 
 Ants don't have managers. No central planner assigns them to trails. An ant drops a pheromone, another ant follows it, the trail strengthens through reinforcement, and a colony-level intelligence emerges from agents that never directly communicate. The pattern is called stigmergy — indirect coordination through the shared environment — and it turns out to be a surprisingly practical foundation for software agent coordination.
 
-Over the past week I've built a complete stigmergy-to-evolution stack in CaseHub's engine: eleven issues, from environment observation through swarm execution to a continuous self-improvement loop with regression detection, circuit breakers, and a structured research pipeline. The system can bootstrap from nothing, grow its own capabilities, detect when its improvements make things worse, and roll them back — all with a human operator watching every decision through a command centre.
+Over the past week I've built a complete stigmergy-to-evolution stack in CaseHub's engine: eleven issues, from environment observation through swarm execution to a continuous self-improvement loop with regression detection, circuit breakers, and a structured research pipeline. The system can bootstrap from nothing, grow its own capabilities, and — once a project wires up the health sensors — detect when its improvements make things worse and roll them back. All with a human operator watching every decision through a command centre.
 
-This isn't theoretical. It compiles, it has 296 passing tests, and every safety gate is exercised.
+The regression detection and rollback infrastructure is complete: confidence scoring, tiered responses, circuit breakers, anti-oscillation. What makes it real for a given project is the `CapabilityArea.assess()` implementations — the sensors that measure test pass rates, build health, error rates, and whatever else defines "better" in that project's context. The pipeline is tested end-to-end; the sensors are the project-specific part.
 
 ## From Pheromones to Proposals
 
