@@ -15,27 +15,32 @@
  */
 package io.casehub.persistence.jpa;
 
+import io.agroal.api.AgroalDataSource;
+import jakarta.enterprise.context.ApplicationScoped;
+import jakarta.enterprise.inject.Produces;
 import jakarta.inject.Inject;
 import jakarta.persistence.EntityManager;
 import org.eclipse.microprofile.config.inject.ConfigProperty;
 
-abstract class TenantAwareRepository {
+@ApplicationScoped
+class PersistenceProducers {
 
   @Inject EntityManager em;
+
+  @Inject AgroalDataSource dataSource;
 
   @ConfigProperty(name = "casehub.rls.enabled", defaultValue = "false")
   boolean rlsEnabled;
 
-  protected void setTenantContext(String tenancyId) {
-    if (tenancyId == null || tenancyId.contains("'") || tenancyId.contains("\\")) {
-      throw new IllegalArgumentException("Invalid tenancyId: " + tenancyId);
-    }
-    em.createNativeQuery("SET LOCAL \"casehub.tenancy_id\" = '" + tenancyId + "'").executeUpdate();
+  @Produces
+  @ApplicationScoped
+  TenantContextManager tenantContextManager() {
+    return new TenantContextManager(em, rlsEnabled);
   }
 
-  protected void setCrossTenantContext() {
-    if (rlsEnabled) {
-      em.createNativeQuery("SET LOCAL ROLE casehub_crosstenancy").executeUpdate();
-    }
+  @Produces
+  @ApplicationScoped
+  RlsPolicySetup rlsPolicySetup() {
+    return new RlsPolicySetup(dataSource, rlsEnabled);
   }
 }

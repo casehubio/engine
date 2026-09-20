@@ -19,6 +19,8 @@ import io.casehub.api.model.event.CaseHubEventType;
 import io.casehub.engine.common.internal.history.EventLog;
 import io.casehub.engine.common.spi.CrossTenantEventLogRepository;
 import jakarta.enterprise.context.ApplicationScoped;
+import jakarta.inject.Inject;
+import jakarta.persistence.EntityManager;
 import jakarta.transaction.Transactional;
 import java.util.Collection;
 import java.util.List;
@@ -29,13 +31,21 @@ import java.util.UUID;
  * implementation.
  */
 @ApplicationScoped
-public class JpaCrossTenantEventLogRepository extends TenantAwareRepository
-    implements CrossTenantEventLogRepository {
+public class JpaCrossTenantEventLogRepository implements CrossTenantEventLogRepository {
+
+  private final EntityManager em;
+  private final TenantContextManager tcm;
+
+  @Inject
+  JpaCrossTenantEventLogRepository(EntityManager em, TenantContextManager tcm) {
+    this.em = em;
+    this.tcm = tcm;
+  }
 
   @Override
   @Transactional
   public List<EventLog> findByTypes(Collection<CaseHubEventType> types) {
-    setCrossTenantContext();
+    tcm.setCrossTenantContext();
     return em
         .createQuery(
             "SELECT e FROM EventLogEntity e WHERE e.eventType IN :types ORDER BY e.seq ASC",
@@ -50,7 +60,7 @@ public class JpaCrossTenantEventLogRepository extends TenantAwareRepository
   @Override
   @Transactional
   public List<EventLog> findByCaseAndTypes(UUID caseId, Collection<CaseHubEventType> types) {
-    setCrossTenantContext();
+    tcm.setCrossTenantContext();
     return em
         .createQuery(
             "SELECT e FROM EventLogEntity e WHERE e.caseId = :caseId AND e.eventType IN :types ORDER BY e.seq ASC",
@@ -66,7 +76,7 @@ public class JpaCrossTenantEventLogRepository extends TenantAwareRepository
   @Override
   @Transactional
   public List<String> findSubmittedWorkWithoutCompletion() {
-    setCrossTenantContext();
+    tcm.setCrossTenantContext();
     List<EventLogEntity> submitted =
         em.createQuery(
                 "SELECT e FROM EventLogEntity e WHERE e.eventType = :type", EventLogEntity.class)
@@ -94,7 +104,7 @@ public class JpaCrossTenantEventLogRepository extends TenantAwareRepository
   @Override
   @Transactional
   public EventLog findById(Long id) {
-    setCrossTenantContext();
+    tcm.setCrossTenantContext();
     EventLogEntity entity = em.find(EventLogEntity.class, id);
     return entity == null ? null : fromEntity(entity);
   }
@@ -103,7 +113,7 @@ public class JpaCrossTenantEventLogRepository extends TenantAwareRepository
   @Transactional
   public List<EventLog> findByCaseAndWorkerAndType(
       UUID caseId, String workerId, CaseHubEventType type) {
-    setCrossTenantContext();
+    tcm.setCrossTenantContext();
     return em
         .createQuery(
             "SELECT e FROM EventLogEntity e WHERE e.caseId = :caseId AND e.workerId = :workerId AND e.eventType = :type",
@@ -120,7 +130,7 @@ public class JpaCrossTenantEventLogRepository extends TenantAwareRepository
   @Override
   @Transactional
   public List<EventLog> findByWorkerAndTypeAcrossTenants(String workerId, CaseHubEventType type) {
-    setCrossTenantContext();
+    tcm.setCrossTenantContext();
     return em
         .createQuery(
             "SELECT e FROM EventLogEntity e WHERE e.workerId = :workerId AND e.eventType = :type",

@@ -22,6 +22,8 @@ import io.casehub.engine.common.internal.model.CaseMetaModel;
 import io.casehub.engine.common.spi.CaseInstanceRepository;
 import io.casehub.engine.common.spi.query.CaseInstanceQuery;
 import jakarta.enterprise.context.ApplicationScoped;
+import jakarta.inject.Inject;
+import jakarta.persistence.EntityManager;
 import jakarta.transaction.Transactional;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
@@ -31,13 +33,21 @@ import java.util.UUID;
 
 /** Blocking JPA {@link CaseInstanceRepository}. Direct EntityManager implementation. */
 @ApplicationScoped
-public class JpaCaseInstanceRepository extends TenantAwareRepository
-    implements CaseInstanceRepository {
+public class JpaCaseInstanceRepository implements CaseInstanceRepository {
+
+  private final EntityManager em;
+  private final TenantContextManager tcm;
+
+  @Inject
+  JpaCaseInstanceRepository(EntityManager em, TenantContextManager tcm) {
+    this.em = em;
+    this.tcm = tcm;
+  }
 
   @Override
   @Transactional
   public CaseInstance save(CaseInstance instance, String tenancyId) {
-    setTenantContext(tenancyId);
+    tcm.setTenantContext(tenancyId);
     CaseInstanceEntity entity = new CaseInstanceEntity();
     entity.tenancyId = tenancyId;
     entity.uuid = instance.getUuid();
@@ -69,7 +79,7 @@ public class JpaCaseInstanceRepository extends TenantAwareRepository
   @Override
   @Transactional
   public CaseInstance update(CaseInstance instance, String tenancyId) {
-    setTenantContext(tenancyId);
+    tcm.setTenantContext(tenancyId);
     CaseInstanceEntity entity =
         em.createQuery(
                 "SELECT ci FROM CaseInstanceEntity ci WHERE ci.id = :id AND ci.tenancyId = :tid",
@@ -94,7 +104,7 @@ public class JpaCaseInstanceRepository extends TenantAwareRepository
   @Override
   @Transactional
   public CaseInstance findByUuid(UUID uuid, String tenancyId) {
-    setTenantContext(tenancyId);
+    tcm.setTenantContext(tenancyId);
     List<CaseInstanceEntity> results =
         em.createQuery(
                 "SELECT ci FROM CaseInstanceEntity ci JOIN FETCH ci.caseMetaModel"
@@ -110,7 +120,7 @@ public class JpaCaseInstanceRepository extends TenantAwareRepository
   @Transactional
   public void updateStateAndAppendEvent(
       CaseInstance instance, EventLog eventLog, String tenancyId) {
-    setTenantContext(tenancyId);
+    tcm.setTenantContext(tenancyId);
     CaseInstanceEntity entity =
         em.createQuery(
                 "SELECT ci FROM CaseInstanceEntity ci WHERE ci.id = :id AND ci.tenancyId = :tid",
@@ -143,7 +153,7 @@ public class JpaCaseInstanceRepository extends TenantAwareRepository
   @Override
   @Transactional
   public List<CaseInstance> findByStatus(CaseStatus status, String tenancyId) {
-    setTenantContext(tenancyId);
+    tcm.setTenantContext(tenancyId);
     return em
         .createQuery(
             "SELECT ci FROM CaseInstanceEntity ci JOIN FETCH ci.caseMetaModel"
@@ -160,7 +170,7 @@ public class JpaCaseInstanceRepository extends TenantAwareRepository
   @Override
   @Transactional
   public List<CaseInstance> findAll(String tenancyId) {
-    setTenantContext(tenancyId);
+    tcm.setTenantContext(tenancyId);
     return em
         .createQuery(
             "SELECT ci FROM CaseInstanceEntity ci JOIN FETCH ci.caseMetaModel"
@@ -177,7 +187,7 @@ public class JpaCaseInstanceRepository extends TenantAwareRepository
   @Transactional
   public List<CaseInstance> findByNamespaceAndName(
       String namespace, String name, String tenancyId) {
-    setTenantContext(tenancyId);
+    tcm.setTenantContext(tenancyId);
     return em
         .createQuery(
             "SELECT ci FROM CaseInstanceEntity ci JOIN FETCH ci.caseMetaModel m"
@@ -195,7 +205,7 @@ public class JpaCaseInstanceRepository extends TenantAwareRepository
   @Override
   @Transactional
   public List<CaseInstance> query(CaseInstanceQuery query, String tenancyId) {
-    setTenantContext(tenancyId);
+    tcm.setTenantContext(tenancyId);
     StringBuilder hql =
         new StringBuilder("SELECT ci FROM CaseInstanceEntity ci WHERE ci.tenancyId = :tid");
     java.util.Map<String, Object> params = new java.util.LinkedHashMap<>();
@@ -222,7 +232,7 @@ public class JpaCaseInstanceRepository extends TenantAwareRepository
   @Override
   @Transactional
   public long count(CaseInstanceQuery query, String tenancyId) {
-    setTenantContext(tenancyId);
+    tcm.setTenantContext(tenancyId);
     StringBuilder hql =
         new StringBuilder("SELECT COUNT(ci) FROM CaseInstanceEntity ci WHERE ci.tenancyId = :tid");
     java.util.Map<String, Object> params = new java.util.LinkedHashMap<>();
