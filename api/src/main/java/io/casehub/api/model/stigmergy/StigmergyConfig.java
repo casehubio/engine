@@ -20,4 +20,13 @@ import jakarta.annotation.Nullable;
 public record StigmergyConfig(
     @Nullable StigmergyDefaults defaults,
     @Nullable CoordinationConfig coordination,
-    @Nullable SwarmConfig swarm) {}
+    @Nullable SwarmConfig swarm,
+    @Nullable ImprovementConfig improvement) {
+
+  public StigmergyConfig(
+      @Nullable StigmergyDefaults defaults,
+      @Nullable CoordinationConfig coordination,
+      @Nullable SwarmConfig swarm) {
+    this(defaults, coordination, swarm, null);
+  }
+}
