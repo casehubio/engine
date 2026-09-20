@@ -38,9 +38,11 @@ import io.casehub.engine.common.internal.jq.JQEvaluator;
 import io.casehub.engine.common.internal.judgment.JudgmentNodeExecutor;
 import io.casehub.engine.common.spi.CaseDefinitionRegistry;
 import io.casehub.engine.common.spi.CaseInstanceRepository;
+import io.casehub.engine.common.spi.CaseMetaModelRepository;
 import io.casehub.engine.common.spi.EventLogRepository;
 import io.casehub.engine.common.spi.HumanTaskScheduler;
 import io.casehub.engine.common.spi.PlanItemStore;
+import io.casehub.engine.common.spi.SubCaseGroupRepository;
 import io.casehub.engine.common.spi.WorkOrchestrator;
 import io.casehub.engine.common.spi.cache.CaseInstanceCache;
 import io.casehub.engine.common.spi.scheduler.WorkerExecutionManager;
@@ -214,6 +216,7 @@ public class EngineSupportAutoConfiguration {
 
   @Bean
   @Primary
+  @ConditionalOnMissingBean(CaseInstanceRepository.class)
   public InMemoryCaseInstanceRepository inMemoryCaseInstanceRepository(
       EventLogRepository eventLogRepository) {
     return new InMemoryCaseInstanceRepository(eventLogRepository);
@@ -221,24 +224,28 @@ public class EngineSupportAutoConfiguration {
 
   @Bean
   @Primary
+  @ConditionalOnMissingBean(CaseMetaModelRepository.class)
   public InMemoryCaseMetaModelRepository inMemoryCaseMetaModelRepository() {
     return new InMemoryCaseMetaModelRepository();
   }
 
   @Bean
   @Primary
+  @ConditionalOnMissingBean(EventLogRepository.class)
   public InMemoryEventLogRepository inMemoryEventLogRepository() {
     return new InMemoryEventLogRepository();
   }
 
   @Bean
   @Primary
+  @ConditionalOnMissingBean(PlanItemStore.class)
   public InMemoryPlanItemStore inMemoryPlanItemStore() {
     return new InMemoryPlanItemStore();
   }
 
   @Bean
   @Primary
+  @ConditionalOnMissingBean(SubCaseGroupRepository.class)
   public InMemorySubCaseGroupRepository inMemorySubCaseGroupRepository() {
     return new InMemorySubCaseGroupRepository();
   }
