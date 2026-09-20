@@ -15,6 +15,18 @@
 
 ### `public abstract io.casehub.api.model.WorkerContext context()`
 
+### `public default io.casehub.api.engine.InterestSpace interests()`
+
+### `public default void leave()`
+
+### `public default io.casehub.api.engine.MetricsSpace metrics()`
+
+### `public default io.casehub.api.engine.NeighborSpace neighbors()`
+
+### `public default io.casehub.api.engine.RuleSpace rules()`
+
+### `public default io.casehub.api.engine.SignalSpace signals()`
+
 ### `public abstract io.casehub.api.context.CaseContext spawnAndAwaitCase(java.lang.String caseType, java.util.Map<java.lang.String,java.lang.Object> input, java.time.Duration timeout)`
 
 #### Parameters

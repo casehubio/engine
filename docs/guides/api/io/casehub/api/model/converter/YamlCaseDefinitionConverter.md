@@ -106,6 +106,12 @@ hand-coded deserializers and post-processor.
 
 - `ycc` (`YamlContextConstraint`)
 
+### `private static io.casehub.api.model.convergence.ConvergenceThresholdConfig convertConvergenceThresholdConfig(com.fasterxml.jackson.databind.JsonNode node)`
+
+#### Parameters
+
+- `node` (`com.fasterxml.jackson.databind.JsonNode`)
+
 ### `private static void convertDecomposition(io.casehub.api.model.converter.yaml.YamlDecomposition decomp, io.casehub.api.model.CaseDefinition def, io.casehub.api.engine.ExpressionEngineRegistry registry)`
 
 #### Parameters
@@ -179,6 +185,12 @@ hand-coded deserializers and post-processor.
 
 - `ym` (`YamlMonitoringConfig`)
 
+### `private static io.casehub.api.spi.observation.ObservationConfig convertObservation(com.fasterxml.jackson.databind.JsonNode node)`
+
+#### Parameters
+
+- `node` (`com.fasterxml.jackson.databind.JsonNode`)
+
 ### `private static io.casehub.api.model.OutcomePolicy convertOutcomePolicy(JsonNode node)`
 
 #### Parameters
@@ -214,6 +226,12 @@ hand-coded deserializers and post-processor.
 #### Parameters
 
 - `yr` (`YamlReflectionTriggerConfig`)
+
+### `private static io.casehub.api.model.signal.SignalConfig convertSignalConfig(com.fasterxml.jackson.databind.JsonNode node)`
+
+#### Parameters
+
+- `node` (`com.fasterxml.jackson.databind.JsonNode`)
 
 ### `private static java.util.Map<java.lang.String,io.casehub.api.model.CapabilityTarget> convertSpec(YamlCaseSpec spec, io.casehub.api.model.CaseDefinition def)`
 
