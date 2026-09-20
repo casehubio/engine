@@ -22,41 +22,40 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
-import io.agroal.api.AgroalDataSource;
 import java.sql.Connection;
 import java.sql.SQLException;
 import java.sql.Statement;
+import javax.sql.DataSource;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.InjectMocks;
-import org.mockito.Mock;
-import org.mockito.junit.jupiter.MockitoExtension;
 
-@ExtendWith(MockitoExtension.class)
 class RlsPolicyApplicatorTest {
 
-  @Mock AgroalDataSource dataSource;
-  @InjectMocks RlsPolicyApplicator applicator;
-
   @Test
-  void onStart_whenDisabled_doesNothing() throws SQLException {
-    applicator.rlsEnabled = false;
+  void onStart_whenDisabled_doesNothing() {
+    DataSource ds = mock(DataSource.class);
+    var setup = new RlsPolicySetup(ds, false);
+    var applicator = new RlsPolicyApplicator();
+    applicator.setup = setup;
+
     applicator.onStart(null);
-    verifyNoInteractions(dataSource);
+    verifyNoInteractions(ds);
   }
 
   @Test
   void onStart_whenEnabled_opensConnectionAndAppliesRls() throws SQLException {
-    applicator.rlsEnabled = true;
+    DataSource ds = mock(DataSource.class);
     Connection conn = mock(Connection.class);
     Statement stmt = mock(Statement.class);
-    when(dataSource.getConnection()).thenReturn(conn);
+    when(ds.getConnection()).thenReturn(conn);
     when(conn.createStatement()).thenReturn(stmt);
+
+    var setup = new RlsPolicySetup(ds, true);
+    var applicator = new RlsPolicyApplicator();
+    applicator.setup = setup;
 
     applicator.onStart(null);
 
-    verify(dataSource).getConnection();
-    // role creation (2 SQL) + 3 DDL ops per table × 5 tables = 17 execute() calls minimum
+    verify(ds).getConnection();
     verify(stmt, atLeast(16)).execute(anyString());
   }
 }
