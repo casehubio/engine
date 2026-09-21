@@ -352,8 +352,17 @@ public class CaseContextChangedEventHandler {
       eligible.add(binding);
     }
 
-    List<RetrievedExperience> experiences =
-        cbrRetrievalService.retrieve(definition, caseInstance).experiences();
+    io.casehub.api.spi.routing.CbrRetrievalResult cbrResult =
+        cbrRetrievalService.retrieve(definition, caseInstance);
+    List<RetrievedExperience> experiences = cbrResult.experiences();
+    if (cbrResult.ensemble() != null
+        && caseInstance.getCaseContext()
+            instanceof io.casehub.api.context.MutableCaseContext mctx) {
+      var layer =
+          (io.casehub.engine.internal.context.WritableLayerImpl)
+              mctx.writableLayer(ContextLayer.WORKING);
+      layer.engineSet("cbrEnsemble", MAPPER.convertValue(cbrResult.ensemble(), MAP_TYPE));
+    }
 
     final PlanExecutionContext planCtx =
         new PlanExecutionContext(
