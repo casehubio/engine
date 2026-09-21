@@ -15,7 +15,7 @@
  */
 package io.casehub.api.spi.observation;
 
-import static org.junit.jupiter.api.Assertions.*;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import java.time.Duration;
 import java.util.List;

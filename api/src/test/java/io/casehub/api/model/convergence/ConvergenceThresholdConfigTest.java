@@ -15,7 +15,7 @@
  */
 package io.casehub.api.model.convergence;
 
-import static org.assertj.core.api.Assertions.*;
+import static org.assertj.core.api.Assertions.assertThat;
 
 import java.time.Duration;
 import org.junit.jupiter.api.Test;
