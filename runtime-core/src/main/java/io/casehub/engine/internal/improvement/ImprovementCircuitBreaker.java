@@ -15,6 +15,7 @@
  */
 package io.casehub.engine.internal.improvement;
 
+import io.casehub.api.model.stigmergy.CircuitBreakerState;
 import io.casehub.api.model.stigmergy.HealthPolicy;
 import io.casehub.engine.common.spi.Resettable;
 import jakarta.enterprise.context.ApplicationScoped;
@@ -23,12 +24,6 @@ import java.util.concurrent.ConcurrentHashMap;
 
 @ApplicationScoped
 public class ImprovementCircuitBreaker implements Resettable {
-
-  public enum CircuitBreakerState {
-    CLOSED,
-    OPEN,
-    HALF_OPEN
-  }
 
   private final ConcurrentHashMap<UUID, CircuitBreakerState> states = new ConcurrentHashMap<>();
   private final ConcurrentHashMap<UUID, Integer> halfOpenCount = new ConcurrentHashMap<>();

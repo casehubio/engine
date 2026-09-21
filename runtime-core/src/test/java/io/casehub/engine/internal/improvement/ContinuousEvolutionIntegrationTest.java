@@ -18,6 +18,7 @@ package io.casehub.engine.internal.improvement;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.casehub.api.model.stigmergy.CapabilityAreaAssessment;
+import io.casehub.api.model.stigmergy.CircuitBreakerState;
 import io.casehub.api.model.stigmergy.HealthPolicy;
 import io.casehub.api.model.stigmergy.ImprovementConfig;
 import io.casehub.api.model.stigmergy.ImprovementOutcome;
@@ -114,8 +115,7 @@ class ContinuousEvolutionIntegrationTest {
 
     ticker.tick(caseId, "tenant-1", config);
 
-    assertThat(circuitBreaker.state(caseId))
-        .isEqualTo(ImprovementCircuitBreaker.CircuitBreakerState.OPEN);
+    assertThat(circuitBreaker.state(caseId)).isEqualTo(CircuitBreakerState.OPEN);
     assertThat(proposalCount.get()).isEqualTo(0);
   }
 
