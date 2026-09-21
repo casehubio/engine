@@ -147,5 +147,18 @@ public enum CaseHubEventType {
   IMPROVEMENT_CONFLICT_DETECTED, // concurrent improvement paths overlap — serialised
 
   COMPLIANCE_LEVEL_CHANGED, // project evolution readiness level changed
-  READINESS_EVALUATED // ReadinessValidator.validate() completed
+  READINESS_EVALUATED, // ReadinessValidator.validate() completed
+
+  CATEGORY_PAUSED, // conductor paused a category from receiving improvements
+  CATEGORY_UNPAUSED, // conductor unpaused a previously paused category
+  DENY_PATTERN_ADDED, // dynamic deny pattern added by conductor
+  DENY_PATTERN_REMOVED, // dynamic deny pattern removed by conductor
+  TICK_EVALUATED, // EvolutionTicker.tick() produced a notable outcome
+  TICK_HEARTBEAT, // periodic liveness signal from the evolution loop
+  GATE_PENDING, // lifecycle gate awaiting conductor decision
+  GATE_RESOLVED, // conductor resolved a lifecycle gate
+  WATCH_PATTERN_ADDED, // conductor added an escalation watch pattern
+  WATCH_PATTERN_REMOVED, // conductor removed an escalation watch pattern
+  IMPROVEMENT_BLOCKED, // conductor manually blocked an improvement stream
+  IMPROVEMENT_UNBLOCKED // conductor unblocked a previously blocked improvement
 }
