@@ -27,10 +27,10 @@ import io.casehub.api.model.cbr.CbrConfig;
 import io.casehub.api.spi.routing.AgentRoutingContext;
 import io.casehub.api.spi.routing.RetrievedExperience;
 import io.casehub.neocortex.memory.MemoryDomain;
+import io.casehub.neocortex.memory.cbr.CbrPlanRecord;
+import io.casehub.neocortex.memory.cbr.CbrPlanStep;
 import io.casehub.neocortex.memory.cbr.CbrRecordStore;
 import io.casehub.neocortex.memory.cbr.FeatureValue;
-import io.casehub.neocortex.memory.cbr.ResolutionStep;
-import io.casehub.neocortex.memory.cbr.CbrPlanRecord;
 import io.casehub.platform.api.identity.TenancyConstants;
 import io.casehub.worker.api.Capability;
 import io.casehub.worker.api.Worker;
@@ -70,8 +70,8 @@ class CbrRoutingFuncDslIntegrationTest {
   @Test
   void lambdaFeatureExtractor_experiencesReachAgentRoutingStrategy() {
     // Pre-load the CBR store with a matching case
-    ResolutionStep trace =
-        new ResolutionStep(
+    CbrPlanStep trace =
+        new CbrPlanStep(
             "analyse-risk", "assessRisk", "risk-assessor", "SUCCESS", 0, Map.of(), null);
     CbrPlanRecord pastCase =
         new CbrPlanRecord(

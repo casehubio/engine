@@ -612,8 +612,8 @@ public class RuntimeBeans {
   io.casehub.engine.internal.routing.CbrRetrievalService cbrRetrievalService(
       io.casehub.engine.common.internal.jq.JQEvaluator jqEvaluator,
       io.casehub.neocortex.memory.cbr.CbrRecordStore cbrStore,
-      io.casehub.neocortex.memory.cbr.PlanAdapter planAdapter,
-      io.casehub.neocortex.memory.cbr.PlanEnsembleAnalyzer ensembleAnalyzer,
+      io.casehub.neocortex.memory.cbr.CbrPlanAdapter planAdapter,
+      io.casehub.neocortex.memory.cbr.CbrPlanEnsembleAnalyzer ensembleAnalyzer,
       @io.quarkus.arc.All Instance<io.casehub.api.model.cbr.CbrCaseTypeRegistration> registrations,
       @org.eclipse.microprofile.config.inject.ConfigProperty(
               name = "casehub.engine.cbr.ensemble-timeout-ms",
@@ -899,7 +899,10 @@ public class RuntimeBeans {
           Instance<io.casehub.engine.internal.stigmergy.RoleTracker> roleTracker,
           Instance<io.casehub.engine.internal.stigmergy.TeamDetector> teamDetector,
           Instance<io.casehub.engine.internal.stigmergy.SwarmProgressTracker> swarmProgressTracker,
-          Instance<io.casehub.engine.internal.stigmergy.SwarmProvisioner> swarmProvisioner) {
+          Instance<io.casehub.engine.internal.stigmergy.SwarmProvisioner> swarmProvisioner,
+          Instance<io.casehub.engine.internal.improvement.ImprovementGoalFormationStrategy>
+              improvementStrategy,
+          Instance<io.casehub.api.spi.routing.GoalFormationService> goalFormationService) {
     return new io.casehub.engine.internal.engine.handler.CaseContextChangedEventHandler(
         eventDispatcher,
         jqEvaluator,
@@ -946,7 +949,9 @@ public class RuntimeBeans {
         roleTracker,
         teamDetector,
         swarmProgressTracker,
-        swarmProvisioner);
+        swarmProvisioner,
+        improvementStrategy,
+        goalFormationService);
   }
 
   @Produces

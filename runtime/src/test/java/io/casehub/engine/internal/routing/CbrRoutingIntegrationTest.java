@@ -24,10 +24,10 @@ import io.casehub.api.spi.routing.AgentRoutingContext;
 import io.casehub.api.spi.routing.RetrievedExperience;
 import io.casehub.api.spi.routing.RoutingOutcome;
 import io.casehub.neocortex.memory.MemoryDomain;
+import io.casehub.neocortex.memory.cbr.CbrPlanRecord;
+import io.casehub.neocortex.memory.cbr.CbrPlanStep;
 import io.casehub.neocortex.memory.cbr.CbrRecordStore;
 import io.casehub.neocortex.memory.cbr.FeatureValue;
-import io.casehub.neocortex.memory.cbr.ResolutionStep;
-import io.casehub.neocortex.memory.cbr.CbrPlanRecord;
 import io.casehub.platform.api.identity.TenancyConstants;
 import io.quarkus.test.junit.QuarkusTest;
 import io.quarkus.test.junit.QuarkusTestProfile;
@@ -43,8 +43,8 @@ import org.junit.jupiter.api.Test;
 
 /**
  * End-to-end integration test verifying the YAML-path CBR retrieval flow: CONTEXT_CHANGED fires,
- * CbrRetrievalService retrieves similar experiences from InMemoryCbrRecordStore, and the
- * recording AgentRoutingStrategy receives them in the AgentRoutingContext.
+ * CbrRetrievalService retrieves similar experiences from InMemoryCbrRecordStore, and the recording
+ * AgentRoutingStrategy receives them in the AgentRoutingContext.
  *
  * <p>Refs casehubio/engine#478.
  */
@@ -63,8 +63,8 @@ class CbrRoutingIntegrationTest {
   @Test
   void yamlCbrConfig_experiencesReachAgentRoutingStrategy() {
     // Pre-load the CBR store with a matching case
-    ResolutionStep trace =
-        new ResolutionStep(
+    CbrPlanStep trace =
+        new CbrPlanStep(
             "plan-on-enemy-sighted", "planBattle", "battle-planner", "SUCCESS", 0, Map.of(), null);
     CbrPlanRecord pastCase =
         new CbrPlanRecord(
