@@ -20,6 +20,8 @@ import static org.assertj.core.api.Assertions.assertThat;
 import io.casehub.api.model.stigmergy.CapabilityAreaAssessment;
 import io.casehub.api.model.stigmergy.HealthPolicy;
 import io.casehub.api.model.stigmergy.ImprovementConfig;
+import io.casehub.api.model.stigmergy.TickTrace;
+import io.casehub.api.model.stigmergy.TickTrace.GateResult.GateVerdict;
 import io.casehub.api.spi.improvement.CapabilityArea;
 import io.casehub.api.spi.routing.GoalFormationResult;
 import io.casehub.api.spi.routing.GoalFormationService;
@@ -65,17 +67,27 @@ class EvolutionTickerTest {
           return new GoalFormationResult(java.util.List.of(), java.util.List.of(), 0);
         };
 
+    var traceBuffer = new TickTraceBuffer();
     ticker =
         new EvolutionTicker(
-            goalFormation, circuitBreaker, healthTracker, regressionDetector, goalService);
+            goalFormation,
+            circuitBreaker,
+            healthTracker,
+            regressionDetector,
+            goalService,
+            traceBuffer);
     caseId = UUID.randomUUID();
   }
 
   @Test
   void evolutionDisabledDoesNothing() {
     var config = new ImprovementConfig(null, null, null, null, null);
-    ticker.tick(caseId, "tenant-1", config);
+    var trace = ticker.tick(caseId, "tenant-1", config);
     assertThat(proposalCount.get()).isEqualTo(0);
+    assertThat(trace.gates()).hasSize(1);
+    assertThat(trace.gates().get(0).gateName()).isEqualTo("evolution_enabled");
+    assertThat(trace.gates().get(0).verdict()).isEqualTo(GateVerdict.BLOCKED);
+    assertThat(trace.outcome()).isInstanceOf(TickTrace.TickOutcome.NoProposal.class);
   }
 
   @Test
@@ -90,9 +102,16 @@ class EvolutionTickerTest {
     var config =
         new ImprovementConfig(
             null, null, null, null, null, true, null, null, healthPolicy, null, null);
-    ticker.tick(caseId, "tenant-1", config);
+    var trace = ticker.tick(caseId, "tenant-1", config);
 
     assertThat(proposalCount.get()).isEqualTo(0);
+    assertThat(
+            trace.gates().stream()
+                .filter(g -> g.gateName().equals("circuit_breaker_check"))
+                .findFirst()
+                .orElseThrow()
+                .verdict())
+        .isEqualTo(GateVerdict.BLOCKED);
   }
 
   @Test
@@ -100,8 +119,10 @@ class EvolutionTickerTest {
     registry.register(area("stability", 0.8));
     var config =
         new ImprovementConfig(null, null, null, null, null, true, null, null, null, null, null);
-    ticker.tick(caseId, "tenant-1", config);
+    var trace = ticker.tick(caseId, "tenant-1", config);
     assertThat(proposalCount.get()).isEqualTo(0);
+    assertThat(trace.gates().stream().allMatch(g -> g.verdict() == GateVerdict.PASSED)).isTrue();
+    assertThat(trace.outcome()).isInstanceOf(TickTrace.TickOutcome.NoProposal.class);
   }
 
   private CapabilityArea area(String id, double health) {
