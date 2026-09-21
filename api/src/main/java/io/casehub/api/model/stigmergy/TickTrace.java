@@ -1,0 +1,63 @@
+/*
+ * Copyright 2026-Present The Case Hub Authors
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ * http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+package io.casehub.api.model.stigmergy;
+
+import jakarta.annotation.Nullable;
+import java.time.Instant;
+import java.util.List;
+import java.util.UUID;
+
+public record TickTrace(
+    UUID caseId,
+    Instant timestamp,
+    TickTrigger trigger,
+    List<GateResult> gates,
+    @Nullable TickOutcome outcome) {
+
+  public enum TickTrigger {
+    EVENT_DRIVEN,
+    TIMER
+  }
+
+  public record GateResult(String gateName, GateVerdict verdict, @Nullable String reason) {
+
+    public enum GateVerdict {
+      PASSED,
+      BLOCKED
+    }
+  }
+
+  public sealed interface TickOutcome
+      permits TickOutcome.NoProposal, TickOutcome.ProposalGenerated, TickOutcome.Heartbeat {
+
+    record NoProposal(String reason) implements TickOutcome {}
+
+    record ProposalGenerated(int goalCount, SignalFilteringSummary filtering)
+        implements TickOutcome {}
+
+    record Heartbeat() implements TickOutcome {}
+  }
+
+  public record SignalFilteringSummary(
+      int consensusSignals,
+      int afterNamespaceFilter,
+      int afterCategoryFilter,
+      int afterSuppressionFilter,
+      int afterAntiOscillationFilter,
+      int afterBudgetFilter,
+      int afterConflictFilter,
+      int proposed) {}
+}
