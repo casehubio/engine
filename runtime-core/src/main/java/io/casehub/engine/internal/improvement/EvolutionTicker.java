@@ -15,6 +15,7 @@
  */
 package io.casehub.engine.internal.improvement;
 
+import io.casehub.api.model.stigmergy.CircuitBreakerState;
 import io.casehub.api.model.stigmergy.ImprovementConfig;
 import io.casehub.api.model.stigmergy.TickTrace;
 import io.casehub.api.model.stigmergy.TickTrace.GateResult;
@@ -77,7 +78,7 @@ public class EvolutionTicker implements Resettable {
     circuitBreaker.evaluate(caseId, tenancyId, healthTracker, config.effectiveHealthPolicy());
     gates.add(new GateResult("circuit_breaker_evaluate", GateVerdict.PASSED, null));
 
-    if (circuitBreaker.state(caseId) == ImprovementCircuitBreaker.CircuitBreakerState.OPEN) {
+    if (circuitBreaker.state(caseId) == CircuitBreakerState.OPEN) {
       gates.add(
           new GateResult("circuit_breaker_check", GateVerdict.BLOCKED, "circuit breaker OPEN"));
       return recordTrace(
