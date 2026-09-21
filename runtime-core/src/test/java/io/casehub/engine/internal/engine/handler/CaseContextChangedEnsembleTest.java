@@ -60,8 +60,8 @@ import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
 
 /**
- * Verifies that EnsembleConsensus from per-step CBR retrieval is written to the working layer.
- * Refs casehubio/engine#1130.
+ * Verifies that EnsembleConsensus from per-step CBR retrieval is written to the working layer. Refs
+ * casehubio/engine#1130.
  */
 class CaseContextChangedEnsembleTest {
 
@@ -98,73 +98,89 @@ class CaseContextChangedEnsembleTest {
 
     var strategyResolver = new TestStrategyResolver();
 
-    handler = new CaseContextChangedEventHandler(
-        eventDispatcher,
-        mock(io.casehub.engine.common.internal.jq.JQEvaluator.class),
-        caseDefinitionRegistry,
-        expressionEngineRegistry,
-        loopControl,
-        strategyResolver,
-        new AgentCandidateFactory(strategyResolver),
-        executionManager,
-        capabilityHealth,
-        mock(io.casehub.api.spi.WorkerContextProvider.class),
-        mock(io.casehub.api.spi.WorkerProvisioner.class),
-        mock(java.util.function.Consumer.class),
-        traceIdProvider,
-        cbrRetrievalService,
-        mock(io.casehub.engine.common.internal.context.BridgeResolver.class),
-        mock(io.casehub.engine.internal.engine.SignalSettlementTracker.class),
-        mock(io.casehub.engine.internal.acl.WorkerGrantOrchestrator.class),
-        mock(java.util.concurrent.ExecutorService.class),
-        evaluationSerializer,
-        mock(io.casehub.engine.internal.engine.QuiescenceTracker.class),
-        mock(io.casehub.engine.common.internal.worker.scope.ScopedWorkerRegistry.class),
-        mock(io.casehub.engine.internal.routing.SelectionContextStore.class),
-        dispatchBudget,
-        mock(io.casehub.engine.common.spi.PlanItemStore.class),
-        mock(java.util.function.Consumer.class),
-        Optional.empty(),
-        mock(io.casehub.engine.common.internal.observation.ObservationRegistry.class),
-        mock(io.casehub.engine.common.internal.observation.ContextHistoryBuffer.class),
-        mock(io.casehub.engine.common.internal.signal.SignalRegistry.class),
-        mock(io.casehub.engine.common.internal.observation.RuleRegistry.class),
-        mock(io.casehub.engine.common.internal.convergence.ActivityTracker.class),
-        mock(io.casehub.engine.internal.convergence.ConvergenceDetector.class),
-        mock(io.casehub.engine.internal.convergence.BudgetEnforcer.class),
-        mock(jakarta.enterprise.inject.Instance.class),
-        mock(jakarta.enterprise.inject.Instance.class),
-        mock(jakarta.enterprise.inject.Instance.class),
-        mock(jakarta.enterprise.inject.Instance.class),
-        mock(jakarta.enterprise.inject.Instance.class),
-        mock(jakarta.enterprise.inject.Instance.class),
-        mock(jakarta.enterprise.inject.Instance.class));
+    handler =
+        new CaseContextChangedEventHandler(
+            eventDispatcher,
+            mock(io.casehub.engine.common.internal.jq.JQEvaluator.class),
+            caseDefinitionRegistry,
+            expressionEngineRegistry,
+            loopControl,
+            strategyResolver,
+            new AgentCandidateFactory(strategyResolver),
+            executionManager,
+            capabilityHealth,
+            mock(io.casehub.api.spi.WorkerContextProvider.class),
+            mock(io.casehub.api.spi.WorkerProvisioner.class),
+            mock(java.util.function.Consumer.class),
+            traceIdProvider,
+            cbrRetrievalService,
+            mock(io.casehub.engine.common.internal.context.BridgeResolver.class),
+            mock(io.casehub.engine.internal.engine.SignalSettlementTracker.class),
+            mock(io.casehub.engine.internal.acl.WorkerGrantOrchestrator.class),
+            mock(java.util.concurrent.ExecutorService.class),
+            evaluationSerializer,
+            mock(io.casehub.engine.internal.engine.QuiescenceTracker.class),
+            mock(io.casehub.engine.common.internal.worker.scope.ScopedWorkerRegistry.class),
+            mock(io.casehub.engine.internal.routing.SelectionContextStore.class),
+            dispatchBudget,
+            mock(io.casehub.engine.common.spi.PlanItemStore.class),
+            mock(java.util.function.Consumer.class),
+            Optional.empty(),
+            mock(io.casehub.engine.common.internal.observation.ObservationRegistry.class),
+            mock(io.casehub.engine.common.internal.observation.ContextHistoryBuffer.class),
+            mock(io.casehub.engine.common.internal.signal.SignalRegistry.class),
+            mock(io.casehub.engine.common.internal.observation.RuleRegistry.class),
+            mock(io.casehub.engine.common.internal.convergence.ActivityTracker.class),
+            mock(io.casehub.engine.internal.convergence.ConvergenceDetector.class),
+            mock(io.casehub.engine.internal.convergence.BudgetEnforcer.class),
+            mock(jakarta.enterprise.inject.Instance.class),
+            mock(jakarta.enterprise.inject.Instance.class),
+            mock(jakarta.enterprise.inject.Instance.class),
+            mock(jakarta.enterprise.inject.Instance.class),
+            mock(jakarta.enterprise.inject.Instance.class),
+            mock(jakarta.enterprise.inject.Instance.class),
+            mock(jakarta.enterprise.inject.Instance.class));
 
-    Capability capability = Capability.builder()
-        .name("analysis").inputSchema(".").outputSchema(".").build();
-    Binding binding = Binding.builder()
-        .name("analyse")
-        .on(new ContextChangeTrigger("."))
-        .target(new CapabilityTarget(capability))
-        .build();
-    Worker worker = Worker.builder()
-        .name("agent-1").capabilityName("analysis")
-        .function(new WorkerFunction.Sync<>(Map.class, Map.class,
-            (input, scope) -> WorkerResult.of(Map.of())))
-        .build();
+    Capability capability =
+        Capability.builder().name("analysis").inputSchema(".").outputSchema(".").build();
+    Binding binding =
+        Binding.builder()
+            .name("analyse")
+            .on(new ContextChangeTrigger("."))
+            .target(new CapabilityTarget(capability))
+            .build();
+    Worker worker =
+        Worker.builder()
+            .name("agent-1")
+            .capabilityName("analysis")
+            .function(
+                new WorkerFunction.Sync<>(
+                    Map.class, Map.class, (input, scope) -> WorkerResult.of(Map.of())))
+            .build();
 
     CaseMetaModel metaModel = mock(CaseMetaModel.class);
-    CaseDefinition definition = CaseDefinition.builder()
-        .namespace("test").name("ensemble-test").version("1.0")
-        .capabilities(capability).workers(worker).bindings(binding).build();
+    CaseDefinition definition =
+        CaseDefinition.builder()
+            .namespace("test")
+            .name("ensemble-test")
+            .version("1.0")
+            .capabilities(capability)
+            .workers(worker)
+            .bindings(binding)
+            .build();
 
     when(caseDefinitionRegistry.getCaseDefinition(metaModel)).thenReturn(definition);
     when(expressionEngineRegistry.evaluate(any(), any(CaseContext.class))).thenReturn(true);
     when(executionManager.getActiveWorkCount(any())).thenReturn(0);
     when(capabilityHealth.probe(any(), any(), any()))
         .thenReturn(new CapabilityHealth.CapabilityStatus.Ready());
-    Mockito.doAnswer(inv -> { ((Runnable) inv.getArgument(1)).run(); return null; })
-        .when(evaluationSerializer).submit(any(), any());
+    Mockito.doAnswer(
+            inv -> {
+              ((Runnable) inv.getArgument(1)).run();
+              return null;
+            })
+        .when(evaluationSerializer)
+        .submit(any(), any());
     when(agentRoutingStrategy.select(any(), any()))
         .thenReturn(RoutingResult.assigned("agent-1", "test"));
     when(loopControl.select(any(), any())).thenReturn(List.of(binding));
@@ -189,17 +205,21 @@ class CaseContextChangedEnsembleTest {
   @Test
   @SuppressWarnings("unchecked")
   void ensembleConsensus_surfacedInWorkingLayer_whenCbrReturnsEnsemble() {
-    var ensemble = new EnsembleConsensus(
-        ConsensusScope.STEP_LEVEL, List.of(), 0.85, 3, List.of("case-1", "case-2"));
+    var ensemble =
+        new EnsembleConsensus(
+            ConsensusScope.STEP_LEVEL, List.of(), 0.85, 3, List.of("case-1", "case-2"));
     when(cbrRetrievalService.retrieve(any(), any()))
         .thenReturn(new CbrRetrievalResult(List.of(), ensemble));
 
-    handler.handle(new CaseContextChangedEvent(
-        caseInstance, caseInstance.getCaseContext(), ContextLayer.WORKING));
+    handler.handle(
+        new CaseContextChangedEvent(
+            caseInstance, caseInstance.getCaseContext(), ContextLayer.WORKING));
 
     Object stored = workingLayer.get("cbrEnsemble");
-    assertThat(stored).as("cbrEnsemble must be written to working layer — engine#1130")
-        .isNotNull().isInstanceOf(Map.class);
+    assertThat(stored)
+        .as("cbrEnsemble must be written to working layer — engine#1130")
+        .isNotNull()
+        .isInstanceOf(Map.class);
     var ensembleMap = (Map<String, Object>) stored;
     assertThat(ensembleMap.get("ensembleConfidence")).isEqualTo(0.85);
     assertThat(ensembleMap.get("inputCount")).isEqualTo(3);
@@ -208,11 +228,11 @@ class CaseContextChangedEnsembleTest {
 
   @Test
   void noEnsemble_workingLayerUnchanged_whenCbrReturnsNoEnsemble() {
-    when(cbrRetrievalService.retrieve(any(), any()))
-        .thenReturn(CbrRetrievalResult.empty());
+    when(cbrRetrievalService.retrieve(any(), any())).thenReturn(CbrRetrievalResult.empty());
 
-    handler.handle(new CaseContextChangedEvent(
-        caseInstance, caseInstance.getCaseContext(), ContextLayer.WORKING));
+    handler.handle(
+        new CaseContextChangedEvent(
+            caseInstance, caseInstance.getCaseContext(), ContextLayer.WORKING));
 
     assertThat(workingLayer.get("cbrEnsemble"))
         .as("cbrEnsemble must not be set when ensemble is null")

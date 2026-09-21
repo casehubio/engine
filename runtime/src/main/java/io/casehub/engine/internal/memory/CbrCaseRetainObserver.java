@@ -37,10 +37,10 @@ import io.casehub.engine.common.spi.CaseDefinitionRegistry;
 import io.casehub.engine.common.spi.PlanItemStore;
 import io.casehub.ledger.api.spi.TrustScoreSource;
 import io.casehub.neocortex.memory.MemoryDomain;
+import io.casehub.neocortex.memory.cbr.CbrPlanRecord;
+import io.casehub.neocortex.memory.cbr.CbrPlanStep;
 import io.casehub.neocortex.memory.cbr.CbrRecordStore;
 import io.casehub.neocortex.memory.cbr.FeatureValue;
-import io.casehub.neocortex.memory.cbr.ResolutionStep;
-import io.casehub.neocortex.memory.cbr.CbrPlanRecord;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.enterprise.inject.Instance;
 import jakarta.inject.Inject;
@@ -157,9 +157,9 @@ public class CbrCaseRetainObserver implements CaseOutcomeObserver {
             .sorted(Comparator.comparing(PlanItemRecord::createdAt))
             .toList();
 
-    List<ResolutionStep> traces = new ArrayList<>(sorted.size());
+    List<CbrPlanStep> traces = new ArrayList<>(sorted.size());
     for (int i = 0; i < sorted.size(); i++) {
-      traces.add(toResolutionStep(sorted.get(i), capabilityNameMap, i, definition));
+      traces.add(toCbrPlanStep(sorted.get(i), capabilityNameMap, i, definition));
     }
 
     if (traces.isEmpty()) {
@@ -253,10 +253,10 @@ public class CbrCaseRetainObserver implements CaseOutcomeObserver {
     return sb.toString();
   }
 
-  private String deriveProducerAgentId(List<ResolutionStep> traces) {
+  private String deriveProducerAgentId(List<CbrPlanStep> traces) {
     return traces.stream()
         .filter(t -> "SUCCESS".equals(t.stepOutcome()))
-        .map(ResolutionStep::workerName)
+        .map(CbrPlanStep::workerName)
         .findFirst()
         .orElseGet(() -> traces.get(0).workerName());
   }
@@ -333,12 +333,12 @@ public class CbrCaseRetainObserver implements CaseOutcomeObserver {
     return map;
   }
 
-  private ResolutionStep toResolutionStep(
+  private CbrPlanStep toCbrPlanStep(
       PlanItemRecord record,
       Map<String, String> capabilityNameMap,
       int priority,
       CaseDefinition definition) {
-    return new ResolutionStep(
+    return new CbrPlanStep(
         record.bindingName(),
         capabilityNameMap.get(record.bindingName()),
         record.executorName(),

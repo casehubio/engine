@@ -22,12 +22,12 @@ import io.casehub.api.spi.CorpusSourceAdapter;
 import io.casehub.api.spi.ResolutionGuideInput;
 import io.casehub.neocortex.memory.EraseRequest;
 import io.casehub.neocortex.memory.MemoryDomain;
-import io.casehub.neocortex.memory.cbr.CbrRecord;
-import io.casehub.neocortex.memory.cbr.CbrRecordStore;
-import io.casehub.neocortex.memory.cbr.CbrRecordSchema;
-import io.casehub.neocortex.memory.cbr.CbrQuery;
 import io.casehub.neocortex.memory.cbr.CbrGuidanceRecord;
 import io.casehub.neocortex.memory.cbr.CbrMatch;
+import io.casehub.neocortex.memory.cbr.CbrQuery;
+import io.casehub.neocortex.memory.cbr.CbrRecord;
+import io.casehub.neocortex.memory.cbr.CbrRecordSchema;
+import io.casehub.neocortex.memory.cbr.CbrRecordStore;
 import io.casehub.platform.api.path.Path;
 import jakarta.enterprise.inject.Instance;
 import java.util.ArrayList;
@@ -166,7 +166,7 @@ class ResolutionIngestionServiceTest {
   }
 
   static class RecordingStore implements CbrRecordStore {
-    final List<CbrCase> storedCases = new ArrayList<>();
+    final List<CbrRecord> storedCases = new ArrayList<>();
     final List<MemoryDomain> storedDomains = new ArrayList<>();
     final List<String> storedTenantIds = new ArrayList<>();
     final List<String> supersededIds = new ArrayList<>();
@@ -176,7 +176,7 @@ class ResolutionIngestionServiceTest {
 
     @Override
     public String store(
-        CbrCase c, String ct, String eid, MemoryDomain d, String tid, String cid, Path scope) {
+        CbrRecord c, String ct, String eid, MemoryDomain d, String tid, String cid, Path scope) {
       storedCases.add(c);
       storedDomains.add(d);
       storedTenantIds.add(tid);

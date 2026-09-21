@@ -45,17 +45,17 @@ import io.casehub.neocortex.memory.cbr.AdaptedPlan;
 import io.casehub.neocortex.memory.cbr.AdaptedStep;
 import io.casehub.neocortex.memory.cbr.CbrFeatureRecord;
 import io.casehub.neocortex.memory.cbr.CbrGuidanceRecord;
+import io.casehub.neocortex.memory.cbr.CbrGuidanceStep;
 import io.casehub.neocortex.memory.cbr.CbrMatch;
+import io.casehub.neocortex.memory.cbr.CbrPlanAdapter;
+import io.casehub.neocortex.memory.cbr.CbrPlanEnsembleAnalyzer;
 import io.casehub.neocortex.memory.cbr.CbrPlanRecord;
+import io.casehub.neocortex.memory.cbr.CbrPlanStep;
 import io.casehub.neocortex.memory.cbr.CbrQuery;
 import io.casehub.neocortex.memory.cbr.CbrRecord;
 import io.casehub.neocortex.memory.cbr.CbrRecordStore;
 import io.casehub.neocortex.memory.cbr.EnsemblePlan;
 import io.casehub.neocortex.memory.cbr.FeatureValue;
-import io.casehub.neocortex.memory.cbr.GuidanceStep;
-import io.casehub.neocortex.memory.cbr.PlanAdapter;
-import io.casehub.neocortex.memory.cbr.PlanEnsembleAnalyzer;
-import io.casehub.neocortex.memory.cbr.ResolutionStep;
 import io.casehub.neocortex.memory.cbr.TemporalDecay;
 import java.time.Duration;
 import java.util.ArrayList;
@@ -89,8 +89,8 @@ public class CbrRetrievalService {
 
   private final JQEvaluator jqEvaluator;
   private final CbrRecordStore cbrStore;
-  private final PlanAdapter planAdapter;
-  private final PlanEnsembleAnalyzer ensembleAnalyzer;
+  private final CbrPlanAdapter planAdapter;
+  private final CbrPlanEnsembleAnalyzer ensembleAnalyzer;
   private final Map<String, Class<? extends CbrRecord>> typeMap;
   private final long ensembleTimeoutMs;
 
@@ -99,8 +99,8 @@ public class CbrRetrievalService {
   public CbrRetrievalService(
       JQEvaluator jqEvaluator,
       CbrRecordStore cbrStore,
-      PlanAdapter planAdapter,
-      PlanEnsembleAnalyzer ensembleAnalyzer,
+      CbrPlanAdapter planAdapter,
+      CbrPlanEnsembleAnalyzer ensembleAnalyzer,
       List<CbrCaseTypeRegistration> registrations,
       long ensembleTimeoutMs) {
     this.jqEvaluator = jqEvaluator;
@@ -114,8 +114,8 @@ public class CbrRetrievalService {
   CbrRetrievalService(
       JQEvaluator jqEvaluator,
       CbrRecordStore cbrStore,
-      PlanAdapter planAdapter,
-      PlanEnsembleAnalyzer ensembleAnalyzer) {
+      CbrPlanAdapter planAdapter,
+      CbrPlanEnsembleAnalyzer ensembleAnalyzer) {
     this.jqEvaluator = jqEvaluator;
     this.cbrStore = cbrStore;
     this.planAdapter = planAdapter;
@@ -127,8 +127,8 @@ public class CbrRetrievalService {
   CbrRetrievalService(
       JQEvaluator jqEvaluator,
       CbrRecordStore cbrStore,
-      PlanAdapter planAdapter,
-      PlanEnsembleAnalyzer ensembleAnalyzer,
+      CbrPlanAdapter planAdapter,
+      CbrPlanEnsembleAnalyzer ensembleAnalyzer,
       long ensembleTimeoutMs) {
     this.jqEvaluator = jqEvaluator;
     this.cbrStore = cbrStore;
@@ -296,10 +296,10 @@ public class CbrRetrievalService {
       List<CbrMatch<CbrPlanRecord>> planCases = new ArrayList<>();
       List<AdaptedPlan> rawAdaptedPlans = new ArrayList<>();
       for (CbrMatch<C> sc : scoredCases) {
-        if (sc.cbrCase() instanceof CbrPlanRecord rc) {
+        if (sc.cbrRecord() instanceof CbrPlanRecord rc) {
           planCases.add((CbrMatch<CbrPlanRecord>) (CbrMatch<?>) sc);
           List<AdaptedStep> retainedSteps =
-              rc.resolutionStep().stream()
+              rc.cbrPlanStep().stream()
                   .map(
                       step ->
                           new AdaptedStep(
@@ -404,7 +404,7 @@ public class CbrRetrievalService {
       List<RetrievedExperience> experiences = new ArrayList<>(scoredCases.size());
 
       for (CbrMatch<C> scored : scoredCases) {
-        CbrRecord c = scored.cbrCase();
+        CbrRecord c = scored.cbrRecord();
         String resultCaseType = scored.caseType();
         List<ExperiencePlanStep> trace;
 
@@ -491,7 +491,7 @@ public class CbrRetrievalService {
       } catch (TimeoutException te) {
         future.cancel(true);
         LOG.warnf(
-            "PlanEnsembleAnalyzer.analyze() timed out after %dms"
+            "CbrPlanEnsembleAnalyzer.analyze() timed out after %dms"
                 + " — proceeding without ensemble",
             ensembleTimeoutMs);
         return null;
@@ -505,7 +505,7 @@ public class CbrRetrievalService {
 
       return mapEnsemblePlan(plan);
     } catch (Exception e) {
-      LOG.warnf(e, "PlanEnsembleAnalyzer.analyze() failed — proceeding without ensemble");
+      LOG.warnf(e, "CbrPlanEnsembleAnalyzer.analyze() failed — proceeding without ensemble");
       return null;
     }
   }
@@ -564,10 +564,10 @@ public class CbrRetrievalService {
               .toList();
       return new AdaptationResult(adapted, steps);
     } catch (Exception e) {
-      LOG.warnf(e, "PlanAdapter.adapt() failed — falling back to raw plan trace");
-      List<ExperiencePlanStep> fallbackSteps = mapResolutionStep(scored.cbrCase().resolutionStep());
+      LOG.warnf(e, "CbrPlanAdapter.adapt() failed — falling back to raw plan trace");
+      List<ExperiencePlanStep> fallbackSteps = mapCbrPlanStep(scored.cbrRecord().cbrPlanStep());
       List<AdaptedStep> retainedSteps =
-          scored.cbrCase().resolutionStep().stream()
+          scored.cbrRecord().cbrPlanStep().stream()
               .map(
                   rs ->
                       new AdaptedStep(
@@ -659,18 +659,18 @@ public class CbrRetrievalService {
   @SuppressWarnings("unchecked")
   private <C extends CbrRecord> RetrievedExperience mapScoredCase(
       CbrMatch<C> scored, Map<String, FeatureValue> features) {
-    CbrRecord c = scored.cbrCase();
+    CbrRecord c = scored.cbrRecord();
     String resultCaseType = scored.caseType();
     List<ExperiencePlanStep> trace;
     if (c instanceof CbrPlanRecord) {
-      trace = adaptAndMapResolutionStep((CbrMatch<CbrPlanRecord>) scored, resultCaseType, features);
+      trace = adaptAndMapCbrPlanStep((CbrMatch<CbrPlanRecord>) scored, resultCaseType, features);
     } else {
       trace = List.of();
     }
     return buildExperience(c, scored, trace, resultCaseType);
   }
 
-  private List<ExperiencePlanStep> adaptAndMapResolutionStep(
+  private List<ExperiencePlanStep> adaptAndMapCbrPlanStep(
       CbrMatch<CbrPlanRecord> scored, String caseType, Map<String, FeatureValue> features) {
     try {
       AdaptedPlan adapted = planAdapter.adapt(caseType, scored, features);
@@ -689,12 +689,12 @@ public class CbrRetrievalService {
                       s.reason()))
           .toList();
     } catch (Exception e) {
-      LOG.warnf(e, "PlanAdapter.adapt() failed — falling back to raw plan trace");
-      return mapResolutionStep(scored.cbrCase().resolutionStep());
+      LOG.warnf(e, "CbrPlanAdapter.adapt() failed — falling back to raw plan trace");
+      return mapCbrPlanStep(scored.cbrRecord().cbrPlanStep());
     }
   }
 
-  private List<ExperiencePlanStep> mapResolutionStep(List<ResolutionStep> traces) {
+  private List<ExperiencePlanStep> mapCbrPlanStep(List<CbrPlanStep> traces) {
     return traces.stream()
         .map(
             t ->
@@ -716,7 +716,7 @@ public class CbrRetrievalService {
     if (c instanceof CbrGuidanceRecord guide) {
       sourceType = ResolutionSourceType.RESOLUTION_GUIDE;
       documentContent = guide.solution();
-      documentSteps = mapGuidanceSteps(guide.steps());
+      documentSteps = mapCbrGuidanceSteps(guide.steps());
     } else {
       sourceType = ResolutionSourceType.PLAN_TRACE;
     }
@@ -735,7 +735,7 @@ public class CbrRetrievalService {
         documentSteps);
   }
 
-  private List<DocumentStep> mapGuidanceSteps(List<GuidanceStep> steps) {
+  private List<DocumentStep> mapCbrGuidanceSteps(List<CbrGuidanceStep> steps) {
     if (steps == null || steps.isEmpty()) return null;
     return steps.stream()
         .map(

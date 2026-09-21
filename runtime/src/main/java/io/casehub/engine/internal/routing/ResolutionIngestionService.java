@@ -19,8 +19,8 @@ import io.casehub.api.spi.CorpusChangeEvent;
 import io.casehub.api.spi.CorpusSourceAdapter;
 import io.casehub.api.spi.ResolutionGuideInput;
 import io.casehub.neocortex.memory.MemoryDomain;
-import io.casehub.neocortex.memory.cbr.CbrRecordStore;
 import io.casehub.neocortex.memory.cbr.CbrGuidanceRecord;
+import io.casehub.neocortex.memory.cbr.CbrRecordStore;
 import io.casehub.platform.api.path.Path;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.enterprise.inject.Instance;
@@ -40,8 +40,7 @@ public class ResolutionIngestionService {
 
   @Inject
   public ResolutionIngestionService(
-      Instance<CorpusSourceAdapter> adapterInstance,
-      Instance<CbrRecordStore> cbrStoreInstance) {
+      Instance<CorpusSourceAdapter> adapterInstance, Instance<CbrRecordStore> cbrStoreInstance) {
     this.adapterInstance = adapterInstance;
     this.cbrStoreInstance = cbrStoreInstance;
   }
@@ -90,8 +89,7 @@ public class ResolutionIngestionService {
     }
   }
 
-  private void ingestSingle(
-      ResolutionGuideInput input, String tenancyId, CbrRecordStore store) {
+  private void ingestSingle(ResolutionGuideInput input, String tenancyId, CbrRecordStore store) {
     String caseId = deterministicCaseId(input.documentId());
     CbrGuidanceRecord guide =
         new CbrGuidanceRecord(input.problem(), input.solution(), null, null, null, null);

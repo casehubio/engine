@@ -36,21 +36,21 @@ import io.casehub.neocortex.memory.MemoryDomain;
 import io.casehub.neocortex.memory.cbr.AdaptationAction;
 import io.casehub.neocortex.memory.cbr.AdaptedPlan;
 import io.casehub.neocortex.memory.cbr.AdaptedStep;
-import io.casehub.neocortex.memory.cbr.CbrRecord;
-import io.casehub.neocortex.memory.cbr.CbrRecordStore;
-import io.casehub.neocortex.memory.cbr.CbrRecordSchema;
+import io.casehub.neocortex.memory.cbr.CbrGuidanceRecord;
+import io.casehub.neocortex.memory.cbr.CbrMatch;
+import io.casehub.neocortex.memory.cbr.CbrPlanAdapter;
+import io.casehub.neocortex.memory.cbr.CbrPlanEnsembleAnalyzer;
+import io.casehub.neocortex.memory.cbr.CbrPlanRecord;
+import io.casehub.neocortex.memory.cbr.CbrPlanStep;
 import io.casehub.neocortex.memory.cbr.CbrQuery;
+import io.casehub.neocortex.memory.cbr.CbrRecord;
+import io.casehub.neocortex.memory.cbr.CbrRecordSchema;
+import io.casehub.neocortex.memory.cbr.CbrRecordStore;
 import io.casehub.neocortex.memory.cbr.EnsemblePlan;
 import io.casehub.neocortex.memory.cbr.FeatureValue;
-import io.casehub.neocortex.memory.cbr.PlanAdapter;
-import io.casehub.neocortex.memory.cbr.PlanEnsembleAnalyzer;
-import io.casehub.neocortex.memory.cbr.CbrGuidanceRecord;
-import io.casehub.neocortex.memory.cbr.ResolutionStep;
-import io.casehub.neocortex.memory.cbr.CbrPlanRecord;
-import io.casehub.neocortex.memory.cbr.CbrMatch;
 import io.casehub.neocortex.memory.cbr.StepConsensus;
 import io.casehub.neocortex.memory.cbr.TemporalDecay;
-import io.casehub.neocortex.memory.cbr.runtime.NoOpPlanEnsembleAnalyzer;
+import io.casehub.neocortex.memory.cbr.runtime.NoOpCbrPlanEnsembleAnalyzer;
 import java.time.Duration;
 import java.util.List;
 import java.util.Map;
@@ -63,16 +63,17 @@ class CbrRetrievalServiceTest {
   private JQEvaluator jqEvaluator;
   private CbrRetrievalService service;
 
-  private RecordingPlanAdapter planAdapter;
+  private RecordingCbrPlanAdapter planAdapter;
 
   @BeforeEach
   void setUp() {
     jqEvaluator = new JQEvaluator(null, null);
 
     cbrStore = new RecordingCbrStore();
-    planAdapter = new RecordingPlanAdapter();
+    planAdapter = new RecordingCbrPlanAdapter();
     service =
-        new CbrRetrievalService(jqEvaluator, cbrStore, planAdapter, new NoOpPlanEnsembleAnalyzer());
+        new CbrRetrievalService(
+            jqEvaluator, cbrStore, planAdapter, new NoOpCbrPlanEnsembleAnalyzer());
   }
 
   @Test
@@ -198,8 +199,8 @@ class CbrRetrievalServiceTest {
     CbrConfig config =
         CbrConfig.builder().featureExtractor(ctx -> Map.of("f1", "v1")).domain("test").build();
     CaseDefinition def = buildDefinition(config);
-    ResolutionStep planTrace =
-        new ResolutionStep("bind1", "cap1", "worker1", "SUCCESS", 0, Map.of(), null);
+    CbrPlanStep planTrace =
+        new CbrPlanStep("bind1", "cap1", "worker1", "SUCCESS", 0, Map.of(), null);
     CbrPlanRecord cbrCase =
         new CbrPlanRecord(
             "problem1",
@@ -328,10 +329,11 @@ class CbrRetrievalServiceTest {
             "COMPLETED",
             io.casehub.neocortex.cognitive.Confidence.inferred(0.9, java.time.Instant.now()),
             Map.of("f1", FeatureValue.string("v1")),
-            List.of(new ResolutionStep("b1", "c1", "w1", "SUCCESS", 0, Map.of(), null)),
+            List.of(new CbrPlanStep("b1", "c1", "w1", "SUCCESS", 0, Map.of(), null)),
             null,
             null);
-    var guideCase = new CbrGuidanceRecord("guide problem", "guide solution", null, null, null, null);
+    var guideCase =
+        new CbrGuidanceRecord("guide problem", "guide solution", null, null, null, null);
 
     @SuppressWarnings("unchecked")
     var mixed =
@@ -395,8 +397,7 @@ class CbrRetrievalServiceTest {
             .cbrType("plan")
             .build();
     CaseDefinition def = buildDefinition(config);
-    ResolutionStep pt =
-        new ResolutionStep("bind1", "cap1", "worker1", "SUCCESS", 0, Map.of(), null);
+    CbrPlanStep pt = new CbrPlanStep("bind1", "cap1", "worker1", "SUCCESS", 0, Map.of(), null);
     CbrPlanRecord planCase =
         new CbrPlanRecord(
             "problem1",
@@ -451,8 +452,7 @@ class CbrRetrievalServiceTest {
     CbrConfig config =
         CbrConfig.builder().featureExtractor(ctx -> Map.of("f1", "v1")).domain("test").build();
     CaseDefinition def = buildDefinition(config);
-    ResolutionStep pt =
-        new ResolutionStep("bind1", "cap1", "worker1", "SUCCESS", 0, Map.of(), null);
+    CbrPlanStep pt = new CbrPlanStep("bind1", "cap1", "worker1", "SUCCESS", 0, Map.of(), null);
     CbrPlanRecord planCase =
         new CbrPlanRecord(
             "problem1",
@@ -489,7 +489,7 @@ class CbrRetrievalServiceTest {
             "COMPLETED",
             io.casehub.neocortex.cognitive.Confidence.inferred(0.9, java.time.Instant.now()),
             Map.of("f1", FeatureValue.string("v1")),
-            List.of(new ResolutionStep("b1", "c1", "w1", "SUCCESS", 0, Map.of(), null)),
+            List.of(new CbrPlanStep("b1", "c1", "w1", "SUCCESS", 0, Map.of(), null)),
             null,
             null);
     cbrStore.setResult(List.of(new CbrMatch<>(planCase, "custom-type", 0.8)));
@@ -512,8 +512,8 @@ class CbrRetrievalServiceTest {
             io.casehub.neocortex.cognitive.Confidence.inferred(0.9, java.time.Instant.now()),
             Map.of("f1", FeatureValue.string("v1")),
             List.of(
-                new ResolutionStep("b1", "c1", "w1", "SUCCESS", 0, Map.of(), null),
-                new ResolutionStep("b2", "c2", "w2", "FAILURE", 0, Map.of(), null)),
+                new CbrPlanStep("b1", "c1", "w1", "SUCCESS", 0, Map.of(), null),
+                new CbrPlanStep("b2", "c2", "w2", "FAILURE", 0, Map.of(), null)),
             null,
             null);
     cbrStore.setResult(List.of(new CbrMatch<>(planCase, "plan", 0.8)));
@@ -569,7 +569,7 @@ class CbrRetrievalServiceTest {
     CbrConfig config =
         CbrConfig.builder().featureExtractor(ctx -> Map.of("f1", "v1")).domain("test").build();
     CaseDefinition def = buildDefinition(config);
-    ResolutionStep pt = new ResolutionStep("b1", "c1", "w1", "SUCCESS", 0, Map.of(), null);
+    CbrPlanStep pt = new CbrPlanStep("b1", "c1", "w1", "SUCCESS", 0, Map.of(), null);
     CbrPlanRecord planCase =
         new CbrPlanRecord(
             "problem1",
@@ -586,7 +586,7 @@ class CbrRetrievalServiceTest {
         new CbrRetrievalService(
             jqEvaluator,
             cbrStore,
-            new PlanAdapter() {
+            new CbrPlanAdapter() {
               @Override
               public AdaptedPlan adapt(
                   String caseType,
@@ -595,7 +595,7 @@ class CbrRetrievalServiceTest {
                 throw new RuntimeException("adapter explosion");
               }
             },
-            new NoOpPlanEnsembleAnalyzer());
+            new NoOpCbrPlanEnsembleAnalyzer());
 
     CbrRetrievalResult result = service.retrieve(def, buildInstance());
 
@@ -609,8 +609,8 @@ class CbrRetrievalServiceTest {
     CbrConfig config =
         CbrConfig.builder().featureExtractor(ctx -> Map.of("f1", "v1")).domain("test").build();
     CaseDefinition def = buildDefinition(config);
-    ResolutionStep planTrace =
-        new ResolutionStep("bind1", "cap1", "worker1", "DECLINED", 0, Map.of(), null);
+    CbrPlanStep planTrace =
+        new CbrPlanStep("bind1", "cap1", "worker1", "DECLINED", 0, Map.of(), null);
     CbrPlanRecord cbrCase =
         new CbrPlanRecord(
             "problem1",
@@ -636,8 +636,8 @@ class CbrRetrievalServiceTest {
     CbrConfig config =
         CbrConfig.builder().featureExtractor(ctx -> Map.of("f1", "v1")).domain("test").build();
     CaseDefinition def = buildDefinition(config);
-    ResolutionStep planTrace =
-        new ResolutionStep("bind1", "cap1", "worker1", "UNKNOWN_VALUE", 0, Map.of(), null);
+    CbrPlanStep planTrace =
+        new CbrPlanStep("bind1", "cap1", "worker1", "UNKNOWN_VALUE", 0, Map.of(), null);
     CbrPlanRecord cbrCase =
         new CbrPlanRecord(
             "problem1",
@@ -813,7 +813,7 @@ class CbrRetrievalServiceTest {
     }
   }
 
-  static class RecordingPlanAdapter implements PlanAdapter {
+  static class RecordingCbrPlanAdapter implements CbrPlanAdapter {
     private boolean called;
     private String lastCaseType;
     private AdaptedPlan result;
@@ -841,7 +841,7 @@ class CbrRetrievalServiceTest {
         return result;
       }
       return new AdaptedPlan(
-          retrieved.cbrCase().resolutionStep().stream()
+          retrieved.cbrRecord().cbrPlanStep().stream()
               .map(
                   t ->
                       new AdaptedStep(
@@ -857,7 +857,7 @@ class CbrRetrievalServiceTest {
     }
   }
 
-  static class RecordingPlanEnsembleAnalyzer implements PlanEnsembleAnalyzer {
+  static class RecordingCbrPlanEnsembleAnalyzer implements CbrPlanEnsembleAnalyzer {
     private boolean called;
     private EnsemblePlan result;
 
@@ -895,11 +895,10 @@ class CbrRetrievalServiceTest {
 
   @Test
   void retrieveForSelectionWithEnsemble_invokes_ensemble_for_plan_type() {
-    var analyzer = new RecordingPlanEnsembleAnalyzer();
+    var analyzer = new RecordingCbrPlanEnsembleAnalyzer();
     service = new CbrRetrievalService(jqEvaluator, cbrStore, planAdapter, analyzer);
 
-    ResolutionStep step1 =
-        new ResolutionStep("triage", "triage", "w1", "SUCCESS", 1, Map.of(), null);
+    CbrPlanStep step1 = new CbrPlanStep("triage", "triage", "w1", "SUCCESS", 1, Map.of(), null);
     CbrPlanRecord case1 =
         new CbrPlanRecord(
             "p1",
@@ -921,9 +920,7 @@ class CbrRetrievalServiceTest {
             null,
             null);
     cbrStore.setResult(
-        List.of(
-            new CbrMatch<>(case1, "TestCase", 0.9),
-            new CbrMatch<>(case2, "TestCase", 0.8)));
+        List.of(new CbrMatch<>(case1, "TestCase", 0.9), new CbrMatch<>(case2, "TestCase", 0.8)));
 
     CbrRetrievalResult result =
         service.retrieveForSelectionWithEnsemble(
@@ -944,10 +941,10 @@ class CbrRetrievalServiceTest {
   @Test
   void retrieveForSelectionWithEnsemble_null_caseType_returns_outcome_only() {
     service =
-        new CbrRetrievalService(jqEvaluator, cbrStore, planAdapter, new NoOpPlanEnsembleAnalyzer());
+        new CbrRetrievalService(
+            jqEvaluator, cbrStore, planAdapter, new NoOpCbrPlanEnsembleAnalyzer());
 
-    ResolutionStep step1 =
-        new ResolutionStep("triage", "triage", "w1", "SUCCESS", 1, Map.of(), null);
+    CbrPlanStep step1 = new CbrPlanStep("triage", "triage", "w1", "SUCCESS", 1, Map.of(), null);
     CbrPlanRecord case1 =
         new CbrPlanRecord(
             "p1",
@@ -969,9 +966,7 @@ class CbrRetrievalServiceTest {
             null,
             null);
     cbrStore.setResult(
-        List.of(
-            new CbrMatch<>(case1, "TestCase", 0.9),
-            new CbrMatch<>(case2, "TestCase", 0.8)));
+        List.of(new CbrMatch<>(case1, "TestCase", 0.9), new CbrMatch<>(case2, "TestCase", 0.8)));
 
     CbrRetrievalResult result =
         service.retrieveForSelectionWithEnsemble(
@@ -991,10 +986,10 @@ class CbrRetrievalServiceTest {
   @Test
   void retrieveForSelectionWithEnsemble_single_result_returns_null_ensemble() {
     service =
-        new CbrRetrievalService(jqEvaluator, cbrStore, planAdapter, new NoOpPlanEnsembleAnalyzer());
+        new CbrRetrievalService(
+            jqEvaluator, cbrStore, planAdapter, new NoOpCbrPlanEnsembleAnalyzer());
 
-    ResolutionStep step1 =
-        new ResolutionStep("triage", "triage", "w1", "SUCCESS", 1, Map.of(), null);
+    CbrPlanStep step1 = new CbrPlanStep("triage", "triage", "w1", "SUCCESS", 1, Map.of(), null);
     CbrPlanRecord case1 =
         new CbrPlanRecord(
             "p1",

@@ -29,14 +29,14 @@ import io.casehub.engine.common.internal.model.CaseInstance;
 import io.casehub.engine.internal.context.CaseContextImpl;
 import io.casehub.neocortex.memory.EraseRequest;
 import io.casehub.neocortex.memory.MemoryDomain;
-import io.casehub.neocortex.memory.cbr.CbrRecord;
-import io.casehub.neocortex.memory.cbr.CbrRecordStore;
-import io.casehub.neocortex.memory.cbr.CbrRecordSchema;
-import io.casehub.neocortex.memory.cbr.CbrQuery;
-import io.casehub.neocortex.memory.cbr.FeatureValue;
-import io.casehub.neocortex.memory.cbr.ResolutionStep;
-import io.casehub.neocortex.memory.cbr.CbrPlanRecord;
 import io.casehub.neocortex.memory.cbr.CbrMatch;
+import io.casehub.neocortex.memory.cbr.CbrPlanRecord;
+import io.casehub.neocortex.memory.cbr.CbrPlanStep;
+import io.casehub.neocortex.memory.cbr.CbrQuery;
+import io.casehub.neocortex.memory.cbr.CbrRecord;
+import io.casehub.neocortex.memory.cbr.CbrRecordSchema;
+import io.casehub.neocortex.memory.cbr.CbrRecordStore;
+import io.casehub.neocortex.memory.cbr.FeatureValue;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
@@ -232,8 +232,7 @@ class CbrRetrievalCachingTest {
   }
 
   private CbrMatch<CbrPlanRecord> scoredCase(String problem, String solution) {
-    ResolutionStep trace =
-        new ResolutionStep("bind1", "cap1", "worker1", "SUCCESS", 0, Map.of(), null);
+    CbrPlanStep trace = new CbrPlanStep("bind1", "cap1", "worker1", "SUCCESS", 0, Map.of(), null);
     CbrPlanRecord cbrCase =
         new CbrPlanRecord(
             problem,
@@ -273,7 +272,7 @@ class CbrRetrievalCachingTest {
 
     @Override
     public String store(
-        CbrCase c,
+        CbrRecord c,
         String ct,
         String eid,
         MemoryDomain d,

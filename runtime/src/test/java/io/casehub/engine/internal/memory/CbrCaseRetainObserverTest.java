@@ -38,13 +38,13 @@ import io.casehub.engine.common.spi.PlanItemStore;
 import io.casehub.ledger.api.spi.TrustScoreSource;
 import io.casehub.neocortex.memory.EraseRequest;
 import io.casehub.neocortex.memory.MemoryDomain;
-import io.casehub.neocortex.memory.cbr.CbrRecord;
-import io.casehub.neocortex.memory.cbr.CbrRecordStore;
-import io.casehub.neocortex.memory.cbr.CbrRecordSchema;
-import io.casehub.neocortex.memory.cbr.CbrQuery;
-import io.casehub.neocortex.memory.cbr.FeatureValue;
-import io.casehub.neocortex.memory.cbr.CbrPlanRecord;
 import io.casehub.neocortex.memory.cbr.CbrMatch;
+import io.casehub.neocortex.memory.cbr.CbrPlanRecord;
+import io.casehub.neocortex.memory.cbr.CbrQuery;
+import io.casehub.neocortex.memory.cbr.CbrRecord;
+import io.casehub.neocortex.memory.cbr.CbrRecordSchema;
+import io.casehub.neocortex.memory.cbr.CbrRecordStore;
+import io.casehub.neocortex.memory.cbr.FeatureValue;
 import io.casehub.worker.api.Capability;
 import io.casehub.worker.api.Worker;
 import jakarta.enterprise.inject.Instance;
@@ -105,11 +105,11 @@ class CbrCaseRetainObserverTest {
     assertThat(stored.problem()).isEqualTo("test-case");
     assertThat(stored.outcome()).isEqualTo("COMPLETED");
     assertThat(stored.features()).containsEntry("amount", FeatureValue.number(50000));
-    assertThat(stored.resolutionStep()).hasSize(1);
-    assertThat(stored.resolutionStep().get(0).bindingName()).isEqualTo("assess-risk");
-    assertThat(stored.resolutionStep().get(0).capabilityName()).isEqualTo("risk-assessment");
-    assertThat(stored.resolutionStep().get(0).workerName()).isEqualTo("worker-1");
-    assertThat(stored.resolutionStep().get(0).stepOutcome()).isEqualTo("SUCCESS");
+    assertThat(stored.cbrPlanStep()).hasSize(1);
+    assertThat(stored.cbrPlanStep().get(0).bindingName()).isEqualTo("assess-risk");
+    assertThat(stored.cbrPlanStep().get(0).capabilityName()).isEqualTo("risk-assessment");
+    assertThat(stored.cbrPlanStep().get(0).workerName()).isEqualTo("worker-1");
+    assertThat(stored.cbrPlanStep().get(0).stepOutcome()).isEqualTo("SUCCESS");
     assertThat(stored.producerAgentId()).isEqualTo("worker-1");
     assertThat(stored.trustScore()).isNull();
   }
@@ -241,12 +241,11 @@ class CbrCaseRetainObserverTest {
     observer.onOutcome(event("f-case", "COMPLETED", Map.of("k", "v")));
 
     assertThat(store.storedCases).hasSize(1);
-    assertThat(store.storedCases.get(0).resolutionStep()).hasSize(2);
-    assertThat(store.storedCases.get(0).resolutionStep().get(0).bindingName())
-        .isEqualTo("cap-bind");
-    assertThat(store.storedCases.get(0).resolutionStep().get(0).capabilityName()).isEqualTo("cap1");
-    assertThat(store.storedCases.get(0).resolutionStep().get(1).bindingName()).isEqualTo("ht-bind");
-    assertThat(store.storedCases.get(0).resolutionStep().get(1).capabilityName()).isNull();
+    assertThat(store.storedCases.get(0).cbrPlanStep()).hasSize(2);
+    assertThat(store.storedCases.get(0).cbrPlanStep().get(0).bindingName()).isEqualTo("cap-bind");
+    assertThat(store.storedCases.get(0).cbrPlanStep().get(0).capabilityName()).isEqualTo("cap1");
+    assertThat(store.storedCases.get(0).cbrPlanStep().get(1).bindingName()).isEqualTo("ht-bind");
+    assertThat(store.storedCases.get(0).cbrPlanStep().get(1).capabilityName()).isNull();
   }
 
   @Test
@@ -264,8 +263,8 @@ class CbrCaseRetainObserverTest {
 
     observer.onOutcome(event("nt-case", "COMPLETED", Map.of("k", "v")));
 
-    assertThat(store.storedCases.get(0).resolutionStep()).hasSize(1);
-    assertThat(store.storedCases.get(0).resolutionStep().get(0).bindingName()).isEqualTo("b1");
+    assertThat(store.storedCases.get(0).cbrPlanStep()).hasSize(1);
+    assertThat(store.storedCases.get(0).cbrPlanStep().get(0).bindingName()).isEqualTo("b1");
   }
 
   @Test
@@ -283,7 +282,7 @@ class CbrCaseRetainObserverTest {
 
     observer.onOutcome(event("ne-case", "CANCELLED", Map.of("k", "v")));
 
-    assertThat(store.storedCases.get(0).resolutionStep()).hasSize(1);
+    assertThat(store.storedCases.get(0).cbrPlanStep()).hasSize(1);
   }
 
   @Test
@@ -308,7 +307,7 @@ class CbrCaseRetainObserverTest {
 
     observer.onOutcome(event("os-case", "FAULTED", Map.of("k", "v")));
 
-    var traces = store.storedCases.get(0).resolutionStep();
+    var traces = store.storedCases.get(0).cbrPlanStep();
     assertThat(traces)
         .extracting("stepOutcome")
         .containsExactly("SUCCESS", "FAILURE", "DECLINED", "CANCELLED", "OBSOLETE");
@@ -354,7 +353,7 @@ class CbrCaseRetainObserverTest {
 
     observer.onOutcome(event("pri-case", "COMPLETED", Map.of("k", "v")));
 
-    var traces = store.storedCases.get(0).resolutionStep();
+    var traces = store.storedCases.get(0).cbrPlanStep();
     assertThat(traces).hasSize(3);
     assertThat(traces.get(0).bindingName()).isEqualTo("first");
     assertThat(traces.get(0).priority()).isEqualTo(0);
@@ -374,7 +373,7 @@ class CbrCaseRetainObserverTest {
 
     observer.onOutcome(event("single-case", "COMPLETED", Map.of("k", "v")));
 
-    var traces = store.storedCases.get(0).resolutionStep();
+    var traces = store.storedCases.get(0).cbrPlanStep();
     assertThat(traces).hasSize(1);
     assertThat(traces.get(0).priority()).isEqualTo(0);
   }
@@ -398,7 +397,7 @@ class CbrCaseRetainObserverTest {
 
     observer.onOutcome(event("gap-case", "COMPLETED", Map.of("k", "v")));
 
-    var traces = store.storedCases.get(0).resolutionStep();
+    var traces = store.storedCases.get(0).cbrPlanStep();
     assertThat(traces).hasSize(2);
     assertThat(traces.get(0).priority()).isEqualTo(0);
     assertThat(traces.get(1).priority()).isEqualTo(1);
@@ -445,7 +444,7 @@ class CbrCaseRetainObserverTest {
     observer.onOutcome(event("model-case", "COMPLETED", Map.of("k", "v")));
 
     assertThat(store.storedCases).hasSize(1);
-    var step = store.storedCases.get(0).resolutionStep().get(0);
+    var step = store.storedCases.get(0).cbrPlanStep().get(0);
     assertThat(step.parameters()).containsEntry("modelId", "claude-sonnet-4-20250514");
   }
 
@@ -458,7 +457,7 @@ class CbrCaseRetainObserverTest {
     observer.onOutcome(event("plain-case", "COMPLETED", Map.of("k", "v")));
 
     assertThat(store.storedCases).hasSize(1);
-    var step = store.storedCases.get(0).resolutionStep().get(0);
+    var step = store.storedCases.get(0).cbrPlanStep().get(0);
     assertThat(step.parameters()).isEmpty();
   }
 
