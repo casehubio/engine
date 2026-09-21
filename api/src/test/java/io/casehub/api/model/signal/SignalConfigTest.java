@@ -16,6 +16,7 @@
 package io.casehub.api.model.signal;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatIllegalArgumentException;
 
 import java.time.Duration;
 import org.junit.jupiter.api.Test;
