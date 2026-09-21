@@ -85,9 +85,15 @@ class ContinuousEvolutionIntegrationTest {
           return new GoalFormationResult(List.of(), List.of(), 0);
         };
 
+    var traceBuffer = new TickTraceBuffer();
     ticker =
         new EvolutionTicker(
-            goalFormation, circuitBreaker, healthTracker, regressionDetector, goalService);
+            goalFormation,
+            circuitBreaker,
+            healthTracker,
+            regressionDetector,
+            goalService,
+            traceBuffer);
     caseId = UUID.randomUUID();
   }
 

@@ -16,9 +16,16 @@
 package io.casehub.engine.internal.improvement;
 
 import io.casehub.api.model.stigmergy.ImprovementConfig;
+import io.casehub.api.model.stigmergy.TickTrace;
+import io.casehub.api.model.stigmergy.TickTrace.GateResult;
+import io.casehub.api.model.stigmergy.TickTrace.GateResult.GateVerdict;
+import io.casehub.api.model.stigmergy.TickTrace.TickTrigger;
 import io.casehub.api.spi.routing.GoalFormationService;
 import io.casehub.engine.common.spi.Resettable;
 import jakarta.enterprise.context.ApplicationScoped;
+import java.time.Instant;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.UUID;
 
 @ApplicationScoped
@@ -29,41 +36,78 @@ public class EvolutionTicker implements Resettable {
   private final HealthScoreTracker healthTracker;
   private final RegressionDetector regressionDetector;
   private final GoalFormationService goalFormationService;
+  private final TickTraceBuffer traceBuffer;
 
   public EvolutionTicker(
       ImprovementGoalFormationStrategy goalFormation,
       ImprovementCircuitBreaker circuitBreaker,
       HealthScoreTracker healthTracker,
       RegressionDetector regressionDetector,
-      GoalFormationService goalFormationService) {
+      GoalFormationService goalFormationService,
+      TickTraceBuffer traceBuffer) {
     this.goalFormation = goalFormation;
     this.circuitBreaker = circuitBreaker;
     this.healthTracker = healthTracker;
     this.regressionDetector = regressionDetector;
     this.goalFormationService = goalFormationService;
+    this.traceBuffer = traceBuffer;
   }
 
-  public void tick(UUID caseId, String tenancyId, ImprovementConfig config) {
+  public TickTrace tick(UUID caseId, String tenancyId, ImprovementConfig config) {
+    return tick(caseId, tenancyId, config, TickTrigger.EVENT_DRIVEN);
+  }
+
+  public TickTrace tick(
+      UUID caseId, String tenancyId, ImprovementConfig config, TickTrigger trigger) {
+    var gates = new ArrayList<GateResult>();
+
     if (!config.effectiveEvolutionEnabled()) {
-      return;
+      gates.add(new GateResult("evolution_enabled", GateVerdict.BLOCKED, "evolution disabled"));
+      return recordTrace(
+          caseId, trigger, gates, new TickTrace.TickOutcome.NoProposal("evolution disabled"));
     }
+    gates.add(new GateResult("evolution_enabled", GateVerdict.PASSED, null));
 
     healthTracker.refresh(caseId, tenancyId, config.effectiveHealthPolicy());
+    gates.add(new GateResult("health_refresh", GateVerdict.PASSED, null));
 
     regressionDetector.checkActiveMonitors(caseId, healthTracker, config.effectiveRollbackPolicy());
+    gates.add(new GateResult("regression_monitor", GateVerdict.PASSED, null));
 
     circuitBreaker.evaluate(caseId, tenancyId, healthTracker, config.effectiveHealthPolicy());
+    gates.add(new GateResult("circuit_breaker_evaluate", GateVerdict.PASSED, null));
 
     if (circuitBreaker.state(caseId) == ImprovementCircuitBreaker.CircuitBreakerState.OPEN) {
-      return;
+      gates.add(
+          new GateResult("circuit_breaker_check", GateVerdict.BLOCKED, "circuit breaker OPEN"));
+      return recordTrace(
+          caseId, trigger, gates, new TickTrace.TickOutcome.NoProposal("circuit breaker OPEN"));
     }
+    gates.add(new GateResult("circuit_breaker_check", GateVerdict.PASSED, null));
 
     var proposal = goalFormation.proposeImprovements(caseId, config);
     if (proposal == null || proposal.goals().isEmpty()) {
-      return;
+      return recordTrace(
+          caseId,
+          trigger,
+          gates,
+          new TickTrace.TickOutcome.NoProposal("no consensus or all filtered"));
     }
 
     goalFormationService.propose("improvement-system", tenancyId, proposal);
+
+    return recordTrace(
+        caseId,
+        trigger,
+        gates,
+        new TickTrace.TickOutcome.ProposalGenerated(proposal.goals().size(), null));
+  }
+
+  private TickTrace recordTrace(
+      UUID caseId, TickTrigger trigger, List<GateResult> gates, TickTrace.TickOutcome outcome) {
+    var trace = new TickTrace(caseId, Instant.now(), trigger, List.copyOf(gates), outcome);
+    traceBuffer.record(trace);
+    return trace;
   }
 
   @Override
