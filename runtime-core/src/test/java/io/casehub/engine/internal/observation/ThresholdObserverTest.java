@@ -15,14 +15,16 @@
  */
 package io.casehub.engine.internal.observation;
 
-import static org.junit.jupiter.api.Assertions.*;
-
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.casehub.api.spi.observation.ObservationContext;
+import org.junit.jupiter.api.Test;
+
 import java.util.List;
 import java.util.Set;
 import java.util.UUID;
-import org.junit.jupiter.api.Test;
+
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 class ThresholdObserverTest {
 

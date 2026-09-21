@@ -15,14 +15,15 @@
  */
 package io.casehub.engine.internal.convergence;
 
-import static org.assertj.core.api.Assertions.*;
-
 import io.casehub.api.model.convergence.ConvergenceThresholdConfig;
 import io.casehub.engine.common.internal.convergence.CaseActivityState;
+import org.junit.jupiter.api.Test;
+
 import java.time.Duration;
 import java.time.Instant;
 import java.util.UUID;
-import org.junit.jupiter.api.Test;
+
+import static org.assertj.core.api.Assertions.assertThat;
 
 class ConvergenceDetectorTest {
 

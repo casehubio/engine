@@ -15,17 +15,20 @@
  */
 package io.casehub.engine.internal.observation;
 
-import static org.junit.jupiter.api.Assertions.*;
-
 import io.casehub.api.spi.observation.InterestDeclaration;
 import io.casehub.api.spi.observation.ObservationConfig;
 import io.casehub.engine.common.internal.observation.ObservationRegistry;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+
 import java.time.Duration;
 import java.util.List;
 import java.util.Set;
 import java.util.UUID;
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Test;
+
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 
 class DefaultInterestSpaceTest {
 

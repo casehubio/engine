@@ -15,17 +15,18 @@
  */
 package io.casehub.engine.internal.observation;
 
-import static org.assertj.core.api.Assertions.*;
-
 import io.casehub.api.model.signal.SignalConfig;
 import io.casehub.api.spi.observation.Neighbor;
 import io.casehub.api.spi.observation.NeighborRelation;
 import io.casehub.engine.common.internal.observation.ObservationRegistry;
 import io.casehub.engine.common.internal.signal.SignalRegistry;
-import java.time.Duration;
-import java.util.UUID;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+
+import java.time.Duration;
+import java.util.UUID;
+
+import static org.assertj.core.api.Assertions.assertThat;
 
 class DefaultNeighborSpaceTest {
 
