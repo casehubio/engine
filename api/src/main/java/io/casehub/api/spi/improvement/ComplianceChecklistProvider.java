@@ -15,16 +15,9 @@
  */
 package io.casehub.api.spi.improvement;
 
-import io.casehub.api.model.stigmergy.CapabilityAreaAssessment;
-import java.util.UUID;
+import io.casehub.api.model.stigmergy.ComplianceChecklist;
+import io.casehub.api.model.stigmergy.ComplianceLevel;
 
-public interface CapabilityArea {
-
-  String id();
-
-  String name();
-
-  String description();
-
-  CapabilityAreaAssessment assess(UUID caseId, String tenancyId);
+public interface ComplianceChecklistProvider {
+  ComplianceChecklist checklistFor(String areaId, ComplianceLevel level);
 }
