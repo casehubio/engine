@@ -43,19 +43,19 @@ import io.casehub.neocortex.memory.MemoryDomain;
 import io.casehub.neocortex.memory.cbr.AdaptationAction;
 import io.casehub.neocortex.memory.cbr.AdaptedPlan;
 import io.casehub.neocortex.memory.cbr.AdaptedStep;
-import io.casehub.neocortex.memory.cbr.CbrCase;
-import io.casehub.neocortex.memory.cbr.CbrCaseMemoryStore;
+import io.casehub.neocortex.memory.cbr.CbrFeatureRecord;
+import io.casehub.neocortex.memory.cbr.CbrGuidanceRecord;
+import io.casehub.neocortex.memory.cbr.CbrMatch;
+import io.casehub.neocortex.memory.cbr.CbrPlanRecord;
 import io.casehub.neocortex.memory.cbr.CbrQuery;
+import io.casehub.neocortex.memory.cbr.CbrRecord;
+import io.casehub.neocortex.memory.cbr.CbrRecordStore;
 import io.casehub.neocortex.memory.cbr.EnsemblePlan;
 import io.casehub.neocortex.memory.cbr.FeatureValue;
-import io.casehub.neocortex.memory.cbr.FeatureVectorCbrCase;
 import io.casehub.neocortex.memory.cbr.GuidanceStep;
 import io.casehub.neocortex.memory.cbr.PlanAdapter;
 import io.casehub.neocortex.memory.cbr.PlanEnsembleAnalyzer;
-import io.casehub.neocortex.memory.cbr.ResolutionGuide;
 import io.casehub.neocortex.memory.cbr.ResolutionStep;
-import io.casehub.neocortex.memory.cbr.ResolvedCase;
-import io.casehub.neocortex.memory.cbr.ScoredCbrCase;
 import io.casehub.neocortex.memory.cbr.TemporalDecay;
 import java.time.Duration;
 import java.util.ArrayList;
@@ -79,26 +79,26 @@ public class CbrRetrievalService {
   static final int MAX_CACHE_SIZE = 1000;
   static final long DEFAULT_ENSEMBLE_TIMEOUT_MS = 5000L;
   private static final Logger LOG = Logger.getLogger(CbrRetrievalService.class);
-  private static final Map<String, Class<? extends CbrCase>> BUILT_IN_TYPES =
+  private static final Map<String, Class<? extends CbrRecord>> BUILT_IN_TYPES =
       Map.of(
-          "plan", ResolvedCase.class,
-          "feature-vector", FeatureVectorCbrCase.class,
-          "textual", ResolutionGuide.class);
+          "plan", CbrPlanRecord.class,
+          "feature-vector", CbrFeatureRecord.class,
+          "textual", CbrGuidanceRecord.class);
 
   private final ConcurrentHashMap<UUID, CbrRetrievalResult> cache = new ConcurrentHashMap<>();
 
   private final JQEvaluator jqEvaluator;
-  private final CbrCaseMemoryStore cbrStore;
+  private final CbrRecordStore cbrStore;
   private final PlanAdapter planAdapter;
   private final PlanEnsembleAnalyzer ensembleAnalyzer;
-  private final Map<String, Class<? extends CbrCase>> typeMap;
+  private final Map<String, Class<? extends CbrRecord>> typeMap;
   private final long ensembleTimeoutMs;
 
   record AdaptationResult(AdaptedPlan adaptedPlan, List<ExperiencePlanStep> steps) {}
 
   public CbrRetrievalService(
       JQEvaluator jqEvaluator,
-      CbrCaseMemoryStore cbrStore,
+      CbrRecordStore cbrStore,
       PlanAdapter planAdapter,
       PlanEnsembleAnalyzer ensembleAnalyzer,
       List<CbrCaseTypeRegistration> registrations,
@@ -113,7 +113,7 @@ public class CbrRetrievalService {
 
   CbrRetrievalService(
       JQEvaluator jqEvaluator,
-      CbrCaseMemoryStore cbrStore,
+      CbrRecordStore cbrStore,
       PlanAdapter planAdapter,
       PlanEnsembleAnalyzer ensembleAnalyzer) {
     this.jqEvaluator = jqEvaluator;
@@ -126,7 +126,7 @@ public class CbrRetrievalService {
 
   CbrRetrievalService(
       JQEvaluator jqEvaluator,
-      CbrCaseMemoryStore cbrStore,
+      CbrRecordStore cbrStore,
       PlanAdapter planAdapter,
       PlanEnsembleAnalyzer ensembleAnalyzer,
       long ensembleTimeoutMs) {
@@ -138,13 +138,13 @@ public class CbrRetrievalService {
     this.ensembleTimeoutMs = ensembleTimeoutMs;
   }
 
-  private static Map<String, Class<? extends CbrCase>> buildTypeMap(
+  private static Map<String, Class<? extends CbrRecord>> buildTypeMap(
       List<CbrCaseTypeRegistration> registrations) {
-    Map<String, Class<? extends CbrCase>> map = new java.util.HashMap<>(BUILT_IN_TYPES);
+    Map<String, Class<? extends CbrRecord>> map = new java.util.HashMap<>(BUILT_IN_TYPES);
     for (CbrCaseTypeRegistration reg : registrations) {
       @SuppressWarnings("unchecked")
-      Class<? extends CbrCase> caseClass = (Class<? extends CbrCase>) reg.caseClass();
-      Class<? extends CbrCase> existing = map.put(reg.cbrType(), caseClass);
+      Class<? extends CbrRecord> caseClass = (Class<? extends CbrRecord>) reg.caseClass();
+      Class<? extends CbrRecord> existing = map.put(reg.cbrType(), caseClass);
       if (existing != null && !BUILT_IN_TYPES.containsKey(reg.cbrType())) {
         throw new IllegalStateException(
             "Duplicate CbrCaseTypeRegistration for cbrType '" + reg.cbrType() + "'");
@@ -185,7 +185,7 @@ public class CbrRetrievalService {
         return CbrRetrievalResult.empty();
       }
       String cbrType = config.cbrType() != null ? config.cbrType() : "plan";
-      Class<? extends CbrCase> caseClass = typeMap.get(cbrType);
+      Class<? extends CbrRecord> caseClass = typeMap.get(cbrType);
       if (caseClass == null) {
         throw new IllegalStateException("Unknown cbrType: " + cbrType);
       }
@@ -199,7 +199,7 @@ public class CbrRetrievalService {
     }
   }
 
-  public <C extends CbrCase> CbrRetrievalResult retrieve(
+  public <C extends CbrRecord> CbrRetrievalResult retrieve(
       CaseDefinition definition, CaseInstance instance, Class<C> caseClass) {
     return retrieveInternal(definition, instance, caseClass);
   }
@@ -212,10 +212,10 @@ public class CbrRetrievalService {
       double minSimilarity,
       Map<String, Double> weights) {
     return retrieveForSelection(
-        tenancyId, domain, features, topK, minSimilarity, weights, ResolvedCase.class);
+        tenancyId, domain, features, topK, minSimilarity, weights, CbrPlanRecord.class);
   }
 
-  public <C extends CbrCase> List<RetrievedExperience> retrieveForSelection(
+  public <C extends CbrRecord> List<RetrievedExperience> retrieveForSelection(
       String tenancyId,
       String domain,
       Map<String, FeatureValue> features,
@@ -238,7 +238,7 @@ public class CbrRetrievalService {
               .withMinSimilarity(minSimilarity)
               .withWeights(weights);
 
-      List<ScoredCbrCase<C>> scoredCases = cbrStore.retrieveSimilar(query, caseClass);
+      List<CbrMatch<C>> scoredCases = cbrStore.retrieveSimilar(query, caseClass);
       return List.copyOf(mapResults(scoredCases, features));
     } catch (Exception failure) {
       LOG.warnf(
@@ -258,11 +258,11 @@ public class CbrRetrievalService {
       Map<String, Double> weights,
       String caseType) {
     return retrieveForSelectionWithEnsemble(
-        tenancyId, domain, features, topK, minSimilarity, weights, caseType, ResolvedCase.class);
+        tenancyId, domain, features, topK, minSimilarity, weights, caseType, CbrPlanRecord.class);
   }
 
   @SuppressWarnings("unchecked")
-  public <C extends CbrCase> CbrRetrievalResult retrieveForSelectionWithEnsemble(
+  public <C extends CbrRecord> CbrRetrievalResult retrieveForSelectionWithEnsemble(
       String tenancyId,
       String domain,
       Map<String, FeatureValue> features,
@@ -286,18 +286,18 @@ public class CbrRetrievalService {
               .withMinSimilarity(minSimilarity)
               .withWeights(weights);
 
-      List<ScoredCbrCase<C>> scoredCases = cbrStore.retrieveSimilar(query, caseClass);
+      List<CbrMatch<C>> scoredCases = cbrStore.retrieveSimilar(query, caseClass);
       List<RetrievedExperience> experiences = List.copyOf(mapResults(scoredCases, features));
 
       if (experiences.size() < 2) {
         return new CbrRetrievalResult(experiences, null);
       }
 
-      List<ScoredCbrCase<ResolvedCase>> planCases = new ArrayList<>();
+      List<CbrMatch<CbrPlanRecord>> planCases = new ArrayList<>();
       List<AdaptedPlan> rawAdaptedPlans = new ArrayList<>();
-      for (ScoredCbrCase<C> sc : scoredCases) {
-        if (sc.cbrCase() instanceof ResolvedCase rc) {
-          planCases.add((ScoredCbrCase<ResolvedCase>) (ScoredCbrCase<?>) sc);
+      for (CbrMatch<C> sc : scoredCases) {
+        if (sc.cbrCase() instanceof CbrPlanRecord rc) {
+          planCases.add((CbrMatch<CbrPlanRecord>) (CbrMatch<?>) sc);
           List<AdaptedStep> retainedSteps =
               rc.resolutionStep().stream()
                   .map(
@@ -335,7 +335,7 @@ public class CbrRetrievalService {
   }
 
   @SuppressWarnings("unchecked")
-  private <C extends CbrCase> CbrRetrievalResult retrieveInternal(
+  private <C extends CbrRecord> CbrRetrievalResult retrieveInternal(
       CaseDefinition definition, CaseInstance instance, Class<C> caseClass) {
     try {
       CbrConfig config = definition.getCbrConfig();
@@ -397,19 +397,19 @@ public class CbrRetrievalService {
                   new TemporalDecay.HalfLife(Duration.ofDays(config.temporalDecayHalfLifeDays())))
               : baseQuery;
 
-      List<ScoredCbrCase<C>> scoredCases = cbrStore.retrieveSimilar(query, caseClass);
+      List<CbrMatch<C>> scoredCases = cbrStore.retrieveSimilar(query, caseClass);
 
-      List<ScoredCbrCase<ResolvedCase>> planCases = new ArrayList<>();
+      List<CbrMatch<CbrPlanRecord>> planCases = new ArrayList<>();
       List<AdaptationResult> planAdaptations = new ArrayList<>();
       List<RetrievedExperience> experiences = new ArrayList<>(scoredCases.size());
 
-      for (ScoredCbrCase<C> scored : scoredCases) {
-        CbrCase c = scored.cbrCase();
+      for (CbrMatch<C> scored : scoredCases) {
+        CbrRecord c = scored.cbrCase();
         String resultCaseType = scored.caseType();
         List<ExperiencePlanStep> trace;
 
-        if (c instanceof ResolvedCase) {
-          ScoredCbrCase<ResolvedCase> planScored = (ScoredCbrCase<ResolvedCase>) scored;
+        if (c instanceof CbrPlanRecord) {
+          CbrMatch<CbrPlanRecord> planScored = (CbrMatch<CbrPlanRecord>) scored;
           AdaptationResult adaptation = adaptPlan(planScored, resultCaseType, features);
           planCases.add(planScored);
           planAdaptations.add(adaptation);
@@ -448,13 +448,13 @@ public class CbrRetrievalService {
     }
   }
 
-  private <C extends CbrCase> EnsembleConsensus computeEnsemble(
+  private <C extends CbrRecord> EnsembleConsensus computeEnsemble(
       CbrConfig config,
       CaseDefinition definition,
       List<RetrievedExperience> experiences,
-      List<ScoredCbrCase<ResolvedCase>> planCases,
+      List<CbrMatch<CbrPlanRecord>> planCases,
       List<AdaptationResult> planAdaptations,
-      List<ScoredCbrCase<C>> allScoredCases,
+      List<CbrMatch<C>> allScoredCases,
       Map<String, FeatureValue> features) {
     if (experiences.size() < 2) {
       return null;
@@ -462,7 +462,7 @@ public class CbrRetrievalService {
 
     if (planCases.size() >= 2) {
       Set<String> distinctCaseTypes =
-          planCases.stream().map(ScoredCbrCase::caseType).collect(Collectors.toSet());
+          planCases.stream().map(CbrMatch::caseType).collect(Collectors.toSet());
 
       if (distinctCaseTypes.size() == 1) {
         String caseType = config.caseType() != null ? config.caseType() : definition.getName();
@@ -477,7 +477,7 @@ public class CbrRetrievalService {
 
   private EnsembleConsensus invokeEnsembleAnalyzer(
       String caseType,
-      List<ScoredCbrCase<ResolvedCase>> planCases,
+      List<CbrMatch<CbrPlanRecord>> planCases,
       List<AdaptedPlan> adaptedPlans,
       Map<String, FeatureValue> features) {
     try {
@@ -534,17 +534,17 @@ public class CbrRetrievalService {
         plan.sourceCaseIds());
   }
 
-  private <C extends CbrCase> EnsembleConsensus buildOutcomeOnlyConsensus(
-      List<RetrievedExperience> experiences, List<ScoredCbrCase<C>> scoredCases) {
+  private <C extends CbrRecord> EnsembleConsensus buildOutcomeOnlyConsensus(
+      List<RetrievedExperience> experiences, List<CbrMatch<C>> scoredCases) {
     double confidence = ExperienceAnalyser.outcomeConsistency(experiences);
     List<String> caseIds =
-        scoredCases.stream().map(ScoredCbrCase::caseId).filter(Objects::nonNull).toList();
+        scoredCases.stream().map(CbrMatch::caseId).filter(Objects::nonNull).toList();
     return new EnsembleConsensus(
         ConsensusScope.OUTCOME_ONLY, List.of(), confidence, experiences.size(), caseIds);
   }
 
   private AdaptationResult adaptPlan(
-      ScoredCbrCase<ResolvedCase> scored, String caseType, Map<String, FeatureValue> features) {
+      CbrMatch<CbrPlanRecord> scored, String caseType, Map<String, FeatureValue> features) {
     try {
       AdaptedPlan adapted = planAdapter.adapt(caseType, scored, features);
       List<ExperiencePlanStep> steps =
@@ -651,20 +651,19 @@ public class CbrRetrievalService {
     return null;
   }
 
-  private <C extends CbrCase> List<RetrievedExperience> mapResults(
-      List<ScoredCbrCase<C>> scoredCases, Map<String, FeatureValue> features) {
+  private <C extends CbrRecord> List<RetrievedExperience> mapResults(
+      List<CbrMatch<C>> scoredCases, Map<String, FeatureValue> features) {
     return scoredCases.stream().map(s -> mapScoredCase(s, features)).toList();
   }
 
   @SuppressWarnings("unchecked")
-  private <C extends CbrCase> RetrievedExperience mapScoredCase(
-      ScoredCbrCase<C> scored, Map<String, FeatureValue> features) {
-    CbrCase c = scored.cbrCase();
+  private <C extends CbrRecord> RetrievedExperience mapScoredCase(
+      CbrMatch<C> scored, Map<String, FeatureValue> features) {
+    CbrRecord c = scored.cbrCase();
     String resultCaseType = scored.caseType();
     List<ExperiencePlanStep> trace;
-    if (c instanceof ResolvedCase) {
-      trace =
-          adaptAndMapResolutionStep((ScoredCbrCase<ResolvedCase>) scored, resultCaseType, features);
+    if (c instanceof CbrPlanRecord) {
+      trace = adaptAndMapResolutionStep((CbrMatch<CbrPlanRecord>) scored, resultCaseType, features);
     } else {
       trace = List.of();
     }
@@ -672,7 +671,7 @@ public class CbrRetrievalService {
   }
 
   private List<ExperiencePlanStep> adaptAndMapResolutionStep(
-      ScoredCbrCase<ResolvedCase> scored, String caseType, Map<String, FeatureValue> features) {
+      CbrMatch<CbrPlanRecord> scored, String caseType, Map<String, FeatureValue> features) {
     try {
       AdaptedPlan adapted = planAdapter.adapt(caseType, scored, features);
       return adapted.steps().stream()
@@ -709,12 +708,12 @@ public class CbrRetrievalService {
         .toList();
   }
 
-  private <C extends CbrCase> RetrievedExperience buildExperience(
-      CbrCase c, ScoredCbrCase<C> scored, List<ExperiencePlanStep> trace, String resultCaseType) {
+  private <C extends CbrRecord> RetrievedExperience buildExperience(
+      CbrRecord c, CbrMatch<C> scored, List<ExperiencePlanStep> trace, String resultCaseType) {
     ResolutionSourceType sourceType;
     String documentContent = null;
     List<DocumentStep> documentSteps = null;
-    if (c instanceof ResolutionGuide guide) {
+    if (c instanceof CbrGuidanceRecord guide) {
       sourceType = ResolutionSourceType.RESOLUTION_GUIDE;
       documentContent = guide.solution();
       documentSteps = mapGuidanceSteps(guide.steps());

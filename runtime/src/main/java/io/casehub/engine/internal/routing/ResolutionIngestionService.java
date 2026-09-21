@@ -19,8 +19,8 @@ import io.casehub.api.spi.CorpusChangeEvent;
 import io.casehub.api.spi.CorpusSourceAdapter;
 import io.casehub.api.spi.ResolutionGuideInput;
 import io.casehub.neocortex.memory.MemoryDomain;
-import io.casehub.neocortex.memory.cbr.CbrCaseMemoryStore;
-import io.casehub.neocortex.memory.cbr.ResolutionGuide;
+import io.casehub.neocortex.memory.cbr.CbrRecordStore;
+import io.casehub.neocortex.memory.cbr.CbrGuidanceRecord;
 import io.casehub.platform.api.path.Path;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.enterprise.inject.Instance;
@@ -36,12 +36,12 @@ public class ResolutionIngestionService {
   private static final Logger LOG = Logger.getLogger(ResolutionIngestionService.class);
 
   private final Instance<CorpusSourceAdapter> adapterInstance;
-  private final Instance<CbrCaseMemoryStore> cbrStoreInstance;
+  private final Instance<CbrRecordStore> cbrStoreInstance;
 
   @Inject
   public ResolutionIngestionService(
       Instance<CorpusSourceAdapter> adapterInstance,
-      Instance<CbrCaseMemoryStore> cbrStoreInstance) {
+      Instance<CbrRecordStore> cbrStoreInstance) {
     this.adapterInstance = adapterInstance;
     this.cbrStoreInstance = cbrStoreInstance;
   }
@@ -51,7 +51,7 @@ public class ResolutionIngestionService {
       return;
     }
     CorpusSourceAdapter adapter = adapterInstance.get();
-    CbrCaseMemoryStore store = cbrStoreInstance.get();
+    CbrRecordStore store = cbrStoreInstance.get();
     List<ResolutionGuideInput> inputs = adapter.discover(tenancyId);
     int ingested = 0;
     int failed = 0;
@@ -75,7 +75,7 @@ public class ResolutionIngestionService {
     if (!cbrStoreInstance.isResolvable()) {
       return;
     }
-    CbrCaseMemoryStore store = cbrStoreInstance.get();
+    CbrRecordStore store = cbrStoreInstance.get();
     switch (event) {
       case CorpusChangeEvent.Added a -> ingestSingle(a.input(), tenancyId, store);
       case CorpusChangeEvent.Updated u -> {
@@ -91,14 +91,14 @@ public class ResolutionIngestionService {
   }
 
   private void ingestSingle(
-      ResolutionGuideInput input, String tenancyId, CbrCaseMemoryStore store) {
+      ResolutionGuideInput input, String tenancyId, CbrRecordStore store) {
     String caseId = deterministicCaseId(input.documentId());
-    ResolutionGuide guide =
-        new ResolutionGuide(input.problem(), input.solution(), null, null, null, null);
+    CbrGuidanceRecord guide =
+        new CbrGuidanceRecord(input.problem(), input.solution(), null, null, null, null);
     store.supersedeAll(List.of(caseId), tenancyId, "corpus re-ingestion");
     store.store(
         guide,
-        ResolutionGuide.CBR_TYPE,
+        CbrGuidanceRecord.CBR_TYPE,
         input.documentId(),
         new MemoryDomain(input.domain()),
         tenancyId,
