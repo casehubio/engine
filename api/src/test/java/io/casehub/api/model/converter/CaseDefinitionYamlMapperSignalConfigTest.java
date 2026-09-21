@@ -15,7 +15,7 @@
  */
 package io.casehub.api.model.converter;
 
-import static org.assertj.core.api.Assertions.*;
+import static org.assertj.core.api.Assertions.assertThat;
 
 import io.casehub.api.model.CaseDefinition;
 import io.casehub.api.model.signal.SignalConfig;

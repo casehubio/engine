@@ -15,7 +15,9 @@
  */
 package io.casehub.api.model.stigmergy;
 
-import static org.junit.jupiter.api.Assertions.*;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
 
 import java.time.Duration;
 import org.junit.jupiter.api.Test;
