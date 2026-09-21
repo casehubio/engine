@@ -53,7 +53,7 @@ class RegressionDetectorTest {
   void mergedOutcomeStartsMonitoring() {
     registry.register(area("stability", 0.8));
     var policy = new HealthPolicy(null, null, null, null, null, null);
-    healthTracker.refresh(caseId, policy);
+    healthTracker.refresh(caseId, "test-tenant", policy);
 
     var outcome = outcome(ImprovementOutcome.OutcomeStatus.MERGED);
     detector.onOutcome(caseId, outcome);
@@ -73,7 +73,7 @@ class RegressionDetectorTest {
   void noRegressionWhenHealthStable() {
     registry.register(area("stability", 0.8));
     var healthPolicy = new HealthPolicy(null, null, null, null, null, null);
-    healthTracker.refresh(caseId, healthPolicy);
+    healthTracker.refresh(caseId, "test-tenant", healthPolicy);
 
     var outcome = outcome(ImprovementOutcome.OutcomeStatus.MERGED);
     detector.onOutcome(caseId, outcome);
@@ -88,14 +88,14 @@ class RegressionDetectorTest {
   void regressionDetectedWhenHealthDrops() {
     registry.register(area("stability", 0.8));
     var healthPolicy = new HealthPolicy(null, null, null, null, null, null);
-    healthTracker.refresh(caseId, healthPolicy);
+    healthTracker.refresh(caseId, "test-tenant", healthPolicy);
 
     var outcome = outcome(ImprovementOutcome.OutcomeStatus.MERGED);
     detector.onOutcome(caseId, outcome);
 
     registry.deprecate("stability");
     registry.register(area("stability", 0.3));
-    healthTracker.refresh(caseId, healthPolicy);
+    healthTracker.refresh(caseId, "test-tenant", healthPolicy);
 
     var rollbackPolicy = new RollbackPolicy(null, 0.1, null, null, null, null);
     detector.checkActiveMonitors(caseId, healthTracker, rollbackPolicy);
@@ -107,7 +107,7 @@ class RegressionDetectorTest {
   void resetClearsMonitors() {
     registry.register(area("stability", 0.8));
     var policy = new HealthPolicy(null, null, null, null, null, null);
-    healthTracker.refresh(caseId, policy);
+    healthTracker.refresh(caseId, "test-tenant", policy);
 
     detector.onOutcome(caseId, outcome(ImprovementOutcome.OutcomeStatus.MERGED));
     detector.reset();
@@ -144,7 +144,7 @@ class RegressionDetectorTest {
         return "test";
       }
 
-      public CapabilityAreaAssessment assess(UUID caseId) {
+      public CapabilityAreaAssessment assess(UUID caseId, String tenancyId) {
         return new CapabilityAreaAssessment(
             id,
             health,

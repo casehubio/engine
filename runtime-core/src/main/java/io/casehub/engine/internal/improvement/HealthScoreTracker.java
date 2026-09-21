@@ -15,6 +15,7 @@
  */
 package io.casehub.engine.internal.improvement;
 
+import io.casehub.api.model.stigmergy.CapabilityAreaAssessment;
 import io.casehub.api.model.stigmergy.HealthPolicy;
 import io.casehub.api.spi.improvement.CapabilityArea;
 import io.casehub.engine.common.spi.Resettable;
@@ -43,12 +44,15 @@ public class HealthScoreTracker implements Resettable {
     this.areaRegistry = areaRegistry;
   }
 
-  public double computeScore(UUID caseId, HealthPolicy policy) {
+  public double computeScore(UUID caseId, String tenancyId, HealthPolicy policy) {
     var weights = policy.effectiveWeights();
     double weightedSum = 0.0;
     double totalWeight = 0.0;
     for (CapabilityArea area : areaRegistry.active()) {
-      var assessment = area.assess(caseId);
+      var assessment = area.assess(caseId, tenancyId);
+      if (assessment.landscapePosition() == CapabilityAreaAssessment.LandscapePosition.ABSENT) {
+        continue;
+      }
       double weight = weights.getOrDefault(area.id(), 0.1);
       weightedSum += weight * assessment.healthScore();
       totalWeight += weight;
@@ -56,13 +60,17 @@ public class HealthScoreTracker implements Resettable {
     return totalWeight > 0 ? weightedSum / totalWeight : 0.0;
   }
 
-  public void refresh(UUID caseId, HealthPolicy policy) {
+  public void refresh(UUID caseId, String tenancyId, HealthPolicy policy) {
     var weights = policy.effectiveWeights();
     Map<String, Double> components = new LinkedHashMap<>();
     double weightedSum = 0.0;
     double totalWeight = 0.0;
     for (CapabilityArea area : areaRegistry.active()) {
-      double healthScore = area.assess(caseId).healthScore();
+      var assessment = area.assess(caseId, tenancyId);
+      if (assessment.landscapePosition() == CapabilityAreaAssessment.LandscapePosition.ABSENT) {
+        continue;
+      }
+      double healthScore = assessment.healthScore();
       components.put(area.id(), healthScore);
       double weight = weights.getOrDefault(area.id(), 0.1);
       weightedSum += weight * healthScore;
