@@ -50,9 +50,9 @@ class ImprovementCircuitBreakerTest {
   void tripsOpenOnLowHealth() {
     registry.register(area("stability", 0.3));
     var policy = new HealthPolicy(0.6, null, null, null, null, null);
-    tracker.refresh(caseId, policy);
+    tracker.refresh(caseId, "test-tenant", policy);
 
-    breaker.evaluate(caseId, tracker, policy);
+    breaker.evaluate(caseId, "test-tenant", tracker, policy);
 
     assertThat(breaker.state(caseId)).isEqualTo(ImprovementCircuitBreaker.CircuitBreakerState.OPEN);
   }
@@ -61,9 +61,9 @@ class ImprovementCircuitBreakerTest {
   void staysClosedWhenHealthy() {
     registry.register(area("stability", 0.8));
     var policy = new HealthPolicy(0.6, null, null, null, null, null);
-    tracker.refresh(caseId, policy);
+    tracker.refresh(caseId, "test-tenant", policy);
 
-    breaker.evaluate(caseId, tracker, policy);
+    breaker.evaluate(caseId, "test-tenant", tracker, policy);
 
     assertThat(breaker.state(caseId))
         .isEqualTo(ImprovementCircuitBreaker.CircuitBreakerState.CLOSED);
@@ -73,8 +73,8 @@ class ImprovementCircuitBreakerTest {
   void manualResetReturnsToClosed() {
     registry.register(area("stability", 0.3));
     var policy = new HealthPolicy(0.6, null, null, null, null, null);
-    tracker.refresh(caseId, policy);
-    breaker.evaluate(caseId, tracker, policy);
+    tracker.refresh(caseId, "test-tenant", policy);
+    breaker.evaluate(caseId, "test-tenant", tracker, policy);
     assertThat(breaker.state(caseId)).isEqualTo(ImprovementCircuitBreaker.CircuitBreakerState.OPEN);
 
     breaker.manualReset(caseId);
@@ -87,14 +87,14 @@ class ImprovementCircuitBreakerTest {
   void halfOpenAfterRecovery() {
     registry.register(area("stability", 0.3));
     var policy = new HealthPolicy(0.6, null, null, 0, null, null);
-    tracker.refresh(caseId, policy);
-    breaker.evaluate(caseId, tracker, policy);
+    tracker.refresh(caseId, "test-tenant", policy);
+    breaker.evaluate(caseId, "test-tenant", tracker, policy);
     assertThat(breaker.state(caseId)).isEqualTo(ImprovementCircuitBreaker.CircuitBreakerState.OPEN);
 
     registry.deprecate("stability");
     registry.register(area("stability", 0.8));
-    tracker.refresh(caseId, policy);
-    breaker.evaluate(caseId, tracker, policy);
+    tracker.refresh(caseId, "test-tenant", policy);
+    breaker.evaluate(caseId, "test-tenant", tracker, policy);
 
     assertThat(breaker.state(caseId))
         .isEqualTo(ImprovementCircuitBreaker.CircuitBreakerState.HALF_OPEN);
@@ -104,19 +104,19 @@ class ImprovementCircuitBreakerTest {
   void halfOpenToClosedAfterCompletedImprovements() {
     registry.register(area("stability", 0.3));
     var policy = new HealthPolicy(0.6, null, null, 0, 2, null);
-    tracker.refresh(caseId, policy);
-    breaker.evaluate(caseId, tracker, policy);
+    tracker.refresh(caseId, "test-tenant", policy);
+    breaker.evaluate(caseId, "test-tenant", tracker, policy);
 
     registry.deprecate("stability");
     registry.register(area("stability", 0.8));
-    tracker.refresh(caseId, policy);
-    breaker.evaluate(caseId, tracker, policy);
+    tracker.refresh(caseId, "test-tenant", policy);
+    breaker.evaluate(caseId, "test-tenant", tracker, policy);
     assertThat(breaker.state(caseId))
         .isEqualTo(ImprovementCircuitBreaker.CircuitBreakerState.HALF_OPEN);
 
     breaker.recordImprovementInHalfOpen(caseId);
     breaker.recordImprovementInHalfOpen(caseId);
-    breaker.evaluate(caseId, tracker, policy);
+    breaker.evaluate(caseId, "test-tenant", tracker, policy);
 
     assertThat(breaker.state(caseId))
         .isEqualTo(ImprovementCircuitBreaker.CircuitBreakerState.CLOSED);
@@ -126,8 +126,8 @@ class ImprovementCircuitBreakerTest {
   void resetClearsState() {
     registry.register(area("stability", 0.3));
     var policy = new HealthPolicy(0.6, null, null, null, null, null);
-    tracker.refresh(caseId, policy);
-    breaker.evaluate(caseId, tracker, policy);
+    tracker.refresh(caseId, "test-tenant", policy);
+    breaker.evaluate(caseId, "test-tenant", tracker, policy);
     breaker.reset();
     assertThat(breaker.state(caseId))
         .isEqualTo(ImprovementCircuitBreaker.CircuitBreakerState.CLOSED);
@@ -147,7 +147,7 @@ class ImprovementCircuitBreakerTest {
         return "test";
       }
 
-      public CapabilityAreaAssessment assess(UUID caseId) {
+      public CapabilityAreaAssessment assess(UUID caseId, String tenancyId) {
         return new CapabilityAreaAssessment(
             id,
             health,

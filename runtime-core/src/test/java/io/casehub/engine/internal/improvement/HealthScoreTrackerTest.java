@@ -47,7 +47,7 @@ class HealthScoreTrackerTest {
     var policy =
         new HealthPolicy(
             null, null, null, null, null, Map.of("stability", 3.0, "performance", 1.0));
-    double score = tracker.computeScore(caseId, policy);
+    double score = tracker.computeScore(caseId, "test-tenant", policy);
     double expected = (3.0 * 0.8 + 1.0 * 0.4) / (3.0 + 1.0);
     assertThat(score).isCloseTo(expected, within(0.001));
   }
@@ -61,7 +61,7 @@ class HealthScoreTrackerTest {
   void refreshCreatesSnapshot() {
     registry.register(area("stability", 0.8));
     var policy = new HealthPolicy(null, null, null, null, null, null);
-    tracker.refresh(caseId, policy);
+    tracker.refresh(caseId, "test-tenant", policy);
     assertThat(tracker.latestSnapshot(caseId)).isNotNull();
     assertThat(tracker.latestSnapshot(caseId).score()).isCloseTo(0.8, within(0.001));
   }
@@ -70,14 +70,50 @@ class HealthScoreTrackerTest {
   void deltaComputesDifference() {
     registry.register(area("stability", 0.8));
     var policy = new HealthPolicy(null, null, null, null, null, null);
-    tracker.refresh(caseId, policy);
+    tracker.refresh(caseId, "test-tenant", policy);
     assertThat(tracker.delta(caseId, 1440)).isCloseTo(0.0, within(0.001));
   }
 
   @Test
   void emptyRegistryReturnsZero() {
     var policy = new HealthPolicy(null, null, null, null, null, null);
-    assertThat(tracker.computeScore(caseId, policy)).isEqualTo(0.0);
+    assertThat(tracker.computeScore(caseId, "test-tenant", policy)).isEqualTo(0.0);
+  }
+
+  @Test
+  void absentAreasExcludedFromScore() {
+    var absentArea =
+        new CapabilityArea() {
+          public String id() {
+            return "absent-area";
+          }
+
+          public String name() {
+            return "Absent";
+          }
+
+          public String description() {
+            return "test";
+          }
+
+          public CapabilityAreaAssessment assess(UUID caseId, String tenancyId) {
+            return new CapabilityAreaAssessment(
+                "absent-area",
+                0.5,
+                CapabilityAreaAssessment.LandscapePosition.ABSENT,
+                0.0,
+                0.0,
+                0.0,
+                Instant.now());
+          }
+        };
+    registry.register(absentArea);
+    registry.register(area("stability", 0.9));
+
+    var policy = new HealthPolicy(null, null, null, null, null, null);
+    double score = tracker.computeScore(caseId, "test-tenant", policy);
+
+    assertThat(score).isCloseTo(0.9, within(0.01));
   }
 
   private CapabilityArea area(String id, double health) {
@@ -94,7 +130,7 @@ class HealthScoreTrackerTest {
         return "test";
       }
 
-      public CapabilityAreaAssessment assess(UUID caseId) {
+      public CapabilityAreaAssessment assess(UUID caseId, String tenancyId) {
         return new CapabilityAreaAssessment(
             id,
             health,

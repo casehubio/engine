@@ -230,7 +230,7 @@ class ContinuousEvolutionIntegrationTest {
   void regressionDetection_healthDropPausesCategory() {
     areaRegistry.register(area("stability", 0.8));
     var healthPolicy = new HealthPolicy(null, null, null, null, null, null);
-    healthTracker.refresh(caseId, healthPolicy);
+    healthTracker.refresh(caseId, "test-tenant", healthPolicy);
 
     var outcome =
         new ImprovementOutcome(
@@ -249,7 +249,7 @@ class ContinuousEvolutionIntegrationTest {
 
     areaRegistry.deprecate("stability");
     areaRegistry.register(area("stability", 0.3));
-    healthTracker.refresh(caseId, healthPolicy);
+    healthTracker.refresh(caseId, "test-tenant", healthPolicy);
 
     var rollbackPolicy = new RollbackPolicy(null, 0.1, null, null, null, null);
     regressionDetector.checkActiveMonitors(caseId, healthTracker, rollbackPolicy);
@@ -271,7 +271,7 @@ class ContinuousEvolutionIntegrationTest {
         return "test";
       }
 
-      public CapabilityAreaAssessment assess(UUID caseId) {
+      public CapabilityAreaAssessment assess(UUID caseId, String tenancyId) {
         return new CapabilityAreaAssessment(
             id,
             health,

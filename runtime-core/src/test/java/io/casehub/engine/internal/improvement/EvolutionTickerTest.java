@@ -82,8 +82,8 @@ class EvolutionTickerTest {
   void circuitBreakerOpenBlocksProposals() {
     registry.register(area("stability", 0.3));
     var healthPolicy = new HealthPolicy(0.6, null, null, null, null, null);
-    healthTracker.refresh(caseId, healthPolicy);
-    circuitBreaker.evaluate(caseId, healthTracker, healthPolicy);
+    healthTracker.refresh(caseId, "test-tenant", healthPolicy);
+    circuitBreaker.evaluate(caseId, "test-tenant", healthTracker, healthPolicy);
     assertThat(circuitBreaker.state(caseId))
         .isEqualTo(ImprovementCircuitBreaker.CircuitBreakerState.OPEN);
 
@@ -118,7 +118,7 @@ class EvolutionTickerTest {
         return "test";
       }
 
-      public CapabilityAreaAssessment assess(UUID caseId) {
+      public CapabilityAreaAssessment assess(UUID caseId, String tenancyId) {
         return new CapabilityAreaAssessment(
             id,
             health,

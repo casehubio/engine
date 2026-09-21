@@ -48,11 +48,11 @@ public class EvolutionTicker implements Resettable {
       return;
     }
 
-    healthTracker.refresh(caseId, config.effectiveHealthPolicy());
+    healthTracker.refresh(caseId, tenancyId, config.effectiveHealthPolicy());
 
     regressionDetector.checkActiveMonitors(caseId, healthTracker, config.effectiveRollbackPolicy());
 
-    circuitBreaker.evaluate(caseId, healthTracker, config.effectiveHealthPolicy());
+    circuitBreaker.evaluate(caseId, tenancyId, healthTracker, config.effectiveHealthPolicy());
 
     if (circuitBreaker.state(caseId) == ImprovementCircuitBreaker.CircuitBreakerState.OPEN) {
       return;
