@@ -13,18 +13,19 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.casehub.api.spi.improvement;
+package io.casehub.api.model.stigmergy;
 
-import io.casehub.api.model.stigmergy.CapabilityAreaAssessment;
-import java.util.UUID;
+import java.util.List;
 
-public interface CapabilityArea {
+public record ComplianceChecklist(
+    String areaId, ComplianceLevel level, List<CheckRequirement> requirements) {
 
-  String id();
+  public record CheckRequirement(String name, String description, CheckType type) {
 
-  String name();
-
-  String description();
-
-  CapabilityAreaAssessment assess(UUID caseId, String tenancyId);
+    public enum CheckType {
+      DATA_FLOW,
+      CONFIGURATION,
+      INFRASTRUCTURE
+    }
+  }
 }

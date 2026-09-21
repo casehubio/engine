@@ -13,18 +13,26 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.casehub.api.spi.improvement;
+package io.casehub.api.model.stigmergy;
 
-import io.casehub.api.model.stigmergy.CapabilityAreaAssessment;
-import java.util.UUID;
+import jakarta.annotation.Nullable;
+import java.time.Instant;
+import java.util.List;
 
-public interface CapabilityArea {
+public record ReadinessReport(
+    ComplianceLevel targetLevel,
+    ComplianceLevel projectLevel,
+    List<AreaCompliance> areas,
+    boolean passed,
+    Instant evaluatedAt) {
 
-  String id();
+  public record AreaCompliance(
+      String areaId, ComplianceLevel areaLevel, List<CheckResult> checks) {}
 
-  String name();
-
-  String description();
-
-  CapabilityAreaAssessment assess(UUID caseId, String tenancyId);
+  public record CheckResult(
+      String name,
+      boolean satisfied,
+      String expected,
+      String actual,
+      @Nullable String remediation) {}
 }
