@@ -15,19 +15,30 @@
  */
 package io.casehub.engine.internal.stigmergy;
 
-import static org.junit.jupiter.api.Assertions.*;
-
 import io.casehub.api.model.event.CaseHubEventType;
-import io.casehub.api.model.stigmergy.*;
-import io.casehub.api.spi.observation.*;
+import io.casehub.api.model.stigmergy.BehavioralFingerprint;
+import io.casehub.api.model.stigmergy.RoleDomainWeights;
+import io.casehub.api.model.stigmergy.StigmergyConfig;
+import io.casehub.api.model.stigmergy.SwarmConfig;
+import io.casehub.api.spi.observation.EnvironmentObserver;
+import io.casehub.api.spi.observation.Observation;
+import io.casehub.api.spi.observation.ObservationContext;
 import io.casehub.engine.common.internal.convergence.ActivityTracker;
 import io.casehub.engine.common.internal.observation.ObservationRegistry;
 import io.casehub.engine.common.internal.observation.RuleRegistry;
 import io.casehub.engine.common.internal.signal.SignalRegistry;
-import java.time.Duration;
-import java.util.*;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+
+import java.time.Duration;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
+import java.util.UUID;
+
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 class RoleTrackerTest {
 

@@ -15,10 +15,10 @@
  */
 package io.casehub.engine.internal.convergence;
 
-import static org.assertj.core.api.Assertions.*;
-
 import io.casehub.api.model.convergence.BudgetConfig;
 import org.junit.jupiter.api.Test;
+
+import static org.assertj.core.api.Assertions.assertThat;
 
 class BudgetEnforcerTest {
 

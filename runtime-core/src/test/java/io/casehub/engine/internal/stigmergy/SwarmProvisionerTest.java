@@ -15,19 +15,30 @@
  */
 package io.casehub.engine.internal.stigmergy;
 
-import static org.junit.jupiter.api.Assertions.*;
-
 import io.casehub.api.model.event.CaseHubEventType;
-import io.casehub.api.model.stigmergy.*;
-import io.casehub.api.spi.*;
+import io.casehub.api.model.stigmergy.IntegrationPolicy;
+import io.casehub.api.model.stigmergy.ProvisionBudget;
+import io.casehub.api.model.stigmergy.StigmergyConfig;
+import io.casehub.api.model.stigmergy.SwarmConfig;
+import io.casehub.api.spi.DispatchBudget;
+import io.casehub.api.spi.DispatchBudgetQuery;
+import io.casehub.api.spi.ProvisionResult;
+import io.casehub.api.spi.WorkerProvisioner;
 import io.casehub.engine.common.internal.convergence.ActivityTracker;
 import io.casehub.engine.common.internal.observation.ObservationRegistry;
 import io.casehub.engine.common.internal.observation.RuleRegistry;
 import io.casehub.engine.common.internal.signal.SignalRegistry;
-import java.time.Duration;
-import java.util.*;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+
+import java.time.Duration;
+import java.util.List;
+import java.util.Set;
+import java.util.UUID;
+
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 class SwarmProvisionerTest {
 

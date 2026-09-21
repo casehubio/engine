@@ -28,7 +28,15 @@ import io.casehub.engine.common.internal.signal.SignalRegistry;
 import io.casehub.engine.common.spi.CaseDefinitionRegistry;
 import io.casehub.engine.common.spi.PlanItemStore;
 import io.casehub.engine.common.spi.cache.CaseInstanceCache;
-import java.util.*;
+
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.LinkedHashMap;
+import java.util.LinkedHashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
+import java.util.UUID;
 import java.util.stream.Collectors;
 
 public class DefaultNeighborSpace implements NeighborSpace {
