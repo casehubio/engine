@@ -15,7 +15,8 @@
  */
 package io.casehub.engine.common.internal.signal;
 
-import static org.assertj.core.api.Assertions.*;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.within;
 
 import io.casehub.api.model.signal.PerceivedSignal;
 import io.casehub.api.model.signal.Signal;

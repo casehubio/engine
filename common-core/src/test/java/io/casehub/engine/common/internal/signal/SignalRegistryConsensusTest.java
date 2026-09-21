@@ -15,7 +15,8 @@
  */
 package io.casehub.engine.common.internal.signal;
 
-import static org.junit.jupiter.api.Assertions.*;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import io.casehub.api.model.signal.Signal;
 import java.time.Duration;
