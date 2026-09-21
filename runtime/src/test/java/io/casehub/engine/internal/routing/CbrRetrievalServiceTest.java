@@ -50,7 +50,7 @@ import io.casehub.neocortex.memory.cbr.EnsemblePlan;
 import io.casehub.neocortex.memory.cbr.FeatureValue;
 import io.casehub.neocortex.memory.cbr.StepConsensus;
 import io.casehub.neocortex.memory.cbr.TemporalDecay;
-import io.casehub.neocortex.memory.cbr.runtime.NoOpCbrPlanEnsembleAnalyzer;
+// NoOpCbrPlanEnsembleAnalyzer removed in neocortex #376 — inline lambda used instead
 import java.time.Duration;
 import java.util.List;
 import java.util.Map;
@@ -73,7 +73,7 @@ class CbrRetrievalServiceTest {
     planAdapter = new RecordingCbrPlanAdapter();
     service =
         new CbrRetrievalService(
-            jqEvaluator, cbrStore, planAdapter, new NoOpCbrPlanEnsembleAnalyzer());
+            jqEvaluator, cbrStore, planAdapter, (caseType, scored, adapted, features) -> null);
   }
 
   @Test
@@ -595,7 +595,7 @@ class CbrRetrievalServiceTest {
                 throw new RuntimeException("adapter explosion");
               }
             },
-            new NoOpCbrPlanEnsembleAnalyzer());
+            (caseType, scored, adapted, features) -> null);
 
     CbrRetrievalResult result = service.retrieve(def, buildInstance());
 
@@ -942,7 +942,7 @@ class CbrRetrievalServiceTest {
   void retrieveForSelectionWithEnsemble_null_caseType_returns_outcome_only() {
     service =
         new CbrRetrievalService(
-            jqEvaluator, cbrStore, planAdapter, new NoOpCbrPlanEnsembleAnalyzer());
+            jqEvaluator, cbrStore, planAdapter, (caseType, scored, adapted, features) -> null);
 
     CbrPlanStep step1 = new CbrPlanStep("triage", "triage", "w1", "SUCCESS", 1, Map.of(), null);
     CbrPlanRecord case1 =
@@ -987,7 +987,7 @@ class CbrRetrievalServiceTest {
   void retrieveForSelectionWithEnsemble_single_result_returns_null_ensemble() {
     service =
         new CbrRetrievalService(
-            jqEvaluator, cbrStore, planAdapter, new NoOpCbrPlanEnsembleAnalyzer());
+            jqEvaluator, cbrStore, planAdapter, (caseType, scored, adapted, features) -> null);
 
     CbrPlanStep step1 = new CbrPlanStep("triage", "triage", "w1", "SUCCESS", 1, Map.of(), null);
     CbrPlanRecord case1 =

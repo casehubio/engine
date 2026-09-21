@@ -65,8 +65,9 @@ class CbrRetrievalCachingTest {
         new CbrRetrievalService(
             jqEvaluator,
             cbrStore,
-            new io.casehub.neocortex.memory.cbr.runtime.NoOpPlanAdapter(),
-            new io.casehub.neocortex.memory.cbr.runtime.NoOpPlanEnsembleAnalyzer());
+            (caseType, scored, features) ->
+                new io.casehub.neocortex.memory.cbr.AdaptedPlan(java.util.List.of()),
+            (caseType, scored, adapted, features) -> null);
     evictionHandler = new CbrCacheEvictionHandler(service);
   }
 
