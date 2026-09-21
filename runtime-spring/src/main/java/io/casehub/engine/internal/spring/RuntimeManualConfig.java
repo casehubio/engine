@@ -103,9 +103,9 @@ import io.casehub.engine.internal.worker.DefaultWorkerFunctionProviderRegistry;
 import io.casehub.engine.internal.worker.FailureCritiqueService;
 import io.casehub.ledger.api.spi.LedgerTraceIdProvider;
 import io.casehub.neocortex.memory.CaseMemoryStore;
+import io.casehub.neocortex.memory.cbr.CbrPlanAdapter;
+import io.casehub.neocortex.memory.cbr.CbrPlanEnsembleAnalyzer;
 import io.casehub.neocortex.memory.cbr.CbrRecordStore;
-import io.casehub.neocortex.memory.cbr.PlanAdapter;
-import io.casehub.neocortex.memory.cbr.PlanEnsembleAnalyzer;
 import io.casehub.platform.api.routing.StrategyResolver;
 import io.micrometer.core.instrument.MeterRegistry;
 import java.time.Duration;
@@ -329,8 +329,8 @@ public class RuntimeManualConfig {
   public CbrRetrievalService cbrRetrievalService(
       JQEvaluator jqEvaluator,
       CbrRecordStore cbrStore,
-      PlanAdapter planAdapter,
-      PlanEnsembleAnalyzer ensembleAnalyzer,
+      CbrPlanAdapter planAdapter,
+      CbrPlanEnsembleAnalyzer ensembleAnalyzer,
       List<CbrCaseTypeRegistration> registrations,
       @org.springframework.beans.factory.annotation.Value(
               "${casehub.engine.cbr.ensemble-timeout-ms:5000}")
@@ -548,6 +548,8 @@ public class RuntimeManualConfig {
         activityTracker,
         convergenceDetector,
         budgetEnforcer,
+        notResolvable(),
+        notResolvable(),
         notResolvable(),
         notResolvable(),
         notResolvable(),

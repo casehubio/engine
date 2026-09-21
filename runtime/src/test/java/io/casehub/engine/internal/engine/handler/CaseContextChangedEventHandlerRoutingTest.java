@@ -142,7 +142,26 @@ class CaseContextChangedEventHandlerRoutingTest {
             dispatchBudget,
             planItemStore,
             caseContextUpdatedEventConsumer,
-            java.util.Optional.empty());
+            java.util.Optional.empty(),
+            org.mockito.Mockito.mock(
+                io.casehub.engine.common.internal.observation.ObservationRegistry.class),
+            org.mockito.Mockito.mock(
+                io.casehub.engine.common.internal.observation.ContextHistoryBuffer.class),
+            org.mockito.Mockito.mock(io.casehub.engine.common.internal.signal.SignalRegistry.class),
+            org.mockito.Mockito.mock(
+                io.casehub.engine.common.internal.observation.RuleRegistry.class),
+            org.mockito.Mockito.mock(
+                io.casehub.engine.common.internal.convergence.ActivityTracker.class),
+            org.mockito.Mockito.mock(
+                io.casehub.engine.internal.convergence.ConvergenceDetector.class),
+            org.mockito.Mockito.mock(io.casehub.engine.internal.convergence.BudgetEnforcer.class),
+            org.mockito.Mockito.mock(jakarta.enterprise.inject.Instance.class),
+            org.mockito.Mockito.mock(jakarta.enterprise.inject.Instance.class),
+            org.mockito.Mockito.mock(jakarta.enterprise.inject.Instance.class),
+            org.mockito.Mockito.mock(jakarta.enterprise.inject.Instance.class),
+            org.mockito.Mockito.mock(jakarta.enterprise.inject.Instance.class),
+            org.mockito.Mockito.mock(jakarta.enterprise.inject.Instance.class),
+            org.mockito.Mockito.mock(jakarta.enterprise.inject.Instance.class));
 
     final Capability capability =
         Capability.builder()
