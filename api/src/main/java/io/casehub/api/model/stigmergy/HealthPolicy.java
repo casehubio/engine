@@ -47,15 +47,19 @@ public record HealthPolicy(
   }
 
   public Map<String, Double> effectiveWeights() {
-    if (weights != null) return weights;
+    if (weights != null) {
+      return weights;
+    }
     return Map.of(
-        "stability", 0.2,
-        "performance", 0.15,
-        "execution", 0.1,
-        "safety", 0.15,
-        "integration", 0.1,
-        "autonomy", 0.1,
-        "cognitive-reasoning", 0.1,
-        "coordination", 0.1);
+        "stability", 0.15,
+        "performance", 0.12,
+        "execution", 0.10,
+        "safety", 0.12,
+        "integration", 0.08,
+        "autonomy", 0.08,
+        "cognitive-reasoning", 0.10,
+        "cognitive-memory", 0.08,
+        "coordination", 0.08,
+        "perception", 0.09);
   }
 }

@@ -144,5 +144,8 @@ public enum CaseHubEventType {
   CAPABILITY_AREA_CHANGED, // capability area registered, deprecated, or assessment updated
   REGRESSION_DETECTED, // regression detector identified health degradation after improvement
   ROLLBACK_STARTED, // rollback case spawned for a regressed improvement
-  IMPROVEMENT_CONFLICT_DETECTED // concurrent improvement paths overlap — serialised
+  IMPROVEMENT_CONFLICT_DETECTED, // concurrent improvement paths overlap — serialised
+
+  COMPLIANCE_LEVEL_CHANGED, // project evolution readiness level changed
+  READINESS_EVALUATED // ReadinessValidator.validate() completed
 }

@@ -26,5 +26,5 @@ public interface CapabilityArea {
 
   String description();
 
-  CapabilityAreaAssessment assess(UUID caseId);
+  CapabilityAreaAssessment assess(UUID caseId, String tenancyId);
 }
