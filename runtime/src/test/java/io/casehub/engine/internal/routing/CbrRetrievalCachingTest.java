@@ -29,14 +29,14 @@ import io.casehub.engine.common.internal.model.CaseInstance;
 import io.casehub.engine.internal.context.CaseContextImpl;
 import io.casehub.neocortex.memory.EraseRequest;
 import io.casehub.neocortex.memory.MemoryDomain;
-import io.casehub.neocortex.memory.cbr.CbrCase;
-import io.casehub.neocortex.memory.cbr.CbrCaseMemoryStore;
-import io.casehub.neocortex.memory.cbr.CbrFeatureSchema;
+import io.casehub.neocortex.memory.cbr.CbrRecord;
+import io.casehub.neocortex.memory.cbr.CbrRecordStore;
+import io.casehub.neocortex.memory.cbr.CbrRecordSchema;
 import io.casehub.neocortex.memory.cbr.CbrQuery;
 import io.casehub.neocortex.memory.cbr.FeatureValue;
 import io.casehub.neocortex.memory.cbr.ResolutionStep;
-import io.casehub.neocortex.memory.cbr.ResolvedCase;
-import io.casehub.neocortex.memory.cbr.ScoredCbrCase;
+import io.casehub.neocortex.memory.cbr.CbrPlanRecord;
+import io.casehub.neocortex.memory.cbr.CbrMatch;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
@@ -231,11 +231,11 @@ class CbrRetrievalCachingTest {
     return instance;
   }
 
-  private ScoredCbrCase<ResolvedCase> scoredCase(String problem, String solution) {
+  private CbrMatch<CbrPlanRecord> scoredCase(String problem, String solution) {
     ResolutionStep trace =
         new ResolutionStep("bind1", "cap1", "worker1", "SUCCESS", 0, Map.of(), null);
-    ResolvedCase cbrCase =
-        new ResolvedCase(
+    CbrPlanRecord cbrCase =
+        new CbrPlanRecord(
             problem,
             solution,
             "COMPLETED",
@@ -244,15 +244,15 @@ class CbrRetrievalCachingTest {
             List.of(trace),
             null,
             null);
-    return new ScoredCbrCase<>(cbrCase, "plan", 0.87);
+    return new CbrMatch<>(cbrCase, "plan", 0.87);
   }
 
-  /** Counting stub for CbrCaseMemoryStore — tracks invocation count. */
-  static class CountingCbrStore implements CbrCaseMemoryStore {
+  /** Counting stub for CbrRecordStore — tracks invocation count. */
+  static class CountingCbrStore implements CbrRecordStore {
     private int callCount;
-    private List<ScoredCbrCase<ResolvedCase>> result = List.of();
+    private List<CbrMatch<CbrPlanRecord>> result = List.of();
 
-    void setResult(List<ScoredCbrCase<ResolvedCase>> result) {
+    void setResult(List<CbrMatch<CbrPlanRecord>> result) {
       this.result = result;
     }
 
@@ -262,14 +262,14 @@ class CbrRetrievalCachingTest {
 
     @Override
     @SuppressWarnings("unchecked")
-    public <C extends CbrCase> List<ScoredCbrCase<C>> retrieveSimilar(
+    public <C extends CbrRecord> List<CbrMatch<C>> retrieveSimilar(
         CbrQuery query, Class<C> caseType) {
       callCount++;
-      return (List<ScoredCbrCase<C>>) (List<?>) result;
+      return (List<CbrMatch<C>>) (List<?>) result;
     }
 
     @Override
-    public void registerSchema(CbrFeatureSchema schema) {}
+    public void registerSchema(CbrRecordSchema schema) {}
 
     @Override
     public String store(
