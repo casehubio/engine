@@ -18,6 +18,7 @@ package io.casehub.engine.internal.improvement;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.casehub.api.model.stigmergy.CapabilityAreaAssessment;
+import io.casehub.api.model.stigmergy.CircuitBreakerState;
 import io.casehub.api.model.stigmergy.HealthPolicy;
 import io.casehub.api.spi.improvement.CapabilityArea;
 import java.time.Instant;
@@ -42,8 +43,7 @@ class ImprovementCircuitBreakerTest {
 
   @Test
   void defaultStateIsClosed() {
-    assertThat(breaker.state(caseId))
-        .isEqualTo(ImprovementCircuitBreaker.CircuitBreakerState.CLOSED);
+    assertThat(breaker.state(caseId)).isEqualTo(CircuitBreakerState.CLOSED);
   }
 
   @Test
@@ -54,7 +54,7 @@ class ImprovementCircuitBreakerTest {
 
     breaker.evaluate(caseId, "test-tenant", tracker, policy);
 
-    assertThat(breaker.state(caseId)).isEqualTo(ImprovementCircuitBreaker.CircuitBreakerState.OPEN);
+    assertThat(breaker.state(caseId)).isEqualTo(CircuitBreakerState.OPEN);
   }
 
   @Test
@@ -65,8 +65,7 @@ class ImprovementCircuitBreakerTest {
 
     breaker.evaluate(caseId, "test-tenant", tracker, policy);
 
-    assertThat(breaker.state(caseId))
-        .isEqualTo(ImprovementCircuitBreaker.CircuitBreakerState.CLOSED);
+    assertThat(breaker.state(caseId)).isEqualTo(CircuitBreakerState.CLOSED);
   }
 
   @Test
@@ -75,12 +74,11 @@ class ImprovementCircuitBreakerTest {
     var policy = new HealthPolicy(0.6, null, null, null, null, null);
     tracker.refresh(caseId, "test-tenant", policy);
     breaker.evaluate(caseId, "test-tenant", tracker, policy);
-    assertThat(breaker.state(caseId)).isEqualTo(ImprovementCircuitBreaker.CircuitBreakerState.OPEN);
+    assertThat(breaker.state(caseId)).isEqualTo(CircuitBreakerState.OPEN);
 
     breaker.manualReset(caseId);
 
-    assertThat(breaker.state(caseId))
-        .isEqualTo(ImprovementCircuitBreaker.CircuitBreakerState.CLOSED);
+    assertThat(breaker.state(caseId)).isEqualTo(CircuitBreakerState.CLOSED);
   }
 
   @Test
@@ -89,15 +87,14 @@ class ImprovementCircuitBreakerTest {
     var policy = new HealthPolicy(0.6, null, null, 0, null, null);
     tracker.refresh(caseId, "test-tenant", policy);
     breaker.evaluate(caseId, "test-tenant", tracker, policy);
-    assertThat(breaker.state(caseId)).isEqualTo(ImprovementCircuitBreaker.CircuitBreakerState.OPEN);
+    assertThat(breaker.state(caseId)).isEqualTo(CircuitBreakerState.OPEN);
 
     registry.deprecate("stability");
     registry.register(area("stability", 0.8));
     tracker.refresh(caseId, "test-tenant", policy);
     breaker.evaluate(caseId, "test-tenant", tracker, policy);
 
-    assertThat(breaker.state(caseId))
-        .isEqualTo(ImprovementCircuitBreaker.CircuitBreakerState.HALF_OPEN);
+    assertThat(breaker.state(caseId)).isEqualTo(CircuitBreakerState.HALF_OPEN);
   }
 
   @Test
@@ -111,15 +108,13 @@ class ImprovementCircuitBreakerTest {
     registry.register(area("stability", 0.8));
     tracker.refresh(caseId, "test-tenant", policy);
     breaker.evaluate(caseId, "test-tenant", tracker, policy);
-    assertThat(breaker.state(caseId))
-        .isEqualTo(ImprovementCircuitBreaker.CircuitBreakerState.HALF_OPEN);
+    assertThat(breaker.state(caseId)).isEqualTo(CircuitBreakerState.HALF_OPEN);
 
     breaker.recordImprovementInHalfOpen(caseId);
     breaker.recordImprovementInHalfOpen(caseId);
     breaker.evaluate(caseId, "test-tenant", tracker, policy);
 
-    assertThat(breaker.state(caseId))
-        .isEqualTo(ImprovementCircuitBreaker.CircuitBreakerState.CLOSED);
+    assertThat(breaker.state(caseId)).isEqualTo(CircuitBreakerState.CLOSED);
   }
 
   @Test
@@ -129,8 +124,7 @@ class ImprovementCircuitBreakerTest {
     tracker.refresh(caseId, "test-tenant", policy);
     breaker.evaluate(caseId, "test-tenant", tracker, policy);
     breaker.reset();
-    assertThat(breaker.state(caseId))
-        .isEqualTo(ImprovementCircuitBreaker.CircuitBreakerState.CLOSED);
+    assertThat(breaker.state(caseId)).isEqualTo(CircuitBreakerState.CLOSED);
   }
 
   private CapabilityArea area(String id, double health) {

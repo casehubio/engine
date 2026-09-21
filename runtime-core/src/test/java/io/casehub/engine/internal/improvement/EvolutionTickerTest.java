@@ -18,6 +18,7 @@ package io.casehub.engine.internal.improvement;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.casehub.api.model.stigmergy.CapabilityAreaAssessment;
+import io.casehub.api.model.stigmergy.CircuitBreakerState;
 import io.casehub.api.model.stigmergy.HealthPolicy;
 import io.casehub.api.model.stigmergy.ImprovementConfig;
 import io.casehub.api.model.stigmergy.TickTrace;
@@ -96,8 +97,7 @@ class EvolutionTickerTest {
     var healthPolicy = new HealthPolicy(0.6, null, null, null, null, null);
     healthTracker.refresh(caseId, "test-tenant", healthPolicy);
     circuitBreaker.evaluate(caseId, "test-tenant", healthTracker, healthPolicy);
-    assertThat(circuitBreaker.state(caseId))
-        .isEqualTo(ImprovementCircuitBreaker.CircuitBreakerState.OPEN);
+    assertThat(circuitBreaker.state(caseId)).isEqualTo(CircuitBreakerState.OPEN);
 
     var config =
         new ImprovementConfig(
