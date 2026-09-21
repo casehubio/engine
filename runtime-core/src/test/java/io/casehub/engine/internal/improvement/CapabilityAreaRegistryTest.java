@@ -73,7 +73,7 @@ class CapabilityAreaRegistryTest {
         return "test";
       }
 
-      public CapabilityAreaAssessment assess(UUID caseId) {
+      public CapabilityAreaAssessment assess(UUID caseId, String tenancyId) {
         return new CapabilityAreaAssessment(
             id,
             0.8,

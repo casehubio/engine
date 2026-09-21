@@ -37,8 +37,9 @@ public class ImprovementCircuitBreaker implements Resettable {
     return states.getOrDefault(caseId, CircuitBreakerState.CLOSED);
   }
 
-  public void evaluate(UUID caseId, HealthScoreTracker tracker, HealthPolicy policy) {
-    double score = tracker.computeScore(caseId, policy);
+  public void evaluate(
+      UUID caseId, String tenancyId, HealthScoreTracker tracker, HealthPolicy policy) {
+    double score = tracker.computeScore(caseId, tenancyId, policy);
     double delta = tracker.delta(caseId, policy.effectiveHealthWindowMinutes());
     var current = state(caseId);
 
