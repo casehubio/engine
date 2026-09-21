@@ -37,10 +37,10 @@ import io.casehub.engine.common.spi.CaseDefinitionRegistry;
 import io.casehub.engine.common.spi.PlanItemStore;
 import io.casehub.ledger.api.spi.TrustScoreSource;
 import io.casehub.neocortex.memory.MemoryDomain;
-import io.casehub.neocortex.memory.cbr.CbrCaseMemoryStore;
+import io.casehub.neocortex.memory.cbr.CbrRecordStore;
 import io.casehub.neocortex.memory.cbr.FeatureValue;
 import io.casehub.neocortex.memory.cbr.ResolutionStep;
-import io.casehub.neocortex.memory.cbr.ResolvedCase;
+import io.casehub.neocortex.memory.cbr.CbrPlanRecord;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.enterprise.inject.Instance;
 import jakarta.inject.Inject;
@@ -66,7 +66,7 @@ public class CbrCaseRetainObserver implements CaseOutcomeObserver {
           TaskStatus.CANCELLED, RoutingOutcome.CANCELLED,
           TaskStatus.OBSOLETE, RoutingOutcome.OBSOLETE);
 
-  private final CbrCaseMemoryStore cbrStore;
+  private final CbrRecordStore cbrStore;
   private final CaseDefinitionRegistry registry;
   private final Instance<PlanItemStore> planItemStoreInstance;
   private final JQEvaluator jqEvaluator;
@@ -75,7 +75,7 @@ public class CbrCaseRetainObserver implements CaseOutcomeObserver {
 
   @Inject
   public CbrCaseRetainObserver(
-      CbrCaseMemoryStore cbrStore,
+      CbrRecordStore cbrStore,
       CaseDefinitionRegistry registry,
       Instance<PlanItemStore> planItemStoreInstance,
       JQEvaluator jqEvaluator,
@@ -179,8 +179,8 @@ public class CbrCaseRetainObserver implements CaseOutcomeObserver {
     String producerAgentId = deriveProducerAgentId(traces);
     Double trustScore = lookupTrustScore(producerAgentId);
 
-    ResolvedCase cbrCase =
-        new ResolvedCase(
+    CbrPlanRecord cbrCase =
+        new CbrPlanRecord(
             problem,
             solution,
             event.outcomeLabel(),

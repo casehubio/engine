@@ -103,7 +103,7 @@ import io.casehub.engine.internal.worker.DefaultWorkerFunctionProviderRegistry;
 import io.casehub.engine.internal.worker.FailureCritiqueService;
 import io.casehub.ledger.api.spi.LedgerTraceIdProvider;
 import io.casehub.neocortex.memory.CaseMemoryStore;
-import io.casehub.neocortex.memory.cbr.CbrCaseMemoryStore;
+import io.casehub.neocortex.memory.cbr.CbrRecordStore;
 import io.casehub.neocortex.memory.cbr.PlanAdapter;
 import io.casehub.neocortex.memory.cbr.PlanEnsembleAnalyzer;
 import io.casehub.platform.api.routing.StrategyResolver;
@@ -328,7 +328,7 @@ public class RuntimeManualConfig {
   @Bean
   public CbrRetrievalService cbrRetrievalService(
       JQEvaluator jqEvaluator,
-      CbrCaseMemoryStore cbrStore,
+      CbrRecordStore cbrStore,
       PlanAdapter planAdapter,
       PlanEnsembleAnalyzer ensembleAnalyzer,
       List<CbrCaseTypeRegistration> registrations,
