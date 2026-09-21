@@ -27,10 +27,10 @@ import io.casehub.api.model.cbr.CbrConfig;
 import io.casehub.api.spi.routing.AgentRoutingContext;
 import io.casehub.api.spi.routing.RetrievedExperience;
 import io.casehub.neocortex.memory.MemoryDomain;
-import io.casehub.neocortex.memory.cbr.CbrCaseMemoryStore;
+import io.casehub.neocortex.memory.cbr.CbrRecordStore;
 import io.casehub.neocortex.memory.cbr.FeatureValue;
 import io.casehub.neocortex.memory.cbr.ResolutionStep;
-import io.casehub.neocortex.memory.cbr.ResolvedCase;
+import io.casehub.neocortex.memory.cbr.CbrPlanRecord;
 import io.casehub.platform.api.identity.TenancyConstants;
 import io.casehub.worker.api.Capability;
 import io.casehub.worker.api.Worker;
@@ -60,7 +60,7 @@ import org.junit.jupiter.api.Test;
 class CbrRoutingFuncDslIntegrationTest {
 
   @Inject FuncDslCbrCaseHub caseHub;
-  @Inject CbrCaseMemoryStore cbrStore;
+  @Inject CbrRecordStore cbrStore;
 
   @BeforeEach
   void reset() {
@@ -73,8 +73,8 @@ class CbrRoutingFuncDslIntegrationTest {
     ResolutionStep trace =
         new ResolutionStep(
             "analyse-risk", "assessRisk", "risk-assessor", "SUCCESS", 0, Map.of(), null);
-    ResolvedCase pastCase =
-        new ResolvedCase(
+    CbrPlanRecord pastCase =
+        new CbrPlanRecord(
             "High-risk transaction detected",
             "Flag for manual review",
             "COMPLETED",

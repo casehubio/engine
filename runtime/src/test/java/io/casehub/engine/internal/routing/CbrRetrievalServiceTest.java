@@ -36,18 +36,18 @@ import io.casehub.neocortex.memory.MemoryDomain;
 import io.casehub.neocortex.memory.cbr.AdaptationAction;
 import io.casehub.neocortex.memory.cbr.AdaptedPlan;
 import io.casehub.neocortex.memory.cbr.AdaptedStep;
-import io.casehub.neocortex.memory.cbr.CbrCase;
-import io.casehub.neocortex.memory.cbr.CbrCaseMemoryStore;
-import io.casehub.neocortex.memory.cbr.CbrFeatureSchema;
+import io.casehub.neocortex.memory.cbr.CbrRecord;
+import io.casehub.neocortex.memory.cbr.CbrRecordStore;
+import io.casehub.neocortex.memory.cbr.CbrRecordSchema;
 import io.casehub.neocortex.memory.cbr.CbrQuery;
 import io.casehub.neocortex.memory.cbr.EnsemblePlan;
 import io.casehub.neocortex.memory.cbr.FeatureValue;
 import io.casehub.neocortex.memory.cbr.PlanAdapter;
 import io.casehub.neocortex.memory.cbr.PlanEnsembleAnalyzer;
-import io.casehub.neocortex.memory.cbr.ResolutionGuide;
+import io.casehub.neocortex.memory.cbr.CbrGuidanceRecord;
 import io.casehub.neocortex.memory.cbr.ResolutionStep;
-import io.casehub.neocortex.memory.cbr.ResolvedCase;
-import io.casehub.neocortex.memory.cbr.ScoredCbrCase;
+import io.casehub.neocortex.memory.cbr.CbrPlanRecord;
+import io.casehub.neocortex.memory.cbr.CbrMatch;
 import io.casehub.neocortex.memory.cbr.StepConsensus;
 import io.casehub.neocortex.memory.cbr.TemporalDecay;
 import io.casehub.neocortex.memory.cbr.runtime.NoOpPlanEnsembleAnalyzer;
@@ -200,8 +200,8 @@ class CbrRetrievalServiceTest {
     CaseDefinition def = buildDefinition(config);
     ResolutionStep planTrace =
         new ResolutionStep("bind1", "cap1", "worker1", "SUCCESS", 0, Map.of(), null);
-    ResolvedCase cbrCase =
-        new ResolvedCase(
+    CbrPlanRecord cbrCase =
+        new CbrPlanRecord(
             "problem1",
             "solution1",
             "COMPLETED",
@@ -210,7 +210,7 @@ class CbrRetrievalServiceTest {
             List.of(planTrace),
             null,
             null);
-    cbrStore.setResult(List.of(new ScoredCbrCase<>(cbrCase, "plan", 0.87)));
+    cbrStore.setResult(List.of(new CbrMatch<>(cbrCase, "plan", 0.87)));
 
     CbrRetrievalResult result = service.retrieve(def, buildInstance());
 
@@ -271,8 +271,8 @@ class CbrRetrievalServiceTest {
             .cbrType("feature-vector")
             .build();
     CaseDefinition def = buildDefinition(config);
-    io.casehub.neocortex.memory.cbr.FeatureVectorCbrCase fvCase =
-        new io.casehub.neocortex.memory.cbr.FeatureVectorCbrCase(
+    io.casehub.neocortex.memory.cbr.CbrFeatureRecord fvCase =
+        new io.casehub.neocortex.memory.cbr.CbrFeatureRecord(
             "problem1",
             "solution1",
             "COMPLETED",
@@ -280,7 +280,7 @@ class CbrRetrievalServiceTest {
             Map.of("f1", FeatureValue.string("v1")),
             null,
             null);
-    cbrStore.setResult(List.of(new ScoredCbrCase<>(fvCase, "feature-vector", 0.85)));
+    cbrStore.setResult(List.of(new CbrMatch<>(fvCase, "feature-vector", 0.85)));
     CbrRetrievalResult result = service.retrieve(def, buildInstance());
     assertEquals(1, result.experiences().size());
     assertEquals("problem1", result.experiences().get(0).problem());
@@ -297,9 +297,9 @@ class CbrRetrievalServiceTest {
             .build();
     CaseDefinition def = buildDefinition(config);
     var guide =
-        new ResolutionGuide(
+        new CbrGuidanceRecord(
             "phishing runbook", "1. Isolate mailbox 2. Reset credentials", null, null, null, null);
-    cbrStore.setResult(List.of(new ScoredCbrCase<>(guide, "textual", 0.82)));
+    cbrStore.setResult(List.of(new CbrMatch<>(guide, "textual", 0.82)));
 
     CbrRetrievalResult result = service.retrieve(def, buildInstance());
 
@@ -322,7 +322,7 @@ class CbrRetrievalServiceTest {
     CaseDefinition def = buildDefinition(config);
 
     var planCase =
-        new ResolvedCase(
+        new CbrPlanRecord(
             "plan problem",
             "plan solution",
             "COMPLETED",
@@ -331,15 +331,15 @@ class CbrRetrievalServiceTest {
             List.of(new ResolutionStep("b1", "c1", "w1", "SUCCESS", 0, Map.of(), null)),
             null,
             null);
-    var guideCase = new ResolutionGuide("guide problem", "guide solution", null, null, null, null);
+    var guideCase = new CbrGuidanceRecord("guide problem", "guide solution", null, null, null, null);
 
     @SuppressWarnings("unchecked")
     var mixed =
-        (List<ScoredCbrCase<CbrCase>>)
+        (List<CbrMatch<CbrRecord>>)
             (List<?>)
                 List.of(
-                    new ScoredCbrCase<>(planCase, "plan", 0.9),
-                    new ScoredCbrCase<>(guideCase, "textual", 0.8));
+                    new CbrMatch<>(planCase, "plan", 0.9),
+                    new CbrMatch<>(guideCase, "textual", 0.8));
     cbrStore.setResult(mixed);
 
     CbrRetrievalResult result = service.retrieve(def, buildInstance());
@@ -356,8 +356,8 @@ class CbrRetrievalServiceTest {
     CbrConfig config =
         CbrConfig.builder().featureExtractor(ctx -> Map.of("f1", "v1")).domain("test").build();
     CaseDefinition def = buildDefinition(config);
-    io.casehub.neocortex.memory.cbr.FeatureVectorCbrCase fvCase =
-        new io.casehub.neocortex.memory.cbr.FeatureVectorCbrCase(
+    io.casehub.neocortex.memory.cbr.CbrFeatureRecord fvCase =
+        new io.casehub.neocortex.memory.cbr.CbrFeatureRecord(
             "problem1",
             "solution1",
             "COMPLETED",
@@ -365,10 +365,10 @@ class CbrRetrievalServiceTest {
             Map.of("f1", FeatureValue.string("v1")),
             null,
             null);
-    cbrStore.setResult(List.of(new ScoredCbrCase<>(fvCase, "feature-vector", 0.75)));
+    cbrStore.setResult(List.of(new CbrMatch<>(fvCase, "feature-vector", 0.75)));
     CbrRetrievalResult result =
         service.retrieve(
-            def, buildInstance(), io.casehub.neocortex.memory.cbr.FeatureVectorCbrCase.class);
+            def, buildInstance(), io.casehub.neocortex.memory.cbr.CbrFeatureRecord.class);
     assertEquals(1, result.experiences().size());
     assertTrue(result.experiences().get(0).planTrace().isEmpty());
   }
@@ -397,8 +397,8 @@ class CbrRetrievalServiceTest {
     CaseDefinition def = buildDefinition(config);
     ResolutionStep pt =
         new ResolutionStep("bind1", "cap1", "worker1", "SUCCESS", 0, Map.of(), null);
-    ResolvedCase planCase =
-        new ResolvedCase(
+    CbrPlanRecord planCase =
+        new CbrPlanRecord(
             "problem1",
             "solution1",
             "COMPLETED",
@@ -407,7 +407,7 @@ class CbrRetrievalServiceTest {
             List.of(pt),
             null,
             null);
-    cbrStore.setResult(List.of(new ScoredCbrCase<>(planCase, "plan", 0.9)));
+    cbrStore.setResult(List.of(new CbrMatch<>(planCase, "plan", 0.9)));
     CbrRetrievalResult result = service.retrieve(def, buildInstance());
     assertEquals(1, result.experiences().size());
     assertEquals(1, result.experiences().get(0).planTrace().size());
@@ -453,8 +453,8 @@ class CbrRetrievalServiceTest {
     CaseDefinition def = buildDefinition(config);
     ResolutionStep pt =
         new ResolutionStep("bind1", "cap1", "worker1", "SUCCESS", 0, Map.of(), null);
-    ResolvedCase planCase =
-        new ResolvedCase(
+    CbrPlanRecord planCase =
+        new CbrPlanRecord(
             "problem1",
             "solution1",
             "COMPLETED",
@@ -463,7 +463,7 @@ class CbrRetrievalServiceTest {
             List.of(pt),
             null,
             null);
-    cbrStore.setResult(List.of(new ScoredCbrCase<>(planCase, "test-case", 0.87)));
+    cbrStore.setResult(List.of(new CbrMatch<>(planCase, "test-case", 0.87)));
 
     CbrRetrievalResult result = service.retrieve(def, buildInstance());
 
@@ -482,8 +482,8 @@ class CbrRetrievalServiceTest {
             .caseType("custom-type")
             .build();
     CaseDefinition def = buildDefinition(config);
-    ResolvedCase planCase =
-        new ResolvedCase(
+    CbrPlanRecord planCase =
+        new CbrPlanRecord(
             "problem1",
             "solution1",
             "COMPLETED",
@@ -492,7 +492,7 @@ class CbrRetrievalServiceTest {
             List.of(new ResolutionStep("b1", "c1", "w1", "SUCCESS", 0, Map.of(), null)),
             null,
             null);
-    cbrStore.setResult(List.of(new ScoredCbrCase<>(planCase, "custom-type", 0.8)));
+    cbrStore.setResult(List.of(new CbrMatch<>(planCase, "custom-type", 0.8)));
 
     service.retrieve(def, buildInstance());
 
@@ -504,8 +504,8 @@ class CbrRetrievalServiceTest {
     CbrConfig config =
         CbrConfig.builder().featureExtractor(ctx -> Map.of("f1", "v1")).domain("test").build();
     CaseDefinition def = buildDefinition(config);
-    ResolvedCase planCase =
-        new ResolvedCase(
+    CbrPlanRecord planCase =
+        new CbrPlanRecord(
             "problem1",
             "solution1",
             "COMPLETED",
@@ -516,7 +516,7 @@ class CbrRetrievalServiceTest {
                 new ResolutionStep("b2", "c2", "w2", "FAILURE", 0, Map.of(), null)),
             null,
             null);
-    cbrStore.setResult(List.of(new ScoredCbrCase<>(planCase, "plan", 0.8)));
+    cbrStore.setResult(List.of(new CbrMatch<>(planCase, "plan", 0.8)));
 
     planAdapter.setResult(
         new AdaptedPlan(
@@ -548,8 +548,8 @@ class CbrRetrievalServiceTest {
             .cbrType("feature-vector")
             .build();
     CaseDefinition def = buildDefinition(config);
-    io.casehub.neocortex.memory.cbr.FeatureVectorCbrCase fvCase =
-        new io.casehub.neocortex.memory.cbr.FeatureVectorCbrCase(
+    io.casehub.neocortex.memory.cbr.CbrFeatureRecord fvCase =
+        new io.casehub.neocortex.memory.cbr.CbrFeatureRecord(
             "problem1",
             "solution1",
             "COMPLETED",
@@ -557,7 +557,7 @@ class CbrRetrievalServiceTest {
             Map.of("f1", FeatureValue.string("v1")),
             null,
             null);
-    cbrStore.setResult(List.of(new ScoredCbrCase<>(fvCase, "feature-vector", 0.85)));
+    cbrStore.setResult(List.of(new CbrMatch<>(fvCase, "feature-vector", 0.85)));
 
     service.retrieve(def, buildInstance());
 
@@ -570,8 +570,8 @@ class CbrRetrievalServiceTest {
         CbrConfig.builder().featureExtractor(ctx -> Map.of("f1", "v1")).domain("test").build();
     CaseDefinition def = buildDefinition(config);
     ResolutionStep pt = new ResolutionStep("b1", "c1", "w1", "SUCCESS", 0, Map.of(), null);
-    ResolvedCase planCase =
-        new ResolvedCase(
+    CbrPlanRecord planCase =
+        new CbrPlanRecord(
             "problem1",
             "solution1",
             "COMPLETED",
@@ -580,7 +580,7 @@ class CbrRetrievalServiceTest {
             List.of(pt),
             null,
             null);
-    cbrStore.setResult(List.of(new ScoredCbrCase<>(planCase, "plan", 0.8)));
+    cbrStore.setResult(List.of(new CbrMatch<>(planCase, "plan", 0.8)));
 
     service =
         new CbrRetrievalService(
@@ -590,7 +590,7 @@ class CbrRetrievalServiceTest {
               @Override
               public AdaptedPlan adapt(
                   String caseType,
-                  ScoredCbrCase<ResolvedCase> retrieved,
+                  CbrMatch<CbrPlanRecord> retrieved,
                   Map<String, FeatureValue> currentFeatures) {
                 throw new RuntimeException("adapter explosion");
               }
@@ -611,8 +611,8 @@ class CbrRetrievalServiceTest {
     CaseDefinition def = buildDefinition(config);
     ResolutionStep planTrace =
         new ResolutionStep("bind1", "cap1", "worker1", "DECLINED", 0, Map.of(), null);
-    ResolvedCase cbrCase =
-        new ResolvedCase(
+    CbrPlanRecord cbrCase =
+        new CbrPlanRecord(
             "problem1",
             "solution1",
             "COMPLETED",
@@ -621,7 +621,7 @@ class CbrRetrievalServiceTest {
             List.of(planTrace),
             null,
             null);
-    cbrStore.setResult(List.of(new ScoredCbrCase<>(cbrCase, "plan", 0.87)));
+    cbrStore.setResult(List.of(new CbrMatch<>(cbrCase, "plan", 0.87)));
 
     CbrRetrievalResult result = service.retrieve(def, buildInstance());
 
@@ -638,8 +638,8 @@ class CbrRetrievalServiceTest {
     CaseDefinition def = buildDefinition(config);
     ResolutionStep planTrace =
         new ResolutionStep("bind1", "cap1", "worker1", "UNKNOWN_VALUE", 0, Map.of(), null);
-    ResolvedCase cbrCase =
-        new ResolvedCase(
+    CbrPlanRecord cbrCase =
+        new CbrPlanRecord(
             "problem1",
             "solution1",
             "COMPLETED",
@@ -648,7 +648,7 @@ class CbrRetrievalServiceTest {
             List.of(planTrace),
             null,
             null);
-    cbrStore.setResult(List.of(new ScoredCbrCase<>(cbrCase, "plan", 0.87)));
+    cbrStore.setResult(List.of(new CbrMatch<>(cbrCase, "plan", 0.87)));
 
     CbrRetrievalResult result = service.retrieve(def, buildInstance());
 
@@ -678,8 +678,8 @@ class CbrRetrievalServiceTest {
     return instance;
   }
 
-  /** Recording stub for CbrCaseMemoryStore — no Mockito. */
-  static class RecordingCbrStore implements CbrCaseMemoryStore {
+  /** Recording stub for CbrRecordStore — no Mockito. */
+  static class RecordingCbrStore implements CbrRecordStore {
     private boolean called;
     private CbrQuery lastQuery;
     private List<?> result;
@@ -703,22 +703,22 @@ class CbrRetrievalServiceTest {
 
     @Override
     @SuppressWarnings("unchecked")
-    public <C extends CbrCase> List<ScoredCbrCase<C>> retrieveSimilar(
+    public <C extends CbrRecord> List<CbrMatch<C>> retrieveSimilar(
         CbrQuery query, Class<C> caseType) {
       called = true;
       lastQuery = query;
       if (failure != null) {
         throw failure;
       }
-      return (List<ScoredCbrCase<C>>) (List<?>) result;
+      return (List<CbrMatch<C>>) (List<?>) result;
     }
 
     @Override
-    public void registerSchema(CbrFeatureSchema schema) {}
+    public void registerSchema(CbrRecordSchema schema) {}
 
     @Override
     public String store(
-        CbrCase c,
+        CbrRecord c,
         String ct,
         String eid,
         MemoryDomain d,
@@ -833,7 +833,7 @@ class CbrRetrievalServiceTest {
     @Override
     public AdaptedPlan adapt(
         String caseType,
-        ScoredCbrCase<ResolvedCase> retrieved,
+        CbrMatch<CbrPlanRecord> retrieved,
         Map<String, FeatureValue> currentFeatures) {
       called = true;
       lastCaseType = caseType;
@@ -872,7 +872,7 @@ class CbrRetrievalServiceTest {
     @Override
     public EnsemblePlan analyze(
         String caseType,
-        List<ScoredCbrCase<ResolvedCase>> scoredCases,
+        List<CbrMatch<CbrPlanRecord>> scoredCases,
         List<AdaptedPlan> adaptedPlans,
         Map<String, FeatureValue> currentFeatures) {
       called = true;
@@ -900,8 +900,8 @@ class CbrRetrievalServiceTest {
 
     ResolutionStep step1 =
         new ResolutionStep("triage", "triage", "w1", "SUCCESS", 1, Map.of(), null);
-    ResolvedCase case1 =
-        new ResolvedCase(
+    CbrPlanRecord case1 =
+        new CbrPlanRecord(
             "p1",
             "s1",
             "COMPLETED",
@@ -910,8 +910,8 @@ class CbrRetrievalServiceTest {
             List.of(step1),
             null,
             null);
-    ResolvedCase case2 =
-        new ResolvedCase(
+    CbrPlanRecord case2 =
+        new CbrPlanRecord(
             "p2",
             "s2",
             "COMPLETED",
@@ -922,8 +922,8 @@ class CbrRetrievalServiceTest {
             null);
     cbrStore.setResult(
         List.of(
-            new ScoredCbrCase<>(case1, "TestCase", 0.9),
-            new ScoredCbrCase<>(case2, "TestCase", 0.8)));
+            new CbrMatch<>(case1, "TestCase", 0.9),
+            new CbrMatch<>(case2, "TestCase", 0.8)));
 
     CbrRetrievalResult result =
         service.retrieveForSelectionWithEnsemble(
@@ -948,8 +948,8 @@ class CbrRetrievalServiceTest {
 
     ResolutionStep step1 =
         new ResolutionStep("triage", "triage", "w1", "SUCCESS", 1, Map.of(), null);
-    ResolvedCase case1 =
-        new ResolvedCase(
+    CbrPlanRecord case1 =
+        new CbrPlanRecord(
             "p1",
             "s1",
             "COMPLETED",
@@ -958,8 +958,8 @@ class CbrRetrievalServiceTest {
             List.of(step1),
             null,
             null);
-    ResolvedCase case2 =
-        new ResolvedCase(
+    CbrPlanRecord case2 =
+        new CbrPlanRecord(
             "p2",
             "s2",
             "COMPLETED",
@@ -970,8 +970,8 @@ class CbrRetrievalServiceTest {
             null);
     cbrStore.setResult(
         List.of(
-            new ScoredCbrCase<>(case1, "TestCase", 0.9),
-            new ScoredCbrCase<>(case2, "TestCase", 0.8)));
+            new CbrMatch<>(case1, "TestCase", 0.9),
+            new CbrMatch<>(case2, "TestCase", 0.8)));
 
     CbrRetrievalResult result =
         service.retrieveForSelectionWithEnsemble(
@@ -995,8 +995,8 @@ class CbrRetrievalServiceTest {
 
     ResolutionStep step1 =
         new ResolutionStep("triage", "triage", "w1", "SUCCESS", 1, Map.of(), null);
-    ResolvedCase case1 =
-        new ResolvedCase(
+    CbrPlanRecord case1 =
+        new CbrPlanRecord(
             "p1",
             "s1",
             "COMPLETED",
@@ -1005,7 +1005,7 @@ class CbrRetrievalServiceTest {
             List.of(step1),
             null,
             null);
-    cbrStore.setResult(List.of(new ScoredCbrCase<>(case1, "TestCase", 0.9)));
+    cbrStore.setResult(List.of(new CbrMatch<>(case1, "TestCase", 0.9)));
 
     CbrRetrievalResult result =
         service.retrieveForSelectionWithEnsemble(

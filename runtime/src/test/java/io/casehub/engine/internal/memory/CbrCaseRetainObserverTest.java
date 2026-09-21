@@ -38,13 +38,13 @@ import io.casehub.engine.common.spi.PlanItemStore;
 import io.casehub.ledger.api.spi.TrustScoreSource;
 import io.casehub.neocortex.memory.EraseRequest;
 import io.casehub.neocortex.memory.MemoryDomain;
-import io.casehub.neocortex.memory.cbr.CbrCase;
-import io.casehub.neocortex.memory.cbr.CbrCaseMemoryStore;
-import io.casehub.neocortex.memory.cbr.CbrFeatureSchema;
+import io.casehub.neocortex.memory.cbr.CbrRecord;
+import io.casehub.neocortex.memory.cbr.CbrRecordStore;
+import io.casehub.neocortex.memory.cbr.CbrRecordSchema;
 import io.casehub.neocortex.memory.cbr.CbrQuery;
 import io.casehub.neocortex.memory.cbr.FeatureValue;
-import io.casehub.neocortex.memory.cbr.ResolvedCase;
-import io.casehub.neocortex.memory.cbr.ScoredCbrCase;
+import io.casehub.neocortex.memory.cbr.CbrPlanRecord;
+import io.casehub.neocortex.memory.cbr.CbrMatch;
 import io.casehub.worker.api.Capability;
 import io.casehub.worker.api.Worker;
 import jakarta.enterprise.inject.Instance;
@@ -101,7 +101,7 @@ class CbrCaseRetainObserverTest {
         event("test-case", "COMPLETED", Map.of("transaction", Map.of("amount", 50000))));
 
     assertThat(store.storedCases).hasSize(1);
-    ResolvedCase stored = store.storedCases.get(0);
+    CbrPlanRecord stored = store.storedCases.get(0);
     assertThat(stored.problem()).isEqualTo("test-case");
     assertThat(stored.outcome()).isEqualTo("COMPLETED");
     assertThat(stored.features()).containsEntry("amount", FeatureValue.number(50000));
@@ -136,7 +136,7 @@ class CbrCaseRetainObserverTest {
     trustObserver.onOutcome(event("trust-case", "COMPLETED", Map.of("k", "v")));
 
     assertThat(store.storedCases).hasSize(1);
-    ResolvedCase stored = store.storedCases.get(0);
+    CbrPlanRecord stored = store.storedCases.get(0);
     assertThat(stored.producerAgentId()).isEqualTo("worker-1");
     assertThat(stored.trustScore()).isEqualTo(0.92);
   }
@@ -657,15 +657,15 @@ class CbrCaseRetainObserverTest {
     }
   }
 
-  static class RecordingCbrStore implements CbrCaseMemoryStore {
-    final List<ResolvedCase> storedCases = new ArrayList<>();
+  static class RecordingCbrStore implements CbrRecordStore {
+    final List<CbrPlanRecord> storedCases = new ArrayList<>();
     String lastCaseType, lastEntityId, lastTenantId, lastCaseId;
     MemoryDomain lastDomain;
     RuntimeException throwOnStore;
 
     @Override
     public String store(
-        CbrCase c,
+        CbrRecord c,
         String ct,
         String eid,
         MemoryDomain d,
@@ -675,7 +675,7 @@ class CbrCaseRetainObserverTest {
       if (throwOnStore != null) {
         throw throwOnStore;
       }
-      storedCases.add((ResolvedCase) c);
+      storedCases.add((CbrPlanRecord) c);
       lastCaseType = ct;
       lastEntityId = eid;
       lastDomain = d;
@@ -685,10 +685,10 @@ class CbrCaseRetainObserverTest {
     }
 
     @Override
-    public void registerSchema(CbrFeatureSchema s) {}
+    public void registerSchema(CbrRecordSchema s) {}
 
     @Override
-    public <C extends CbrCase> List<ScoredCbrCase<C>> retrieveSimilar(CbrQuery q, Class<C> t) {
+    public <C extends CbrRecord> List<CbrMatch<C>> retrieveSimilar(CbrQuery q, Class<C> t) {
       return List.of();
     }
 

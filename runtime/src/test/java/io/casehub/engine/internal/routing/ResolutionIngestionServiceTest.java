@@ -22,12 +22,12 @@ import io.casehub.api.spi.CorpusSourceAdapter;
 import io.casehub.api.spi.ResolutionGuideInput;
 import io.casehub.neocortex.memory.EraseRequest;
 import io.casehub.neocortex.memory.MemoryDomain;
-import io.casehub.neocortex.memory.cbr.CbrCase;
-import io.casehub.neocortex.memory.cbr.CbrCaseMemoryStore;
-import io.casehub.neocortex.memory.cbr.CbrFeatureSchema;
+import io.casehub.neocortex.memory.cbr.CbrRecord;
+import io.casehub.neocortex.memory.cbr.CbrRecordStore;
+import io.casehub.neocortex.memory.cbr.CbrRecordSchema;
 import io.casehub.neocortex.memory.cbr.CbrQuery;
-import io.casehub.neocortex.memory.cbr.ResolutionGuide;
-import io.casehub.neocortex.memory.cbr.ScoredCbrCase;
+import io.casehub.neocortex.memory.cbr.CbrGuidanceRecord;
+import io.casehub.neocortex.memory.cbr.CbrMatch;
 import io.casehub.platform.api.path.Path;
 import jakarta.enterprise.inject.Instance;
 import java.util.ArrayList;
@@ -65,8 +65,8 @@ class ResolutionIngestionServiceTest {
     service.ingest("tenant-1");
 
     assertThat(store.storedCases).hasSize(1);
-    assertThat(store.storedCases.get(0)).isInstanceOf(ResolutionGuide.class);
-    var guide = (ResolutionGuide) store.storedCases.get(0);
+    assertThat(store.storedCases.get(0)).isInstanceOf(CbrGuidanceRecord.class);
+    var guide = (CbrGuidanceRecord) store.storedCases.get(0);
     assertThat(guide.problem()).isEqualTo("Phishing runbook");
     assertThat(guide.solution()).isEqualTo("1. Isolate 2. Reset");
     assertThat(store.storedDomains.get(0).name()).isEqualTo("soc-domain");
@@ -103,7 +103,7 @@ class ResolutionIngestionServiceTest {
     service.ingest("tenant-1");
 
     assertThat(store.storedCases).hasSize(1);
-    assertThat(((ResolutionGuide) store.storedCases.get(0)).problem()).isEqualTo("Problem");
+    assertThat(((CbrGuidanceRecord) store.storedCases.get(0)).problem()).isEqualTo("Problem");
   }
 
   @Test
@@ -144,7 +144,7 @@ class ResolutionIngestionServiceTest {
     org.mockito.Mockito.when(adapterInstance.get()).thenReturn(adapter);
 
     @SuppressWarnings("unchecked")
-    Instance<CbrCaseMemoryStore> storeInstance = org.mockito.Mockito.mock(Instance.class);
+    Instance<CbrRecordStore> storeInstance = org.mockito.Mockito.mock(Instance.class);
     org.mockito.Mockito.when(storeInstance.isResolvable()).thenReturn(true);
     org.mockito.Mockito.when(storeInstance.get()).thenReturn(store);
 
@@ -165,14 +165,14 @@ class ResolutionIngestionServiceTest {
     };
   }
 
-  static class RecordingStore implements CbrCaseMemoryStore {
+  static class RecordingStore implements CbrRecordStore {
     final List<CbrCase> storedCases = new ArrayList<>();
     final List<MemoryDomain> storedDomains = new ArrayList<>();
     final List<String> storedTenantIds = new ArrayList<>();
     final List<String> supersededIds = new ArrayList<>();
 
     @Override
-    public void registerSchema(CbrFeatureSchema schema) {}
+    public void registerSchema(CbrRecordSchema schema) {}
 
     @Override
     public String store(
@@ -184,7 +184,7 @@ class ResolutionIngestionServiceTest {
     }
 
     @Override
-    public <C extends CbrCase> List<ScoredCbrCase<C>> retrieveSimilar(
+    public <C extends CbrRecord> List<CbrMatch<C>> retrieveSimilar(
         CbrQuery query, Class<C> caseType) {
       return List.of();
     }
