@@ -52,6 +52,8 @@ public class ImprovementBudgetEnforcer implements Resettable {
 
   private final ConcurrentHashMap<UUID, ImprovementRequest> activeImprovements =
       new ConcurrentHashMap<>();
+  private final ConcurrentHashMap<UUID, Set<String>> dynamicDenyPatterns =
+      new ConcurrentHashMap<>();
   private final ConcurrentHashMap<LocalDate, AtomicInteger> dailyCounts = new ConcurrentHashMap<>();
   private volatile Instant lastCompletionTime = Instant.EPOCH;
 
@@ -66,6 +68,15 @@ public class ImprovementBudgetEnforcer implements Resettable {
       for (String pattern : STRUCTURAL_DENIED_PATTERNS) {
         if (path.contains(pattern)) {
           return new BudgetCheck.Denied("Structural self-modification denied: " + path);
+        }
+      }
+    }
+
+    var dynamic = dynamicDenyPatterns.getOrDefault(caseId, Set.of());
+    for (String path : request.targetPaths()) {
+      for (String pattern : dynamic) {
+        if (path.contains(pattern)) {
+          return new BudgetCheck.Denied("Path denied by dynamic deny pattern: " + path);
         }
       }
     }
@@ -140,9 +151,46 @@ public class ImprovementBudgetEnforcer implements Resettable {
     return activeImprovements.size();
   }
 
+  public void addDenyPattern(UUID caseId, String pattern) {
+    dynamicDenyPatterns.computeIfAbsent(caseId, k -> ConcurrentHashMap.newKeySet()).add(pattern);
+  }
+
+  public void removeDenyPattern(UUID caseId, String pattern) {
+    var patterns = dynamicDenyPatterns.get(caseId);
+    if (patterns != null) {
+      patterns.remove(pattern);
+    }
+  }
+
+  public boolean isDenied(UUID caseId, ImprovementRequest request) {
+    for (String path : request.targetPaths()) {
+      for (String pattern : STRUCTURAL_DENIED_PATTERNS) {
+        if (path.contains(pattern)) {
+          return true;
+        }
+      }
+      var dynamic = dynamicDenyPatterns.getOrDefault(caseId, Set.of());
+      for (String pattern : dynamic) {
+        if (path.contains(pattern)) {
+          return true;
+        }
+      }
+    }
+    return false;
+  }
+
+  public Set<String> dynamicDenyPatterns(UUID caseId) {
+    return Set.copyOf(dynamicDenyPatterns.getOrDefault(caseId, Set.of()));
+  }
+
+  public static Set<String> staticDenyPatterns() {
+    return STRUCTURAL_DENIED_PATTERNS;
+  }
+
   @Override
   public void reset() {
     activeImprovements.clear();
+    dynamicDenyPatterns.clear();
     dailyCounts.clear();
     lastCompletionTime = Instant.EPOCH;
   }
