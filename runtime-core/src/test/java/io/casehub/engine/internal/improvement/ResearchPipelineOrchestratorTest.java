@@ -18,6 +18,9 @@ package io.casehub.engine.internal.improvement;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.casehub.api.model.stigmergy.CapabilityAreaAssessment;
+import io.casehub.api.model.stigmergy.EscalationPolicy;
+import io.casehub.api.model.stigmergy.GatePolicy;
+import io.casehub.api.model.stigmergy.ResearchPipelineResult;
 import io.casehub.api.spi.improvement.ResearchDepth;
 import io.casehub.engine.internal.improvement.research.DefaultHypothesisFormer;
 import io.casehub.engine.internal.improvement.research.DefaultResearchAnalyzer;
@@ -25,6 +28,7 @@ import io.casehub.engine.internal.improvement.research.DefaultResearchScoper;
 import io.casehub.engine.internal.improvement.research.DefaultResearchSearcher;
 import java.time.Instant;
 import java.util.Map;
+import java.util.UUID;
 import org.junit.jupiter.api.Test;
 
 class ResearchPipelineOrchestratorTest {
@@ -38,7 +42,9 @@ class ResearchPipelineOrchestratorTest {
             new DefaultResearchSearcher(),
             new DefaultResearchAnalyzer(),
             new DefaultHypothesisFormer(),
-            corpus);
+            corpus,
+            new ConductorInboxManager(),
+            new DefaultEscalationProvider());
 
     var area =
         new CapabilityAreaAssessment(
@@ -50,8 +56,16 @@ class ResearchPipelineOrchestratorTest {
             2.67,
             Instant.now());
 
-    var hypotheses = orchestrator.execute(ResearchDepth.HORIZON_SCAN, area, Map.of());
+    var result =
+        orchestrator.execute(
+            UUID.randomUUID(),
+            "t1",
+            ResearchDepth.HORIZON_SCAN,
+            area,
+            Map.of(),
+            new GatePolicy(null, null),
+            new EscalationPolicy(null, null));
 
-    assertThat(hypotheses).isNotNull();
+    assertThat(result).isInstanceOf(ResearchPipelineResult.Completed.class);
   }
 }
