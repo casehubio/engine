@@ -10,7 +10,7 @@
 
 ## Methods
 
-### `public static io.casehub.api.model.ai.Agent toApiAgent(com.fasterxml.jackson.databind.JsonNode agentNode)`
+### `public static io.casehub.api.model.ai.Agent toApiAgent(com.fasterxml.jackson.databind.JsonNode agentNode, io.casehub.api.model.ai.ChatModelProviderResolver resolver)`
 
 Builds an Agent directly from a raw YAML `com.fasterxml.jackson.databind.JsonNode`,
 bypassing the generated schema POJOs. Supports the flat YAML format where `model:` is the
@@ -20,10 +20,4 @@ level.
 #### Parameters
 
 - `agentNode` (`com.fasterxml.jackson.databind.JsonNode`)
-
-### `private static io.casehub.api.model.ai.ChatModelProvider toChatModelProviderFromNode(com.fasterxml.jackson.databind.JsonNode node, java.lang.String providerType)`
-
-#### Parameters
-
-- `node` (`com.fasterxml.jackson.databind.JsonNode`)
-- `providerType` (`java.lang.String`)
+- `resolver` (`io.casehub.api.model.ai.ChatModelProviderResolver`)
