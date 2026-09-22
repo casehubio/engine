@@ -146,6 +146,7 @@ public class ResearchPipelineOrchestrator {
     var entryId = UUID.randomUUID().toString();
     var entry =
         new ConductorInboxEntry(
+            caseId,
             entryId,
             stage,
             ConductorInboxEntry.Status.PENDING,

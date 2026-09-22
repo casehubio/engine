@@ -68,6 +68,7 @@ class EvolutionApiTest {
   void getInboxReturnsPendingEntries() {
     var entry =
         new ConductorInboxEntry(
+            caseId,
             "e1",
             ImprovementStage.RESEARCH_SCOPE,
             Status.PENDING,
@@ -92,6 +93,7 @@ class EvolutionApiTest {
   void resolveGateUpdatesEntryStatus() {
     var entry =
         new ConductorInboxEntry(
+            caseId,
             "e1",
             ImprovementStage.RESEARCH_SCOPE,
             Status.PENDING,

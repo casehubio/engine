@@ -75,6 +75,7 @@ public class ConductorInboxManager implements Resettable {
     }
     var resolved =
         new ConductorInboxEntry(
+            existing.caseId(),
             existing.id(),
             existing.stage(),
             decision.outcome(),
