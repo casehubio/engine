@@ -35,7 +35,7 @@ class EvolutionApiTest {
 
   @BeforeEach
   void setUp() {
-    var budgetEnforcer = new ImprovementBudgetEnforcer();
+    var budgetEnforcer = new ImprovementBudgetEnforcer(new InMemoryDenyPatternStore());
     inboxManager = new ConductorInboxManager();
     coordinator = new ImprovementCoordinator(new InMemoryImprovementBlockStore());
 
@@ -52,15 +52,15 @@ class EvolutionApiTest {
 
   @Test
   void addAndRemoveDenyPattern() {
-    api.addDenyPattern(caseId, "blocked-path");
+    api.addDenyPattern(caseId, "test-tenant", "blocked-path");
 
-    var view = api.getDenyPatterns(caseId);
+    var view = api.getDenyPatterns(caseId, "test-tenant");
     assertThat(view.staticPatterns()).isNotEmpty();
     assertThat(view.dynamicPatterns()).hasSize(1);
     assertThat(view.dynamicPatterns().get(0).pattern()).isEqualTo("blocked-path");
 
-    api.removeDenyPattern(caseId, "blocked-path");
-    var viewAfter = api.getDenyPatterns(caseId);
+    api.removeDenyPattern(caseId, "test-tenant", "blocked-path");
+    var viewAfter = api.getDenyPatterns(caseId, "test-tenant");
     assertThat(viewAfter.dynamicPatterns()).isEmpty();
   }
 

@@ -57,7 +57,7 @@ class EvolutionTickerTest {
 
     var signalRegistry = new SignalRegistry();
     var signalContext = new ImprovementSignalContext();
-    var budgetEnforcer = new ImprovementBudgetEnforcer();
+    var budgetEnforcer = new ImprovementBudgetEnforcer(new InMemoryDenyPatternStore());
     goalFormation =
         new ImprovementGoalFormationStrategy(budgetEnforcer, signalRegistry, signalContext);
 

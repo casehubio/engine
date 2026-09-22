@@ -1502,7 +1502,7 @@ public class CaseContextChangedEventHandler {
       if (improvementConfig != null) {
         var improvementStrategy = improvementStrategyInstance.get();
         var proposal =
-            improvementStrategy.proposeImprovements(caseInstance.getUuid(), improvementConfig);
+            improvementStrategy.proposeImprovements(caseInstance.getUuid(), caseInstance.tenancyId, improvementConfig);
         if (proposal != null
             && !proposal.goals().isEmpty()
             && goalFormationServiceInstance.isResolvable()) {

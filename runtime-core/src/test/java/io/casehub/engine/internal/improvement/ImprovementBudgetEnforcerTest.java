@@ -27,12 +27,13 @@ import org.junit.jupiter.api.Test;
 
 class ImprovementBudgetEnforcerTest {
 
+  private static final String TENANT = "test-tenant";
   private ImprovementBudgetEnforcer enforcer;
   private UUID caseId;
 
   @BeforeEach
   void setUp() {
-    enforcer = new ImprovementBudgetEnforcer();
+    enforcer = new ImprovementBudgetEnforcer(new InMemoryDenyPatternStore());
     caseId = UUID.randomUUID();
   }
 
@@ -49,7 +50,7 @@ class ImprovementBudgetEnforcerTest {
             10,
             Map.of());
 
-    var result = enforcer.check(caseId, budget, request);
+    var result = enforcer.check(caseId, budget, request, TENANT);
 
     assertThat(result).isInstanceOf(ImprovementBudgetEnforcer.BudgetCheck.Denied.class);
     assertThat(((ImprovementBudgetEnforcer.BudgetCheck.Denied) result).reason())
@@ -70,7 +71,7 @@ class ImprovementBudgetEnforcerTest {
             5,
             Map.of());
 
-    var result = enforcer.check(caseId, budget, request);
+    var result = enforcer.check(caseId, budget, request, TENANT);
 
     assertThat(result).isInstanceOf(ImprovementBudgetEnforcer.BudgetCheck.Denied.class);
   }
@@ -88,7 +89,7 @@ class ImprovementBudgetEnforcerTest {
             5,
             Map.of());
 
-    var result = enforcer.check(caseId, budget, request);
+    var result = enforcer.check(caseId, budget, request, TENANT);
 
     assertThat(result).isInstanceOf(ImprovementBudgetEnforcer.BudgetCheck.Denied.class);
   }
@@ -106,7 +107,7 @@ class ImprovementBudgetEnforcerTest {
             20,
             Map.of());
 
-    var result = enforcer.check(caseId, budget, request);
+    var result = enforcer.check(caseId, budget, request, TENANT);
 
     assertThat(result).isInstanceOf(ImprovementBudgetEnforcer.BudgetCheck.Allowed.class);
   }
@@ -126,7 +127,7 @@ class ImprovementBudgetEnforcerTest {
 
     enforcer.recordStart(caseId, request);
 
-    var result = enforcer.check(UUID.randomUUID(), budget, request);
+    var result = enforcer.check(UUID.randomUUID(), budget, request, TENANT);
 
     assertThat(result).isInstanceOf(ImprovementBudgetEnforcer.BudgetCheck.Denied.class);
     assertThat(((ImprovementBudgetEnforcer.BudgetCheck.Denied) result).reason())
@@ -149,7 +150,7 @@ class ImprovementBudgetEnforcerTest {
     enforcer.recordStart(caseId, request);
     enforcer.recordCompletion(caseId);
 
-    var result = enforcer.check(UUID.randomUUID(), budget, request);
+    var result = enforcer.check(UUID.randomUUID(), budget, request, TENANT);
 
     assertThat(result).isInstanceOf(ImprovementBudgetEnforcer.BudgetCheck.Denied.class);
     assertThat(((ImprovementBudgetEnforcer.BudgetCheck.Denied) result).reason())
@@ -170,7 +171,7 @@ class ImprovementBudgetEnforcerTest {
             10,
             Map.of());
 
-    var result = enforcer.check(caseId, budget, request);
+    var result = enforcer.check(caseId, budget, request, TENANT);
 
     assertThat(result).isInstanceOf(ImprovementBudgetEnforcer.BudgetCheck.Denied.class);
     assertThat(((ImprovementBudgetEnforcer.BudgetCheck.Denied) result).reason())
@@ -190,7 +191,7 @@ class ImprovementBudgetEnforcerTest {
             100,
             Map.of());
 
-    var result = enforcer.check(caseId, budget, request);
+    var result = enforcer.check(caseId, budget, request, TENANT);
 
     assertThat(result).isInstanceOf(ImprovementBudgetEnforcer.BudgetCheck.Denied.class);
     assertThat(((ImprovementBudgetEnforcer.BudgetCheck.Denied) result).reason())
@@ -210,7 +211,7 @@ class ImprovementBudgetEnforcerTest {
             10,
             Map.of());
 
-    var result = enforcer.check(caseId, budget, request);
+    var result = enforcer.check(caseId, budget, request, TENANT);
 
     assertThat(result).isInstanceOf(ImprovementBudgetEnforcer.BudgetCheck.Denied.class);
     assertThat(((ImprovementBudgetEnforcer.BudgetCheck.Denied) result).reason())
@@ -230,7 +231,7 @@ class ImprovementBudgetEnforcerTest {
             10,
             Map.of());
 
-    var result = enforcer.check(caseId, budget, request);
+    var result = enforcer.check(caseId, budget, request, TENANT);
 
     assertThat(result).isInstanceOf(ImprovementBudgetEnforcer.BudgetCheck.Allowed.class);
   }

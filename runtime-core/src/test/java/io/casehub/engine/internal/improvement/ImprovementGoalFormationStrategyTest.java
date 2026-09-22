@@ -38,7 +38,7 @@ class ImprovementGoalFormationStrategyTest {
 
   @BeforeEach
   void setUp() {
-    budgetEnforcer = new ImprovementBudgetEnforcer();
+    budgetEnforcer = new ImprovementBudgetEnforcer(new InMemoryDenyPatternStore());
     signalRegistry = new SignalRegistry();
     signalContext = new ImprovementSignalContext();
     strategy = new ImprovementGoalFormationStrategy(budgetEnforcer, signalRegistry, signalContext);
@@ -49,7 +49,7 @@ class ImprovementGoalFormationStrategyTest {
   void noProposalWhenNoImprovementConsensus() {
     var config = new ImprovementConfig(null, null, null, null, null);
 
-    var proposal = strategy.proposeImprovements(caseId, config);
+    var proposal = strategy.proposeImprovements(caseId, "test-tenant", config);
 
     assertThat(proposal).isNull();
   }
@@ -74,7 +74,7 @@ class ImprovementGoalFormationStrategyTest {
             20,
             Map.of()));
 
-    var proposal = strategy.proposeImprovements(caseId, config);
+    var proposal = strategy.proposeImprovements(caseId, "test-tenant", config);
 
     assertThat(proposal).isNotNull();
     assertThat(proposal.goals()).hasSize(1);
@@ -104,7 +104,7 @@ class ImprovementGoalFormationStrategyTest {
         new ImprovementRequest(
             "operational", "lint-fix", "checkstyle", "casehubio/engine", List.of(), 10, Map.of()));
 
-    var proposal = strategy.proposeImprovements(caseId, config);
+    var proposal = strategy.proposeImprovements(caseId, "test-tenant", config);
 
     assertThat(proposal).isNull();
   }
@@ -122,7 +122,7 @@ class ImprovementGoalFormationStrategyTest {
     signalRegistry.deposit(caseId, signalName, 1.0, Duration.ofHours(1), "agent-1", 100);
     signalRegistry.deposit(caseId, signalName, 1.0, Duration.ofHours(1), "agent-2", 100);
 
-    var proposal = strategy.proposeImprovements(caseId, config);
+    var proposal = strategy.proposeImprovements(caseId, "test-tenant", config);
 
     assertThat(proposal).isNull();
   }
@@ -141,7 +141,7 @@ class ImprovementGoalFormationStrategyTest {
         new ImprovementRequest(
             "operational", "lint-fix", "checkstyle", "casehubio/engine", List.of(), 10, Map.of()));
 
-    var proposal = strategy.proposeImprovements(caseId, config);
+    var proposal = strategy.proposeImprovements(caseId, "test-tenant", config);
 
     assertThat(proposal).isNull();
   }
