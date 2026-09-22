@@ -17,103 +17,67 @@ package io.casehub.engine.internal.improvement;
 
 import io.casehub.api.model.stigmergy.ConductorDecision;
 import io.casehub.api.model.stigmergy.ConductorInboxEntry;
-import io.casehub.api.model.stigmergy.ConductorInboxEntry.Status;
 import io.casehub.api.model.stigmergy.WatchPattern;
-import io.casehub.engine.common.spi.Resettable;
+import io.casehub.engine.common.spi.ConductorInboxRepository;
+import io.casehub.engine.common.spi.WatchPatternStore;
 import jakarta.enterprise.context.ApplicationScoped;
+import jakarta.inject.Inject;
+
 import java.time.Instant;
 import java.util.List;
 import java.util.UUID;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.CopyOnWriteArrayList;
 
 @ApplicationScoped
-public class ConductorInboxManager implements Resettable {
+public class ConductorInboxManager {
 
-  private final ConcurrentHashMap<UUID, ConcurrentHashMap<String, ConductorInboxEntry>> entries =
-      new ConcurrentHashMap<>();
-  private final ConcurrentHashMap<UUID, CopyOnWriteArrayList<WatchPattern>> watchPatterns =
-      new ConcurrentHashMap<>();
+    private final ConductorInboxRepository inboxRepository;
+    private final WatchPatternStore        watchPatternStore;
 
-  public String enqueue(UUID caseId, ConductorInboxEntry entry) {
-    entries.computeIfAbsent(caseId, k -> new ConcurrentHashMap<>()).put(entry.id(), entry);
-    return entry.id();
-  }
-
-  public List<ConductorInboxEntry> pending(UUID caseId) {
-    var caseEntries = entries.get(caseId);
-    if (caseEntries == null) {
-      return List.of();
+    @Inject
+    ConductorInboxManager(ConductorInboxRepository inboxRepository,
+                          WatchPatternStore watchPatternStore) {
+        this.inboxRepository   = inboxRepository;
+        this.watchPatternStore = watchPatternStore;
     }
-    return caseEntries.values().stream().filter(e -> e.status() == Status.PENDING).toList();
-  }
 
-  public int pendingCount(UUID caseId) {
-    var caseEntries = entries.get(caseId);
-    if (caseEntries == null) {
-      return 0;
+    public String enqueue(UUID caseId, ConductorInboxEntry entry, String tenancyId) {
+        inboxRepository.save(entry, tenancyId);
+        return entry.id();
     }
-    return (int) caseEntries.values().stream().filter(e -> e.status() == Status.PENDING).count();
-  }
 
-  public List<ConductorInboxEntry> allEntries(UUID caseId) {
-    var caseEntries = entries.get(caseId);
-    if (caseEntries == null) {
-      return List.of();
+    public List<ConductorInboxEntry> pending(UUID caseId, String tenancyId) {
+        return inboxRepository.findPending(caseId, tenancyId);
     }
-    return List.copyOf(caseEntries.values());
-  }
 
-  public void resolve(UUID caseId, String entryId, ConductorDecision decision) {
-    var caseEntries = entries.get(caseId);
-    if (caseEntries == null) {
-      return;
+    public int pendingCount(UUID caseId, String tenancyId) {
+        return inboxRepository.countPending(caseId, tenancyId);
     }
-    var existing = caseEntries.get(entryId);
-    if (existing == null) {
-      return;
+
+    public List<ConductorInboxEntry> allEntries(UUID caseId, String tenancyId) {
+        return inboxRepository.findAll(caseId, tenancyId);
     }
-    var resolved =
-        new ConductorInboxEntry(
-            existing.caseId(),
-            existing.id(),
-            existing.stage(),
-            decision.outcome(),
-            existing.category(),
-            existing.areaId(),
-            existing.improvementCaseId(),
-            existing.summary(),
-            existing.escalationTriggers(),
-            existing.confidence(),
-            existing.queuedAt(),
-            Instant.now(),
-            existing.timeoutMinutes(),
-            decision);
-    caseEntries.put(entryId, resolved);
-  }
 
-  public List<WatchPattern> activeWatchPatterns(UUID caseId) {
-    var patterns = watchPatterns.get(caseId);
-    if (patterns == null) {
-      return List.of();
+    public void resolve(UUID caseId, String entryId, ConductorDecision decision,
+                        String tenancyId) {
+        var existing = inboxRepository.findById(caseId, entryId, tenancyId);
+        if (existing == null) {return;}
+        var resolved = new ConductorInboxEntry(
+                existing.caseId(), existing.id(), existing.stage(), decision.outcome(),
+                existing.category(), existing.areaId(), existing.improvementCaseId(),
+                existing.summary(), existing.escalationTriggers(), existing.confidence(),
+                existing.queuedAt(), Instant.now(), existing.timeoutMinutes(), decision);
+        inboxRepository.save(resolved, tenancyId);
     }
-    return List.copyOf(patterns);
-  }
 
-  public void addWatchPattern(UUID caseId, WatchPattern pattern) {
-    watchPatterns.computeIfAbsent(caseId, k -> new CopyOnWriteArrayList<>()).add(pattern);
-  }
-
-  public void removeWatchPattern(UUID caseId, String patternId) {
-    var patterns = watchPatterns.get(caseId);
-    if (patterns != null) {
-      patterns.removeIf(p -> p.id().equals(patternId));
+    public List<WatchPattern> activeWatchPatterns(UUID caseId, String tenancyId) {
+        return watchPatternStore.findActive(caseId, tenancyId);
     }
-  }
 
-  @Override
-  public void reset() {
-    entries.clear();
-    watchPatterns.clear();
-  }
+    public void addWatchPattern(UUID caseId, WatchPattern pattern, String tenancyId) {
+        watchPatternStore.save(caseId, pattern, tenancyId);
+    }
+
+    public void removeWatchPattern(UUID caseId, String patternId, String tenancyId) {
+        watchPatternStore.remove(caseId, patternId, tenancyId);
+    }
 }

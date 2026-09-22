@@ -36,7 +36,7 @@ class EvolutionApiTest {
   @BeforeEach
   void setUp() {
     var budgetEnforcer = new ImprovementBudgetEnforcer(new InMemoryDenyPatternStore());
-    inboxManager = new ConductorInboxManager();
+    inboxManager = new ConductorInboxManager(new InMemoryConductorInboxRepository(), new InMemoryWatchPatternStore());
     coordinator = new ImprovementCoordinator(new InMemoryImprovementBlockStore());
 
     api =
@@ -82,9 +82,9 @@ class EvolutionApiTest {
             null,
             null,
             null);
-    inboxManager.enqueue(caseId, entry);
+    inboxManager.enqueue(caseId, entry, "test-tenant");
 
-    var inbox = api.getInbox(caseId);
+    var inbox = api.getInbox(caseId, "test-tenant");
     assertThat(inbox).hasSize(1);
     assertThat(inbox.get(0).id()).isEqualTo("e1");
   }
@@ -107,11 +107,11 @@ class EvolutionApiTest {
             null,
             null,
             null);
-    inboxManager.enqueue(caseId, entry);
+    inboxManager.enqueue(caseId, entry, "test-tenant");
 
-    api.resolveGate(caseId, "e1", Status.APPROVED, "looks good", null);
+    api.resolveGate(caseId, "test-tenant", "e1", Status.APPROVED, "looks good", null);
 
-    assertThat(api.getInbox(caseId)).isEmpty();
+    assertThat(api.getInbox(caseId, "test-tenant")).isEmpty();
   }
 
   @Test
@@ -124,14 +124,14 @@ class EvolutionApiTest {
 
   @Test
   void addAndRemoveWatchPattern() {
-    api.addWatchPattern(caseId, "security", null, null, null);
+    api.addWatchPattern(caseId, "test-tenant", "security", null, null, null);
 
-    var patterns = inboxManager.activeWatchPatterns(caseId);
+    var patterns = inboxManager.activeWatchPatterns(caseId, "test-tenant");
     assertThat(patterns).hasSize(1);
     assertThat(patterns.get(0).category()).isEqualTo("security");
 
-    api.removeWatchPattern(caseId, patterns.get(0).id());
-    assertThat(inboxManager.activeWatchPatterns(caseId)).isEmpty();
+    api.removeWatchPattern(caseId, "test-tenant", patterns.get(0).id());
+    assertThat(inboxManager.activeWatchPatterns(caseId, "test-tenant")).isEmpty();
   }
 
   @Test
