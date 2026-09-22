@@ -15,6 +15,7 @@
  */
 package io.casehub.actorstate;
 
+import io.casehub.platform.api.mcp.HandWrittenEndpoint;
 import jakarta.annotation.security.PermitAll;
 import jakarta.ws.rs.GET;
 import jakarta.ws.rs.Path;
@@ -32,6 +33,7 @@ import jakarta.ws.rs.core.MediaType;
  * in-memory without tenancy).
  */
 @jakarta.enterprise.inject.Vetoed
+@HandWrittenEndpoint("shared engine infrastructure")
 @PermitAll
 @Path("/actors")
 @Produces(MediaType.APPLICATION_JSON)
