@@ -29,7 +29,37 @@ public record ImprovementConfig(
     @Nullable RollbackPolicy rollbackPolicy,
     @Nullable HealthPolicy healthPolicy,
     @Nullable ResearchMethodology researchMethodology,
-    @Nullable Integer conflictTrivialThreshold) {
+    @Nullable Integer conflictTrivialThreshold,
+    @Nullable GatePolicy gatePolicy,
+    @Nullable EscalationPolicy escalationPolicy) {
+
+  public ImprovementConfig(
+      @Nullable String signalNamespace,
+      @Nullable Integer consensusMinSources,
+      @Nullable List<String> enabledCategories,
+      @Nullable ImprovementBudget budget,
+      @Nullable String caseTemplateId,
+      @Nullable Boolean evolutionEnabled,
+      @Nullable Integer evolutionTickIntervalMinutes,
+      @Nullable RollbackPolicy rollbackPolicy,
+      @Nullable HealthPolicy healthPolicy,
+      @Nullable ResearchMethodology researchMethodology,
+      @Nullable Integer conflictTrivialThreshold) {
+    this(
+        signalNamespace,
+        consensusMinSources,
+        enabledCategories,
+        budget,
+        caseTemplateId,
+        evolutionEnabled,
+        evolutionTickIntervalMinutes,
+        rollbackPolicy,
+        healthPolicy,
+        researchMethodology,
+        conflictTrivialThreshold,
+        null,
+        null);
+  }
 
   public ImprovementConfig(
       @Nullable String signalNamespace,
@@ -43,6 +73,8 @@ public record ImprovementConfig(
         enabledCategories,
         budget,
         caseTemplateId,
+        null,
+        null,
         null,
         null,
         null,
@@ -103,5 +135,13 @@ public record ImprovementConfig(
 
   public int effectiveConflictTrivialThreshold() {
     return conflictTrivialThreshold != null ? conflictTrivialThreshold : 10;
+  }
+
+  public GatePolicy effectiveGatePolicy() {
+    return gatePolicy != null ? gatePolicy : new GatePolicy(null, null);
+  }
+
+  public EscalationPolicy effectiveEscalationPolicy() {
+    return escalationPolicy != null ? escalationPolicy : new EscalationPolicy(null, null);
   }
 }
