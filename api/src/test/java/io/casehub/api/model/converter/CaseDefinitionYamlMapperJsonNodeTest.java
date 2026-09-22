@@ -43,7 +43,12 @@ class CaseDefinitionYamlMapperJsonNodeTest {
 
       JsonNode node = YAML_MAPPER.readTree(bytes);
       CaseDefinition fromNode =
-          CaseDefinitionYamlMapper.load(node, YAML_MAPPER, null, n -> WorkerFunction.NONE);
+          CaseDefinitionYamlMapper.load(
+              node,
+              YAML_MAPPER,
+              null,
+              n -> WorkerFunction.NONE,
+              io.casehub.api.model.ai.InlineChatModelProviderResolver.INSTANCE);
 
       assertThat(fromNode.getNamespace()).isEqualTo(fromStream.getNamespace());
       assertThat(fromNode.getName()).isEqualTo(fromStream.getName());
@@ -58,7 +63,11 @@ class CaseDefinitionYamlMapperJsonNodeTest {
     assertThatThrownBy(
             () ->
                 CaseDefinitionYamlMapper.load(
-                    (JsonNode) null, YAML_MAPPER, null, n -> WorkerFunction.NONE))
+                    (JsonNode) null,
+                    YAML_MAPPER,
+                    null,
+                    n -> WorkerFunction.NONE,
+                    io.casehub.api.model.ai.InlineChatModelProviderResolver.INSTANCE))
         .isInstanceOf(IllegalArgumentException.class)
         .hasMessageContaining("null");
   }

@@ -21,6 +21,8 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.casehub.api.model.ai.Agent;
+import io.casehub.api.model.ai.ChatModelProviderResolver;
+import io.casehub.api.model.ai.InlineChatModelProviderResolver;
 import org.junit.jupiter.api.Test;
 
 /**
@@ -30,26 +32,28 @@ import org.junit.jupiter.api.Test;
 class AgentConverterTest {
 
   private static final ObjectMapper JSON = new ObjectMapper();
+  private static final ChatModelProviderResolver RESOLVER =
+      InlineChatModelProviderResolver.INSTANCE;
 
   // ---- null / error handling ------------------------------------------------
 
   @Test
   void toApiAgent_nullInput_returnsNull() {
-    Agent result = AgentConverter.toApiAgent((JsonNode) null);
+    Agent result = AgentConverter.toApiAgent((JsonNode) null, RESOLVER);
     assertThat(result).isNull();
   }
 
   @Test
   void toApiAgent_nullJsonNode_returnsNull() throws Exception {
     JsonNode node = JSON.readTree("null");
-    Agent result = AgentConverter.toApiAgent(node);
+    Agent result = AgentConverter.toApiAgent(node, RESOLVER);
     assertThat(result).isNull();
   }
 
   @Test
   void toApiAgent_missingModel_throwsIllegalArgument() throws Exception {
     JsonNode node = JSON.readTree("{\"systemPrompt\": \"You are a test agent\"}");
-    assertThatThrownBy(() -> AgentConverter.toApiAgent(node))
+    assertThatThrownBy(() -> AgentConverter.toApiAgent(node, RESOLVER))
         .isInstanceOf(IllegalArgumentException.class)
         .hasMessageContaining("model");
   }
@@ -57,7 +61,7 @@ class AgentConverterTest {
   @Test
   void toApiAgent_unknownProvider_throwsIllegalArgument() throws Exception {
     JsonNode node = JSON.readTree("{\"model\": \"unknown-llm\", \"modelName\": \"x\"}");
-    assertThatThrownBy(() -> AgentConverter.toApiAgent(node))
+    assertThatThrownBy(() -> AgentConverter.toApiAgent(node, RESOLVER))
         .isInstanceOf(IllegalArgumentException.class)
         .hasMessageContaining("Unknown model provider");
   }
@@ -73,7 +77,7 @@ class AgentConverterTest {
          "baseUrl":"http://openclaw:3000/v1","organizationId":"org-test",
          "temperature":0.7,"topP":0.9,"maxTokens":1024,
          "systemPrompt":"You are a test agent"}""");
-    Agent result = AgentConverter.toApiAgent(node);
+    Agent result = AgentConverter.toApiAgent(node, RESOLVER);
     assertThat(result).isNotNull();
   }
 
@@ -82,7 +86,7 @@ class AgentConverterTest {
     JsonNode node =
         JSON.readTree(
             "{\"model\":\"openai\",\"modelName\":\"gpt-4o-mini\",\"apiKey\":\"sk-test-key\",\"systemPrompt\":\"test\"}");
-    Agent result = AgentConverter.toApiAgent(node);
+    Agent result = AgentConverter.toApiAgent(node, RESOLVER);
     assertThat(result).isNotNull();
   }
 
@@ -94,7 +98,7 @@ class AgentConverterTest {
         JSON.readTree(
             "{\"model\":\"ollama\",\"baseUrl\":\"http://localhost:11434\","
                 + "\"modelName\":\"llama2\",\"temperature\":0.5,\"topP\":0.8,\"systemPrompt\":\"test\"}");
-    Agent result = AgentConverter.toApiAgent(node);
+    Agent result = AgentConverter.toApiAgent(node, RESOLVER);
     assertThat(result).isNotNull();
   }
 
@@ -104,7 +108,7 @@ class AgentConverterTest {
         JSON.readTree(
             "{\"model\":\"ollama\",\"baseUrl\":\"http://localhost:11434\","
                 + "\"modelName\":\"mistral\",\"systemPrompt\":\"test\"}");
-    Agent result = AgentConverter.toApiAgent(node);
+    Agent result = AgentConverter.toApiAgent(node, RESOLVER);
     assertThat(result).isNotNull();
   }
 
@@ -119,7 +123,7 @@ class AgentConverterTest {
          "apiKey":"sk-ant-test-key","baseUrl":"https://custom-anthropic.example.com",
          "version":"2023-06-01","temperature":0.3,"topP":0.95,"topK":40,"maxTokens":2048,
          "systemPrompt":"You are a test agent"}""");
-    Agent result = AgentConverter.toApiAgent(node);
+    Agent result = AgentConverter.toApiAgent(node, RESOLVER);
     assertThat(result).isNotNull();
   }
 
@@ -129,7 +133,7 @@ class AgentConverterTest {
         JSON.readTree(
             "{\"model\":\"anthropic\",\"modelName\":\"claude-3-haiku-20240307\","
                 + "\"apiKey\":\"sk-ant-key\",\"systemPrompt\":\"test\"}");
-    Agent result = AgentConverter.toApiAgent(node);
+    Agent result = AgentConverter.toApiAgent(node, RESOLVER);
     assertThat(result).isNotNull();
   }
 
@@ -142,7 +146,7 @@ class AgentConverterTest {
             "{\"model\":\"mistralai\",\"modelName\":\"mistral-large-latest\","
                 + "\"apiKey\":\"msk-test-key\",\"baseUrl\":\"https://custom-mistral.example.com\","
                 + "\"temperature\":0.4,\"topP\":0.85,\"maxTokens\":512,\"systemPrompt\":\"test\"}");
-    Agent result = AgentConverter.toApiAgent(node);
+    Agent result = AgentConverter.toApiAgent(node, RESOLVER);
     assertThat(result).isNotNull();
   }
 
@@ -151,7 +155,7 @@ class AgentConverterTest {
     JsonNode node =
         JSON.readTree(
             "{\"model\":\"mistral\",\"modelName\":\"mistral-small\",\"apiKey\":\"msk-key\",\"systemPrompt\":\"test\"}");
-    Agent result = AgentConverter.toApiAgent(node);
+    Agent result = AgentConverter.toApiAgent(node, RESOLVER);
     assertThat(result).isNotNull();
   }
 
@@ -165,7 +169,7 @@ class AgentConverterTest {
         {"model":"googleaigemini","modelName":"gemini-pro",
          "apiKey":"gai-test-key","temperature":0.6,"topP":0.7,"maxTokens":1500,
          "systemPrompt":"test"}""");
-    Agent result = AgentConverter.toApiAgent(node);
+    Agent result = AgentConverter.toApiAgent(node, RESOLVER);
     assertThat(result).isNotNull();
   }
 
@@ -174,7 +178,7 @@ class AgentConverterTest {
     JsonNode node =
         JSON.readTree(
             "{\"model\":\"gemini\",\"modelName\":\"gemini-1.5-pro\",\"apiKey\":\"gai-key\",\"systemPrompt\":\"test\"}");
-    Agent result = AgentConverter.toApiAgent(node);
+    Agent result = AgentConverter.toApiAgent(node, RESOLVER);
     assertThat(result).isNotNull();
   }
 
@@ -185,7 +189,7 @@ class AgentConverterTest {
             """
                         {"model":"openai","modelName":"gpt-4","apiKey":"sk-test",
                          "systemPrompt":"You are a test agent"}""");
-    Agent result = AgentConverter.toApiAgent(node);
+    Agent result = AgentConverter.toApiAgent(node, RESOLVER);
     assertThat(result).isNotNull();
     assertThat(result.modelId()).isEqualTo("gpt-4");
   }
@@ -197,7 +201,7 @@ class AgentConverterTest {
             """
                         {"model":"openai","apiKey":"sk-test",
                          "systemPrompt":"You are a test agent"}""");
-    Agent result = AgentConverter.toApiAgent(node);
+    Agent result = AgentConverter.toApiAgent(node, RESOLVER);
     assertThat(result).isNotNull();
     assertThat(result.modelId()).isNull();
   }

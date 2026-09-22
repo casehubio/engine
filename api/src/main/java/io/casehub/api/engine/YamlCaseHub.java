@@ -72,7 +72,11 @@ public class YamlCaseHub extends CaseHub {
             JsonNode merged = (overlay != null) ? YamlMerger.merge(base, overlay) : base;
             CaseDefinition loaded =
                 CaseDefinitionYamlMapper.load(
-                    merged, objectMapper, expressionEngineRegistry, workerFunctionProviderRegistry);
+                    merged,
+                    objectMapper,
+                    expressionEngineRegistry,
+                    workerFunctionProviderRegistry,
+                    io.casehub.api.model.ai.InlineChatModelProviderResolver.INSTANCE);
             augment(loaded);
             definition = loaded;
           } catch (RuntimeException e) {

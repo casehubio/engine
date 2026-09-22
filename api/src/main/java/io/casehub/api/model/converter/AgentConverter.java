@@ -15,14 +15,6 @@
  */
 package io.casehub.api.model.converter;
 
-import io.casehub.api.model.ai.AgentBuilder;
-import io.casehub.api.model.ai.ChatModelProvider;
-import io.casehub.api.model.ai.anthropic.AnthropicChatModelProvider;
-import io.casehub.api.model.ai.gemini.GoogleAiGeminiChatModelProvider;
-import io.casehub.api.model.ai.mistral.MistralAiChatModelProvider;
-import io.casehub.api.model.ai.ollama.OllamaChatModelProvider;
-import io.casehub.api.model.ai.openai.OpenAiChatModelProvider;
-
 public class AgentConverter {
 
   /**
@@ -32,7 +24,8 @@ public class AgentConverter {
    * level.
    */
   public static io.casehub.api.model.ai.Agent toApiAgent(
-      com.fasterxml.jackson.databind.JsonNode agentNode) {
+      com.fasterxml.jackson.databind.JsonNode agentNode,
+      io.casehub.api.model.ai.ChatModelProviderResolver resolver) {
     if (agentNode == null || agentNode.isNull()) {
       return null;
     }
@@ -48,12 +41,13 @@ public class AgentConverter {
       providerType = modelNode != null ? modelNode.asText() : null;
       providerConfigNode = agentNode;
     }
-    ChatModelProvider modelProvider = toChatModelProviderFromNode(providerConfigNode, providerType);
+    io.casehub.api.model.ai.ChatModelProvider modelProvider =
+        resolver.resolve(providerType, providerConfigNode);
 
     String modelNameForId =
         providerConfigNode.has("modelName") ? providerConfigNode.get("modelName").asText() : null;
 
-    AgentBuilder builder =
+    io.casehub.api.model.ai.AgentBuilder builder =
         io.casehub.api.model.ai.Agent.builder()
             .systemPrompt(
                 agentNode.has("systemPrompt") ? agentNode.get("systemPrompt").asText() : null)
@@ -71,102 +65,5 @@ public class AgentConverter {
     }
 
     return builder.build();
-  }
-
-  private static ChatModelProvider toChatModelProviderFromNode(
-      com.fasterxml.jackson.databind.JsonNode node, String providerType) {
-    if (providerType == null) {
-      throw new IllegalArgumentException("agent 'model' field (provider type) is required");
-    }
-    String modelName = node.has("modelName") ? node.get("modelName").asText() : null;
-    String apiKey = node.has("apiKey") ? node.get("apiKey").asText() : null;
-    Double temperature = node.has("temperature") ? node.get("temperature").asDouble() : null;
-    Double topP = node.has("topP") ? node.get("topP").asDouble() : null;
-    Integer maxTokens = node.has("maxTokens") ? node.get("maxTokens").asInt() : null;
-    String baseUrl = node.has("baseUrl") ? node.get("baseUrl").asText() : null;
-
-    return switch (providerType.toLowerCase()) {
-      case "openai" -> {
-        var b = OpenAiChatModelProvider.builder().apiKey(apiKey).modelName(modelName);
-        if (baseUrl != null) {
-          b.baseUrl(baseUrl);
-        }
-        if (temperature != null) {
-          b.temperature(temperature);
-        }
-        if (topP != null) {
-          b.topP(topP);
-        }
-        if (maxTokens != null) {
-          b.maxTokens(maxTokens);
-        }
-        if (node.has("organizationId")) {
-          b.organizationId(node.get("organizationId").asText());
-        }
-        yield b.build();
-      }
-      case "anthropic" -> {
-        var b = AnthropicChatModelProvider.builder().apiKey(apiKey).modelName(modelName);
-        if (baseUrl != null) {
-          b.baseUrl(baseUrl);
-        }
-        if (temperature != null) {
-          b.temperature(temperature);
-        }
-        if (topP != null) {
-          b.topP(topP);
-        }
-        if (maxTokens != null) {
-          b.maxTokens(maxTokens);
-        }
-        if (node.has("version")) {
-          b.version(node.get("version").asText());
-        }
-        if (node.has("topK")) {
-          b.topK(node.get("topK").asInt());
-        }
-        yield b.build();
-      }
-      case "ollama" -> {
-        var b = OllamaChatModelProvider.builder().baseUrl(baseUrl).modelName(modelName);
-        if (temperature != null) {
-          b.temperature(temperature);
-        }
-        if (topP != null) {
-          b.topP(topP);
-        }
-        yield b.build();
-      }
-      case "mistralai", "mistral" -> {
-        var b = MistralAiChatModelProvider.builder().apiKey(apiKey).modelName(modelName);
-        if (baseUrl != null) {
-          b.baseUrl(baseUrl);
-        }
-        if (temperature != null) {
-          b.temperature(temperature);
-        }
-        if (topP != null) {
-          b.topP(topP);
-        }
-        if (maxTokens != null) {
-          b.maxTokens(maxTokens);
-        }
-        yield b.build();
-      }
-      case "googleaigemini", "gemini" -> {
-        var b = GoogleAiGeminiChatModelProvider.builder().apiKey(apiKey).modelName(modelName);
-        if (temperature != null) {
-          b.temperature(temperature);
-        }
-        if (topP != null) {
-          b.topP(topP);
-        }
-        if (maxTokens != null) {
-          b.maxOutputTokens(maxTokens);
-        }
-        yield b.build();
-      }
-      default -> throw new IllegalArgumentException("Unknown model provider: " + providerType);
-    };
   }
 }
