@@ -200,7 +200,7 @@ All per-case-selectable strategies extend `NamedStrategy` (from `casehub-platfor
 ### Placement Rules
 
 - **Operational SPIs** (worker provisioning, lifecycle, channels, routing, risk classification) → `api/spi/`
-- **Persistence SPIs** (`CaseMetaModelRepository`, `CaseInstanceRepository`, `EventLogRepository`, `PlanItemStore`, `SubCaseGroupRepository`) → `common-core/spi/`
+- **Persistence SPIs** (`CaseMetaModelRepository`, `CaseInstanceRepository`, `EventLogRepository`, `PlanItemStore`, `SubCaseGroupRepository`, `ConductorInboxRepository`, `WatchPatternStore`, `DenyPatternStore`, `ImprovementBlockStore`) → `common-core/spi/`
 - **Scheduler SPIs** (`JobScheduler`, `WorkerExecutionManager`, `WorkerExecutionRoutingStrategy`) → `common-core/spi/scheduler/`
 - **CDI-specific SPIs** (CDI qualifiers like `@WorkerBackend`) → `common/spi/scheduler/` (Quarkus module, not `-core`)
 - **CDI events** for optional observers → `common-core/spi/event/`
