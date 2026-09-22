@@ -41,7 +41,7 @@ class ConductorInboxManagerTest {
 
   @Test
   void enqueueAndRetrievePending() {
-    var entry = makeEntry("e1", ImprovementStage.RESEARCH_SCOPE);
+    var entry = makeEntry(caseId, "e1", ImprovementStage.RESEARCH_SCOPE);
     manager.enqueue(caseId, entry);
 
     var pending = manager.pending(caseId);
@@ -52,7 +52,7 @@ class ConductorInboxManagerTest {
 
   @Test
   void resolveGateApproved() {
-    manager.enqueue(caseId, makeEntry("e1", ImprovementStage.RESEARCH_SCOPE));
+    manager.enqueue(caseId, makeEntry(caseId, "e1", ImprovementStage.RESEARCH_SCOPE));
     var decision = new ConductorDecision(Status.APPROVED, null, "looks good", null);
 
     manager.resolve(caseId, "e1", decision);
@@ -63,7 +63,7 @@ class ConductorInboxManagerTest {
 
   @Test
   void resolveGateRejected() {
-    manager.enqueue(caseId, makeEntry("e1", ImprovementStage.HYPOTHESIS_APPROVAL));
+    manager.enqueue(caseId, makeEntry(caseId, "e1", ImprovementStage.HYPOTHESIS_APPROVAL));
     var decision = new ConductorDecision(Status.REJECTED, null, "not viable", null);
 
     manager.resolve(caseId, "e1", decision);
@@ -73,7 +73,7 @@ class ConductorInboxManagerTest {
 
   @Test
   void resolveGateRedirected() {
-    manager.enqueue(caseId, makeEntry("e1", ImprovementStage.IMPLEMENTATION_PLAN));
+    manager.enqueue(caseId, makeEntry(caseId, "e1", ImprovementStage.IMPLEMENTATION_PLAN));
     var decision = new ConductorDecision(Status.REDIRECTED, null, "try different approach", null);
 
     manager.resolve(caseId, "e1", decision);
@@ -83,8 +83,8 @@ class ConductorInboxManagerTest {
 
   @Test
   void pendingCountMatchesPendingEntries() {
-    manager.enqueue(caseId, makeEntry("e1", ImprovementStage.RESEARCH_SCOPE));
-    manager.enqueue(caseId, makeEntry("e2", ImprovementStage.HYPOTHESIS_APPROVAL));
+    manager.enqueue(caseId, makeEntry(caseId, "e1", ImprovementStage.RESEARCH_SCOPE));
+    manager.enqueue(caseId, makeEntry(caseId, "e2", ImprovementStage.HYPOTHESIS_APPROVAL));
 
     assertThat(manager.pendingCount(caseId)).isEqualTo(2);
 
@@ -96,8 +96,8 @@ class ConductorInboxManagerTest {
   @Test
   void perCaseIsolation() {
     var case2 = UUID.randomUUID();
-    manager.enqueue(caseId, makeEntry("e1", ImprovementStage.RESEARCH_SCOPE));
-    manager.enqueue(case2, makeEntry("e2", ImprovementStage.RESEARCH_SCOPE));
+    manager.enqueue(caseId, makeEntry(caseId, "e1", ImprovementStage.RESEARCH_SCOPE));
+    manager.enqueue(case2, makeEntry(case2, "e2", ImprovementStage.RESEARCH_SCOPE));
 
     assertThat(manager.pending(caseId)).hasSize(1);
     assertThat(manager.pending(case2)).hasSize(1);
@@ -115,7 +115,7 @@ class ConductorInboxManagerTest {
 
   @Test
   void resolvedEntryRetainsDecision() {
-    manager.enqueue(caseId, makeEntry("e1", ImprovementStage.PR_REVIEW));
+    manager.enqueue(caseId, makeEntry(caseId, "e1", ImprovementStage.PR_REVIEW));
     var decision = new ConductorDecision(Status.APPROVED, null, "LGTM", "nice work");
 
     manager.resolve(caseId, "e1", decision);
@@ -164,7 +164,7 @@ class ConductorInboxManagerTest {
 
   @Test
   void resetClearsAllState() {
-    manager.enqueue(caseId, makeEntry("e1", ImprovementStage.RESEARCH_SCOPE));
+    manager.enqueue(caseId, makeEntry(caseId, "e1", ImprovementStage.RESEARCH_SCOPE));
     manager.addWatchPattern(
         caseId, new WatchPattern("w1", "security", null, null, null, Instant.now()));
 
@@ -180,8 +180,9 @@ class ConductorInboxManagerTest {
     assertThat(manager.pendingCount(UUID.randomUUID())).isZero();
   }
 
-  private ConductorInboxEntry makeEntry(String id, ImprovementStage stage) {
+  private ConductorInboxEntry makeEntry(UUID caseId, String id, ImprovementStage stage) {
     return new ConductorInboxEntry(
+        caseId,
         id,
         stage,
         Status.PENDING,

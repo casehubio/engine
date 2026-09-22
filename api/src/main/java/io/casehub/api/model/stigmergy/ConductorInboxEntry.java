@@ -21,6 +21,7 @@ import java.util.List;
 import java.util.UUID;
 
 public record ConductorInboxEntry(
+    UUID caseId,
     String id,
     ImprovementStage stage,
     Status status,
