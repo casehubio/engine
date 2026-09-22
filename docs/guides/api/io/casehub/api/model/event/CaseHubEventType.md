@@ -38,11 +38,17 @@
 
 ### `CASE_STATUS_CHANGED` (`io.casehub.api.model.event.CaseHubEventType`)
 
+### `CATEGORY_PAUSED` (`io.casehub.api.model.event.CaseHubEventType`)
+
+### `CATEGORY_UNPAUSED` (`io.casehub.api.model.event.CaseHubEventType`)
+
 ### `CIRCUIT_BREAKER_RECOVERING` (`io.casehub.api.model.event.CaseHubEventType`)
 
 ### `CIRCUIT_BREAKER_RESET` (`io.casehub.api.model.event.CaseHubEventType`)
 
 ### `CIRCUIT_BREAKER_TRIPPED` (`io.casehub.api.model.event.CaseHubEventType`)
+
+### `COMPLIANCE_LEVEL_CHANGED` (`io.casehub.api.model.event.CaseHubEventType`)
 
 ### `CONSTRAINTS_INFEASIBLE` (`io.casehub.api.model.event.CaseHubEventType`)
 
@@ -53,6 +59,14 @@
 ### `CONVERGENCE_DETECTED` (`io.casehub.api.model.event.CaseHubEventType`)
 
 ### `COORDINATION_STORM_DETECTED` (`io.casehub.api.model.event.CaseHubEventType`)
+
+### `DENY_PATTERN_ADDED` (`io.casehub.api.model.event.CaseHubEventType`)
+
+### `DENY_PATTERN_REMOVED` (`io.casehub.api.model.event.CaseHubEventType`)
+
+### `GATE_PENDING` (`io.casehub.api.model.event.CaseHubEventType`)
+
+### `GATE_RESOLVED` (`io.casehub.api.model.event.CaseHubEventType`)
 
 ### `GOAL_DECOMPOSED` (`io.casehub.api.model.event.CaseHubEventType`)
 
@@ -66,6 +80,8 @@
 
 ### `GOAL_REVISED` (`io.casehub.api.model.event.CaseHubEventType`)
 
+### `IMPROVEMENT_BLOCKED` (`io.casehub.api.model.event.CaseHubEventType`)
+
 ### `IMPROVEMENT_BUDGET_DENIED` (`io.casehub.api.model.event.CaseHubEventType`)
 
 ### `IMPROVEMENT_CONFLICT_DETECTED` (`io.casehub.api.model.event.CaseHubEventType`)
@@ -73,6 +89,8 @@
 ### `IMPROVEMENT_GOAL_FORMED` (`io.casehub.api.model.event.CaseHubEventType`)
 
 ### `IMPROVEMENT_OUTCOME` (`io.casehub.api.model.event.CaseHubEventType`)
+
+### `IMPROVEMENT_UNBLOCKED` (`io.casehub.api.model.event.CaseHubEventType`)
 
 ### `INTEREST_CONVERGENCE_DETECTED` (`io.casehub.api.model.event.CaseHubEventType`)
 
@@ -121,6 +139,8 @@
 ### `PLAN_DEEPENED` (`io.casehub.api.model.event.CaseHubEventType`)
 
 ### `REACT_CYCLE` (`io.casehub.api.model.event.CaseHubEventType`)
+
+### `READINESS_EVALUATED` (`io.casehub.api.model.event.CaseHubEventType`)
 
 ### `RECOVERY_ESCALATED` (`io.casehub.api.model.event.CaseHubEventType`)
 
@@ -185,6 +205,14 @@
 ### `TASK_CREATED` (`io.casehub.api.model.event.CaseHubEventType`)
 
 ### `TASK_FAILED` (`io.casehub.api.model.event.CaseHubEventType`)
+
+### `TICK_EVALUATED` (`io.casehub.api.model.event.CaseHubEventType`)
+
+### `TICK_HEARTBEAT` (`io.casehub.api.model.event.CaseHubEventType`)
+
+### `WATCH_PATTERN_ADDED` (`io.casehub.api.model.event.CaseHubEventType`)
+
+### `WATCH_PATTERN_REMOVED` (`io.casehub.api.model.event.CaseHubEventType`)
 
 ### `WORKER_EXECUTION_COMPLETED` (`io.casehub.api.model.event.CaseHubEventType`)
 
