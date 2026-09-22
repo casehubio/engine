@@ -117,11 +117,11 @@ public class DefaultEngineEvolutionApi {
     inboxManager.removeWatchPattern(caseId, patternId);
   }
 
-  public void blockImprovement(UUID caseId, UUID improvementId, UUID blockedBy) {
-    coordinator.block(caseId, improvementId, blockedBy);
-  }
+    public void blockImprovement(UUID caseId, String tenancyId, UUID improvementId, UUID blockedBy) {
+        coordinator.block(caseId, improvementId, blockedBy, tenancyId);
+    }
 
-  public void unblockImprovement(UUID caseId, UUID improvementId) {
-    coordinator.unblock(caseId, improvementId);
+  public void unblockImprovement(UUID caseId, String tenancyId, UUID improvementId) {
+    coordinator.unblock(caseId, improvementId, tenancyId);
   }
 }

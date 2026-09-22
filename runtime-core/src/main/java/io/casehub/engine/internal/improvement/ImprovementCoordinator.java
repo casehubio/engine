@@ -15,44 +15,38 @@
  */
 package io.casehub.engine.internal.improvement;
 
-import io.casehub.engine.common.spi.Resettable;
+import io.casehub.engine.common.spi.ImprovementBlockStore;
 import jakarta.annotation.Nullable;
 import jakarta.enterprise.context.ApplicationScoped;
+import jakarta.inject.Inject;
+
 import java.util.UUID;
-import java.util.concurrent.ConcurrentHashMap;
 
 @ApplicationScoped
-public class ImprovementCoordinator implements Resettable {
+public class ImprovementCoordinator {
 
-  private final ConcurrentHashMap<UUID, ConcurrentHashMap<UUID, UUID>> blocks =
-      new ConcurrentHashMap<>();
+    private final ImprovementBlockStore blockStore;
 
-  public void block(UUID caseId, UUID improvementCaseId, UUID blockerImprovementId) {
-    blocks
-        .computeIfAbsent(caseId, k -> new ConcurrentHashMap<>())
-        .put(improvementCaseId, blockerImprovementId);
-  }
-
-  public void unblock(UUID caseId, UUID improvementCaseId) {
-    var caseBlocks = blocks.get(caseId);
-    if (caseBlocks != null) {
-      caseBlocks.remove(improvementCaseId);
+    @Inject
+    ImprovementCoordinator(ImprovementBlockStore blockStore) {
+        this.blockStore = blockStore;
     }
-  }
 
-  public boolean isBlocked(UUID caseId, UUID improvementCaseId) {
-    var caseBlocks = blocks.get(caseId);
-    return caseBlocks != null && caseBlocks.containsKey(improvementCaseId);
-  }
+    public void block(UUID caseId, UUID improvementCaseId, UUID blockerImprovementId,
+                      String tenancyId) {
+        blockStore.save(caseId, improvementCaseId, blockerImprovementId, tenancyId);
+    }
 
-  @Nullable
-  public UUID blockedBy(UUID caseId, UUID improvementCaseId) {
-    var caseBlocks = blocks.get(caseId);
-    return caseBlocks != null ? caseBlocks.get(improvementCaseId) : null;
-  }
+    public void unblock(UUID caseId, UUID improvementCaseId, String tenancyId) {
+        blockStore.remove(caseId, improvementCaseId, tenancyId);
+    }
 
-  @Override
-  public void reset() {
-    blocks.clear();
-  }
+    public boolean isBlocked(UUID caseId, UUID improvementCaseId, String tenancyId) {
+        return blockStore.isBlocked(caseId, improvementCaseId, tenancyId);
+    }
+
+    @Nullable
+    public UUID blockedBy(UUID caseId, UUID improvementCaseId, String tenancyId) {
+        return blockStore.blockedBy(caseId, improvementCaseId, tenancyId);
+    }
 }

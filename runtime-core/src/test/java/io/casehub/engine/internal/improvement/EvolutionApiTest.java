@@ -37,7 +37,7 @@ class EvolutionApiTest {
   void setUp() {
     var budgetEnforcer = new ImprovementBudgetEnforcer();
     inboxManager = new ConductorInboxManager();
-    coordinator = new ImprovementCoordinator();
+    coordinator = new ImprovementCoordinator(new InMemoryImprovementBlockStore());
 
     api =
         new DefaultEngineEvolutionApi(
@@ -139,11 +139,11 @@ class EvolutionApiTest {
     var improvementId = UUID.randomUUID();
     var blockerId = UUID.randomUUID();
 
-    api.blockImprovement(caseId, improvementId, blockerId);
-    assertThat(coordinator.isBlocked(caseId, improvementId)).isTrue();
+    api.blockImprovement(caseId, "test-tenant", improvementId, blockerId);
+    assertThat(coordinator.isBlocked(caseId, improvementId, "test-tenant")).isTrue();
 
-    api.unblockImprovement(caseId, improvementId);
-    assertThat(coordinator.isBlocked(caseId, improvementId)).isFalse();
+    api.unblockImprovement(caseId, "test-tenant", improvementId);
+    assertThat(coordinator.isBlocked(caseId, improvementId, "test-tenant")).isFalse();
   }
 
   @Test

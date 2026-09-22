@@ -24,7 +24,6 @@ import io.casehub.eidos.api.GoalPriority;
 import io.casehub.engine.common.internal.signal.SignalRegistry;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
-
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;

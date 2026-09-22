@@ -15,13 +15,12 @@
  */
 package io.casehub.engine.internal.convergence;
 
-import io.casehub.api.model.convergence.OutputConvergenceConfig;
-import org.junit.jupiter.api.Test;
+import static org.assertj.core.api.Assertions.assertThat;
 
+import io.casehub.api.model.convergence.OutputConvergenceConfig;
 import java.util.Map;
 import java.util.UUID;
-
-import static org.assertj.core.api.Assertions.assertThat;
+import org.junit.jupiter.api.Test;
 
 class OutputConvergenceMonitorTest {
 

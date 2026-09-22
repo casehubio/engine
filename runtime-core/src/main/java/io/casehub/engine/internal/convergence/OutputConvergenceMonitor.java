@@ -20,7 +20,6 @@ import io.casehub.api.model.convergence.OutputConvergenceConfig;
 import io.casehub.engine.common.spi.Resettable;
 import jakarta.annotation.Nullable;
 import jakarta.enterprise.context.ApplicationScoped;
-
 import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
 import java.util.ArrayList;

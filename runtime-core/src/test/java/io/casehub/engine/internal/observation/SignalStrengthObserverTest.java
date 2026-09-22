@@ -15,20 +15,19 @@
  */
 package io.casehub.engine.internal.observation;
 
+import static org.assertj.core.api.Assertions.assertThat;
+
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.node.JsonNodeFactory;
 import io.casehub.api.model.signal.PerceivedSignal;
 import io.casehub.api.spi.observation.Observation;
 import io.casehub.api.spi.observation.ObservationContext;
-import org.junit.jupiter.api.Test;
-
 import java.time.Duration;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
-
-import static org.assertj.core.api.Assertions.assertThat;
+import org.junit.jupiter.api.Test;
 
 class SignalStrengthObserverTest {
 
