@@ -15,6 +15,9 @@
  */
 package io.casehub.engine.internal.executor;
 
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.within;
+
 import io.casehub.api.engine.InterestSpace;
 import io.casehub.api.engine.SignalSpace;
 import io.casehub.api.model.WorkerContext;
@@ -22,16 +25,12 @@ import io.casehub.api.model.signal.PerceivedSignal;
 import io.casehub.api.model.signal.SignalConfig;
 import io.casehub.engine.common.internal.signal.SignalRegistry;
 import io.casehub.engine.internal.signal.DefaultSignalSpace;
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Test;
-
 import java.time.Duration;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
-
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.within;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
 class DefaultWorkerRuntimeSignalTest {
 
