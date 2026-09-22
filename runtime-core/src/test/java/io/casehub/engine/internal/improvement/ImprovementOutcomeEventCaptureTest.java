@@ -45,7 +45,7 @@ class ImprovementOutcomeEventCaptureTest {
   void setUp() {
     eventLogRepo = new RecordingEventLogRepository();
     signalRegistry = new SignalRegistry();
-    budgetEnforcer = new ImprovementBudgetEnforcer();
+    budgetEnforcer = new ImprovementBudgetEnforcer(new InMemoryDenyPatternStore());
     capture =
         new ImprovementOutcomeEventCapture(
             new ImprovementOutcomeRecorder(eventLogRepo),

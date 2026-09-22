@@ -86,7 +86,7 @@ public class EvolutionTicker implements Resettable {
     }
     gates.add(new GateResult("circuit_breaker_check", GateVerdict.PASSED, null));
 
-    var proposal = goalFormation.proposeImprovements(caseId, config);
+    var proposal = goalFormation.proposeImprovements(caseId, tenancyId, config);
     if (proposal == null || proposal.goals().isEmpty()) {
       return recordTrace(
           caseId,

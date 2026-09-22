@@ -55,12 +55,12 @@ public class DefaultEngineEvolutionApi {
     return tickTraceBuffer.recent(caseId, limit != null ? limit : 20);
   }
 
-  public DenyPatternView getDenyPatterns(UUID caseId) {
+  public DenyPatternView getDenyPatterns(UUID caseId, String tenancyId) {
     return new DenyPatternView(
-        List.copyOf(ImprovementBudgetEnforcer.staticDenyPatterns()),
-        budgetEnforcer.dynamicDenyPatterns(caseId).stream()
-            .map(p -> new DenyPatternView.DynamicDenyEntry(p, "operator", Instant.now()))
-            .toList());
+            List.copyOf(ImprovementBudgetEnforcer.staticDenyPatterns()),
+            budgetEnforcer.dynamicDenyPatterns(caseId, tenancyId).stream()
+                          .map(p -> new DenyPatternView.DynamicDenyEntry(p, "operator", Instant.now()))
+                          .toList());
   }
 
   public EvolutionSummary getSummary(
@@ -74,12 +74,12 @@ public class DefaultEngineEvolutionApi {
     return summarizationProvider.summarize(caseId, tenancyId, scope);
   }
 
-  public void addDenyPattern(UUID caseId, String pattern) {
-    budgetEnforcer.addDenyPattern(caseId, pattern);
+  public void addDenyPattern(UUID caseId, String tenancyId, String pattern) {
+    budgetEnforcer.addDenyPattern(caseId, pattern, tenancyId);
   }
 
-  public void removeDenyPattern(UUID caseId, String pattern) {
-    budgetEnforcer.removeDenyPattern(caseId, pattern);
+  public void removeDenyPattern(UUID caseId, String tenancyId, String pattern) {
+    budgetEnforcer.removeDenyPattern(caseId, pattern, tenancyId);
   }
 
   public List<ConductorInboxEntry> getInbox(UUID caseId) {
