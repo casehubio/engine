@@ -1740,7 +1740,8 @@ class CaseDefinitionYamlMapperTest {
         new ByteArrayInputStream(yaml.getBytes(StandardCharsets.UTF_8)),
         mapper,
         registry,
-        r -> null);
+        r -> null,
+        io.casehub.api.model.ai.InlineChatModelProviderResolver.INSTANCE);
 
     assertThat(registry.exprs).hasSize(5);
     assertThat(registry.exprs)
@@ -1773,7 +1774,8 @@ class CaseDefinitionYamlMapperTest {
         new ByteArrayInputStream(yaml.getBytes(StandardCharsets.UTF_8)),
         mapper,
         registry,
-        r -> null);
+        r -> null,
+        io.casehub.api.model.ai.InlineChatModelProviderResolver.INSTANCE);
 
     assertThat(registry.langs).containsOnly("jq");
   }
@@ -1804,7 +1806,8 @@ class CaseDefinitionYamlMapperTest {
         new ByteArrayInputStream(yaml.getBytes(StandardCharsets.UTF_8)),
         mapper,
         registry,
-        r -> null);
+        r -> null,
+        io.casehub.api.model.ai.InlineChatModelProviderResolver.INSTANCE);
 
     assertThat(registry.langs).containsOnly("drools");
   }
@@ -1874,7 +1877,8 @@ class CaseDefinitionYamlMapperTest {
                     new ByteArrayInputStream(yaml.getBytes(StandardCharsets.UTF_8)),
                     new ObjectMapper(new YAMLFactory()),
                     strictRegistry,
-                    r -> null))
+                    r -> null,
+                    io.casehub.api.model.ai.InlineChatModelProviderResolver.INSTANCE))
         .isInstanceOf(IllegalArgumentException.class)
         .hasMessageContaining("unknown-lang");
   }
@@ -1913,7 +1917,8 @@ class CaseDefinitionYamlMapperTest {
             new ByteArrayInputStream(yaml.getBytes(StandardCharsets.UTF_8)),
             mapper,
             registry,
-            r -> null);
+            r -> null,
+            io.casehub.api.model.ai.InlineChatModelProviderResolver.INSTANCE);
 
     assertThat(def.getDefaultWorkerBridge()).isInstanceOf(JacksonPojoBridge.class);
     assertThat(def.getDefaultWorkerBridge().contextType()).isEqualTo(TestContextPojo.class);
@@ -1939,7 +1944,8 @@ class CaseDefinitionYamlMapperTest {
                     new ByteArrayInputStream(yaml.getBytes(StandardCharsets.UTF_8)),
                     mapper,
                     new RecordingRegistry(),
-                    r -> null))
+                    r -> null,
+                    io.casehub.api.model.ai.InlineChatModelProviderResolver.INSTANCE))
         .isInstanceOf(IllegalArgumentException.class)
         .hasMessageContaining("not found");
   }
@@ -1970,7 +1976,8 @@ class CaseDefinitionYamlMapperTest {
             new ByteArrayInputStream(yaml.getBytes(StandardCharsets.UTF_8)),
             mapper,
             registry,
-            r -> null);
+            r -> null,
+            io.casehub.api.model.ai.InlineChatModelProviderResolver.INSTANCE);
 
     assertThat(def.getDefaultWorkerBridge()).isNull();
   }
@@ -2001,7 +2008,8 @@ class CaseDefinitionYamlMapperTest {
         new ByteArrayInputStream(yaml.getBytes(StandardCharsets.UTF_8)),
         mapper,
         registry,
-        r -> null);
+        r -> null,
+        io.casehub.api.model.ai.InlineChatModelProviderResolver.INSTANCE);
 
     assertThat(registry.langs).containsOnly("mvel");
   }
@@ -2033,7 +2041,8 @@ class CaseDefinitionYamlMapperTest {
         new ByteArrayInputStream(yaml.getBytes(StandardCharsets.UTF_8)),
         mapper,
         registry,
-        r -> null);
+        r -> null,
+        io.casehub.api.model.ai.InlineChatModelProviderResolver.INSTANCE);
 
     assertThat(registry.langs).containsOnly("jq");
   }
@@ -2065,7 +2074,8 @@ class CaseDefinitionYamlMapperTest {
         new ByteArrayInputStream(yaml.getBytes(StandardCharsets.UTF_8)),
         mapper,
         registry,
-        r -> null);
+        r -> null,
+        io.casehub.api.model.ai.InlineChatModelProviderResolver.INSTANCE);
 
     assertThat(registry.langs).containsOnly("mvel");
   }
@@ -2096,7 +2106,8 @@ class CaseDefinitionYamlMapperTest {
         new ByteArrayInputStream(yaml.getBytes(StandardCharsets.UTF_8)),
         mapper,
         registry,
-        r -> null);
+        r -> null,
+        io.casehub.api.model.ai.InlineChatModelProviderResolver.INSTANCE);
 
     assertThat(registry.langs).containsOnly("jq");
   }

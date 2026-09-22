@@ -35,9 +35,8 @@ import org.jboss.logging.Logger;
  * CaseDefinitionModule}. Post-processing of worker functions and GOAP shorthands is handled by
  * {@link YamlCaseDefinitionConverter}.
  *
- * <p>Use {@link #load(InputStream, ObjectMapper, ExpressionEngineRegistry,
- * WorkerFunctionProviderRegistry)} in CDI contexts. Use {@link #load(InputStream)} for non-CDI
- * contexts (tests, tooling) — JQ only.
+ * <p>Use the multi-parameter {@code load()} overload in CDI contexts. Use {@link
+ * #load(InputStream)} for non-CDI contexts (tests, tooling) — JQ only.
  */
 public final class CaseDefinitionYamlMapper {
 
@@ -127,7 +126,8 @@ public final class CaseDefinitionYamlMapper {
       final InputStream yamlStream,
       final ObjectMapper objectMapper,
       final ExpressionEngineRegistry registry,
-      final WorkerFunctionProviderRegistry providerRegistry)
+      final WorkerFunctionProviderRegistry providerRegistry,
+      final io.casehub.api.model.ai.ChatModelProviderResolver chatModelResolver)
       throws IOException {
     if (yamlStream == null) {
       throw new IllegalArgumentException("InputStream cannot be null");
@@ -149,7 +149,10 @@ public final class CaseDefinitionYamlMapper {
     return YamlCaseDefinitionConverter.convert(
         yaml,
         registry != null ? registry : JQ_ONLY,
-        providerRegistry != null ? providerRegistry : EMPTY_PROVIDERS);
+        providerRegistry != null ? providerRegistry : EMPTY_PROVIDERS,
+        chatModelResolver != null
+            ? chatModelResolver
+            : io.casehub.api.model.ai.InlineChatModelProviderResolver.INSTANCE);
   }
 
   /**
@@ -170,7 +173,8 @@ public final class CaseDefinitionYamlMapper {
       final ObjectMapper objectMapper,
       final ExpressionEngineRegistry registry,
       final WorkerFunctionProviderRegistry providerRegistry,
-      final java.util.Map<String, io.casehub.yaml.core.resolver.VariableSource> variableSources)
+      final java.util.Map<String, io.casehub.yaml.core.resolver.VariableSource> variableSources,
+      final io.casehub.api.model.ai.ChatModelProviderResolver chatModelResolver)
       throws IOException {
     if (yamlStream == null) {
       throw new IllegalArgumentException("InputStream cannot be null");
@@ -194,7 +198,10 @@ public final class CaseDefinitionYamlMapper {
     return YamlCaseDefinitionConverter.convert(
         yaml,
         registry != null ? registry : JQ_ONLY,
-        providerRegistry != null ? providerRegistry : EMPTY_PROVIDERS);
+        providerRegistry != null ? providerRegistry : EMPTY_PROVIDERS,
+        chatModelResolver != null
+            ? chatModelResolver
+            : io.casehub.api.model.ai.InlineChatModelProviderResolver.INSTANCE);
   }
 
   /**
@@ -211,7 +218,8 @@ public final class CaseDefinitionYamlMapper {
       final JsonNode mergedNode,
       final ObjectMapper objectMapper,
       final ExpressionEngineRegistry registry,
-      final WorkerFunctionProviderRegistry providerRegistry) {
+      final WorkerFunctionProviderRegistry providerRegistry,
+      final io.casehub.api.model.ai.ChatModelProviderResolver chatModelResolver) {
     if (mergedNode == null) {
       throw new IllegalArgumentException("JsonNode cannot be null");
     }
@@ -230,7 +238,10 @@ public final class CaseDefinitionYamlMapper {
     return YamlCaseDefinitionConverter.convert(
         yaml,
         registry != null ? registry : JQ_ONLY,
-        providerRegistry != null ? providerRegistry : EMPTY_PROVIDERS);
+        providerRegistry != null ? providerRegistry : EMPTY_PROVIDERS,
+        chatModelResolver != null
+            ? chatModelResolver
+            : io.casehub.api.model.ai.InlineChatModelProviderResolver.INSTANCE);
   }
 
   /**
@@ -577,14 +588,18 @@ public final class CaseDefinitionYamlMapper {
    * expression support.
    *
    * <p>For non-CDI contexts (tests, tooling). Does not support custom expression languages — use
-   * {@link #load(InputStream, ObjectMapper, ExpressionEngineRegistry,
-   * WorkerFunctionProviderRegistry)} in CDI deployments.
+   * the multi-parameter {@code load()} overload in CDI deployments.
    *
    * @param yamlStream InputStream containing YAML CaseDefinition
    * @return API model CaseDefinition
    * @throws IOException if reading or parsing fails
    */
   public static CaseDefinition load(final InputStream yamlStream) throws IOException {
-    return load(yamlStream, new ObjectMapper(new YAMLFactory()), JQ_ONLY, EMPTY_PROVIDERS);
+    return load(
+        yamlStream,
+        new ObjectMapper(new YAMLFactory()),
+        JQ_ONLY,
+        EMPTY_PROVIDERS,
+        io.casehub.api.model.ai.InlineChatModelProviderResolver.INSTANCE);
   }
 }

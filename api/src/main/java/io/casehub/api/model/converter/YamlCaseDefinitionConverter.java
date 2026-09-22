@@ -165,7 +165,8 @@ public final class YamlCaseDefinitionConverter {
   public static CaseDefinition convert(
       YamlCaseDefinition yaml,
       ExpressionEngineRegistry registry,
-      WorkerFunctionProviderRegistry providers) {
+      WorkerFunctionProviderRegistry providers,
+      io.casehub.api.model.ai.ChatModelProviderResolver chatModelResolver) {
     CaseDefinition def = new CaseDefinition(yaml.namespace(), yaml.name(), yaml.version());
 
     convertTopLevel(yaml, def);
@@ -179,7 +180,7 @@ public final class YamlCaseDefinitionConverter {
         yaml.spec() != null && !yaml.spec().workers().isEmpty()
             ? yaml.spec().workers()
             : yaml.workers();
-    convertWorkers(effectiveWorkers, def, providers);
+    convertWorkers(effectiveWorkers, def, providers, chatModelResolver);
 
     List<YamlBinding> effectiveBindings =
         yaml.spec() != null && !yaml.spec().bindings().isEmpty()
@@ -491,7 +492,10 @@ public final class YamlCaseDefinitionConverter {
   // --- Workers ------------------------------------------------------------
 
   private static void convertWorkers(
-      List<YamlWorker> yamlWorkers, CaseDefinition def, WorkerFunctionProviderRegistry providers) {
+      List<YamlWorker> yamlWorkers,
+      CaseDefinition def,
+      WorkerFunctionProviderRegistry providers,
+      io.casehub.api.model.ai.ChatModelProviderResolver chatModelResolver) {
     Map<String, Worker> workerIndex = new LinkedHashMap<>();
     List<String> sequenceWorkerNames = new ArrayList<>();
 
@@ -541,7 +545,7 @@ public final class YamlCaseDefinitionConverter {
         WorkerFunction<?, ?> function = providers.createFunction(rawWorker);
         if (function == null) {
           if (yw.agent() != null) {
-            function = buildAgentFunction(yw);
+            function = buildAgentFunction(yw, chatModelResolver);
           } else if (yw.contextType() != null) {
             function = buildTypedSyncFunction(yw);
           } else {
@@ -606,10 +610,11 @@ public final class YamlCaseDefinitionConverter {
     applyAgentDescriptors(yamlWorkers, def);
   }
 
-  private static WorkerFunction<?, ?> buildAgentFunction(YamlWorker yw) {
+  private static WorkerFunction<?, ?> buildAgentFunction(
+      YamlWorker yw, io.casehub.api.model.ai.ChatModelProviderResolver chatModelResolver) {
     try {
       JsonNode agentNode = MAPPER.valueToTree(yw.agent());
-      Agent agent = AgentConverter.toApiAgent(agentNode);
+      Agent agent = AgentConverter.toApiAgent(agentNode, chatModelResolver);
       return new AgentWorkerFunction(agent);
     } catch (Exception e) {
       LOG.warnf(

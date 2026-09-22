@@ -36,7 +36,8 @@ class CaseDefinitionYamlMapperVariableTest {
         new ObjectMapper(new YAMLFactory()),
         null,
         null,
-        sources);
+        sources,
+        io.casehub.api.model.ai.InlineChatModelProviderResolver.INSTANCE);
   }
 
   @Test
