@@ -6,11 +6,12 @@
 
 ## Methods
 
-### `public abstract io.casehub.api.model.stigmergy.CapabilityAreaAssessment assess(java.util.UUID caseId)`
+### `public abstract io.casehub.api.model.stigmergy.CapabilityAreaAssessment assess(java.util.UUID caseId, java.lang.String tenancyId)`
 
 #### Parameters
 
 - `caseId` (`java.util.UUID`)
+- `tenancyId` (`java.lang.String`)
 
 ### `public abstract java.lang.String description()`
 

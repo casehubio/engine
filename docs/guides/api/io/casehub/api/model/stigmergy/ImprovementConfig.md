@@ -16,9 +16,13 @@
 
 ### `enabledCategories` (`java.util.List<java.lang.String>`)
 
+### `escalationPolicy` (`io.casehub.api.model.stigmergy.EscalationPolicy`)
+
 ### `evolutionEnabled` (`java.lang.Boolean`)
 
 ### `evolutionTickIntervalMinutes` (`java.lang.Integer`)
+
+### `gatePolicy` (`io.casehub.api.model.stigmergy.GatePolicy`)
 
 ### `healthPolicy` (`io.casehub.api.model.stigmergy.HealthPolicy`)
 
@@ -40,9 +44,13 @@
 
 ### `enabledCategories` (`java.util.List<java.lang.String>`)
 
+### `escalationPolicy` (`io.casehub.api.model.stigmergy.EscalationPolicy`)
+
 ### `evolutionEnabled` (`java.lang.Boolean`)
 
 ### `evolutionTickIntervalMinutes` (`java.lang.Integer`)
+
+### `gatePolicy` (`io.casehub.api.model.stigmergy.GatePolicy`)
 
 ### `healthPolicy` (`io.casehub.api.model.stigmergy.HealthPolicy`)
 
@@ -80,6 +88,24 @@
 - `researchMethodology` (`io.casehub.api.model.stigmergy.ResearchMethodology`)
 - `conflictTrivialThreshold` (`java.lang.Integer`)
 
+### `public ImprovementConfig(java.lang.String signalNamespace, java.lang.Integer consensusMinSources, java.util.List<java.lang.String> enabledCategories, io.casehub.api.model.stigmergy.ImprovementBudget budget, java.lang.String caseTemplateId, java.lang.Boolean evolutionEnabled, java.lang.Integer evolutionTickIntervalMinutes, io.casehub.api.model.stigmergy.RollbackPolicy rollbackPolicy, io.casehub.api.model.stigmergy.HealthPolicy healthPolicy, io.casehub.api.model.stigmergy.ResearchMethodology researchMethodology, java.lang.Integer conflictTrivialThreshold, io.casehub.api.model.stigmergy.GatePolicy gatePolicy, io.casehub.api.model.stigmergy.EscalationPolicy escalationPolicy)`
+
+#### Parameters
+
+- `signalNamespace` (`java.lang.String`)
+- `consensusMinSources` (`java.lang.Integer`)
+- `enabledCategories` (`java.util.List<java.lang.String>`)
+- `budget` (`io.casehub.api.model.stigmergy.ImprovementBudget`)
+- `caseTemplateId` (`java.lang.String`)
+- `evolutionEnabled` (`java.lang.Boolean`)
+- `evolutionTickIntervalMinutes` (`java.lang.Integer`)
+- `rollbackPolicy` (`io.casehub.api.model.stigmergy.RollbackPolicy`)
+- `healthPolicy` (`io.casehub.api.model.stigmergy.HealthPolicy`)
+- `researchMethodology` (`io.casehub.api.model.stigmergy.ResearchMethodology`)
+- `conflictTrivialThreshold` (`java.lang.Integer`)
+- `gatePolicy` (`io.casehub.api.model.stigmergy.GatePolicy`)
+- `escalationPolicy` (`io.casehub.api.model.stigmergy.EscalationPolicy`)
+
 ## Methods
 
 ### `public io.casehub.api.model.stigmergy.ImprovementBudget budget()`
@@ -100,9 +126,13 @@
 
 ### `public java.util.List<java.lang.String> effectiveEnabledCategories()`
 
+### `public io.casehub.api.model.stigmergy.EscalationPolicy effectiveEscalationPolicy()`
+
 ### `public boolean effectiveEvolutionEnabled()`
 
 ### `public int effectiveEvolutionTickIntervalMinutes()`
+
+### `public io.casehub.api.model.stigmergy.GatePolicy effectiveGatePolicy()`
 
 ### `public io.casehub.api.model.stigmergy.HealthPolicy effectiveHealthPolicy()`
 
@@ -120,9 +150,13 @@
 
 - `o` (`java.lang.Object`)
 
+### `public io.casehub.api.model.stigmergy.EscalationPolicy escalationPolicy()`
+
 ### `public java.lang.Boolean evolutionEnabled()`
 
 ### `public java.lang.Integer evolutionTickIntervalMinutes()`
+
+### `public io.casehub.api.model.stigmergy.GatePolicy gatePolicy()`
 
 ### `public final int hashCode()`
 
