@@ -58,8 +58,13 @@ public class PersistenceAutoConfiguration {
   }
 
   @Bean
-  CaseInstanceRepository caseInstanceRepository(EntityManager em, TenantContextManager tcm) {
-    return new SpringJpaCaseInstanceRepository(em, tcm);
+  CaseInstanceRepository caseInstanceRepository(
+      EntityManager em,
+      TenantContextManager tcm,
+      org.springframework.beans.factory.ObjectProvider<
+              io.casehub.engine.common.spi.recovery.CaseContextRecoveryStrategy>
+          recoveryStrategy) {
+    return new SpringJpaCaseInstanceRepository(em, tcm, recoveryStrategy);
   }
 
   @Bean

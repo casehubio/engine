@@ -38,12 +38,16 @@ class SpringJpaCaseInstanceRepository implements CaseInstanceRepository {
 
   private final EntityManager em;
   private final TenantContextManager tcm;
-  private final org.springframework.beans.factory.ObjectProvider<io.casehub.engine.common.spi.recovery.CaseContextRecoveryStrategy> recoveryStrategy;
+  private final org.springframework.beans.factory.ObjectProvider<
+          io.casehub.engine.common.spi.recovery.CaseContextRecoveryStrategy>
+      recoveryStrategy;
 
   SpringJpaCaseInstanceRepository(
       EntityManager em,
       TenantContextManager tcm,
-      org.springframework.beans.factory.ObjectProvider<io.casehub.engine.common.spi.recovery.CaseContextRecoveryStrategy> recoveryStrategy) {
+      org.springframework.beans.factory.ObjectProvider<
+              io.casehub.engine.common.spi.recovery.CaseContextRecoveryStrategy>
+          recoveryStrategy) {
     this.em = em;
     this.tcm = tcm;
     this.recoveryStrategy = recoveryStrategy;

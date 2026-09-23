@@ -68,26 +68,6 @@ public class JpaPlanItemStore implements PlanItemStore {
 
   @Override
   @Transactional
-  public void updateStatus(String planItemId, TaskStatus status) {
-    tcm.setCrossTenantContext();
-    em.flush();
-    if (status.isTerminal()) {
-      em.createQuery(
-              "UPDATE PlanItemEntity SET status = :status, completedAt = :completedAt WHERE planItemId = :planItemId")
-          .setParameter("status", status)
-          .setParameter("completedAt", java.time.Instant.now())
-          .setParameter("planItemId", planItemId)
-          .executeUpdate();
-    } else {
-      em.createQuery("UPDATE PlanItemEntity SET status = :status WHERE planItemId = :planItemId")
-          .setParameter("status", status)
-          .setParameter("planItemId", planItemId)
-          .executeUpdate();
-    }
-  }
-
-  @Override
-  @Transactional
   public void updateStatus(String planItemId, TaskStatus status, String tenancyId) {
     tcm.setTenantContext(tenancyId);
     em.flush();
