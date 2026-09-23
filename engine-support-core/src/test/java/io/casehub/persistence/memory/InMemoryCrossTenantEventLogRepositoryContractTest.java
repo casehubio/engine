@@ -13,28 +13,24 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.casehub.engine.common.internal.store;
+package io.casehub.persistence.memory;
 
-import io.casehub.engine.common.spi.recovery.PlanVersionStore;
-import io.casehub.engine.common.spi.recovery.PlanVersionStoreContractTest;
-import org.junit.jupiter.api.BeforeEach;
+import io.casehub.engine.common.internal.history.EventLog;
+import io.casehub.engine.common.spi.CrossTenantEventLogRepository;
+import io.casehub.engine.common.spi.CrossTenantEventLogRepositoryContractTest;
 
-class InMemoryPlanVersionStoreTest extends PlanVersionStoreContractTest {
+class InMemoryCrossTenantEventLogRepositoryContractTest
+    extends CrossTenantEventLogRepositoryContractTest {
 
-  private InMemoryPlanVersionStore store;
+  private final InMemoryEventLogRepository repo = new InMemoryEventLogRepository();
 
-  @BeforeEach
-  void setUp() {
-    store = new InMemoryPlanVersionStore();
+  @Override
+  protected CrossTenantEventLogRepository repository() {
+    return repo;
   }
 
   @Override
-  protected PlanVersionStore store() {
-    return store;
-  }
-
-  @Override
-  protected String tenancyId() {
-    return "tenant-1";
+  protected void appendEvent(EventLog event, String tenancyId) {
+    repo.append(event, tenancyId);
   }
 }
