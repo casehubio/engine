@@ -279,8 +279,8 @@ public class PlanItemCompletionApplier {
     }
     return def.getBindings().stream()
         .filter(b -> b.getName().equals(bindingName))
-        .map(Binding::getConflictResolverStrategy)
         .findFirst()
+        .map(Binding::getConflictResolverStrategy)
         .orElse(null);
   }
 }
