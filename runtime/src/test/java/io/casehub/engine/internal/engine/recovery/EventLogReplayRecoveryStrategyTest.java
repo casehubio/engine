@@ -133,6 +133,32 @@ class EventLogReplayRecoveryStrategyTest {
   }
 
   @Test
+  void recoverReplaysContextSignalAppliedEvent() {
+    UUID caseId = UUID.randomUUID();
+    ObjectNode startPayload = MAPPER.createObjectNode();
+    startPayload.putObject("working").put("status", "initial");
+
+    ObjectNode signalMeta = MAPPER.createObjectNode();
+    signalMeta.put("bindingName", "test-binding");
+    ObjectNode contextChanges = signalMeta.putObject("contextChanges");
+    contextChanges.putObject("priority").put("after", "high");
+    contextChanges.putObject("assignee").put("after", "agent-1");
+
+    eventLogRepo.events =
+        List.of(
+            eventLog(caseId, CaseHubEventType.CASE_STARTED, startPayload, null),
+            eventLog(caseId, CaseHubEventType.CONTEXT_SIGNAL_APPLIED, null, signalMeta));
+
+    CaseInstance instance = new CaseInstance();
+    instance.setUuid(caseId);
+
+    CaseContext ctx = strategy.recover(instance);
+    assertEquals("initial", ctx.getString("status"));
+    assertEquals("high", ctx.getString("priority"));
+    assertEquals("agent-1", ctx.getString("assignee"));
+  }
+
+  @Test
   void onContextChangedIsNoOp() {
     CaseInstance instance = new CaseInstance();
     instance.setUuid(UUID.randomUUID());

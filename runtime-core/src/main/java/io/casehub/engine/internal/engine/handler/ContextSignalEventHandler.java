@@ -51,16 +51,19 @@ public class ContextSignalEventHandler {
 
     payload.forEach((key, value) -> caseInstance.getCaseContext().set(key, value));
 
+    var metadata = MAPPER.createObjectNode();
+    metadata.put("bindingName", bindingName);
+    metadata.set("signalKeys", MAPPER.valueToTree(payload.keySet()));
+    var contextChanges = metadata.putObject("contextChanges");
+    payload.forEach(
+        (key, value) -> contextChanges.putObject(key).set("after", MAPPER.valueToTree(value)));
+
     EventLog eventLog = new EventLog();
     eventLog.setCaseId(caseInstance.getUuid());
     eventLog.setEventType(CaseHubEventType.CONTEXT_SIGNAL_APPLIED);
     eventLog.setStreamType(EventStreamType.CASE);
     eventLog.setTimestamp(Instant.now());
-    eventLog.setMetadata(
-        MAPPER
-            .createObjectNode()
-            .put("bindingName", bindingName)
-            .set("signalKeys", MAPPER.valueToTree(payload.keySet())));
+    eventLog.setMetadata(metadata);
     eventLogRepository.append(eventLog, caseInstance.tenancyId);
 
     eventDispatcher.dispatch(
