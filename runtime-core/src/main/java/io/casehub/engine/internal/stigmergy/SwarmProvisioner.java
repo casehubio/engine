@@ -34,9 +34,6 @@ import io.casehub.api.spi.stigmergy.SwarmProvisioningAdvisor;
 import io.casehub.engine.common.internal.convergence.ActivityTracker;
 import io.casehub.engine.common.internal.signal.SignalRegistry;
 import io.casehub.engine.common.spi.Resettable;
-import jakarta.enterprise.context.ApplicationScoped;
-import jakarta.enterprise.inject.Instance;
-import jakarta.inject.Inject;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.ArrayList;
@@ -49,7 +46,6 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.locks.ReentrantLock;
 
-@ApplicationScoped
 public class SwarmProvisioner implements Resettable {
 
   private final WorkerProvisioner workerProvisioner;
@@ -60,11 +56,10 @@ public class SwarmProvisioner implements Resettable {
   private final TeamDetector teamDetector;
   private final SwarmProgressTracker progressTracker;
   private final DispatchBudget dispatchBudget;
-  private Instance<SwarmProvisioningAdvisor> advisorInstance;
+  private final SwarmProvisioningAdvisor advisor;
 
   private final ConcurrentHashMap<UUID, CaseProvisionState> cases = new ConcurrentHashMap<>();
 
-  @Inject
   public SwarmProvisioner(
       WorkerProvisioner workerProvisioner,
       StigmergyCoordinator coordinator,
@@ -73,7 +68,8 @@ public class SwarmProvisioner implements Resettable {
       RoleTracker roleTracker,
       TeamDetector teamDetector,
       SwarmProgressTracker progressTracker,
-      DispatchBudget dispatchBudget) {
+      DispatchBudget dispatchBudget,
+      SwarmProvisioningAdvisor advisor) {
     this.workerProvisioner = workerProvisioner;
     this.coordinator = coordinator;
     this.signalRegistry = signalRegistry;
@@ -82,6 +78,7 @@ public class SwarmProvisioner implements Resettable {
     this.teamDetector = teamDetector;
     this.progressTracker = progressTracker;
     this.dispatchBudget = dispatchBudget;
+    this.advisor = advisor;
   }
 
   public List<SwarmEvent> evaluateAndProvision(
@@ -179,8 +176,7 @@ public class SwarmProvisioner implements Resettable {
             CaseHubEventType.SWARM_PROVISION_REQUESTED,
             Map.of("caseId", caseId, "activeAgents", currentActive)));
 
-    if (advisorInstance != null && advisorInstance.isResolvable()) {
-      var advisor = advisorInstance.get();
+    if (advisor != null) {
       var bootstrapCtx = buildBootstrapContext(caseId, swarmConfig, null);
       var adviceCtx =
           new SwarmProvisioningAdvisor.ProvisioningContext(

@@ -23,13 +23,11 @@ import io.casehub.api.model.stigmergy.TickTrace.GateResult.GateVerdict;
 import io.casehub.api.model.stigmergy.TickTrace.TickTrigger;
 import io.casehub.api.spi.routing.GoalFormationService;
 import io.casehub.engine.common.spi.Resettable;
-import jakarta.enterprise.context.ApplicationScoped;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
 
-@ApplicationScoped
 public class EvolutionTicker implements Resettable {
 
   private final ImprovementGoalFormationStrategy goalFormation;
