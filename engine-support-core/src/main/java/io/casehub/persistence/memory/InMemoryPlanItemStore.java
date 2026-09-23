@@ -67,7 +67,7 @@ public class InMemoryPlanItemStore
   }
 
   @Override
-  public void updateStatus(String planItemId, TaskStatus status) {
+  public void updateStatus(String planItemId, TaskStatus status, String tenancyId) {
     records.computeIfPresent(
         planItemId,
         (k, r) ->

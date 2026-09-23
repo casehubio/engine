@@ -37,11 +37,13 @@ public class JpaCaseInstanceRepository implements CaseInstanceRepository {
 
   private final EntityManager em;
   private final TenantContextManager tcm;
-    @jakarta.inject.Inject
-    jakarta.enterprise.inject.Instance<io.casehub.engine.common.spi.recovery.CaseContextRecoveryStrategy> recoveryStrategy;
 
+  @jakarta.inject.Inject
+  jakarta.enterprise.inject.Instance<
+          io.casehub.engine.common.spi.recovery.CaseContextRecoveryStrategy>
+      recoveryStrategy;
 
-    @Inject
+  @Inject
   JpaCaseInstanceRepository(EntityManager em, TenantContextManager tcm) {
     this.em = em;
     this.tcm = tcm;

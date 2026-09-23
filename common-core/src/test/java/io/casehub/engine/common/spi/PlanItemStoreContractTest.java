@@ -64,7 +64,7 @@ public abstract class PlanItemStoreContractTest {
     UUID caseId = UUID.randomUUID();
     String planItemId = UUID.randomUUID().toString();
     store().save(request(caseId, planItemId, TaskStatus.PENDING), TEST_TENANT);
-    store().updateStatus(planItemId, TaskStatus.RUNNING);
+    store().updateStatus(planItemId, TaskStatus.RUNNING, TEST_TENANT);
     List<PlanItemRecord> results = store().findByCaseId(caseId, TEST_TENANT);
     assertThat(results.get(0).status()).isEqualTo(TaskStatus.RUNNING);
   }
@@ -75,7 +75,7 @@ public abstract class PlanItemStoreContractTest {
     String planItemId = UUID.randomUUID().toString();
     store().save(request(caseId, planItemId, TaskStatus.PENDING), TEST_TENANT);
     assertThat(store().findByCaseId(caseId, TEST_TENANT).get(0).completedAt()).isNull();
-    store().updateStatus(planItemId, TaskStatus.COMPLETED);
+    store().updateStatus(planItemId, TaskStatus.COMPLETED, TEST_TENANT);
     PlanItemRecord result = store().findByCaseId(caseId, TEST_TENANT).get(0);
     assertThat(result.completedAt()).isNotNull();
     assertThat(result.completedAt()).isBeforeOrEqualTo(Instant.now());

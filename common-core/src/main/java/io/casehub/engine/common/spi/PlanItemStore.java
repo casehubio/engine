@@ -31,12 +31,7 @@ public interface PlanItemStore {
 
   void save(PlanItemSaveRequest request, String tenancyId);
 
-  void updateStatus(String planItemId, TaskStatus status);
-
-  /** Update status with explicit tenancyId for RLS enforcement. */
-  default void updateStatus(String planItemId, TaskStatus status, String tenancyId) {
-    updateStatus(planItemId, status);
-  }
+  void updateStatus(String planItemId, TaskStatus status, String tenancyId);
 
   List<PlanItemRecord> findByCaseId(UUID caseId, String tenancyId);
 
