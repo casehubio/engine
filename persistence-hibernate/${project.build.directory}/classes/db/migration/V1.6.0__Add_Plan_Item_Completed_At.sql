@@ -1,1 +1,0 @@
-ALTER TABLE plan_item ADD COLUMN IF NOT EXISTS completed_at TIMESTAMP;
