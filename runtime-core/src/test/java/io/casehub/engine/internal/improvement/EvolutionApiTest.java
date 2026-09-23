@@ -32,12 +32,18 @@ class EvolutionApiTest {
   private ConductorInboxManager inboxManager;
   private ImprovementCoordinator coordinator;
   private UUID caseId;
+  private ImprovementCategoryTracker categoryTracker;
+  private ImprovementCircuitBreaker circuitBreaker;
 
   @BeforeEach
   void setUp() {
     var budgetEnforcer = new ImprovementBudgetEnforcer(new InMemoryDenyPatternStore());
-    inboxManager = new ConductorInboxManager(new InMemoryConductorInboxRepository(), new InMemoryWatchPatternStore());
+    inboxManager =
+        new ConductorInboxManager(
+            new InMemoryConductorInboxRepository(), new InMemoryWatchPatternStore());
     coordinator = new ImprovementCoordinator(new InMemoryImprovementBlockStore());
+    categoryTracker = new ImprovementCategoryTracker();
+    circuitBreaker = new ImprovementCircuitBreaker(new TestEvent<>());
 
     api =
         new DefaultEngineEvolutionApi(
@@ -45,7 +51,9 @@ class EvolutionApiTest {
             budgetEnforcer,
             inboxManager,
             new DefaultSummarizationProvider(),
-            coordinator);
+            coordinator,
+            categoryTracker,
+            circuitBreaker);
 
     caseId = UUID.randomUUID();
   }
@@ -150,5 +158,33 @@ class EvolutionApiTest {
   void getTickHistoryDefaultLimit() {
     var history = api.getTickHistory(caseId, null);
     assertThat(history).isEmpty();
+  }
+
+  @Test
+  void pauseCategoryDelegatesToTracker() {
+    api.pauseCategory(caseId, "test-tenant", "security", 60);
+    assertThat(categoryTracker.isSuppressed(caseId, "security")).isTrue();
+  }
+
+  @Test
+  void unpauseCategoryDelegatesToTracker() {
+    categoryTracker.pauseCategory(caseId, "security", java.time.Duration.ofMinutes(60));
+    assertThat(categoryTracker.isSuppressed(caseId, "security")).isTrue();
+
+    api.unpauseCategory(caseId, "test-tenant", "security");
+    assertThat(categoryTracker.isSuppressed(caseId, "security")).isFalse();
+  }
+
+  @Test
+  void resetCircuitBreakerDelegatesToBreaker() {
+    var healthTracker = new HealthScoreTracker(new CapabilityAreaRegistry());
+    var policy =
+        new io.casehub.api.model.stigmergy.HealthPolicy(null, null, null, null, null, null);
+    circuitBreaker.evaluate(caseId, "test-tenant", healthTracker, policy);
+    circuitBreaker.evaluate(caseId, "test-tenant", healthTracker, policy);
+
+    api.resetCircuitBreaker(caseId);
+    assertThat(circuitBreaker.state(caseId))
+        .isEqualTo(io.casehub.api.model.stigmergy.CircuitBreakerState.CLOSED);
   }
 }
