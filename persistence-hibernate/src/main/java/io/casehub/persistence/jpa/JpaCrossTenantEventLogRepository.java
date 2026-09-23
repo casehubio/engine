@@ -101,13 +101,13 @@ public class JpaCrossTenantEventLogRepository implements CrossTenantEventLogRepo
     return new java.util.ArrayList<>(submittedKeys);
   }
 
-  @Override
-  @Transactional
-  public EventLog findById(Long id) {
-    tcm.setCrossTenantContext();
-    EventLogEntity entity = em.find(EventLogEntity.class, id);
-    return entity == null ? null : fromEntity(entity);
-  }
+    @Override
+    @Transactional
+    public java.util.Optional<EventLog> findById(Long id) {
+        tcm.setCrossTenantContext();
+        EventLogEntity entity = em.find(EventLogEntity.class, id);
+        return java.util.Optional.ofNullable(entity).map(this::fromEntity);
+    }
 
   @Override
   @Transactional

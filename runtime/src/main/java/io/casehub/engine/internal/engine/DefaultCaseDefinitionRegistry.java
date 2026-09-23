@@ -148,13 +148,14 @@ public class DefaultCaseDefinitionRegistry implements CaseDefinitionRegistry {
 
     JsonNode definitionJson = serializeDefinition(model);
 
-    CaseMetaModel dbModel =
+    java.util.Optional<CaseMetaModel> persisted =
         caseMetaModelRepository.findByKey(
             model.getNamespace(),
             model.getName(),
             model.getVersion(),
             currentPrincipal.tenancyId());
-    if (dbModel != null) {
+    if (persisted.isPresent()) {
+      CaseMetaModel dbModel = persisted.get();
       registry.put(CaseKey.of(dbModel), new RegistryEntry(model, dbModel));
       return dbModel;
     }

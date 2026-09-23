@@ -86,7 +86,7 @@ class PersistenceIntegrationTest {
 
     // Verify instance state updated
     CaseInstance reloaded =
-        run(() -> instanceRepository.findByUuid(instance.getUuid(), "test-tenant"));
+        run(() -> instanceRepository.findByUuid(instance.getUuid(), "test-tenant").orElse(null));
     assertThat(reloaded.getState()).isEqualTo(CaseStatus.COMPLETED);
 
     // Verify event created
@@ -143,7 +143,7 @@ class PersistenceIntegrationTest {
     run(() -> instanceRepository.save(instance, "test-tenant"));
 
     CaseInstance found =
-        run(() -> instanceRepository.findByUuid(instance.getUuid(), "test-tenant"));
+        run(() -> instanceRepository.findByUuid(instance.getUuid(), "test-tenant").orElse(null));
 
     assertThat(found.getCaseMetaModel()).isNotNull();
     assertThat(found.getCaseMetaModel().getId()).isEqualTo(savedMeta.getId());
@@ -175,7 +175,7 @@ class PersistenceIntegrationTest {
 
     // Verify child can be found by its UUID
     CaseInstance foundChild =
-        run(() -> instanceRepository.findByUuid(childInstance.getUuid(), "test-tenant"));
+        run(() -> instanceRepository.findByUuid(childInstance.getUuid(), "test-tenant").orElse(null));
     assertThat(foundChild).isNotNull();
     assertThat(foundChild.getParentCaseId()).isEqualTo(parentCaseId);
   }
@@ -338,11 +338,11 @@ class PersistenceIntegrationTest {
         .containsExactlyInAnyOrder(child1.getUuid(), child2.getUuid());
 
     CaseInstance foundParent =
-        run(() -> instanceRepository.findByUuid(parentInstance.getUuid(), "test-tenant"));
+        run(() -> instanceRepository.findByUuid(parentInstance.getUuid(), "test-tenant").orElse(null));
     assertThat(foundParent.getState()).isEqualTo(CaseStatus.RUNNING);
 
     CaseInstance foundChild1 =
-        run(() -> instanceRepository.findByUuid(child1.getUuid(), "test-tenant"));
+        run(() -> instanceRepository.findByUuid(child1.getUuid(), "test-tenant").orElse(null));
     assertThat(foundChild1.getState()).isEqualTo(CaseStatus.COMPLETED);
     assertThat(foundChild1.getParentCaseId()).isEqualTo(parentInstance.getUuid());
 

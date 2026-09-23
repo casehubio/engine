@@ -34,15 +34,15 @@ public class InMemoryCaseMetaModelRepository implements CaseMetaModelRepository 
   private final ConcurrentHashMap<String, CaseMetaModel> store = new ConcurrentHashMap<>();
   private final ReentrantReadWriteLock rwLock = new ReentrantReadWriteLock();
 
-  @Override
-  public CaseMetaModel findByKey(String namespace, String name, String version, String tenancyId) {
-    rwLock.readLock().lock();
-    try {
-      return store.get(key(tenancyId, namespace, name, version));
-    } finally {
-      rwLock.readLock().unlock();
+    @Override
+    public java.util.Optional<CaseMetaModel> findByKey(String namespace, String name, String version, String tenancyId) {
+        rwLock.readLock().lock();
+        try {
+            return java.util.Optional.ofNullable(store.get(key(tenancyId, namespace, name, version)));
+        } finally {
+            rwLock.readLock().unlock();
+        }
     }
-  }
 
   @Override
   public CaseMetaModel save(CaseMetaModel metaModel, String tenancyId) {

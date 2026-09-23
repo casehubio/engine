@@ -84,7 +84,7 @@ class GoalFormationIntegrationTest {
             .build());
 
     var caseId = caseHub.startCase(Map.of("task", "analysis-1"));
-    CaseInstance caseInstance = caseInstanceRepository.findByUuid(caseId, TENANT);
+    CaseInstance caseInstance = caseInstanceRepository.findByUuid(caseId, TENANT).orElse(null);
 
     goalFormationEvaluator.evaluate(
         "analysis-worker",
@@ -133,7 +133,7 @@ class GoalFormationIntegrationTest {
             .build());
 
     var caseId = caseHub.startCase(Map.of("task", "empty-1"));
-    CaseInstance caseInstance = caseInstanceRepository.findByUuid(caseId, TENANT);
+    CaseInstance caseInstance = caseInstanceRepository.findByUuid(caseId, TENANT).orElse(null);
 
     goalFormationEvaluator.evaluate("analysis-worker", caseInstance, List.of());
 
@@ -167,7 +167,7 @@ class GoalFormationIntegrationTest {
             .build());
 
     var caseId = caseHub.startCase(Map.of("task", "capacity-1"));
-    CaseInstance caseInstance = caseInstanceRepository.findByUuid(caseId, TENANT);
+    CaseInstance caseInstance = caseInstanceRepository.findByUuid(caseId, TENANT).orElse(null);
 
     goalFormationEvaluator.evaluate("analysis-worker", caseInstance, List.of("Some insight"));
 

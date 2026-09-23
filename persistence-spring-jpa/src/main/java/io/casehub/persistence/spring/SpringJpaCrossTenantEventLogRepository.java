@@ -21,10 +21,11 @@ import io.casehub.engine.common.spi.CrossTenantEventLogRepository;
 import io.casehub.persistence.jpa.EventLogEntity;
 import io.casehub.persistence.jpa.TenantContextManager;
 import jakarta.persistence.EntityManager;
+import org.springframework.transaction.annotation.Transactional;
+
 import java.util.Collection;
 import java.util.List;
 import java.util.UUID;
-import org.springframework.transaction.annotation.Transactional;
 
 @Transactional
 class SpringJpaCrossTenantEventLogRepository implements CrossTenantEventLogRepository {
@@ -93,12 +94,12 @@ class SpringJpaCrossTenantEventLogRepository implements CrossTenantEventLogRepos
     return new java.util.ArrayList<>(submittedKeys);
   }
 
-  @Override
-  public EventLog findById(Long id) {
-    tcm.setCrossTenantContext();
-    EventLogEntity entity = em.find(EventLogEntity.class, id);
-    return entity == null ? null : fromEntity(entity);
-  }
+    @Override
+    public java.util.Optional<EventLog> findById(Long id) {
+        tcm.setCrossTenantContext();
+        EventLogEntity entity = em.find(EventLogEntity.class, id);
+        return java.util.Optional.ofNullable(entity).map(this::fromEntity);
+    }
 
   @Override
   public List<EventLog> findByCaseAndWorkerAndType(

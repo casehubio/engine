@@ -39,8 +39,10 @@ public interface CrossTenantEventLogRepository {
   /** Cross-tenant variant of findByWorkerAndType. */
   List<EventLog> findByWorkerAndTypeAcrossTenants(String workerId, CaseHubEventType type);
 
-  /** Look up an event log entry by surrogate id without tenant filter. */
-  EventLog findById(Long id);
+    /**
+     * Look up an event log entry by surrogate id without tenant filter.
+     */
+    java.util.Optional<EventLog> findById(Long id);
 
   /** Cross-tenant variant of findByCaseAndWorkerAndType. */
   List<EventLog> findByCaseAndWorkerAndType(UUID caseId, String workerId, CaseHubEventType type);

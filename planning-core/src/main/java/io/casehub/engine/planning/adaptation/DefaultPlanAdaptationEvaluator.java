@@ -124,11 +124,12 @@ public class DefaultPlanAdaptationEvaluator implements PlanAdaptationEvaluator {
 
     String compoundId = parentOpt.get();
 
-    CaseInstance instance = caseInstanceRepository.findByUuid(caseId, tenancyId);
-    if (instance == null) {
+    java.util.Optional<CaseInstance> instanceOpt = caseInstanceRepository.findByUuid(caseId, tenancyId);
+    if (instanceOpt.isEmpty()) {
       LOG.warnf("CaseInstance not found for caseId=%s — skipping adaptation", caseId);
       return;
     }
+    CaseInstance instance = instanceOpt.get();
 
     CaseDefinition definition =
         caseDefinitionRegistry.getCaseDefinition(instance.getCaseMetaModel());

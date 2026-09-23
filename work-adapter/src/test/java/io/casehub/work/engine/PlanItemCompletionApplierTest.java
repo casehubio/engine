@@ -98,7 +98,7 @@ class PlanItemCompletionApplierTest {
 
     assertThat(planItem.getStatus()).isEqualTo(TaskStatus.FAULTED);
 
-    CaseInstance updated = caseInstanceRepository.findByUuid(caseId, "test-tenant");
+    CaseInstance updated = caseInstanceRepository.findByUuid(caseId, "test-tenant").orElse(null);
     Object signal = updated.getCaseContext().get("workItemEscalated");
     assertThat(signal).isNotNull().isInstanceOf(Map.class);
     @SuppressWarnings("unchecked")
@@ -137,7 +137,7 @@ class PlanItemCompletionApplierTest {
         .as("ESCALATED must bypass resolution validation")
         .isEqualTo(TaskStatus.FAULTED);
 
-    CaseInstance updated = caseInstanceRepository.findByUuid(caseId, "test-tenant");
+    CaseInstance updated = caseInstanceRepository.findByUuid(caseId, "test-tenant").orElse(null);
     Object signal = updated.getCaseContext().get("workItemEscalated");
     assertThat(signal).isNotNull();
   }

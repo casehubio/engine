@@ -49,7 +49,10 @@ public class WorkResultSubmitter {
   @Inject EventBus eventBus;
 
   public void complete(UUID caseId, String workerId, Map<String, Object> output) {
-    CaseInstance instance = caseInstanceRepository.findByUuid(caseId);
+    CaseInstance instance =
+        caseInstanceRepository
+            .findByUuid(caseId)
+            .orElseThrow(() -> new IllegalArgumentException("CaseInstance not found: " + caseId));
     var definition = caseDefinitionRegistry.getCaseDefinition(instance.getCaseMetaModel());
     Worker worker =
         definition.getWorkers().stream()

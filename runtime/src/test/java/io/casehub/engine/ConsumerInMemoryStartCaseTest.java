@@ -90,14 +90,14 @@ public class ConsumerInMemoryStartCaseTest {
     String tenancyId = "test-tenant";
     caseInstanceRepo.save(instance, tenancyId);
 
-    var found = caseInstanceRepo.findByUuid(instance.getUuid(), tenancyId);
+    var found = caseInstanceRepo.findByUuid(instance.getUuid(), tenancyId).orElse(null);
     assertNotNull(found, "findByUuid should return the saved instance");
     assertEquals(tenancyId, found.tenancyId);
 
     instance.setState(CaseStatus.RUNNING);
     caseInstanceRepo.update(instance, tenancyId);
 
-    var updated = caseInstanceRepo.findByUuid(instance.getUuid(), tenancyId);
+    var updated = caseInstanceRepo.findByUuid(instance.getUuid(), tenancyId).orElse(null);
     assertEquals(CaseStatus.RUNNING, updated.getState());
   }
 
@@ -113,7 +113,7 @@ public class ConsumerInMemoryStartCaseTest {
 
     caseInstanceRepo.save(instance, tenancyId);
 
-    var found = caseInstanceRepo.findByUuid(instance.getUuid(), tenancyId);
+    var found = caseInstanceRepo.findByUuid(instance.getUuid(), tenancyId).orElse(null);
     assertNotNull(found, "repo should find instance saved (same store)");
   }
 
