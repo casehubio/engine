@@ -13,28 +13,22 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.casehub.engine.common.internal.store;
+package io.casehub.persistence.memory;
 
-import io.casehub.engine.common.spi.recovery.PlanVersionStore;
-import io.casehub.engine.common.spi.recovery.PlanVersionStoreContractTest;
-import org.junit.jupiter.api.BeforeEach;
+import io.casehub.engine.common.spi.SubCaseGroupRepository;
+import io.casehub.engine.common.spi.SubCaseGroupRepositoryContractTest;
 
-class InMemoryPlanVersionStoreTest extends PlanVersionStoreContractTest {
+class InMemorySubCaseGroupRepositoryContractTest extends SubCaseGroupRepositoryContractTest {
 
-  private InMemoryPlanVersionStore store;
-
-  @BeforeEach
-  void setUp() {
-    store = new InMemoryPlanVersionStore();
-  }
+  private final InMemorySubCaseGroupRepository repo = new InMemorySubCaseGroupRepository();
 
   @Override
-  protected PlanVersionStore store() {
-    return store;
+  protected SubCaseGroupRepository repository() {
+    return repo;
   }
 
   @Override
   protected String tenancyId() {
-    return "tenant-1";
+    return "test-tenant";
   }
 }
