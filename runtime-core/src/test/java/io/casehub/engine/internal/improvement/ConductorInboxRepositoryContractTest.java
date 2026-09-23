@@ -19,7 +19,6 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import io.casehub.api.model.stigmergy.ConductorInboxEntry;
 import io.casehub.api.model.stigmergy.ConductorInboxEntry.Status;
-import io.casehub.api.model.stigmergy.ImprovementStage;
 import io.casehub.engine.common.spi.ConductorInboxRepository;
 import java.time.Instant;
 import java.util.List;
@@ -40,8 +39,7 @@ public abstract class ConductorInboxRepositoryContractTest {
     store = createStore();
   }
 
-  protected ConductorInboxEntry makeEntry(
-      UUID caseId, String id, ImprovementStage stage, Status status) {
+  protected ConductorInboxEntry makeEntry(UUID caseId, String id, String stage, Status status) {
     return new ConductorInboxEntry(
         caseId,
         id,
@@ -62,7 +60,7 @@ public abstract class ConductorInboxRepositoryContractTest {
   @Test
   void saveAndFindById() {
     var caseId = UUID.randomUUID();
-    var entry = makeEntry(caseId, "e1", ImprovementStage.RESEARCH_SCOPE, Status.PENDING);
+    var entry = makeEntry(caseId, "e1", CodeEvolutionStages.RESEARCH_SCOPE, Status.PENDING);
 
     store.save(entry, tenancyId());
 
@@ -76,11 +74,11 @@ public abstract class ConductorInboxRepositoryContractTest {
   void findPendingFiltersByStatus() {
     var caseId = UUID.randomUUID();
     store.save(
-        makeEntry(caseId, "e1", ImprovementStage.RESEARCH_SCOPE, Status.PENDING), tenancyId());
+        makeEntry(caseId, "e1", CodeEvolutionStages.RESEARCH_SCOPE, Status.PENDING), tenancyId());
     store.save(
-        makeEntry(caseId, "e2", ImprovementStage.HYPOTHESIS_APPROVAL, Status.APPROVED),
+        makeEntry(caseId, "e2", CodeEvolutionStages.HYPOTHESIS_APPROVAL, Status.APPROVED),
         tenancyId());
-    store.save(makeEntry(caseId, "e3", ImprovementStage.PR_REVIEW, Status.PENDING), tenancyId());
+    store.save(makeEntry(caseId, "e3", CodeEvolutionStages.PR_REVIEW, Status.PENDING), tenancyId());
 
     var pending = store.findPending(caseId, tenancyId());
     assertThat(pending).hasSize(2);
@@ -91,9 +89,9 @@ public abstract class ConductorInboxRepositoryContractTest {
   void countPendingMatchesPendingSize() {
     var caseId = UUID.randomUUID();
     store.save(
-        makeEntry(caseId, "e1", ImprovementStage.RESEARCH_SCOPE, Status.PENDING), tenancyId());
+        makeEntry(caseId, "e1", CodeEvolutionStages.RESEARCH_SCOPE, Status.PENDING), tenancyId());
     store.save(
-        makeEntry(caseId, "e2", ImprovementStage.HYPOTHESIS_APPROVAL, Status.APPROVED),
+        makeEntry(caseId, "e2", CodeEvolutionStages.HYPOTHESIS_APPROVAL, Status.APPROVED),
         tenancyId());
 
     assertThat(store.countPending(caseId, tenancyId())).isEqualTo(1);
@@ -103,9 +101,9 @@ public abstract class ConductorInboxRepositoryContractTest {
   void findAllReturnsAllEntries() {
     var caseId = UUID.randomUUID();
     store.save(
-        makeEntry(caseId, "e1", ImprovementStage.RESEARCH_SCOPE, Status.PENDING), tenancyId());
+        makeEntry(caseId, "e1", CodeEvolutionStages.RESEARCH_SCOPE, Status.PENDING), tenancyId());
     store.save(
-        makeEntry(caseId, "e2", ImprovementStage.HYPOTHESIS_APPROVAL, Status.APPROVED),
+        makeEntry(caseId, "e2", CodeEvolutionStages.HYPOTHESIS_APPROVAL, Status.APPROVED),
         tenancyId());
 
     assertThat(store.findAll(caseId, tenancyId())).hasSize(2);
@@ -116,9 +114,9 @@ public abstract class ConductorInboxRepositoryContractTest {
     var case1 = UUID.randomUUID();
     var case2 = UUID.randomUUID();
     store.save(
-        makeEntry(case1, "e1", ImprovementStage.RESEARCH_SCOPE, Status.PENDING), tenancyId());
+        makeEntry(case1, "e1", CodeEvolutionStages.RESEARCH_SCOPE, Status.PENDING), tenancyId());
     store.save(
-        makeEntry(case2, "e2", ImprovementStage.RESEARCH_SCOPE, Status.PENDING), tenancyId());
+        makeEntry(case2, "e2", CodeEvolutionStages.RESEARCH_SCOPE, Status.PENDING), tenancyId());
 
     assertThat(store.findAll(case1, tenancyId())).hasSize(1);
     assertThat(store.findAll(case1, tenancyId()).get(0).id()).isEqualTo("e1");
@@ -130,9 +128,9 @@ public abstract class ConductorInboxRepositoryContractTest {
   void saveIdempotency() {
     var caseId = UUID.randomUUID();
     store.save(
-        makeEntry(caseId, "e1", ImprovementStage.RESEARCH_SCOPE, Status.PENDING), tenancyId());
+        makeEntry(caseId, "e1", CodeEvolutionStages.RESEARCH_SCOPE, Status.PENDING), tenancyId());
     store.save(
-        makeEntry(caseId, "e1", ImprovementStage.RESEARCH_SCOPE, Status.APPROVED), tenancyId());
+        makeEntry(caseId, "e1", CodeEvolutionStages.RESEARCH_SCOPE, Status.APPROVED), tenancyId());
 
     assertThat(store.findAll(caseId, tenancyId())).hasSize(1);
     assertThat(store.findById(caseId, "e1", tenancyId()).status()).isEqualTo(Status.APPROVED);

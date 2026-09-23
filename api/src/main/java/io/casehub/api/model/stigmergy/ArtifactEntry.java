@@ -17,8 +17,7 @@ package io.casehub.api.model.stigmergy;
 
 import java.time.Instant;
 
-public record ArtifactEntry(
-    String path, ArtifactType type, ImprovementStage stage, Instant createdAt) {
+public record ArtifactEntry(String path, ArtifactType type, String stage, Instant createdAt) {
 
   public enum ArtifactType {
     ANALYSIS,

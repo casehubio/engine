@@ -34,6 +34,7 @@ import io.casehub.api.view.EvolutionStateSnapshot.CategoryStateView;
 import io.casehub.api.view.EvolutionSummary;
 import io.casehub.api.view.ResearchCorpusView;
 import io.casehub.engine.common.spi.ArtifactManifestStore;
+import io.casehub.engine.common.spi.DenyPatternStore;
 import io.casehub.engine.common.spi.GatePolicyStore;
 import jakarta.annotation.Nullable;
 import jakarta.enterprise.context.ApplicationScoped;
@@ -59,6 +60,7 @@ public class DefaultEngineEvolutionApi implements EngineEvolutionApi {
   private final ResearchCorpus researchCorpus;
   private final GatePolicyStore gatePolicyStore;
   private final ArtifactManifestStore artifactManifestStore;
+  private final DenyPatternStore denyPatternStore;
 
   public DefaultEngineEvolutionApi(
       TickTraceBuffer tickTraceBuffer,
@@ -72,7 +74,8 @@ public class DefaultEngineEvolutionApi implements EngineEvolutionApi {
       HealthScoreTracker healthTracker,
       ResearchCorpus researchCorpus,
       GatePolicyStore gatePolicyStore,
-      ArtifactManifestStore artifactManifestStore) {
+      ArtifactManifestStore artifactManifestStore,
+      DenyPatternStore denyPatternStore) {
     this.tickTraceBuffer = tickTraceBuffer;
     this.budgetEnforcer = budgetEnforcer;
     this.inboxManager = inboxManager;
@@ -85,6 +88,7 @@ public class DefaultEngineEvolutionApi implements EngineEvolutionApi {
     this.researchCorpus = researchCorpus;
     this.gatePolicyStore = gatePolicyStore;
     this.artifactManifestStore = artifactManifestStore;
+    this.denyPatternStore = denyPatternStore;
   }
 
   @Override
@@ -95,8 +99,8 @@ public class DefaultEngineEvolutionApi implements EngineEvolutionApi {
   @Override
   public DenyPatternView getDenyPatterns(UUID caseId, String tenancyId) {
     return new DenyPatternView(
-        List.copyOf(ImprovementBudgetEnforcer.staticDenyPatterns()),
-        budgetEnforcer.dynamicDenyPatterns(caseId, tenancyId).stream()
+        List.of(),
+        denyPatternStore.findAll(caseId, tenancyId).stream()
             .map(p -> new DenyPatternView.DynamicDenyEntry(p, "operator", Instant.now()))
             .toList());
   }
@@ -115,12 +119,12 @@ public class DefaultEngineEvolutionApi implements EngineEvolutionApi {
 
   @Override
   public void addDenyPattern(UUID caseId, String tenancyId, String pattern) {
-    budgetEnforcer.addDenyPattern(caseId, pattern, tenancyId);
+    denyPatternStore.save(caseId, pattern, tenancyId);
   }
 
   @Override
   public void removeDenyPattern(UUID caseId, String tenancyId, String pattern) {
-    budgetEnforcer.removeDenyPattern(caseId, pattern, tenancyId);
+    denyPatternStore.remove(caseId, pattern, tenancyId);
   }
 
   @Override

@@ -18,7 +18,6 @@ package io.casehub.api.spi.improvement;
 import io.casehub.api.model.stigmergy.EscalationContext;
 import io.casehub.api.model.stigmergy.EscalationPolicy;
 import io.casehub.api.model.stigmergy.EscalationResult;
-import io.casehub.api.model.stigmergy.ImprovementStage;
 import io.casehub.api.model.stigmergy.WatchPattern;
 import java.util.List;
 import java.util.UUID;
@@ -28,7 +27,7 @@ public interface EscalationProvider {
   EscalationResult evaluate(
       UUID caseId,
       String tenancyId,
-      ImprovementStage stage,
+      String stage,
       EscalationContext context,
       EscalationPolicy policy,
       List<WatchPattern> activeWatchPatterns);

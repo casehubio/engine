@@ -23,7 +23,7 @@ import java.util.UUID;
 public record ConductorInboxEntry(
     UUID caseId,
     String id,
-    ImprovementStage stage,
+    String stage,
     Status status,
     @Nullable String category,
     @Nullable String areaId,

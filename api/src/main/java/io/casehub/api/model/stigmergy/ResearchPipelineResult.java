@@ -22,6 +22,6 @@ public sealed interface ResearchPipelineResult
 
   record Completed(List<ImprovementHypothesis> hypotheses) implements ResearchPipelineResult {}
 
-  record AwaitingGate(ImprovementStage stage, String inboxEntryId, GateCheckpoint checkpoint)
+  record AwaitingGate(String stage, String inboxEntryId, GateCheckpoint checkpoint)
       implements ResearchPipelineResult {}
 }

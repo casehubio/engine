@@ -22,7 +22,6 @@ import io.casehub.api.model.stigmergy.EscalationPolicy;
 import io.casehub.api.model.stigmergy.GateCheckpoint;
 import io.casehub.api.model.stigmergy.GatePolicy;
 import io.casehub.api.model.stigmergy.GatePolicy.GateMode;
-import io.casehub.api.model.stigmergy.ImprovementStage;
 import io.casehub.api.model.stigmergy.ResearchPipelineResult;
 import io.casehub.api.model.stigmergy.ResearchScope;
 import io.casehub.api.spi.improvement.EscalationProvider;
@@ -79,19 +78,19 @@ public class ResearchPipelineOrchestrator {
 
     var scopeOutcome =
         evaluateGate(
-            gatePolicy.effectiveMode(ImprovementStage.RESEARCH_SCOPE),
+            gatePolicy.effectiveMode(CodeEvolutionStages.RESEARCH_SCOPE),
             caseId,
             tenancyId,
-            ImprovementStage.RESEARCH_SCOPE,
+            CodeEvolutionStages.RESEARCH_SCOPE,
             escalationPolicy,
             buildContext(scope));
 
     if (scopeOutcome == GateOutcome.BLOCK) {
       var checkpoint = new GateCheckpoint.ScopeCheckpoint(scope);
       var entryId =
-          enqueueForApproval(caseId, tenancyId, ImprovementStage.RESEARCH_SCOPE, checkpoint);
+          enqueueForApproval(caseId, tenancyId, CodeEvolutionStages.RESEARCH_SCOPE, checkpoint);
       return new ResearchPipelineResult.AwaitingGate(
-          ImprovementStage.RESEARCH_SCOPE, entryId, checkpoint);
+          CodeEvolutionStages.RESEARCH_SCOPE, entryId, checkpoint);
     }
 
     return executeFromScope(caseId, tenancyId, depth, area, driveContext, scope);
@@ -123,7 +122,7 @@ public class ResearchPipelineOrchestrator {
       GateMode mode,
       UUID caseId,
       String tenancyId,
-      ImprovementStage stage,
+      String stage,
       EscalationPolicy policy,
       EscalationContext context) {
     if (mode == GateMode.GATED) {
@@ -148,7 +147,7 @@ public class ResearchPipelineOrchestrator {
   }
 
   private String enqueueForApproval(
-      UUID caseId, String tenancyId, ImprovementStage stage, GateCheckpoint checkpoint) {
+      UUID caseId, String tenancyId, String stage, GateCheckpoint checkpoint) {
     var entryId = UUID.randomUUID().toString();
     var entry =
         new ConductorInboxEntry(

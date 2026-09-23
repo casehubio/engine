@@ -38,63 +38,6 @@ class ImprovementBudgetEnforcerTest {
   }
 
   @Test
-  void structuralDenyBlocksImprovementBudgetPath() {
-    var budget = new ImprovementBudget(null, null, null, null, List.of(), null, null);
-    var request =
-        new ImprovementRequest(
-            "operational",
-            "lint-fix",
-            "checkstyle",
-            "casehubio/engine",
-            List.of("src/main/java/io/casehub/api/model/stigmergy/ImprovementBudget.java"),
-            10,
-            Map.of());
-
-    var result = enforcer.check(caseId, budget, request, TENANT);
-
-    assertThat(result).isInstanceOf(ImprovementBudgetEnforcer.BudgetCheck.Denied.class);
-    assertThat(((ImprovementBudgetEnforcer.BudgetCheck.Denied) result).reason())
-        .contains("Structural self-modification denied");
-  }
-
-  @Test
-  void structuralDenyBlocksEnforcerPath() {
-    var budget = new ImprovementBudget(null, null, null, null, List.of(), null, null);
-    var request =
-        new ImprovementRequest(
-            "operational",
-            "recipe",
-            "cleanup",
-            "casehubio/engine",
-            List.of(
-                "src/main/java/io/casehub/engine/internal/improvement/ImprovementBudgetEnforcer.java"),
-            5,
-            Map.of());
-
-    var result = enforcer.check(caseId, budget, request, TENANT);
-
-    assertThat(result).isInstanceOf(ImprovementBudgetEnforcer.BudgetCheck.Denied.class);
-  }
-
-  @Test
-  void structuralDenyCannotBeOverriddenByEmptyUserDenyList() {
-    var budget = new ImprovementBudget(null, null, null, null, List.of(), null, null);
-    var request =
-        new ImprovementRequest(
-            "operational",
-            "recipe",
-            "cleanup",
-            "casehubio/engine",
-            List.of("src/main/java/io/casehub/api/model/stigmergy/ImprovementConfig.java"),
-            5,
-            Map.of());
-
-    var result = enforcer.check(caseId, budget, request, TENANT);
-
-    assertThat(result).isInstanceOf(ImprovementBudgetEnforcer.BudgetCheck.Denied.class);
-  }
-
-  @Test
   void allowedWhenAllChecksPass() {
     var budget = new ImprovementBudget(null, null, null, null, null, null, null);
     var request =
@@ -158,27 +101,6 @@ class ImprovementBudgetEnforcerTest {
   }
 
   @Test
-  void repoAllowListDeniesUnlistedRepo() {
-    var budget =
-        new ImprovementBudget(null, null, null, List.of("casehubio/blocks"), null, null, null);
-    var request =
-        new ImprovementRequest(
-            "operational",
-            "lint-fix",
-            "checkstyle",
-            "casehubio/engine",
-            List.of("src/Foo.java"),
-            10,
-            Map.of());
-
-    var result = enforcer.check(caseId, budget, request, TENANT);
-
-    assertThat(result).isInstanceOf(ImprovementBudgetEnforcer.BudgetCheck.Denied.class);
-    assertThat(((ImprovementBudgetEnforcer.BudgetCheck.Denied) result).reason())
-        .contains("Repository not in allowed list");
-  }
-
-  @Test
   void prSizeLimitDeniesOversizedChange() {
     var budget = new ImprovementBudget(null, null, null, null, null, null, 50);
     var request =
@@ -196,26 +118,6 @@ class ImprovementBudgetEnforcerTest {
     assertThat(result).isInstanceOf(ImprovementBudgetEnforcer.BudgetCheck.Denied.class);
     assertThat(((ImprovementBudgetEnforcer.BudgetCheck.Denied) result).reason())
         .contains("exceeds limit");
-  }
-
-  @Test
-  void userDenyListBlocksMatchingPath() {
-    var budget = new ImprovementBudget(null, null, null, null, List.of("**/test/**"), null, null);
-    var request =
-        new ImprovementRequest(
-            "operational",
-            "lint-fix",
-            "checkstyle",
-            "casehubio/engine",
-            List.of("src/test/java/Foo.java"),
-            10,
-            Map.of());
-
-    var result = enforcer.check(caseId, budget, request, TENANT);
-
-    assertThat(result).isInstanceOf(ImprovementBudgetEnforcer.BudgetCheck.Denied.class);
-    assertThat(((ImprovementBudgetEnforcer.BudgetCheck.Denied) result).reason())
-        .contains("Path denied by configuration");
   }
 
   @Test

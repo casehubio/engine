@@ -11,7 +11,6 @@ imports:
   AdaptationConfig: io.casehub.api.model.AdaptationConfig
   JsonNode: com.fasterxml.jackson.databind.JsonNode
   SubCaseMapping: io.casehub.api.model.SubCaseMapping
-  ImprovementStage: io.casehub.api.model.stigmergy.ImprovementStage
   GateMode: io.casehub.api.model.stigmergy.GatePolicy.GateMode
 
 deserializers:
@@ -520,7 +519,7 @@ types:
   GatePolicy:
     record: YamlGatePolicy
     extra:
-      - { name: modes, type: "Map<ImprovementStage, GateMode>" }
+      - { name: modes, type: "Map<String, GateMode>" }
       - { name: gateTimeoutMinutes, type: Integer }
 
   EscalationPolicy:

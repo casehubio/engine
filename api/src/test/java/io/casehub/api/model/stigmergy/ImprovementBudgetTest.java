@@ -31,7 +31,7 @@ class ImprovementBudgetTest {
     assertThat(budget.effectiveAllowedRepos()).isEmpty();
     assertThat(budget.effectiveDeniedPaths()).isEmpty();
     assertThat(budget.effectiveRequireReview()).isTrue();
-    assertThat(budget.effectiveMaxPRSize()).isEqualTo(500);
+    assertThat(budget.effectiveMaxChangeSize()).isEqualTo(500);
   }
 
   @Test
@@ -45,7 +45,7 @@ class ImprovementBudgetTest {
     assertThat(budget.effectiveAllowedRepos()).containsExactly("casehubio/engine");
     assertThat(budget.effectiveDeniedPaths()).containsExactly("**/test/**");
     assertThat(budget.effectiveRequireReview()).isFalse();
-    assertThat(budget.effectiveMaxPRSize()).isEqualTo(1000);
+    assertThat(budget.effectiveMaxChangeSize()).isEqualTo(1000);
   }
 
   @Test
@@ -53,8 +53,6 @@ class ImprovementBudgetTest {
     var config = new ImprovementConfig(null, null, null, null, null);
     assertThat(config.effectiveSignalNamespace()).isEqualTo("improvement");
     assertThat(config.effectiveConsensusMinSources()).isEqualTo(2);
-    assertThat(config.effectiveEnabledCategories())
-        .containsExactly("dependency-update", "lint-fix", "coverage-gap", "ci-triage", "recipe");
     assertThat(config.effectiveBudget()).isNotNull();
     assertThat(config.effectiveCaseTemplateId()).isEqualTo("self-improvement");
   }

@@ -56,8 +56,20 @@ class SelfImprovementIntegrationTest {
     signalRegistry = new SignalRegistry();
     signalContext = new ImprovementSignalContext();
     budgetEnforcer = new ImprovementBudgetEnforcer(new InMemoryDenyPatternStore());
+    var proposalSourceRegistry = new ImprovementProposalSourceRegistry();
+    proposalSourceRegistry.register(
+        new SignalConsensusProposalSource(signalRegistry, signalContext));
+    var categoryRegistryLocal = new ImprovementCategoryRegistry();
+    categoryRegistryLocal.registerProvider(new CodeEvolutionCategoryProvider());
     goalStrategy =
-        new ImprovementGoalFormationStrategy(budgetEnforcer, signalRegistry, signalContext);
+        new ImprovementGoalFormationStrategy(
+            budgetEnforcer,
+            proposalSourceRegistry,
+            categoryRegistryLocal,
+            new ImprovementCategoryTracker(),
+            new RollbackHistory(),
+            new ConflictStrategyRegistry(),
+            new DenyPatternProviderRegistry());
     eventLogRepo = new RecordingEventLogRepository();
     outcomeRecorder = new ImprovementOutcomeRecorder(eventLogRepo);
     signalProjector = new ImprovementSignalProjector(signalRegistry);

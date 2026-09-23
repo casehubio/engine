@@ -26,7 +26,6 @@ import io.casehub.api.model.stigmergy.TickTrace.GateResult.GateVerdict;
 import io.casehub.api.spi.improvement.CapabilityArea;
 import io.casehub.api.spi.routing.GoalFormationResult;
 import io.casehub.api.spi.routing.GoalFormationService;
-import io.casehub.engine.common.internal.signal.SignalRegistry;
 import io.casehub.engine.common.spi.event.CircuitBreakerStateChangedEvent;
 import io.casehub.engine.common.spi.event.RegressionDetectedEvent;
 import io.casehub.engine.common.spi.event.TickEvaluatedEvent;
@@ -62,11 +61,19 @@ class EvolutionTickerTest {
         new RegressionDetector(
             scorer, categoryTracker, rollbackHistory, healthTracker, regressionEvents);
 
-    var signalRegistry = new SignalRegistry();
-    var signalContext = new ImprovementSignalContext();
     var budgetEnforcer = new ImprovementBudgetEnforcer(new InMemoryDenyPatternStore());
+    var proposalSourceRegistry = new ImprovementProposalSourceRegistry();
+    var categoryRegistryLocal = new ImprovementCategoryRegistry();
+    categoryRegistryLocal.registerProvider(new CodeEvolutionCategoryProvider());
     goalFormation =
-        new ImprovementGoalFormationStrategy(budgetEnforcer, signalRegistry, signalContext);
+        new ImprovementGoalFormationStrategy(
+            budgetEnforcer,
+            proposalSourceRegistry,
+            categoryRegistryLocal,
+            categoryTracker,
+            rollbackHistory,
+            new ConflictStrategyRegistry(),
+            new DenyPatternProviderRegistry());
 
     proposalCount = new AtomicInteger(0);
     GoalFormationService goalService =

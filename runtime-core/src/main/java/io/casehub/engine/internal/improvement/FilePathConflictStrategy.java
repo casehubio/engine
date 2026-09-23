@@ -16,41 +16,42 @@
 package io.casehub.engine.internal.improvement;
 
 import io.casehub.api.model.stigmergy.ImprovementRequest;
-import io.casehub.engine.common.spi.Resettable;
+import io.casehub.api.spi.improvement.ConflictStrategy;
 import jakarta.enterprise.context.ApplicationScoped;
+import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 
 @ApplicationScoped
-public class ConflictDetector implements Resettable {
+public class FilePathConflictStrategy implements ConflictStrategy {
 
-  public sealed interface ConflictCheck permits ConflictCheck.Clear, ConflictCheck.Conflicting {
-    record Clear() implements ConflictCheck {}
-
-    record Conflicting(UUID blockingImprovementId, String conflictPath) implements ConflictCheck {}
+  @Override
+  public String domainId() {
+    return "code-evolution";
   }
 
-  public ConflictCheck check(
+  @Override
+  public ConflictResult check(
       ImprovementRequest request,
       Map<UUID, ImprovementRequest> activeImprovements,
       int trivialThreshold) {
-    boolean isTrivial =
-        request.estimatedSize() <= trivialThreshold && request.targetPaths().size() == 1;
+    List<String> requestPaths = CodeEvolutionMetadata.extractPaths(request);
+    boolean isTrivial = request.estimatedSize() <= trivialThreshold && requestPaths.size() == 1;
 
     for (var entry : activeImprovements.entrySet()) {
-      var active = entry.getValue();
-      for (String requestPath : request.targetPaths()) {
-        for (String activePath : active.targetPaths()) {
-          if (requestPath.equals(activePath)) {
-            return new ConflictCheck.Conflicting(entry.getKey(), requestPath);
+      List<String> activePaths = CodeEvolutionMetadata.extractPaths(entry.getValue());
+      for (String rp : requestPaths) {
+        for (String ap : activePaths) {
+          if (rp.equals(ap)) {
+            return new ConflictResult.Conflicting(entry.getKey(), rp);
           }
-          if (!isTrivial && sameDirectory(requestPath, activePath)) {
-            return new ConflictCheck.Conflicting(entry.getKey(), requestPath);
+          if (!isTrivial && sameDirectory(rp, ap)) {
+            return new ConflictResult.Conflicting(entry.getKey(), rp);
           }
         }
       }
     }
-    return new ConflictCheck.Clear();
+    return new ConflictResult.Clear();
   }
 
   private boolean sameDirectory(String a, String b) {
@@ -61,7 +62,4 @@ public class ConflictDetector implements Resettable {
     int last = path.lastIndexOf('/');
     return last > 0 ? path.substring(0, last) : "";
   }
-
-  @Override
-  public void reset() {}
 }
