@@ -22,40 +22,42 @@ import java.util.List;
 import java.util.UUID;
 
 /**
- * Blocking cross-tenant event log access for startup recovery services only.
- *
- * @see CrossTenantEventLogRepository
+ * Blocking cross-tenant event log access for system-level services (recovery, scheduling, bridges)
+ * that operate without tenant principal.
  */
 public interface CrossTenantEventLogRepository {
 
-  /** All events of the given types across all tenants. Recovery: reschedule orphaned workers. */
-  List<EventLog> findByTypes(Collection<CaseHubEventType> types);
+    /**
+     * All events of the given types across all tenants.
+     */
+    List<EventLog> findByTypes(Collection<CaseHubEventType> types);
 
-  /**
-   * Events for a specific case — caseId is UUID (globally unique). Recovery: rebuild case state
-   * context.
-   */
-  List<EventLog> findByCaseAndTypes(UUID caseId, Collection<CaseHubEventType> types);
+    /**
+     * Events for a specific case — caseId is UUID (globally unique).
+     */
+    List<EventLog> findByCaseAndTypes(UUID caseId, Collection<CaseHubEventType> types);
 
-  /** Find WORK_SUBMITTED events with no matching WORK_COMPLETED across all tenants. */
-  List<String> findSubmittedWorkWithoutCompletion();
+    /**
+     * Find WORK_SUBMITTED events with no matching WORK_COMPLETED across all tenants.
+     */
+    List<String> findSubmittedWorkWithoutCompletion();
 
-  /** Cross-tenant variant of findByWorkerAndType — recovery only. */
-  List<EventLog> findByWorkerAndTypeAcrossTenants(String workerId, CaseHubEventType type);
+    /**
+     * Cross-tenant variant of findByWorkerAndType.
+     */
+    List<EventLog> findByWorkerAndTypeAcrossTenants(String workerId, CaseHubEventType type);
 
-  /**
-   * Look up an event log entry by surrogate id without tenant filter. Used by Quartz jobs that have
-   * the event log id from job data but no principal context.
-   */
-  EventLog findById(Long id);
+    /**
+     * Look up an event log entry by surrogate id without tenant filter.
+     */
+    EventLog findById(Long id);
 
-  /**
-   * Cross-tenant variant of findByCaseAndWorkerAndType. Used by DLQ replay and system services that
-   * operate across tenants.
-   */
-  List<EventLog> findByCaseAndWorkerAndType(UUID caseId, String workerId, CaseHubEventType type);
+    /**
+     * Cross-tenant variant of findByCaseAndWorkerAndType.
+     */
+    List<EventLog> findByCaseAndWorkerAndType(UUID caseId, String workerId, CaseHubEventType type);
 
-  default List<EventLog> findByTypesAfterId(Collection<CaseHubEventType> types, long afterId) {
-    return findByTypes(types).stream().filter(e -> e.id != null && e.id > afterId).toList();
-  }
+    default List<EventLog> findByTypesAfterId(Collection<CaseHubEventType> types, long afterId) {
+        return findByTypes(types).stream().filter(e -> e.id != null && e.id > afterId).toList();
+    }
 }
