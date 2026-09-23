@@ -17,7 +17,6 @@ package io.casehub.api.view;
 
 import io.casehub.api.model.stigmergy.CircuitBreakerState;
 import io.casehub.api.model.stigmergy.ComplianceLevel;
-import io.casehub.api.model.stigmergy.ImprovementStage;
 import io.casehub.api.model.stigmergy.TickTrace;
 import jakarta.annotation.Nullable;
 import java.time.Instant;
@@ -56,17 +55,14 @@ public record EvolutionStateSnapshot(
       UUID improvementCaseId,
       String category,
       @Nullable String target,
-      ImprovementStage currentStage,
+      String currentStage,
       List<StageProgress> stageHistory,
       @Nullable UUID blockedBy,
       boolean conflictBlocked,
       Instant startedAt) {}
 
   public record StageProgress(
-      ImprovementStage stage,
-      StageStatus status,
-      Instant enteredAt,
-      @Nullable Instant completedAt) {
+      String stage, StageStatus status, Instant enteredAt, @Nullable Instant completedAt) {
 
     public enum StageStatus {
       PENDING,

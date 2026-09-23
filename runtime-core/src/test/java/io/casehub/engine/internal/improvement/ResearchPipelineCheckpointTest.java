@@ -22,7 +22,6 @@ import io.casehub.api.model.stigmergy.EscalationPolicy;
 import io.casehub.api.model.stigmergy.GatePolicy;
 import io.casehub.api.model.stigmergy.GatePolicy.GateMode;
 import io.casehub.api.model.stigmergy.ImprovementHypothesis;
-import io.casehub.api.model.stigmergy.ImprovementStage;
 import io.casehub.api.model.stigmergy.ResearchPipelineResult;
 import io.casehub.api.model.stigmergy.ResearchScope;
 import io.casehub.api.spi.improvement.ResearchDepth;
@@ -58,7 +57,8 @@ class ResearchPipelineCheckpointTest {
 
   @Test
   void gatedScopeReturnsAwaitingGate() {
-    var gatePolicy = new GatePolicy(Map.of(ImprovementStage.RESEARCH_SCOPE, GateMode.GATED), null);
+    var gatePolicy =
+        new GatePolicy(Map.of(CodeEvolutionStages.RESEARCH_SCOPE, GateMode.GATED), null);
     var escalationPolicy = new EscalationPolicy(null, null);
     var area = makeArea();
 
@@ -68,7 +68,7 @@ class ResearchPipelineCheckpointTest {
 
     assertThat(result).isInstanceOf(ResearchPipelineResult.AwaitingGate.class);
     var awaiting = (ResearchPipelineResult.AwaitingGate) result;
-    assertThat(awaiting.stage()).isEqualTo(ImprovementStage.RESEARCH_SCOPE);
+    assertThat(awaiting.stage()).isEqualTo(CodeEvolutionStages.RESEARCH_SCOPE);
     assertThat(awaiting.inboxEntryId()).isNotNull();
   }
 

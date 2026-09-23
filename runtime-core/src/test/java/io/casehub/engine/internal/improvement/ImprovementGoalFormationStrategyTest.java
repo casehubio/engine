@@ -17,11 +17,13 @@ package io.casehub.engine.internal.improvement;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import io.casehub.api.model.stigmergy.CategoryDescriptor;
 import io.casehub.api.model.stigmergy.ImprovementBudget;
 import io.casehub.api.model.stigmergy.ImprovementConfig;
 import io.casehub.api.model.stigmergy.ImprovementRequest;
-import io.casehub.engine.common.internal.signal.SignalRegistry;
-import java.time.Duration;
+import io.casehub.api.model.stigmergy.StageDescriptor;
+import io.casehub.api.spi.improvement.ImprovementCategoryProvider;
+import io.casehub.api.spi.improvement.ImprovementProposalSource;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
@@ -32,22 +34,159 @@ class ImprovementGoalFormationStrategyTest {
 
   private ImprovementGoalFormationStrategy strategy;
   private ImprovementBudgetEnforcer budgetEnforcer;
-  private ImprovementSignalContext signalContext;
-  private SignalRegistry signalRegistry;
+  private ImprovementProposalSourceRegistry proposalSourceRegistry;
+  private ImprovementCategoryRegistry categoryRegistry;
+  private ConflictStrategyRegistry conflictStrategyRegistry;
+  private DenyPatternProviderRegistry denyPatternProviderRegistry;
   private UUID caseId;
 
   @BeforeEach
   void setUp() {
     budgetEnforcer = new ImprovementBudgetEnforcer(new InMemoryDenyPatternStore());
-    signalRegistry = new SignalRegistry();
-    signalContext = new ImprovementSignalContext();
-    strategy = new ImprovementGoalFormationStrategy(budgetEnforcer, signalRegistry, signalContext);
+    proposalSourceRegistry = new ImprovementProposalSourceRegistry();
+    categoryRegistry = new ImprovementCategoryRegistry();
+    conflictStrategyRegistry = new ConflictStrategyRegistry();
+    denyPatternProviderRegistry = new DenyPatternProviderRegistry();
+
+    categoryRegistry.registerProvider(new CodeEvolutionCategoryProvider());
+
+    strategy =
+        new ImprovementGoalFormationStrategy(
+            budgetEnforcer,
+            proposalSourceRegistry,
+            categoryRegistry,
+            new ImprovementCategoryTracker(),
+            new RollbackHistory(),
+            conflictStrategyRegistry,
+            denyPatternProviderRegistry);
     caseId = UUID.randomUUID();
   }
 
   @Test
-  void noProposalWhenNoImprovementConsensus() {
+  void noProposalWhenNoSources() {
     var config = new ImprovementConfig(null, null, null, null, null);
+    var proposal = strategy.proposeImprovements(caseId, "test-tenant", config);
+    assertThat(proposal).isNull();
+  }
+
+  @Test
+  void collectsFromSourceAndProposesGoal() {
+    var request =
+        new ImprovementRequest(
+            "operational",
+            "dependency-update",
+            "hibernate-core",
+            "repo",
+            List.of("pom.xml"),
+            20,
+            Map.of(),
+            "code-evolution");
+    proposalSourceRegistry.register(staticSource("s1", "code-evolution", List.of(request)));
+
+    var config = new ImprovementConfig(null, null, null, null, null);
+    var proposal = strategy.proposeImprovements(caseId, "test-tenant", config);
+
+    assertThat(proposal).isNotNull();
+    assertThat(proposal.goals()).hasSize(1);
+    assertThat(proposal.goals().get(0).name()).contains("self_improvement");
+    assertThat(proposal.goals().get(0).attributes())
+        .containsEntry("improvement.category", "dependency-update");
+  }
+
+  @Test
+  void collectsFromMultipleSourcesAndFilters() {
+    var codeRequest =
+        new ImprovementRequest(
+            "operational",
+            "dependency-update",
+            "lodash",
+            "repo",
+            List.of(),
+            5,
+            Map.of(),
+            "code-evolution");
+    var tradingRequest =
+        new ImprovementRequest(
+            "operational",
+            "parameter-tuning",
+            "sharpe-ratio",
+            "",
+            List.of(),
+            3,
+            Map.of(),
+            "trading");
+
+    proposalSourceRegistry.register(staticSource("s1", "code-evolution", List.of(codeRequest)));
+    proposalSourceRegistry.register(staticSource("s2", "trading", List.of(tradingRequest)));
+
+    categoryRegistry.registerProvider(
+        new ImprovementCategoryProvider() {
+          @Override
+          public String domainId() {
+            return "trading";
+          }
+
+          @Override
+          public List<CategoryDescriptor> categories() {
+            return List.of(
+                new CategoryDescriptor(
+                    "parameter-tuning", "Parameter Tuning", "Tune params", "trading"));
+          }
+
+          @Override
+          public List<StageDescriptor> stages() {
+            return List.of();
+          }
+        });
+
+    var config = new ImprovementConfig(null, null, null, null, null);
+    var proposal = strategy.proposeImprovements(caseId, "test-tenant", config);
+
+    assertThat(proposal).isNotNull();
+    assertThat(proposal.goals()).hasSize(2);
+  }
+
+  @Test
+  void disabledCategoryFiltersProposal() {
+    var request =
+        new ImprovementRequest(
+            "operational",
+            "lint-fix",
+            "checkstyle",
+            "repo",
+            List.of(),
+            10,
+            Map.of(),
+            "code-evolution");
+    proposalSourceRegistry.register(staticSource("s1", "code-evolution", List.of(request)));
+
+    var config = new ImprovementConfig(null, null, List.of("dependency-update"), null, null);
+    var proposal = strategy.proposeImprovements(caseId, "test-tenant", config);
+
+    assertThat(proposal).isNull();
+  }
+
+  @Test
+  void budgetDenialPreventsProposal() {
+    var budget = new ImprovementBudget(0, null, null, null, null, null, null);
+    var config = new ImprovementConfig(null, null, null, budget, null);
+
+    budgetEnforcer.recordStart(
+        UUID.randomUUID(),
+        new ImprovementRequest(
+            "operational", "lint-fix", "checkstyle", "repo", List.of(), 10, Map.of()));
+
+    var request =
+        new ImprovementRequest(
+            "operational",
+            "lint-fix",
+            "checkstyle",
+            "repo",
+            List.of(),
+            10,
+            Map.of(),
+            "code-evolution");
+    proposalSourceRegistry.register(staticSource("s1", "code-evolution", List.of(request)));
 
     var proposal = strategy.proposeImprovements(caseId, "test-tenant", config);
 
@@ -55,55 +194,25 @@ class ImprovementGoalFormationStrategyTest {
   }
 
   @Test
-  void proposesGoalWhenConsensusReached() {
-    var config = new ImprovementConfig(null, 2, null, null, null);
-    String signalName = "improvement:dependency:staleness:major-behind";
-
-    signalRegistry.deposit(caseId, signalName, 1.0, Duration.ofHours(1), "agent-1", 100);
-    signalRegistry.deposit(caseId, signalName, 1.0, Duration.ofHours(1), "agent-2", 100);
-
-    signalContext.register(
-        caseId,
-        signalName,
+  void denyPatternProviderFiltersByDomain() {
+    var request =
         new ImprovementRequest(
             "operational",
             "dependency-update",
-            "hibernate-core",
-            "casehubio/engine",
-            List.of("pom.xml"),
-            20,
-            Map.of()));
+            "target",
+            null,
+            null,
+            5,
+            CodeEvolutionMetadata.encode(null, List.of("src/ImprovementBudgetEnforcer.java")),
+            "code-evolution");
+    proposalSourceRegistry.register(staticSource("s1", "code-evolution", List.of(request)));
 
-    var proposal = strategy.proposeImprovements(caseId, "test-tenant", config);
+    var denyProvider =
+        new CodeEvolutionDenyPatternProvider(
+            new CodeEvolutionDenyPatternProviderTest.InMemoryDenyPatternStore());
+    denyPatternProviderRegistry.register(denyProvider);
 
-    assertThat(proposal).isNotNull();
-    assertThat(proposal.goals()).hasSize(1);
-    assertThat(proposal.goals().get(0).name()).contains("self_improvement");
-    assertThat(proposal.goals().get(0).attributes())
-        .containsEntry("improvement.type", "operational")
-        .containsEntry("improvement.category", "dependency-update");
-  }
-
-  @Test
-  void budgetDenialPreventsProposal() {
-    var budget = new ImprovementBudget(0, null, null, null, null, null, null);
-    var config = new ImprovementConfig(null, 2, null, budget, null);
-    String signalName = "improvement:quality:lint:violation";
-
-    budgetEnforcer.recordStart(
-        UUID.randomUUID(),
-        new ImprovementRequest(
-            "operational", "lint-fix", "checkstyle", "casehubio/engine", List.of(), 10, Map.of()));
-
-    signalRegistry.deposit(caseId, signalName, 1.0, Duration.ofHours(1), "agent-1", 100);
-    signalRegistry.deposit(caseId, signalName, 1.0, Duration.ofHours(1), "agent-2", 100);
-
-    signalContext.register(
-        caseId,
-        signalName,
-        new ImprovementRequest(
-            "operational", "lint-fix", "checkstyle", "casehubio/engine", List.of(), 10, Map.of()));
-
+    var config = new ImprovementConfig(null, null, null, null, null);
     var proposal = strategy.proposeImprovements(caseId, "test-tenant", config);
 
     assertThat(proposal).isNull();
@@ -114,35 +223,24 @@ class ImprovementGoalFormationStrategyTest {
     assertThat(strategy.id()).isEqualTo("self-improvement");
   }
 
-  @Test
-  void consensusWithoutContextSkipsSignal() {
-    var config = new ImprovementConfig(null, 2, null, null, null);
-    String signalName = "improvement:dependency:staleness:major-behind";
+  private ImprovementProposalSource staticSource(
+      String sourceId, String domainId, List<ImprovementRequest> proposals) {
+    return new ImprovementProposalSource() {
+      @Override
+      public String sourceId() {
+        return sourceId;
+      }
 
-    signalRegistry.deposit(caseId, signalName, 1.0, Duration.ofHours(1), "agent-1", 100);
-    signalRegistry.deposit(caseId, signalName, 1.0, Duration.ofHours(1), "agent-2", 100);
+      @Override
+      public String domainId() {
+        return domainId;
+      }
 
-    var proposal = strategy.proposeImprovements(caseId, "test-tenant", config);
-
-    assertThat(proposal).isNull();
-  }
-
-  @Test
-  void disabledCategorySkipsSignal() {
-    var config = new ImprovementConfig(null, 2, List.of("dependency-update"), null, null);
-    String signalName = "improvement:quality:lint:violation";
-
-    signalRegistry.deposit(caseId, signalName, 1.0, Duration.ofHours(1), "agent-1", 100);
-    signalRegistry.deposit(caseId, signalName, 1.0, Duration.ofHours(1), "agent-2", 100);
-
-    signalContext.register(
-        caseId,
-        signalName,
-        new ImprovementRequest(
-            "operational", "lint-fix", "checkstyle", "casehubio/engine", List.of(), 10, Map.of()));
-
-    var proposal = strategy.proposeImprovements(caseId, "test-tenant", config);
-
-    assertThat(proposal).isNull();
+      @Override
+      public List<ImprovementRequest> propose(
+          UUID caseId, String tenancyId, ImprovementConfig config) {
+        return proposals;
+      }
+    };
   }
 }

@@ -17,15 +17,15 @@ package io.casehub.engine.internal.improvement;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-import io.casehub.api.model.stigmergy.ImprovementStage;
+import io.casehub.api.model.stigmergy.ProposalFilteringSummary;
 import io.casehub.api.model.stigmergy.TickTrace;
 import io.casehub.api.model.stigmergy.TickTrace.GateResult;
 import io.casehub.api.model.stigmergy.TickTrace.GateResult.GateVerdict;
-import io.casehub.api.model.stigmergy.TickTrace.SignalFilteringSummary;
 import io.casehub.api.model.stigmergy.TickTrace.TickOutcome;
 import io.casehub.api.model.stigmergy.TickTrace.TickTrigger;
 import java.time.Instant;
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 import org.junit.jupiter.api.Test;
 
@@ -58,11 +58,11 @@ class TickTraceTest {
 
   @Test
   void proposalOutcomeIncludesFilteringSummary() {
-    var summary = new SignalFilteringSummary(10, 8, 7, 5, 5, 4, 3, 3);
+    var summary = new ProposalFilteringSummary(Map.of("signal-consensus", 10), 8, 7, 5, 5, 4, 3, 3);
     var outcome = new TickOutcome.ProposalGenerated(3, summary);
 
     assertThat(outcome.goalCount()).isEqualTo(3);
-    assertThat(outcome.filtering().consensusSignals()).isEqualTo(10);
+    assertThat(outcome.filtering().proposalsBySource()).containsEntry("signal-consensus", 10);
     assertThat(outcome.filtering().proposed()).isEqualTo(3);
   }
 
@@ -70,22 +70,6 @@ class TickTraceTest {
   void heartbeatOutcomeIsDistinct() {
     TickOutcome outcome = new TickOutcome.Heartbeat();
     assertThat(outcome).isInstanceOf(TickOutcome.Heartbeat.class);
-  }
-
-  @Test
-  void improvementStageGateCheckpoints() {
-    assertThat(ImprovementStage.RESEARCH_SCOPE.isGateCheckpoint()).isTrue();
-    assertThat(ImprovementStage.HYPOTHESIS_APPROVAL.isGateCheckpoint()).isTrue();
-    assertThat(ImprovementStage.IMPLEMENTATION_PLAN.isGateCheckpoint()).isTrue();
-    assertThat(ImprovementStage.PR_REVIEW.isGateCheckpoint()).isTrue();
-
-    assertThat(ImprovementStage.INTROSPECT.isGateCheckpoint()).isFalse();
-    assertThat(ImprovementStage.SEARCH.isGateCheckpoint()).isFalse();
-    assertThat(ImprovementStage.ANALYZE.isGateCheckpoint()).isFalse();
-    assertThat(ImprovementStage.IMPLEMENT.isGateCheckpoint()).isFalse();
-    assertThat(ImprovementStage.SUBMIT_PR.isGateCheckpoint()).isFalse();
-    assertThat(ImprovementStage.INTEGRATE.isGateCheckpoint()).isFalse();
-    assertThat(ImprovementStage.OUTCOME_RECORDING.isGateCheckpoint()).isFalse();
   }
 
   @Test

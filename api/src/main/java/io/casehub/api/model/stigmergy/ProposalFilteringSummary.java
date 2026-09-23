@@ -13,22 +13,16 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.casehub.api.spi.improvement;
+package io.casehub.api.model.stigmergy;
 
-import io.casehub.api.model.stigmergy.EscalationContext;
-import io.casehub.api.model.stigmergy.EscalationPolicy;
-import io.casehub.api.model.stigmergy.EscalationResult;
-import io.casehub.api.model.stigmergy.WatchPattern;
-import java.util.List;
-import java.util.UUID;
+import java.util.Map;
 
-public interface EscalationProvider {
-
-  EscalationResult evaluate(
-      UUID caseId,
-      String tenancyId,
-      String stage,
-      EscalationContext context,
-      EscalationPolicy policy,
-      List<WatchPattern> activeWatchPatterns);
-}
+public record ProposalFilteringSummary(
+    Map<String, Integer> proposalsBySource,
+    int afterCategoryFilter,
+    int afterSuppressionFilter,
+    int afterAntiOscillationFilter,
+    int afterDenyFilter,
+    int afterBudgetFilter,
+    int afterConflictFilter,
+    int proposed) {}

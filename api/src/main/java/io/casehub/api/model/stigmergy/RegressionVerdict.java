@@ -13,22 +13,12 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.casehub.api.spi.improvement;
+package io.casehub.api.model.stigmergy;
 
-import io.casehub.api.model.stigmergy.EscalationContext;
-import io.casehub.api.model.stigmergy.EscalationPolicy;
-import io.casehub.api.model.stigmergy.EscalationResult;
-import io.casehub.api.model.stigmergy.WatchPattern;
-import java.util.List;
-import java.util.UUID;
+public sealed interface RegressionVerdict
+    permits RegressionVerdict.NoRegression, RegressionVerdict.Detected {
 
-public interface EscalationProvider {
+  record NoRegression() implements RegressionVerdict {}
 
-  EscalationResult evaluate(
-      UUID caseId,
-      String tenancyId,
-      String stage,
-      EscalationContext context,
-      EscalationPolicy policy,
-      List<WatchPattern> activeWatchPatterns);
+  record Detected(double confidence, String reason) implements RegressionVerdict {}
 }

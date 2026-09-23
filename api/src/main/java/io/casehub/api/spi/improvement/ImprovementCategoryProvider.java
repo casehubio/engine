@@ -13,27 +13,17 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.casehub.api.model.stigmergy;
+package io.casehub.api.spi.improvement;
 
-import java.util.Set;
+import io.casehub.api.model.stigmergy.CategoryDescriptor;
+import io.casehub.api.model.stigmergy.StageDescriptor;
+import java.util.List;
 
-public enum ImprovementStage {
-  INTROSPECT,
-  RESEARCH_SCOPE,
-  SEARCH,
-  ANALYZE,
-  HYPOTHESIS_APPROVAL,
-  IMPLEMENTATION_PLAN,
-  IMPLEMENT,
-  SUBMIT_PR,
-  PR_REVIEW,
-  INTEGRATE,
-  OUTCOME_RECORDING;
+public interface ImprovementCategoryProvider {
 
-  private static final Set<ImprovementStage> GATE_CHECKPOINTS =
-      Set.of(RESEARCH_SCOPE, HYPOTHESIS_APPROVAL, IMPLEMENTATION_PLAN, PR_REVIEW);
+  String domainId();
 
-  public boolean isGateCheckpoint() {
-    return GATE_CHECKPOINTS.contains(this);
-  }
+  List<CategoryDescriptor> categories();
+
+  List<StageDescriptor> stages();
 }

@@ -91,12 +91,6 @@ public record ImprovementConfig(
     return consensusMinSources != null ? consensusMinSources : 2;
   }
 
-  public List<String> effectiveEnabledCategories() {
-    return enabledCategories != null
-        ? enabledCategories
-        : List.of("dependency-update", "lint-fix", "coverage-gap", "ci-triage", "recipe");
-  }
-
   public ImprovementBudget effectiveBudget() {
     return budget != null
         ? budget

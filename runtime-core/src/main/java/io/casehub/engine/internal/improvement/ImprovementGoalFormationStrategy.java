@@ -15,59 +15,51 @@
  */
 package io.casehub.engine.internal.improvement;
 
+import io.casehub.api.model.stigmergy.CategoryDescriptor;
 import io.casehub.api.model.stigmergy.ImprovementConfig;
 import io.casehub.api.model.stigmergy.ImprovementRequest;
+import io.casehub.api.spi.improvement.ConflictStrategy;
 import io.casehub.api.spi.routing.GoalFormationContext;
 import io.casehub.api.spi.routing.GoalFormationProposal;
 import io.casehub.api.spi.routing.GoalFormationStrategy;
 import io.casehub.eidos.api.GoalPriority;
-import io.casehub.engine.common.internal.signal.SignalRegistry;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Optional;
+import java.util.Set;
 import java.util.UUID;
+import java.util.stream.Collectors;
 
 @ApplicationScoped
 public class ImprovementGoalFormationStrategy implements GoalFormationStrategy {
 
   private final ImprovementBudgetEnforcer budgetEnforcer;
-  private final SignalRegistry signalRegistry;
-  private final ImprovementSignalContext signalContext;
+  private final ImprovementProposalSourceRegistry proposalSourceRegistry;
+  private final ImprovementCategoryRegistry categoryRegistry;
   private final ImprovementCategoryTracker categoryTracker;
   private final RollbackHistory rollbackHistory;
-  private final ConflictDetector conflictDetector;
+  private final ConflictStrategyRegistry conflictStrategyRegistry;
+  private final DenyPatternProviderRegistry denyPatternProviderRegistry;
 
   @Inject
   public ImprovementGoalFormationStrategy(
       ImprovementBudgetEnforcer budgetEnforcer,
-      SignalRegistry signalRegistry,
-      ImprovementSignalContext signalContext,
+      ImprovementProposalSourceRegistry proposalSourceRegistry,
+      ImprovementCategoryRegistry categoryRegistry,
       ImprovementCategoryTracker categoryTracker,
       RollbackHistory rollbackHistory,
-      ConflictDetector conflictDetector) {
+      ConflictStrategyRegistry conflictStrategyRegistry,
+      DenyPatternProviderRegistry denyPatternProviderRegistry) {
     this.budgetEnforcer = budgetEnforcer;
-    this.signalRegistry = signalRegistry;
-    this.signalContext = signalContext;
+    this.proposalSourceRegistry = proposalSourceRegistry;
+    this.categoryRegistry = categoryRegistry;
     this.categoryTracker = categoryTracker;
     this.rollbackHistory = rollbackHistory;
-    this.conflictDetector = conflictDetector;
-  }
-
-  public ImprovementGoalFormationStrategy(
-      ImprovementBudgetEnforcer budgetEnforcer,
-      SignalRegistry signalRegistry,
-      ImprovementSignalContext signalContext) {
-    this(
-        budgetEnforcer,
-        signalRegistry,
-        signalContext,
-        new ImprovementCategoryTracker(),
-        new RollbackHistory(),
-        new ConflictDetector());
+    this.conflictStrategyRegistry = conflictStrategyRegistry;
+    this.denyPatternProviderRegistry = denyPatternProviderRegistry;
   }
 
   @Override
@@ -82,67 +74,93 @@ public class ImprovementGoalFormationStrategy implements GoalFormationStrategy {
 
   public GoalFormationProposal proposeImprovements(
       UUID caseId, String tenancyId, ImprovementConfig config) {
-    String namespace = config.effectiveSignalNamespace();
-    int minSources = config.effectiveConsensusMinSources();
-    var consensus = signalRegistry.consensusSignals(caseId, minSources, 0.01);
+    List<ImprovementRequest> allProposals = new ArrayList<>();
+    Map<String, Integer> proposalsBySource = new LinkedHashMap<>();
+    for (var source : proposalSourceRegistry.all()) {
+      var sourceProposals = source.propose(caseId, tenancyId, config);
+      proposalsBySource.put(source.sourceId(), sourceProposals.size());
+      allProposals.addAll(sourceProposals);
+    }
 
-    List<GoalFormationProposal.ProposedGoal> goals = new ArrayList<>();
-    for (var entry : consensus.entrySet()) {
-      String signalName = entry.getKey();
-      if (!signalName.startsWith(namespace + ":")) {
-        continue;
+    var enabledCategories = effectiveEnabledCategories(config);
+
+    List<ImprovementRequest> afterCategory =
+        allProposals.stream().filter(r -> enabledCategories.contains(r.category())).toList();
+
+    List<ImprovementRequest> afterSuppression = new ArrayList<>();
+    for (var request : afterCategory) {
+      if (!categoryTracker.isSuppressed(caseId, request.category())) {
+        afterSuppression.add(request);
       }
+    }
 
-      Optional<ImprovementRequest> ctxOpt = signalContext.get(caseId, signalName);
-      if (ctxOpt.isEmpty()) {
-        continue;
-      }
-
-      ImprovementRequest request = ctxOpt.get();
-      if (!config.effectiveEnabledCategories().contains(request.category())) {
-        continue;
-      }
-
-      if (categoryTracker.isSuppressed(caseId, request.category())) {
-        continue;
-      }
-
-      if (rollbackHistory.wasRecentlyRolledBack(
+    List<ImprovementRequest> afterAntiOscillation = new ArrayList<>();
+    for (var request : afterSuppression) {
+      if (!rollbackHistory.wasRecentlyRolledBack(
           caseId,
           request.category(),
           request.target(),
           java.time.Duration.ofMinutes(
               config.effectiveRollbackPolicy().effectiveRegressionWindowMinutes()))) {
-        continue;
+        afterAntiOscillation.add(request);
       }
+    }
 
+    List<ImprovementRequest> afterDeny = new ArrayList<>();
+    for (var request : afterAntiOscillation) {
+      String domainId = request.domainId();
+      if (domainId != null) {
+        var provider = denyPatternProviderRegistry.forDomain(domainId);
+        if (provider.isPresent() && provider.get().isDenied(caseId, tenancyId, request, config)) {
+          continue;
+        }
+      }
+      afterDeny.add(request);
+    }
+
+    List<ImprovementRequest> afterBudget = new ArrayList<>();
+    for (var request : afterDeny) {
       var budgetCheck = budgetEnforcer.check(caseId, config.effectiveBudget(), request, tenancyId);
       if (budgetCheck instanceof ImprovementBudgetEnforcer.BudgetCheck.Denied) {
         continue;
       }
+      afterBudget.add(request);
+    }
 
-      var conflictCheck =
-          conflictDetector.check(
-              request,
-              budgetEnforcer.activeImprovementRequests(),
-              config.effectiveConflictTrivialThreshold());
-      if (conflictCheck instanceof ConflictDetector.ConflictCheck.Conflicting) {
-        continue;
+    List<ImprovementRequest> afterConflict = new ArrayList<>();
+    for (var request : afterBudget) {
+      String domainId = request.domainId();
+      if (domainId != null) {
+        var strategyOpt = conflictStrategyRegistry.forDomain(domainId);
+        if (strategyOpt.isPresent()) {
+          var check =
+              strategyOpt
+                  .get()
+                  .check(
+                      request,
+                      budgetEnforcer.activeImprovementRequests(),
+                      config.effectiveConflictTrivialThreshold());
+          if (check instanceof ConflictStrategy.ConflictResult.Conflicting) {
+            continue;
+          }
+        }
       }
+      afterConflict.add(request);
+    }
 
+    List<GoalFormationProposal.ProposedGoal> goals = new ArrayList<>();
+    for (var request : afterConflict) {
       Map<String, String> attributes = new LinkedHashMap<>();
       attributes.put("improvement.type", request.improvementType());
       attributes.put("improvement.category", request.category());
       attributes.put("improvement.target", request.target());
-      attributes.put("improvement.targetRepo", request.targetRepo());
-      attributes.put("improvement.signalName", signalName);
 
       goals.add(
           new GoalFormationProposal.ProposedGoal(
               "self_improvement:" + request.category() + ":" + request.target(),
               "Improve " + request.category() + " for " + request.target(),
               GoalPriority.SECONDARY,
-              "Signal consensus reached for " + signalName,
+              "Proposal from source",
               attributes));
     }
 
@@ -151,7 +169,15 @@ public class ImprovementGoalFormationStrategy implements GoalFormationStrategy {
     }
 
     return new GoalFormationProposal(
-        goals,
-        "Improvement signal consensus detected — " + goals.size() + " improvement(s) proposed");
+        goals, "Improvement proposals detected — " + goals.size() + " improvement(s) proposed");
+  }
+
+  private Set<String> effectiveEnabledCategories(ImprovementConfig config) {
+    if (config.enabledCategories() != null) {
+      return Set.copyOf(config.enabledCategories());
+    }
+    return categoryRegistry.allCategories().stream()
+        .map(CategoryDescriptor::id)
+        .collect(Collectors.toSet());
   }
 }

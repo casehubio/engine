@@ -19,7 +19,7 @@ import jakarta.annotation.Nullable;
 import java.util.Map;
 
 public record GatePolicy(
-    @Nullable Map<ImprovementStage, GateMode> modes, @Nullable Integer gateTimeoutMinutes) {
+    @Nullable Map<String, GateMode> modes, @Nullable Integer gateTimeoutMinutes) {
 
   public enum GateMode {
     GATED,
@@ -27,21 +27,11 @@ public record GatePolicy(
     NOTIFY
   }
 
-  public GatePolicy {
-    if (modes != null) {
-      for (var stage : modes.keySet()) {
-        if (!stage.isGateCheckpoint()) {
-          throw new IllegalArgumentException(stage + " is not a gate checkpoint");
-        }
-      }
+  public GateMode effectiveMode(String stageId) {
+    if (modes != null && modes.containsKey(stageId)) {
+      return modes.get(stageId);
     }
-  }
-
-  public GateMode effectiveMode(ImprovementStage stage) {
-    if (modes != null && modes.containsKey(stage)) {
-      return modes.get(stage);
-    }
-    return stage == ImprovementStage.PR_REVIEW ? GateMode.GATED : GateMode.AUTO;
+    return GateMode.AUTO;
   }
 
   public int effectiveGateTimeoutMinutes() {

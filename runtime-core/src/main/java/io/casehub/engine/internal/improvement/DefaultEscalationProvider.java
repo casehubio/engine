@@ -20,7 +20,6 @@ import io.casehub.api.model.stigmergy.EscalationPolicy;
 import io.casehub.api.model.stigmergy.EscalationResult;
 import io.casehub.api.model.stigmergy.EscalationTrigger;
 import io.casehub.api.model.stigmergy.EscalationTrigger.EscalationLayer;
-import io.casehub.api.model.stigmergy.ImprovementStage;
 import io.casehub.api.model.stigmergy.WatchPattern;
 import io.casehub.api.spi.improvement.EscalationProvider;
 import io.quarkus.arc.DefaultBean;
@@ -37,7 +36,7 @@ public class DefaultEscalationProvider implements EscalationProvider {
   public EscalationResult evaluate(
       UUID caseId,
       String tenancyId,
-      ImprovementStage stage,
+      String stage,
       EscalationContext context,
       EscalationPolicy policy,
       List<WatchPattern> activeWatchPatterns) {

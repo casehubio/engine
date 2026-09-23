@@ -21,7 +21,6 @@ import io.casehub.api.model.event.CaseHubEventType;
 import io.casehub.api.model.event.EventStreamType;
 import io.casehub.api.model.stigmergy.ConductorInboxEntry;
 import io.casehub.api.model.stigmergy.ConductorInboxEntry.Status;
-import io.casehub.api.model.stigmergy.ImprovementStage;
 import io.casehub.engine.common.internal.history.EventLog;
 import io.casehub.engine.common.spi.EventLogRepository;
 import java.time.Instant;
@@ -76,7 +75,8 @@ class EvolutionApiTest {
             healthTracker,
             researchCorpus,
             gatePolicyStore,
-            artifactManifestStore);
+            artifactManifestStore,
+            new InMemoryDenyPatternStore());
 
     caseId = UUID.randomUUID();
   }
@@ -86,7 +86,6 @@ class EvolutionApiTest {
     api.addDenyPattern(caseId, "test-tenant", "blocked-path");
 
     var view = api.getDenyPatterns(caseId, "test-tenant");
-    assertThat(view.staticPatterns()).isNotEmpty();
     assertThat(view.dynamicPatterns()).hasSize(1);
     assertThat(view.dynamicPatterns().get(0).pattern()).isEqualTo("blocked-path");
 
@@ -101,7 +100,7 @@ class EvolutionApiTest {
         new ConductorInboxEntry(
             caseId,
             "e1",
-            ImprovementStage.RESEARCH_SCOPE,
+            CodeEvolutionStages.RESEARCH_SCOPE,
             Status.PENDING,
             null,
             null,
@@ -126,7 +125,7 @@ class EvolutionApiTest {
         new ConductorInboxEntry(
             caseId,
             "e1",
-            ImprovementStage.RESEARCH_SCOPE,
+            CodeEvolutionStages.RESEARCH_SCOPE,
             Status.PENDING,
             null,
             null,
@@ -268,7 +267,7 @@ class EvolutionApiTest {
     var policy =
         new io.casehub.api.model.stigmergy.GatePolicy(
             java.util.Map.of(
-                io.casehub.api.model.stigmergy.ImprovementStage.PR_REVIEW,
+                CodeEvolutionStages.PR_REVIEW,
                 io.casehub.api.model.stigmergy.GatePolicy.GateMode.GATED),
             null);
     api.setGatePolicy(caseId, "test-tenant", policy);
@@ -276,7 +275,7 @@ class EvolutionApiTest {
     assertThat(
             gatePolicyStore
                 .find(caseId, "test-tenant")
-                .effectiveMode(io.casehub.api.model.stigmergy.ImprovementStage.PR_REVIEW))
+                .effectiveMode(CodeEvolutionStages.PR_REVIEW))
         .isEqualTo(io.casehub.api.model.stigmergy.GatePolicy.GateMode.GATED);
   }
 
@@ -287,7 +286,7 @@ class EvolutionApiTest {
         new io.casehub.api.model.stigmergy.ArtifactEntry(
             "analysis.md",
             io.casehub.api.model.stigmergy.ArtifactEntry.ArtifactType.ANALYSIS,
-            io.casehub.api.model.stigmergy.ImprovementStage.RESEARCH_SCOPE,
+            CodeEvolutionStages.RESEARCH_SCOPE,
             java.time.Instant.now());
     artifactManifestStore.addEntry(caseId, improvementId, entry, "test-tenant");
 

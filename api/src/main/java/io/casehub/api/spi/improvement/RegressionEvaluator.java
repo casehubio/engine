@@ -15,20 +15,16 @@
  */
 package io.casehub.api.spi.improvement;
 
-import io.casehub.api.model.stigmergy.EscalationContext;
-import io.casehub.api.model.stigmergy.EscalationPolicy;
-import io.casehub.api.model.stigmergy.EscalationResult;
-import io.casehub.api.model.stigmergy.WatchPattern;
-import java.util.List;
+import io.casehub.api.model.stigmergy.HealthScoreSnapshot;
+import io.casehub.api.model.stigmergy.RegressionVerdict;
 import java.util.UUID;
 
-public interface EscalationProvider {
+public interface RegressionEvaluator {
 
-  EscalationResult evaluate(
-      UUID caseId,
-      String tenancyId,
-      String stage,
-      EscalationContext context,
-      EscalationPolicy policy,
-      List<WatchPattern> activeWatchPatterns);
+  String evaluatorId();
+
+  String domainId();
+
+  RegressionVerdict evaluate(
+      UUID caseId, HealthScoreSnapshot baseline, HealthScoreSnapshot current, String category);
 }

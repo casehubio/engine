@@ -15,6 +15,7 @@
  */
 package io.casehub.api.model.stigmergy;
 
+import jakarta.annotation.Nullable;
 import java.util.List;
 import java.util.Map;
 
@@ -25,4 +26,16 @@ public record ImprovementRequest(
     String targetRepo,
     List<String> targetPaths,
     int estimatedSize,
-    Map<String, String> metadata) {}
+    Map<String, String> metadata,
+    @Nullable String domainId) {
+  public ImprovementRequest(
+      String improvementType,
+      String category,
+      String target,
+      String targetRepo,
+      List<String> targetPaths,
+      int estimatedSize,
+      Map<String, String> metadata) {
+    this(improvementType, category, target, targetRepo, targetPaths, estimatedSize, metadata, null);
+  }
+}

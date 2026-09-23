@@ -15,20 +15,14 @@
  */
 package io.casehub.api.spi.improvement;
 
-import io.casehub.api.model.stigmergy.EscalationContext;
-import io.casehub.api.model.stigmergy.EscalationPolicy;
-import io.casehub.api.model.stigmergy.EscalationResult;
-import io.casehub.api.model.stigmergy.WatchPattern;
-import java.util.List;
+import io.casehub.api.model.stigmergy.ImprovementConfig;
+import io.casehub.api.model.stigmergy.ImprovementRequest;
 import java.util.UUID;
 
-public interface EscalationProvider {
+public interface DenyPatternProvider {
 
-  EscalationResult evaluate(
-      UUID caseId,
-      String tenancyId,
-      String stage,
-      EscalationContext context,
-      EscalationPolicy policy,
-      List<WatchPattern> activeWatchPatterns);
+  String domainId();
+
+  boolean isDenied(
+      UUID caseId, String tenancyId, ImprovementRequest request, ImprovementConfig config);
 }

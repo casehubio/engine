@@ -15,20 +15,16 @@
  */
 package io.casehub.api.spi.improvement;
 
-import io.casehub.api.model.stigmergy.EscalationContext;
-import io.casehub.api.model.stigmergy.EscalationPolicy;
-import io.casehub.api.model.stigmergy.EscalationResult;
-import io.casehub.api.model.stigmergy.WatchPattern;
+import io.casehub.api.model.stigmergy.ImprovementConfig;
+import io.casehub.api.model.stigmergy.ImprovementRequest;
 import java.util.List;
 import java.util.UUID;
 
-public interface EscalationProvider {
+public interface ImprovementProposalSource {
 
-  EscalationResult evaluate(
-      UUID caseId,
-      String tenancyId,
-      String stage,
-      EscalationContext context,
-      EscalationPolicy policy,
-      List<WatchPattern> activeWatchPatterns);
+  String sourceId();
+
+  String domainId();
+
+  List<ImprovementRequest> propose(UUID caseId, String tenancyId, ImprovementConfig config);
 }
