@@ -62,8 +62,8 @@ class CaseServiceAclTest {
           }
 
           @Override
-          public CaseInstance findByUuid(UUID uuid, String tenancyId) {
-            return uuid.equals(caseId) && "t1".equals(tenancyId) ? instance : null;
+          public java.util.Optional<CaseInstance> findByUuid(UUID uuid, String tenancyId) {
+            return uuid.equals(caseId) && "t1".equals(tenancyId) ? java.util.Optional.of(instance) : java.util.Optional.empty();
           }
 
           @Override

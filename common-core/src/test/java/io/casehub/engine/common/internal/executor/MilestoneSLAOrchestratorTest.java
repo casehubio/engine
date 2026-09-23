@@ -15,8 +15,6 @@
  */
 package io.casehub.engine.common.internal.executor;
 
-import static org.assertj.core.api.Assertions.assertThat;
-
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.casehub.api.model.CaseStatus;
 import io.casehub.api.model.event.CaseHubEventType;
@@ -28,12 +26,15 @@ import io.casehub.engine.common.internal.model.CaseInstance;
 import io.casehub.engine.common.spi.CrossTenantCaseInstanceRepository;
 import io.casehub.engine.common.spi.CrossTenantEventLogRepository;
 import io.casehub.engine.common.spi.cache.CaseInstanceCache;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Test;
+
+import static org.assertj.core.api.Assertions.assertThat;
 
 class MilestoneSLAOrchestratorTest {
 
@@ -178,8 +179,8 @@ class MilestoneSLAOrchestratorTest {
     CaseInstance instance;
 
     @Override
-    public CaseInstance findByUuid(UUID uuid) {
-      return instance;
+    public java.util.Optional<CaseInstance> findByUuid(java.util.UUID caseId) {
+      return java.util.Optional.ofNullable(instances.get(caseId));
     }
   }
 
@@ -207,10 +208,10 @@ class MilestoneSLAOrchestratorTest {
       return List.of();
     }
 
-    @Override
-    public EventLog findById(Long id) {
-      return null;
-    }
+      @Override
+      public java.util.Optional<EventLog> findById(Long id) {
+          return java.util.Optional.empty();
+      }
 
     @Override
     public List<EventLog> findByCaseAndWorkerAndType(

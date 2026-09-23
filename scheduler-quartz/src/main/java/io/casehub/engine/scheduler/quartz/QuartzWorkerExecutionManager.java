@@ -109,10 +109,10 @@ public class QuartzWorkerExecutionManager implements WorkerExecutionManager {
             instance.getUuid(), worker.name(), capability.name(), inputData);
     String group = instance.getUuid().toString();
 
-    EventLog eventLog = eventLogRepository.findById(eventLogId);
-    if (eventLog == null) {
-      throw new RuntimeException("EventLog not found: id=" + eventLogId);
-    }
+    EventLog eventLog =
+        eventLogRepository
+            .findById(eventLogId)
+            .orElseThrow(() -> new RuntimeException("EventLog not found: id=" + eventLogId));
 
     scheduleQuartzJob(eventLogId, instance, worker, idempotency, group, instance.tenancyId);
   }

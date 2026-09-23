@@ -156,7 +156,7 @@ public class QhorusMessageSignalBridge {
     Long eventLogId = parseEventLogId(event.correlationId());
     if (eventLogId == null) return false;
 
-    EventLog eventLog = eventLogRepository.findById(eventLogId);
+    EventLog eventLog = eventLogRepository.findById(eventLogId).orElse(null);
     if (eventLog == null) return false;
 
     JsonNode metadata = eventLog.getMetadata();
