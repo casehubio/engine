@@ -15,18 +15,32 @@
  */
 package io.casehub.engine.internal.improvement;
 
+import io.casehub.api.model.stigmergy.ArtifactManifest;
+import io.casehub.api.model.stigmergy.ComplianceLevel;
 import io.casehub.api.model.stigmergy.ConductorDecision;
 import io.casehub.api.model.stigmergy.ConductorInboxEntry;
+import io.casehub.api.model.stigmergy.GatePolicy;
+import io.casehub.api.model.stigmergy.ImprovementConfig;
+import io.casehub.api.model.stigmergy.ReadinessReport;
 import io.casehub.api.model.stigmergy.SummaryScope;
 import io.casehub.api.model.stigmergy.TickTrace;
 import io.casehub.api.model.stigmergy.WatchPattern;
+import io.casehub.api.spi.improvement.ResearchCorpus;
 import io.casehub.api.spi.improvement.SummarizationProvider;
 import io.casehub.api.view.DenyPatternView;
+import io.casehub.api.view.EvolutionStateSnapshot;
+import io.casehub.api.view.EvolutionStateSnapshot.CategoryStateView;
 import io.casehub.api.view.EvolutionSummary;
+import io.casehub.api.view.ResearchCorpusView;
+import io.casehub.engine.common.spi.ArtifactManifestStore;
+import io.casehub.engine.common.spi.GatePolicyStore;
 import jakarta.annotation.Nullable;
 import jakarta.enterprise.context.ApplicationScoped;
 import java.time.Instant;
+import java.util.ArrayList;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 
 @ApplicationScoped
@@ -37,18 +51,39 @@ public class DefaultEngineEvolutionApi {
   private final ConductorInboxManager inboxManager;
   private final SummarizationProvider summarizationProvider;
   private final ImprovementCoordinator coordinator;
+  private final ImprovementCategoryTracker categoryTracker;
+  private final ImprovementCircuitBreaker circuitBreaker;
+  private final ReadinessValidator readinessValidator;
+  private final HealthScoreTracker healthTracker;
+  private final ResearchCorpus researchCorpus;
+  private final GatePolicyStore gatePolicyStore;
+  private final ArtifactManifestStore artifactManifestStore;
 
   public DefaultEngineEvolutionApi(
       TickTraceBuffer tickTraceBuffer,
       ImprovementBudgetEnforcer budgetEnforcer,
       ConductorInboxManager inboxManager,
       SummarizationProvider summarizationProvider,
-      ImprovementCoordinator coordinator) {
+      ImprovementCoordinator coordinator,
+      ImprovementCategoryTracker categoryTracker,
+      ImprovementCircuitBreaker circuitBreaker,
+      ReadinessValidator readinessValidator,
+      HealthScoreTracker healthTracker,
+      ResearchCorpus researchCorpus,
+      GatePolicyStore gatePolicyStore,
+      ArtifactManifestStore artifactManifestStore) {
     this.tickTraceBuffer = tickTraceBuffer;
     this.budgetEnforcer = budgetEnforcer;
     this.inboxManager = inboxManager;
     this.summarizationProvider = summarizationProvider;
     this.coordinator = coordinator;
+    this.categoryTracker = categoryTracker;
+    this.circuitBreaker = circuitBreaker;
+    this.readinessValidator = readinessValidator;
+    this.healthTracker = healthTracker;
+    this.researchCorpus = researchCorpus;
+    this.gatePolicyStore = gatePolicyStore;
+    this.artifactManifestStore = artifactManifestStore;
   }
 
   public List<TickTrace> getTickHistory(UUID caseId, @Nullable Integer limit) {
@@ -125,5 +160,110 @@ public class DefaultEngineEvolutionApi {
 
   public void unblockImprovement(UUID caseId, String tenancyId, UUID improvementId) {
     coordinator.unblock(caseId, improvementId, tenancyId);
+  }
+
+  public void pauseCategory(UUID caseId, String tenancyId, String category, int durationMinutes) {
+    categoryTracker.pauseCategory(caseId, category, java.time.Duration.ofMinutes(durationMinutes));
+  }
+
+  public void unpauseCategory(UUID caseId, String tenancyId, String category) {
+    categoryTracker.unpauseCategory(caseId, category);
+  }
+
+  public void resetCircuitBreaker(UUID caseId) {
+    circuitBreaker.manualReset(caseId);
+  }
+
+  public ReadinessReport getReadinessReport(
+      UUID caseId, String tenancyId, ComplianceLevel targetLevel, ImprovementConfig config) {
+    return readinessValidator.validate(caseId, tenancyId, targetLevel, config);
+  }
+
+  public ReadinessReport triggerReadinessValidation(
+      UUID caseId, String tenancyId, ComplianceLevel targetLevel, ImprovementConfig config) {
+    return readinessValidator.validate(caseId, tenancyId, targetLevel, config);
+  }
+
+  public EvolutionStateSnapshot getEvolutionState(
+      UUID caseId, String tenancyId, ImprovementConfig config) {
+    var latest = healthTracker.latestSnapshot(caseId);
+    double healthScore = latest != null ? latest.score() : 0.0;
+    Map<String, Double> componentScores = latest != null ? latest.componentScores() : Map.of();
+    double healthDelta =
+        healthTracker.delta(caseId, config.effectiveHealthPolicy().effectiveHealthWindowMinutes());
+    int healthWindowMinutes = config.effectiveHealthPolicy().effectiveHealthWindowMinutes();
+    var cbState = circuitBreaker.state(caseId);
+    Map<String, CategoryStateView> categoryStates = new LinkedHashMap<>();
+    for (var entry : categoryTracker.states(caseId).entrySet()) {
+      var s = entry.getValue();
+      categoryStates.put(
+          entry.getKey(),
+          new CategoryStateView(
+              s.successCount(),
+              s.failureCount(),
+              s.rejectionCount(),
+              s.paused(),
+              s.pausedUntil(),
+              categoryTracker.isSuppressed(caseId, entry.getKey())));
+    }
+    var complianceLevel = readinessValidator.cachedLevel(caseId);
+    var recentTicks = tickTraceBuffer.recent(caseId, 20);
+    int activeCount = budgetEnforcer.activeCount();
+    int dailyCount = budgetEnforcer.dailyCount();
+    int pendingInbox = inboxManager.pendingCount(caseId, tenancyId);
+    return new EvolutionStateSnapshot(
+        caseId,
+        Instant.now(),
+        healthScore,
+        componentScores,
+        healthDelta,
+        healthWindowMinutes,
+        cbState,
+        categoryStates,
+        complianceLevel,
+        null,
+        Map.of(),
+        recentTicks,
+        activeCount,
+        dailyCount,
+        List.of(),
+        config.effectiveEvolutionEnabled(),
+        pendingInbox);
+  }
+
+  public ResearchCorpusView getResearchCorpus(String query, String areaId, int limit) {
+    var findings = researchCorpus.search(query, areaId, limit);
+    var pending = researchCorpus.pendingHilEntries();
+    return new ResearchCorpusView(findings, pending);
+  }
+
+  public void setGatePolicy(UUID caseId, String tenancyId, GatePolicy policy) {
+    gatePolicyStore.save(caseId, policy, tenancyId);
+  }
+
+  public ArtifactManifest getArtifactTrail(UUID caseId, String tenancyId, UUID improvementCaseId) {
+    return artifactManifestStore.find(caseId, improvementCaseId, tenancyId);
+  }
+
+  public List<EvolutionStateSnapshot.ImprovementStreamView> getStreamProgress(
+      UUID caseId, String tenancyId) {
+    var active = budgetEnforcer.activeImprovementRequests();
+    if (active.isEmpty()) return List.of();
+    List<EvolutionStateSnapshot.ImprovementStreamView> streams = new ArrayList<>();
+    for (var entry : active.entrySet()) {
+      var req = entry.getValue();
+      var blockedBy = coordinator.blockedBy(caseId, entry.getKey(), tenancyId);
+      streams.add(
+          new EvolutionStateSnapshot.ImprovementStreamView(
+              entry.getKey(),
+              req.category(),
+              req.target(),
+              null,
+              List.of(),
+              blockedBy,
+              false,
+              Instant.now()));
+    }
+    return List.copyOf(streams);
   }
 }
