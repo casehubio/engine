@@ -259,6 +259,7 @@ public class EngineSupportAutoConfiguration {
   }
 
   @Bean
+  @ConditionalOnMissingBean(CaseQueueEntryStore.class)
   public InMemoryCaseQueueEntryStore inMemoryCaseQueueEntryStore() {
     return new InMemoryCaseQueueEntryStore();
   }
