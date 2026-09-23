@@ -233,7 +233,7 @@ class CaseQueueLifecycleTest {
 
   private void wireRepoRead(CaseInstance instance) {
     when(caseInstanceRepo.findByUuid(instance.getUuid(), instance.tenancyId))
-        .thenReturn((instance));
+        .thenReturn(java.util.Optional.of(instance));
   }
 
   private CaseLifecycleEvent lifecycleEvent(CaseInstance instance, String eventType) {

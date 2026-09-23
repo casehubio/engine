@@ -167,7 +167,7 @@ public class QhorusMessageSignalBridge {
       return false;
     }
 
-    CaseInstance caseInstance = caseInstanceRepository.findByUuid(caseId);
+    CaseInstance caseInstance = caseInstanceRepository.findByUuid(caseId).orElse(null);
     if (caseInstance == null) {
       LOG.infof(
           "CaseInstance %s not found — case already terminal, skipping failure cascade", caseId);

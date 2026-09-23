@@ -84,27 +84,28 @@ public class CaseService {
 
     UUID caseId = runtime.startCase(definition, context);
 
-    CaseInstance instance = instanceRepository.findByUuid(caseId, tenancyId);
-    if (instance == null) {
-      throw new RuntimeException("Case created (id=" + caseId + ") but not found in repository");
-    }
+    CaseInstance instance =
+        instanceRepository
+            .findByUuid(caseId, tenancyId)
+            .orElseThrow(
+                () ->
+                    new RuntimeException(
+                        "Case created (id=" + caseId + ") but not found in repository"));
     return instance;
   }
 
   public CaseInstance requireCase(UUID caseId, String tenancyId) {
-    CaseInstance instance = instanceRepository.findByUuid(caseId, tenancyId);
-    if (instance == null) {
-      throw new EntityNotFoundException("Case not found: " + caseId);
-    }
-    return instance;
+    return instanceRepository
+        .findByUuid(caseId, tenancyId)
+        .orElseThrow(() -> new EntityNotFoundException("Case not found: " + caseId));
   }
 
   public CaseInstance requireCaseAccess(UUID caseId, AclAction action) {
     String tenancyId = currentPrincipal.tenancyId();
-    CaseInstance instance = instanceRepository.findByUuid(caseId, tenancyId);
-    if (instance == null) {
-      throw new EntityNotFoundException("Case not found: " + caseId);
-    }
+    CaseInstance instance =
+        instanceRepository
+            .findByUuid(caseId, tenancyId)
+            .orElseThrow(() -> new EntityNotFoundException("Case not found: " + caseId));
     String actorId = currentPrincipal.actorId();
     ResourceId resourceId = new ResourceId(EngineResourceTypes.CASE, caseId.toString());
     if (!accessControlProvider.canAccess(actorId, resourceId, action)) {

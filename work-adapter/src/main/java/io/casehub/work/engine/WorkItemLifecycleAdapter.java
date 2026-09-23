@@ -121,12 +121,13 @@ public class WorkItemLifecycleAdapter {
 
     if (!applyGroupStatus(item, status)) return;
 
-    CaseInstance instance = caseInstanceRepository.findByUuid(piRef.caseId());
-    if (instance == null) {
+    java.util.Optional<CaseInstance> instanceOpt = caseInstanceRepository.findByUuid(piRef.caseId());
+    if (instanceOpt.isEmpty()) {
       LOG.warnf(
           "CaseInstance not found for caseId=%s — cannot fire CONTEXT_CHANGED", piRef.caseId());
       return;
     }
+    CaseInstance instance = instanceOpt.get();
 
     eventBus.publish(
         EventBusAddresses.CONTEXT_CHANGED,

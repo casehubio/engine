@@ -66,10 +66,10 @@ public class DefaultWorkerExecutionRecoveryService implements WorkerExecutionRec
       return cached;
     }
 
-    CaseInstance instance = caseInstanceRepository.findByUuid(caseId);
-    if (instance == null) {
-      throw new IllegalStateException("CaseInstance not found for caseId=" + caseId);
-    }
+    CaseInstance instance =
+        caseInstanceRepository
+            .findByUuid(caseId)
+            .orElseThrow(() -> new IllegalStateException("CaseInstance not found for caseId=" + caseId));
     CaseContext stateContext = recoveryStrategy.recover(instance);
     instance.setCaseContext(stateContext);
     caseInstanceCache.put(instance);

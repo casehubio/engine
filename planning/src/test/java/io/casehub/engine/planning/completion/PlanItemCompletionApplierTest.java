@@ -252,7 +252,7 @@ class PlanItemCompletionApplierTest {
     CaseInstance instance = mock(CaseInstance.class);
     CaseContext context = mock(CaseContext.class);
     WritableLayer workingLayer = mock(WritableLayer.class);
-    when(caseInstanceRepository.findByUuid(CASE_ID)).thenReturn(instance);
+    when(caseInstanceRepository.findByUuid(CASE_ID)).thenReturn(java.util.Optional.of(instance));
     when(instance.getUuid()).thenReturn(CASE_ID);
     when(instance.getCaseContext()).thenReturn(context);
     when(context.snapshot()).thenReturn(context);

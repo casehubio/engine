@@ -116,12 +116,13 @@ public class DeadLetterReplayService {
       return Optional.empty();
     }
 
-    CaseInstance caseInstance = caseInstanceRepository.findByUuid(caseId);
+    java.util.Optional<CaseInstance> caseOpt = caseInstanceRepository.findByUuid(caseId);
 
-    if (caseInstance == null) {
+    if (caseOpt.isEmpty()) {
       LOG.warnf("DLQ replay: CaseInstance not found for caseId=%s", caseId);
       return Optional.empty();
     }
+    CaseInstance caseInstance = caseOpt.get();
     if (caseInstance.getState().isTerminal()) {
       LOG.warnf(
           "DLQ replay: case %s is %s — cannot accept new work", caseId, caseInstance.getState());

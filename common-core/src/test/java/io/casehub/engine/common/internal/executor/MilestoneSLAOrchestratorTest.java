@@ -180,7 +180,7 @@ class MilestoneSLAOrchestratorTest {
 
     @Override
     public java.util.Optional<CaseInstance> findByUuid(java.util.UUID caseId) {
-      return java.util.Optional.ofNullable(instances.get(caseId));
+      return java.util.Optional.ofNullable(instance);
     }
   }
 

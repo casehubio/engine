@@ -58,7 +58,7 @@ public class TestWorkerProvisioner implements WorkerProvisioner {
             50,
             id -> {
               try {
-                CaseInstance instance = caseInstanceRepository.findByUuid(context.caseId());
+                CaseInstance instance = caseInstanceRepository.findByUuid(context.caseId()).orElse(null);
                 if (instance == null) return;
                 var definition =
                     caseDefinitionRegistry.getCaseDefinition(instance.getCaseMetaModel());

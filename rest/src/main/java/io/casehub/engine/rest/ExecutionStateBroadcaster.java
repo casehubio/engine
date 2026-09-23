@@ -90,10 +90,11 @@ public class ExecutionStateBroadcaster {
 
   private CaseDefinition resolveDefinition(UUID caseId, String tenancyId) {
     try {
-      CaseInstance instance = caseInstanceRepository.findByUuid(caseId, tenancyId);
-      if (instance != null && instance.getCaseMetaModel() != null) {
-        return definitionRegistry.getCaseDefinition(instance.getCaseMetaModel());
-      }
+      return caseInstanceRepository
+          .findByUuid(caseId, tenancyId)
+          .filter(instance -> instance.getCaseMetaModel() != null)
+          .map(instance -> definitionRegistry.getCaseDefinition(instance.getCaseMetaModel()))
+          .orElse(null);
     } catch (Exception ignored) {
     }
     return null;

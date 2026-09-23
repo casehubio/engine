@@ -74,13 +74,14 @@ public class CaseLabelEvaluator {
     ReentrantLock lock = caseLocks.computeIfAbsent(caseId, k -> new ReentrantLock());
     lock.lock();
     try {
-      CaseInstance instance = caseInstanceRepository.findByUuid(caseId, tenancyId);
-      if (instance == null) {
+      java.util.Optional<CaseInstance> opt = caseInstanceRepository.findByUuid(caseId, tenancyId);
+      if (opt.isEmpty()) {
         LOG.debugf(
             "CaseInstance not found for caseId=%s tenancyId=%s — skipping label evaluation",
             caseId, tenancyId);
         return;
       }
+      CaseInstance instance = opt.get();
 
       CaseMetaModel metaModel = instance.getCaseMetaModel();
       if (metaModel == null) {

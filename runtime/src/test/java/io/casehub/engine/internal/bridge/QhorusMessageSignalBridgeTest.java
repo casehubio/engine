@@ -392,7 +392,7 @@ class QhorusMessageSignalBridgeTest {
     metadata.put("inputDataHash", inputDataHash);
     EventLog log = new EventLog();
     log.setMetadata(metadata);
-    when(eventLogRepository.findById(eventLogId)).thenReturn((log));
+    when(eventLogRepository.findById(eventLogId)).thenReturn(java.util.Optional.of(log));
   }
 
   private CaseInstance stubCaseInstance(UUID caseId) {
@@ -404,7 +404,7 @@ class QhorusMessageSignalBridgeTest {
   }
 
   private void stubCaseInstance(UUID caseId, CaseInstance instance) {
-    when(caseInstanceRepository.findByUuid(caseId)).thenReturn((instance));
+    when(caseInstanceRepository.findByUuid(caseId)).thenReturn(java.util.Optional.of(instance));
   }
 
   private void stubWorkerInDefinition(CaseInstance instance, String workerName) {
