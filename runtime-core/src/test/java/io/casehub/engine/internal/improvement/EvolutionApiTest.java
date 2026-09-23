@@ -34,6 +34,7 @@ class EvolutionApiTest {
   private UUID caseId;
   private ImprovementCategoryTracker categoryTracker;
   private ImprovementCircuitBreaker circuitBreaker;
+  private ReadinessValidator readinessValidator;
 
   @BeforeEach
   void setUp() {
@@ -44,6 +45,10 @@ class EvolutionApiTest {
     coordinator = new ImprovementCoordinator(new InMemoryImprovementBlockStore());
     categoryTracker = new ImprovementCategoryTracker();
     circuitBreaker = new ImprovementCircuitBreaker(new TestEvent<>());
+    var areaRegistry = new CapabilityAreaRegistry();
+    readinessValidator =
+        new ReadinessValidator(
+            areaRegistry, new DefaultComplianceChecklistProvider(), new TestEvent<>());
 
     api =
         new DefaultEngineEvolutionApi(
@@ -53,7 +58,8 @@ class EvolutionApiTest {
             new DefaultSummarizationProvider(),
             coordinator,
             categoryTracker,
-            circuitBreaker);
+            circuitBreaker,
+            readinessValidator);
 
     caseId = UUID.randomUUID();
   }
@@ -186,5 +192,34 @@ class EvolutionApiTest {
     api.resetCircuitBreaker(caseId);
     assertThat(circuitBreaker.state(caseId))
         .isEqualTo(io.casehub.api.model.stigmergy.CircuitBreakerState.CLOSED);
+  }
+
+  @Test
+  void getReadinessReportDelegatesToValidator() {
+    var config =
+        new io.casehub.api.model.stigmergy.ImprovementConfig(
+            null, null, null, null, null, null, null, null, null, null, null);
+    var report =
+        api.getReadinessReport(
+            caseId,
+            "test-tenant",
+            io.casehub.api.model.stigmergy.ComplianceLevel.L1_OBSERVE,
+            config);
+    assertThat(report).isNotNull();
+    assertThat(report.targetLevel())
+        .isEqualTo(io.casehub.api.model.stigmergy.ComplianceLevel.L1_OBSERVE);
+    assertThat(report.evaluatedAt()).isNotNull();
+  }
+
+  @Test
+  void triggerReadinessValidationReturnsReport() {
+    var config =
+        new io.casehub.api.model.stigmergy.ImprovementConfig(
+            null, null, null, null, null, null, null, null, null, null, null);
+    var report =
+        api.triggerReadinessValidation(
+            caseId, "test-tenant", io.casehub.api.model.stigmergy.ComplianceLevel.L0_INERT, config);
+    assertThat(report).isNotNull();
+    assertThat(report.passed()).isTrue();
   }
 }

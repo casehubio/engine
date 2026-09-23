@@ -15,8 +15,11 @@
  */
 package io.casehub.engine.internal.improvement;
 
+import io.casehub.api.model.stigmergy.ComplianceLevel;
 import io.casehub.api.model.stigmergy.ConductorDecision;
 import io.casehub.api.model.stigmergy.ConductorInboxEntry;
+import io.casehub.api.model.stigmergy.ImprovementConfig;
+import io.casehub.api.model.stigmergy.ReadinessReport;
 import io.casehub.api.model.stigmergy.SummaryScope;
 import io.casehub.api.model.stigmergy.TickTrace;
 import io.casehub.api.model.stigmergy.WatchPattern;
@@ -39,6 +42,7 @@ public class DefaultEngineEvolutionApi {
   private final ImprovementCoordinator coordinator;
   private final ImprovementCategoryTracker categoryTracker;
   private final ImprovementCircuitBreaker circuitBreaker;
+  private final ReadinessValidator readinessValidator;
 
   public DefaultEngineEvolutionApi(
       TickTraceBuffer tickTraceBuffer,
@@ -47,7 +51,8 @@ public class DefaultEngineEvolutionApi {
       SummarizationProvider summarizationProvider,
       ImprovementCoordinator coordinator,
       ImprovementCategoryTracker categoryTracker,
-      ImprovementCircuitBreaker circuitBreaker) {
+      ImprovementCircuitBreaker circuitBreaker,
+      ReadinessValidator readinessValidator) {
     this.tickTraceBuffer = tickTraceBuffer;
     this.budgetEnforcer = budgetEnforcer;
     this.inboxManager = inboxManager;
@@ -55,6 +60,7 @@ public class DefaultEngineEvolutionApi {
     this.coordinator = coordinator;
     this.categoryTracker = categoryTracker;
     this.circuitBreaker = circuitBreaker;
+    this.readinessValidator = readinessValidator;
   }
 
   public List<TickTrace> getTickHistory(UUID caseId, @Nullable Integer limit) {
@@ -143,5 +149,15 @@ public class DefaultEngineEvolutionApi {
 
   public void resetCircuitBreaker(UUID caseId) {
     circuitBreaker.manualReset(caseId);
+  }
+
+  public ReadinessReport getReadinessReport(
+      UUID caseId, String tenancyId, ComplianceLevel targetLevel, ImprovementConfig config) {
+    return readinessValidator.validate(caseId, tenancyId, targetLevel, config);
+  }
+
+  public ReadinessReport triggerReadinessValidation(
+      UUID caseId, String tenancyId, ComplianceLevel targetLevel, ImprovementConfig config) {
+    return readinessValidator.validate(caseId, tenancyId, targetLevel, config);
   }
 }
