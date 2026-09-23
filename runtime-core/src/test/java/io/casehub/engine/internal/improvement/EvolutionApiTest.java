@@ -17,10 +17,15 @@ package io.casehub.engine.internal.improvement;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import io.casehub.api.model.event.CaseHubEventType;
+import io.casehub.api.model.event.EventStreamType;
 import io.casehub.api.model.stigmergy.ConductorInboxEntry;
 import io.casehub.api.model.stigmergy.ConductorInboxEntry.Status;
 import io.casehub.api.model.stigmergy.ImprovementStage;
+import io.casehub.engine.common.internal.history.EventLog;
+import io.casehub.engine.common.spi.EventLogRepository;
 import java.time.Instant;
+import java.util.Collection;
 import java.util.List;
 import java.util.UUID;
 import org.junit.jupiter.api.BeforeEach;
@@ -63,7 +68,7 @@ class EvolutionApiTest {
             new TickTraceBuffer(),
             budgetEnforcer,
             inboxManager,
-            new DefaultSummarizationProvider(),
+            new DefaultSummarizationProvider(new NoOpEventLogRepository(), categoryTracker),
             coordinator,
             categoryTracker,
             circuitBreaker,
@@ -297,5 +302,53 @@ class EvolutionApiTest {
     var streams = api.getStreamProgress(caseId, "test-tenant");
     assertThat(streams).isNotNull();
     assertThat(streams).isEmpty();
+  }
+
+  static class NoOpEventLogRepository implements EventLogRepository {
+    @Override
+    public void append(EventLog eventLog, String tenancyId) {}
+
+    @Override
+    public Long appendAndReturnId(EventLog eventLog, String tenancyId) {
+      return 0L;
+    }
+
+    @Override
+    public EventLog findById(Long id, String tenancyId) {
+      return null;
+    }
+
+    @Override
+    public List<EventLog> findSchedulingEvents(
+        UUID caseId, String workerId, Instant after, String tenancyId) {
+      return List.of();
+    }
+
+    @Override
+    public List<EventLog> findByCaseAndTypes(
+        UUID caseId, Collection<CaseHubEventType> types, String tenancyId) {
+      return List.of();
+    }
+
+    @Override
+    public List<EventLog> findByCaseAndWorkerAndType(
+        UUID caseId, String workerId, CaseHubEventType type, String tenancyId) {
+      return List.of();
+    }
+
+    @Override
+    public List<EventLog> findByWorkerAndType(
+        String workerId, CaseHubEventType type, String tenancyId) {
+      return List.of();
+    }
+
+    @Override
+    public List<EventLog> findByCaseWithFilters(
+        UUID caseId,
+        Collection<CaseHubEventType> eventTypes,
+        Collection<EventStreamType> streamTypes,
+        String tenancyId) {
+      return List.of();
+    }
   }
 }
