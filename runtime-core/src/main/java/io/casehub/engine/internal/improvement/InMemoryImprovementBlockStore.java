@@ -31,9 +31,10 @@ public class InMemoryImprovementBlockStore implements ImprovementBlockStore, Res
       new ConcurrentHashMap<>();
 
   @Override
-  public void save(UUID caseId, UUID improvementCaseId, UUID blockerImprovementId,
-      String tenancyId) {
-    blocks.computeIfAbsent(caseId, k -> new ConcurrentHashMap<>())
+  public void save(
+      UUID caseId, UUID improvementCaseId, UUID blockerImprovementId, String tenancyId) {
+    blocks
+        .computeIfAbsent(caseId, k -> new ConcurrentHashMap<>())
         .put(improvementCaseId, blockerImprovementId);
   }
 

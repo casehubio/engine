@@ -36,7 +36,9 @@ class EvolutionApiTest {
   @BeforeEach
   void setUp() {
     var budgetEnforcer = new ImprovementBudgetEnforcer(new InMemoryDenyPatternStore());
-    inboxManager = new ConductorInboxManager(new InMemoryConductorInboxRepository(), new InMemoryWatchPatternStore());
+    inboxManager =
+        new ConductorInboxManager(
+            new InMemoryConductorInboxRepository(), new InMemoryWatchPatternStore());
     coordinator = new ImprovementCoordinator(new InMemoryImprovementBlockStore());
 
     api =

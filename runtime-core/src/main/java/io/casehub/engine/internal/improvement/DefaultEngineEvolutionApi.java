@@ -57,10 +57,10 @@ public class DefaultEngineEvolutionApi {
 
   public DenyPatternView getDenyPatterns(UUID caseId, String tenancyId) {
     return new DenyPatternView(
-            List.copyOf(ImprovementBudgetEnforcer.staticDenyPatterns()),
-            budgetEnforcer.dynamicDenyPatterns(caseId, tenancyId).stream()
-                          .map(p -> new DenyPatternView.DynamicDenyEntry(p, "operator", Instant.now()))
-                          .toList());
+        List.copyOf(ImprovementBudgetEnforcer.staticDenyPatterns()),
+        budgetEnforcer.dynamicDenyPatterns(caseId, tenancyId).stream()
+            .map(p -> new DenyPatternView.DynamicDenyEntry(p, "operator", Instant.now()))
+            .toList());
   }
 
   public EvolutionSummary getSummary(
@@ -87,31 +87,31 @@ public class DefaultEngineEvolutionApi {
   }
 
   public void resolveGate(
-          UUID caseId,
-          String tenancyId,
-          String entryId,
-          ConductorInboxEntry.Status outcome,
-          @Nullable String reason,
-          @Nullable String feedback) {
+      UUID caseId,
+      String tenancyId,
+      String entryId,
+      ConductorInboxEntry.Status outcome,
+      @Nullable String reason,
+      @Nullable String feedback) {
     var decision = new ConductorDecision(outcome, null, reason, feedback);
     inboxManager.resolve(caseId, entryId, decision, tenancyId);
   }
 
   public void addWatchPattern(
-          UUID caseId,
-          String tenancyId,
-          @Nullable String category,
-          @Nullable String areaId,
-          @Nullable String targetPattern,
-          @Nullable Integer minEstimatedSize) {
+      UUID caseId,
+      String tenancyId,
+      @Nullable String category,
+      @Nullable String areaId,
+      @Nullable String targetPattern,
+      @Nullable Integer minEstimatedSize) {
     var pattern =
-            new WatchPattern(
-                    UUID.randomUUID().toString(),
-                    category,
-                    areaId,
-                    targetPattern,
-                    minEstimatedSize,
-                    Instant.now());
+        new WatchPattern(
+            UUID.randomUUID().toString(),
+            category,
+            areaId,
+            targetPattern,
+            minEstimatedSize,
+            Instant.now());
     inboxManager.addWatchPattern(caseId, pattern, tenancyId);
   }
 
@@ -119,9 +119,9 @@ public class DefaultEngineEvolutionApi {
     inboxManager.removeWatchPattern(caseId, patternId, tenancyId);
   }
 
-    public void blockImprovement(UUID caseId, String tenancyId, UUID improvementId, UUID blockedBy) {
-        coordinator.block(caseId, improvementId, blockedBy, tenancyId);
-    }
+  public void blockImprovement(UUID caseId, String tenancyId, UUID improvementId, UUID blockedBy) {
+    coordinator.block(caseId, improvementId, blockedBy, tenancyId);
+  }
 
   public void unblockImprovement(UUID caseId, String tenancyId, UUID improvementId) {
     coordinator.unblock(caseId, improvementId, tenancyId);
