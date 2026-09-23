@@ -16,7 +16,6 @@
 package io.casehub.work.engine.recovery;
 
 import io.casehub.engine.common.internal.model.PlanItemRecord;
-import io.casehub.engine.common.spi.PlanItemStore;
 import io.casehub.work.api.WorkItemRef;
 import io.casehub.work.api.spi.WorkItemCreator;
 import io.casehub.work.engine.PlanItemCompletionApplier;
@@ -47,7 +46,7 @@ public class HumanTaskRecoveryService {
 
   private static final Logger LOG = Logger.getLogger(HumanTaskRecoveryService.class);
 
-  @Inject PlanItemStore planItemStore;
+  @Inject io.casehub.engine.common.spi.CrossTenantPlanItemStore planItemStore;
   @Inject WorkItemCreator workItemCreator;
   @Inject PlanItemCompletionApplier applier;
 

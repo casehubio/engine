@@ -18,6 +18,7 @@ package io.casehub.engine.planning.store;
 import io.casehub.api.model.TaskStatus;
 import io.casehub.engine.common.internal.model.PlanItemRecord;
 import io.casehub.engine.common.internal.model.PlanItemSaveRequest;
+import io.casehub.engine.common.spi.CrossTenantPlanItemStore;
 import io.casehub.engine.common.spi.PlanItemStore;
 import java.util.List;
 import java.util.UUID;
@@ -26,13 +27,18 @@ import java.util.UUID;
  * No-op {@link PlanItemStore} — active when no real store implementation is on the classpath.
  * PlanItem status is tracked in-memory only (via {@link io.casehub.engine.planning.plan.PlanItem}).
  */
-public class NoOpPlanItemStore implements PlanItemStore {
+public class NoOpPlanItemStore implements PlanItemStore, CrossTenantPlanItemStore {
 
   @Override
   public void save(PlanItemSaveRequest request, String tenancyId) {}
 
   @Override
   public void updateStatus(String planItemId, TaskStatus status, String tenancyId) {}
+
+  @Override
+  public List<PlanItemRecord> findDelegated(UUID caseId, String tenancyId) {
+    return List.of();
+  }
 
   @Override
   public List<PlanItemRecord> findByCaseId(UUID caseId, String tenancyId) {

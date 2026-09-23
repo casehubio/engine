@@ -61,9 +61,14 @@ public class BlackboardRegistry implements io.casehub.engine.common.spi.Resettab
   private final PlanItemRestorer restorer = new PlanItemRestorer();
 
   private final PlanItemStore planItemStore;
+  private final io.casehub.engine.common.spi.CrossTenantPlanItemStore crossTenantPlanItemStore;
 
   public BlackboardRegistry(PlanItemStore planItemStore) {
     this.planItemStore = planItemStore;
+    this.crossTenantPlanItemStore =
+        planItemStore instanceof io.casehub.engine.common.spi.CrossTenantPlanItemStore ct
+            ? ct
+            : null;
   }
 
   public BlackboardRegistry() {
@@ -117,12 +122,18 @@ public class BlackboardRegistry implements io.casehub.engine.common.spi.Resettab
    */
   public Optional<CasePlanModel> get(UUID caseId) {
     CaseEntry e = entries.get(caseId);
-    if (e != null) return Optional.of(e.planModel);
+    if (e != null) {
+      return Optional.of(e.planModel);
+    }
 
-    if (planItemStore == null) return Optional.empty();
+    if (crossTenantPlanItemStore == null) {
+      return Optional.empty();
+    }
 
-    List<PlanItemRecord> records = planItemStore.findDelegatedCrossTenant(caseId);
-    if (records.isEmpty()) return Optional.empty();
+    List<PlanItemRecord> records = crossTenantPlanItemStore.findDelegatedCrossTenant(caseId);
+    if (records.isEmpty()) {
+      return Optional.empty();
+    }
 
     String inferredTenancyId =
         records.stream()

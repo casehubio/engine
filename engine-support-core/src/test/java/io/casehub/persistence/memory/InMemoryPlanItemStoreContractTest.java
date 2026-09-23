@@ -26,4 +26,9 @@ class InMemoryPlanItemStoreContractTest extends PlanItemStoreContractTest {
   protected PlanItemStore store() {
     return store;
   }
+
+  @Override
+  protected io.casehub.engine.common.spi.CrossTenantPlanItemStore crossTenantStore() {
+    return store;
+  }
 }
