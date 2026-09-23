@@ -28,7 +28,7 @@ public class NoOpPlanItemStore implements PlanItemStore {
   public void save(PlanItemSaveRequest request, String tenancyId) {}
 
   @Override
-  public void updateStatus(String planItemId, TaskStatus status) {}
+  public void updateStatus(String planItemId, TaskStatus status, String tenancyId) {}
 
   @Override
   public List<PlanItemRecord> findByCaseId(UUID caseId, String tenancyId) {

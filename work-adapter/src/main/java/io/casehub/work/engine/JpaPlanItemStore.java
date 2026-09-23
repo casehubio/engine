@@ -53,7 +53,7 @@ public class JpaPlanItemStore implements PlanItemStore {
   }
 
   @Override
-  public void updateStatus(String planItemId, TaskStatus status) {
+  public void updateStatus(String planItemId, TaskStatus status, String tenancyId) {
     em.flush();
     em.createQuery(
             "UPDATE WorkAdapterPlanItemEntity e SET e.status = :status WHERE e.planItemId = :planItemId")

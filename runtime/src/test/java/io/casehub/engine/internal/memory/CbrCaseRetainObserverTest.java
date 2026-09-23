@@ -643,7 +643,7 @@ class CbrCaseRetainObserverTest {
     public void save(PlanItemSaveRequest r, String t) {}
 
     @Override
-    public void updateStatus(String id, TaskStatus s) {}
+    public void updateStatus(String id, TaskStatus s, String tenancyId) {}
 
     @Override
     public List<PlanItemRecord> findDelegatedCrossTenant(UUID id) {

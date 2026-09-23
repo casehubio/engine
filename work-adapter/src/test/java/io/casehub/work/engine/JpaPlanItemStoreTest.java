@@ -62,7 +62,6 @@ class JpaPlanItemStoreTest {
   }
 
   @Test
-  @Transactional
   void updateStatus_updates_stored_value() {
     UUID caseId = UUID.randomUUID();
     String planItemId = UUID.randomUUID().toString();
@@ -80,7 +79,7 @@ class JpaPlanItemStoreTest {
             null,
             null),
         "test-tenant");
-    store.updateStatus(planItemId, TaskStatus.RUNNING);
+    store.updateStatus(planItemId, TaskStatus.RUNNING, "test-tenant");
     List<PlanItemRecord> found = store.findByCaseId(caseId, "test-tenant");
     assertThat(found.get(0).status()).isEqualTo(TaskStatus.RUNNING);
   }

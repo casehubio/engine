@@ -15,7 +15,8 @@
  */
 package io.casehub.persistence.memory;
 
-import static org.junit.jupiter.api.Assertions.*;
+import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import io.casehub.api.context.CaseContext;
 import io.casehub.api.model.CaseStatus;
