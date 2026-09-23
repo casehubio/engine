@@ -273,10 +273,12 @@ public final class RecordEmitter {
       imports.add(mapping.imports().get(baseType));
     }
     if (javaType.contains("<") && javaType.contains(",")) {
-      String inner = javaType.substring(javaType.indexOf(',') + 1, javaType.lastIndexOf('>'));
-      String trimmed = inner.trim();
-      if (mapping.imports().containsKey(trimmed)) {
-        imports.add(mapping.imports().get(trimmed));
+      String allInner = javaType.substring(javaType.indexOf('<') + 1, javaType.lastIndexOf('>'));
+      for (String part : allInner.split(",")) {
+        String trimmed = part.trim();
+        if (mapping.imports().containsKey(trimmed)) {
+          imports.add(mapping.imports().get(trimmed));
+        }
       }
     }
   }
