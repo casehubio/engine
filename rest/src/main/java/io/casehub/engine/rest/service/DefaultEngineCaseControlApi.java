@@ -32,7 +32,7 @@ import jakarta.inject.Inject;
 import java.util.UUID;
 
 @ApplicationScoped
-@McpDomain("engine/control")
+@McpDomain(value = "engine/control", app = "engine")
 public class DefaultEngineCaseControlApi {
 
   @Inject CaseService caseService;

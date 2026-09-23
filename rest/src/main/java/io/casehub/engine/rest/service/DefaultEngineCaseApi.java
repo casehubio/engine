@@ -51,7 +51,7 @@ import java.util.Map;
 import java.util.UUID;
 
 @ApplicationScoped
-@McpDomain("engine/cases")
+@McpDomain(value = "engine/cases", app = "engine")
 public class DefaultEngineCaseApi {
 
   @Inject CaseService caseService;
