@@ -38,10 +38,15 @@ class SpringJpaCaseInstanceRepository implements CaseInstanceRepository {
 
   private final EntityManager em;
   private final TenantContextManager tcm;
+  private final org.springframework.beans.factory.ObjectProvider<io.casehub.engine.common.spi.recovery.CaseContextRecoveryStrategy> recoveryStrategy;
 
-  SpringJpaCaseInstanceRepository(EntityManager em, TenantContextManager tcm) {
+  SpringJpaCaseInstanceRepository(
+      EntityManager em,
+      TenantContextManager tcm,
+      org.springframework.beans.factory.ObjectProvider<io.casehub.engine.common.spi.recovery.CaseContextRecoveryStrategy> recoveryStrategy) {
     this.em = em;
     this.tcm = tcm;
+    this.recoveryStrategy = recoveryStrategy;
   }
 
   @Override
@@ -129,6 +134,11 @@ class SpringJpaCaseInstanceRepository implements CaseInstanceRepository {
     entity.parentPlanItemId = instance.getParentPlanItemId();
     entity.waitingForWorkId = instance.getWaitingForWorkId();
     entity.pendingActionGate = PendingActionGateMapper.toJson(instance.getPendingActionGate());
+    var strategy = recoveryStrategy.getIfAvailable();
+    if (strategy != null && instance.getCaseContext() != null) {
+      strategy.onContextChanged(instance, instance.getCaseContext());
+    }
+    entity.contextSnapshot = instance.getContextSnapshot();
     em.merge(entity);
 
     EventLogEntity logEntity = new EventLogEntity();
@@ -265,6 +275,7 @@ class SpringJpaCaseInstanceRepository implements CaseInstanceRepository {
       instance.setExchangeHeaders(new java.util.LinkedHashMap<>(entity.exchangeHeaders));
     }
     instance.setPendingActionGate(PendingActionGateMapper.fromJson(entity.pendingActionGate));
+    instance.setContextSnapshot(entity.contextSnapshot);
     return instance;
   }
 

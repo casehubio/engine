@@ -37,8 +37,11 @@ public class JpaCaseInstanceRepository implements CaseInstanceRepository {
 
   private final EntityManager em;
   private final TenantContextManager tcm;
+    @jakarta.inject.Inject
+    jakarta.enterprise.inject.Instance<io.casehub.engine.common.spi.recovery.CaseContextRecoveryStrategy> recoveryStrategy;
 
-  @Inject
+
+    @Inject
   JpaCaseInstanceRepository(EntityManager em, TenantContextManager tcm) {
     this.em = em;
     this.tcm = tcm;
@@ -134,6 +137,9 @@ public class JpaCaseInstanceRepository implements CaseInstanceRepository {
     entity.parentPlanItemId = instance.getParentPlanItemId();
     entity.waitingForWorkId = instance.getWaitingForWorkId();
     entity.pendingActionGate = PendingActionGateMapper.toJson(instance.getPendingActionGate());
+    if (recoveryStrategy.isResolvable() && instance.getCaseContext() != null) {
+      recoveryStrategy.get().onContextChanged(instance, instance.getCaseContext());
+    }
     entity.contextSnapshot = instance.getContextSnapshot();
     em.merge(entity);
 

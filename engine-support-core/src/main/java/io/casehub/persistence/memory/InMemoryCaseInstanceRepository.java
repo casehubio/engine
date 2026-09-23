@@ -42,6 +42,12 @@ public class InMemoryCaseInstanceRepository
   private final ConcurrentHashMap<UUID, CaseInstance> store = new ConcurrentHashMap<>();
   private final ReentrantReadWriteLock rwLock = new ReentrantReadWriteLock();
   private final EventLogRepository eventLogRepository;
+  private io.casehub.engine.common.spi.recovery.CaseContextRecoveryStrategy recoveryStrategy;
+
+  public void setRecoveryStrategy(
+      io.casehub.engine.common.spi.recovery.CaseContextRecoveryStrategy strategy) {
+    this.recoveryStrategy = strategy;
+  }
 
   public InMemoryCaseInstanceRepository(EventLogRepository eventLogRepository) {
     this.eventLogRepository = eventLogRepository;
@@ -107,6 +113,9 @@ public class InMemoryCaseInstanceRepository
       CaseInstance instance, EventLog eventLog, String tenancyId) {
     rwLock.writeLock().lock();
     try {
+      if (recoveryStrategy != null && instance.getCaseContext() != null) {
+        recoveryStrategy.onContextChanged(instance, instance.getCaseContext());
+      }
       instance.tenancyId = tenancyId;
       store.put(instance.getUuid(), instance);
       eventLogRepository.append(eventLog, tenancyId);
