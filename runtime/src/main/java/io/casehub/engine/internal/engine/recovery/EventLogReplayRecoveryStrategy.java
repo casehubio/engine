@@ -40,6 +40,9 @@ import org.jboss.logging.Logger;
  *
  * <p>Extracted from {@code DefaultWorkerExecutionRecoveryService.rebuildStateContext()}.
  */
+@io.quarkus.arc.properties.IfBuildProperty(
+    name = "casehub.context.recovery-strategy",
+    stringValue = "event-log")
 @ApplicationScoped
 public class EventLogReplayRecoveryStrategy implements CaseContextRecoveryStrategy {
 
@@ -48,7 +51,9 @@ public class EventLogReplayRecoveryStrategy implements CaseContextRecoveryStrate
 
   private final CrossTenantEventLogRepository eventLogRepository;
 
-  public EventLogReplayRecoveryStrategy(CrossTenantEventLogRepository eventLogRepository) {
+  public EventLogReplayRecoveryStrategy(
+      @io.casehub.engine.common.qualifier.CrossTenant
+          CrossTenantEventLogRepository eventLogRepository) {
     this.eventLogRepository = eventLogRepository;
   }
 

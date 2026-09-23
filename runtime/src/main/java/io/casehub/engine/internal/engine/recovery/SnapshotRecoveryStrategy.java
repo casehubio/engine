@@ -26,6 +26,7 @@ import jakarta.enterprise.context.ApplicationScoped;
  * serialised by {@link #onContextChanged} and stored on the {@link CaseInstance} as a {@code
  * JsonNode} field that the repository persists within the existing transaction.
  */
+@io.quarkus.arc.DefaultBean
 @ApplicationScoped
 public class SnapshotRecoveryStrategy implements CaseContextRecoveryStrategy {
 
