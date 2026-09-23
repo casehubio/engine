@@ -70,6 +70,11 @@ types:
       - { name: compounds, type: "List<YamlCompound>" }
       - { name: layers, type: "List<YamlContextLayer>" }
       - { name: decomposition, type: YamlDecomposition }
+      - { name: observation, type: JsonNode }
+      - { name: signalConfig, type: JsonNode }
+      - { name: budgetConfig, type: JsonNode }
+      - { name: convergenceThresholdConfig, type: JsonNode }
+      - { name: outputConvergenceConfig, type: JsonNode }
 
   # ── Binding ──
   Binding:
