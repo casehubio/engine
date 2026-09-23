@@ -30,23 +30,23 @@ import java.util.UUID;
  */
 public interface CaseQueueEntryStore {
 
-    CaseQueueEntry save(CaseQueueEntry entry);
+  CaseQueueEntry save(CaseQueueEntry entry);
 
-    CaseQueueEntry upsertByCaseAndView(CaseQueueEntry entry);
+  CaseQueueEntry upsertByCaseAndView(CaseQueueEntry entry);
 
-    Optional<CaseQueueEntry> findById(UUID id);
+  Optional<CaseQueueEntry> findById(UUID id);
 
-    Optional<CaseQueueEntry> findByCaseAndView(UUID caseId, UUID viewId);
+  Optional<CaseQueueEntry> findByCaseAndView(UUID caseId, UUID viewId);
 
-    List<CaseQueueEntry> findByView(UUID viewId, String tenancyId);
+  List<CaseQueueEntry> findByView(UUID viewId, String tenancyId);
 
-    List<CaseQueueEntry> findByCaseId(UUID caseId);
+  List<CaseQueueEntry> findByCaseId(UUID caseId);
 
-    long countByView(UUID viewId, String tenancyId);
+  long countByView(UUID viewId, String tenancyId);
 
-    boolean delete(UUID id);
+  boolean delete(UUID id);
 
-    void deleteByCaseId(UUID caseId);
+  void deleteByCaseId(UUID caseId);
 
-    Optional<CaseQueueEntry> claimIfPending(UUID entryId, String userId);
+  Optional<CaseQueueEntry> claimIfPending(UUID entryId, String userId);
 }

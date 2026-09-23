@@ -31,17 +31,17 @@ import java.util.UUID;
  */
 public interface ExecutionSnapshotStore {
 
-    void storeDecomposition(UUID caseId, String tenancyId, DecompositionSnapshot snapshot);
+  void storeDecomposition(UUID caseId, String tenancyId, DecompositionSnapshot snapshot);
 
-    Optional<DecompositionSnapshot> getDecomposition(UUID caseId, String tenancyId);
+  Optional<DecompositionSnapshot> getDecomposition(UUID caseId, String tenancyId);
 
-    void storeDagPlan(UUID caseId, String tenancyId, DagPlanSnapshot snapshot);
+  void storeDagPlan(UUID caseId, String tenancyId, DagPlanSnapshot snapshot);
 
-    Optional<DagPlanSnapshot> getDagPlan(UUID caseId, String tenancyId);
+  Optional<DagPlanSnapshot> getDagPlan(UUID caseId, String tenancyId);
 
-    void storeDagResult(UUID caseId, String tenancyId, DagResultSnapshot snapshot);
+  void storeDagResult(UUID caseId, String tenancyId, DagResultSnapshot snapshot);
 
-    Optional<DagResultSnapshot> getDagResult(UUID caseId, String tenancyId);
+  Optional<DagResultSnapshot> getDagResult(UUID caseId, String tenancyId);
 
-    void evict(UUID caseId);
+  void evict(UUID caseId);
 }
