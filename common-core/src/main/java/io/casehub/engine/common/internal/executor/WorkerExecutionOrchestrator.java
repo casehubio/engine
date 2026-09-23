@@ -156,7 +156,10 @@ public class WorkerExecutionOrchestrator {
   }
 
   private void executeWorker(WorkerTaskData taskData, RetryHandler retryHandler) {
-    EventLog eventLog = crossTenantEventLogRepository.findById(taskData.eventLogId());
+    EventLog eventLog =
+        crossTenantEventLogRepository
+            .findById(taskData.eventLogId())
+            .orElse(null);
     if (eventLog == null) {
       retryHandler.handleFailure(
           taskData,

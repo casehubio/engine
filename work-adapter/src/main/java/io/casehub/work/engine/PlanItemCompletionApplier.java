@@ -91,7 +91,7 @@ public class PlanItemCompletionApplier {
       return;
     }
 
-    CaseInstance instance = caseInstanceRepository.findByUuid(caseId);
+    CaseInstance instance = caseInstanceRepository.findByUuid(caseId).orElse(null);
     if (instance == null) {
       LOG.warnf("CaseInstance not found for caseId=%s — CONTEXT_CHANGED not fired", caseId);
       return;

@@ -21,9 +21,10 @@ import io.casehub.engine.common.spi.CrossTenantCaseInstanceRepository;
 import io.casehub.persistence.jpa.CaseInstanceEntity;
 import io.casehub.persistence.jpa.TenantContextManager;
 import jakarta.persistence.EntityManager;
+import org.springframework.transaction.annotation.Transactional;
+
 import java.util.List;
 import java.util.UUID;
-import org.springframework.transaction.annotation.Transactional;
 
 @Transactional
 class SpringJpaCrossTenantCaseInstanceRepository implements CrossTenantCaseInstanceRepository {
@@ -36,18 +37,18 @@ class SpringJpaCrossTenantCaseInstanceRepository implements CrossTenantCaseInsta
     this.tcm = tcm;
   }
 
-  @Override
-  public CaseInstance findByUuid(UUID caseId) {
-    tcm.setCrossTenantContext();
-    List<CaseInstanceEntity> results =
-        em.createQuery(
-                "SELECT ci FROM CaseInstanceEntity ci JOIN FETCH ci.caseMetaModel"
-                    + " WHERE ci.uuid = :uuid",
-                CaseInstanceEntity.class)
-            .setParameter("uuid", caseId)
-            .getResultList();
-    return results.isEmpty() ? null : fromEntity(results.get(0));
-  }
+    @Override
+    public java.util.Optional<CaseInstance> findByUuid(UUID caseId) {
+        tcm.setCrossTenantContext();
+        List<CaseInstanceEntity> results =
+                em.createQuery(
+                          "SELECT ci FROM CaseInstanceEntity ci JOIN FETCH ci.caseMetaModel"
+                          + " WHERE ci.uuid = :uuid",
+                          CaseInstanceEntity.class)
+                  .setParameter("uuid", caseId)
+                  .getResultList();
+        return results.isEmpty() ? java.util.Optional.empty() : java.util.Optional.of(fromEntity(results.get(0)));
+    }
 
   private CaseInstance fromEntity(CaseInstanceEntity entity) {
     CaseInstance instance = new CaseInstance();

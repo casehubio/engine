@@ -41,19 +41,19 @@ public class JpaCrossTenantCaseInstanceRepository implements CrossTenantCaseInst
     this.tcm = tcm;
   }
 
-  @Override
-  @Transactional
-  public CaseInstance findByUuid(UUID caseId) {
-    tcm.setCrossTenantContext();
-    List<CaseInstanceEntity> results =
-        em.createQuery(
-                "SELECT ci FROM CaseInstanceEntity ci JOIN FETCH ci.caseMetaModel"
-                    + " WHERE ci.uuid = :uuid",
-                CaseInstanceEntity.class)
-            .setParameter("uuid", caseId)
-            .getResultList();
-    return results.isEmpty() ? null : fromEntity(results.get(0));
-  }
+    @Override
+    @Transactional
+    public java.util.Optional<CaseInstance> findByUuid(UUID caseId) {
+        tcm.setCrossTenantContext();
+        List<CaseInstanceEntity> results =
+                em.createQuery(
+                          "SELECT ci FROM CaseInstanceEntity ci JOIN FETCH ci.caseMetaModel"
+                          + " WHERE ci.uuid = :uuid",
+                          CaseInstanceEntity.class)
+                  .setParameter("uuid", caseId)
+                  .getResultList();
+        return results.isEmpty() ? java.util.Optional.empty() : java.util.Optional.of(fromEntity(results.get(0)));
+    }
 
   private CaseInstance fromEntity(CaseInstanceEntity entity) {
     CaseInstance instance = new CaseInstance();

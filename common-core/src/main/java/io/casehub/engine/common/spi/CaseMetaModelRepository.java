@@ -28,11 +28,7 @@ import java.util.List;
  */
 public interface CaseMetaModelRepository {
 
-  /**
-   * Find a registered case type by its natural key within the given tenant. Returns {@code null} if
-   * not found.
-   */
-  CaseMetaModel findByKey(String namespace, String name, String version, String tenancyId);
+    java.util.Optional<CaseMetaModel> findByKey(String namespace, String name, String version, String tenancyId);
 
   /**
    * Persist a new case meta model scoped to tenancyId. Sets {@code metaModel.id} and {@code

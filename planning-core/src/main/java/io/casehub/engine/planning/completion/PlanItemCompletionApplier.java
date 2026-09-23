@@ -91,7 +91,7 @@ public class PlanItemCompletionApplier {
       return;
     }
 
-    CaseInstance instance = caseInstanceRepository.findByUuid(caseId);
+    CaseInstance instance = caseInstanceRepository.findByUuid(caseId).orElse(null);
 
     if (instance != null
         && status != TaskStatus.FAULTED

@@ -68,7 +68,7 @@ public class MilestoneSLAOrchestrator {
 
     CaseInstance caseInstance = caseInstanceCache.get(caseId);
     if (caseInstance == null) {
-      caseInstance = caseInstanceRepository.findByUuid(caseId);
+      caseInstance = caseInstanceRepository.findByUuid(caseId).orElse(null);
     }
 
     if (caseInstance == null) {

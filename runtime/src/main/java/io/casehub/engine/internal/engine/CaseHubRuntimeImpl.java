@@ -187,10 +187,10 @@ class CaseHubRuntimeImpl implements CaseHubRuntime {
     Objects.requireNonNull(payload, "Typed signal payload must not be null");
     CaseInstance instance = caseInstanceCache.get(caseId);
     if (instance == null) {
-      instance = crossTenantCaseInstanceRepository.findByUuid(caseId);
-      if (instance == null) {
-        throw new IllegalArgumentException("CaseInstance not found: " + caseId);
-      }
+      instance =
+          crossTenantCaseInstanceRepository
+              .findByUuid(caseId)
+              .orElseThrow(() -> new IllegalArgumentException("CaseInstance not found: " + caseId));
       caseInstanceCache.put(instance);
     }
     CaseStatus state = instance.getState();
@@ -308,10 +308,10 @@ class CaseHubRuntimeImpl implements CaseHubRuntime {
   private void validateTenancy(UUID caseId, String tenancyId) {
     CaseInstance instance = caseInstanceCache.get(caseId);
     if (instance == null) {
-      instance = crossTenantCaseInstanceRepository.findByUuid(caseId);
-      if (instance == null) {
-        throw new IllegalArgumentException("CaseInstance not found: " + caseId);
-      }
+      instance =
+          crossTenantCaseInstanceRepository
+              .findByUuid(caseId)
+              .orElseThrow(() -> new IllegalArgumentException("CaseInstance not found: " + caseId));
       caseInstanceCache.put(instance);
     }
     java.util.Objects.requireNonNull(tenancyId, "tenancyId must not be null");

@@ -93,7 +93,7 @@ class CaseLifecycleCdiEventTest {
         .until(
             () -> {
               CaseInstance instance =
-                  caseInstanceRepository.findByUuid(caseId, TenancyConstants.DEFAULT_TENANT_ID);
+                  caseInstanceRepository.findByUuid(caseId, TenancyConstants.DEFAULT_TENANT_ID).orElse(null);
               return instance != null && CaseStatus.COMPLETED == instance.getState();
             });
 

@@ -249,7 +249,7 @@ class CaseLabelEvaluatorTest {
 
   private void wireRepoRead(CaseInstance instance) {
     when(caseInstanceRepo.findByUuid(instance.getUuid(), instance.tenancyId))
-        .thenReturn((instance));
+        .thenReturn(java.util.Optional.of(instance));
     when(caseInstanceRepo.update(any(), any()))
         .thenAnswer(inv -> (inv.getArgument(0, CaseInstance.class)));
   }

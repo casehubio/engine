@@ -24,6 +24,8 @@ import java.util.UUID;
  */
 public interface CrossTenantCaseInstanceRepository {
 
-  /** Load a case instance without tenant filter. caseId is UUID (globally unique). */
-  CaseInstance findByUuid(UUID caseId);
+    /**
+     * Load a case instance without tenant filter. caseId is UUID (globally unique).
+     */
+    java.util.Optional<CaseInstance> findByUuid(UUID caseId);
 }

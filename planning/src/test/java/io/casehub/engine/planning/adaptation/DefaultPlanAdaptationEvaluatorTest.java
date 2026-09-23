@@ -115,7 +115,7 @@ class DefaultPlanAdaptationEvaluatorTest {
             .adaptationConfig(AdaptationConfig.of("every-step", "forward-replan"))
             .build();
 
-    when(caseInstanceRepository.findByUuid(caseId, TENANT)).thenReturn(caseInstance);
+    when(caseInstanceRepository.findByUuid(caseId, TENANT)).thenReturn(java.util.Optional.of(caseInstance));
     when(caseDefinitionRegistry.getCaseDefinition(metaModel)).thenReturn(definition);
     when(registry.get(caseId)).thenReturn(Optional.of(casePlanModel));
     when(planItemStore.findByCaseId(caseId, TENANT)).thenReturn(List.of());

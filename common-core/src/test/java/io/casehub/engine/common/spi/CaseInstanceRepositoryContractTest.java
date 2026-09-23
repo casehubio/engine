@@ -114,7 +114,7 @@ public abstract class CaseInstanceRepositoryContractTest {
     CaseInstance saved = repository().save(instance, tenancyId());
     assertThat(saved.getActorId()).isEqualTo("alice");
 
-    CaseInstance found = repository().findByUuid(saved.getUuid(), tenancyId());
+    CaseInstance found = repository().findByUuid(saved.getUuid(), tenancyId()).orElse(null);
     assertThat(found).isNotNull();
     assertThat(found.getActorId()).isEqualTo("alice");
   }
@@ -122,7 +122,7 @@ public abstract class CaseInstanceRepositoryContractTest {
   @Test
   void actorId_null_whenNotSet() {
     CaseInstance instance = createInstance("ns", "case-b", CaseStatus.RUNNING);
-    CaseInstance found = repository().findByUuid(instance.getUuid(), tenancyId());
+    CaseInstance found = repository().findByUuid(instance.getUuid(), tenancyId()).orElse(null);
     assertThat(found).isNotNull();
     assertThat(found.getActorId()).isNull();
   }
@@ -144,7 +144,7 @@ public abstract class CaseInstanceRepositoryContractTest {
     CaseInstance saved = repository().save(instance, tenancyId());
     assertThat(saved.getCreatedAt()).isEqualTo(Instant.parse("2026-06-15T10:30:00Z"));
 
-    CaseInstance found = repository().findByUuid(saved.getUuid(), tenancyId());
+    CaseInstance found = repository().findByUuid(saved.getUuid(), tenancyId()).orElse(null);
     assertThat(found).isNotNull();
     assertThat(found.getCreatedAt()).isEqualTo(Instant.parse("2026-06-15T10:30:00Z"));
   }

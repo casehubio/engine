@@ -118,7 +118,7 @@ class DeadLetterReplayServiceTest {
 
     CaseInstance faulted = new CaseInstance();
     faulted.setState(CaseStatus.FAULTED);
-    when(caseInstanceRepository.findByUuid(caseId)).thenReturn(faulted);
+    when(caseInstanceRepository.findByUuid(caseId)).thenReturn(java.util.Optional.of(faulted));
 
     assertThat(service.replay(entry.deadLetterId())).isEmpty();
     assertThat(entry.status()).isEqualTo(DeadLetterStatus.PENDING_REVIEW);
@@ -144,7 +144,7 @@ class DeadLetterReplayServiceTest {
     CaseInstance running = new CaseInstance();
     running.setState(CaseStatus.RUNNING);
     running.setCaseMetaModel(metaModel);
-    when(caseInstanceRepository.findByUuid(caseId)).thenReturn(running);
+    when(caseInstanceRepository.findByUuid(caseId)).thenReturn(java.util.Optional.of(running));
 
     Capability cap =
         Capability.builder().name(workerId).inputSchema("{}").outputSchema("{}").build();

@@ -26,12 +26,13 @@ import io.casehub.persistence.jpa.CaseMetaModelEntity;
 import io.casehub.persistence.jpa.EventLogEntity;
 import io.casehub.persistence.jpa.TenantContextManager;
 import jakarta.persistence.EntityManager;
+import org.springframework.transaction.annotation.Transactional;
+
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.UUID;
-import org.springframework.transaction.annotation.Transactional;
 
 @Transactional
 class SpringJpaCaseInstanceRepository implements CaseInstanceRepository {
@@ -108,19 +109,19 @@ class SpringJpaCaseInstanceRepository implements CaseInstanceRepository {
     return instance;
   }
 
-  @Override
-  public CaseInstance findByUuid(UUID uuid, String tenancyId) {
-    tcm.setTenantContext(tenancyId);
-    List<CaseInstanceEntity> results =
-        em.createQuery(
-                "SELECT ci FROM CaseInstanceEntity ci JOIN FETCH ci.caseMetaModel"
-                    + " WHERE ci.uuid = :uuid AND ci.tenancyId = :tid",
-                CaseInstanceEntity.class)
-            .setParameter("uuid", uuid)
-            .setParameter("tid", tenancyId)
-            .getResultList();
-    return results.isEmpty() ? null : fromEntity(results.get(0));
-  }
+    @Override
+    public java.util.Optional<CaseInstance> findByUuid(UUID uuid, String tenancyId) {
+        tcm.setTenantContext(tenancyId);
+        List<CaseInstanceEntity> results =
+                em.createQuery(
+                          "SELECT ci FROM CaseInstanceEntity ci JOIN FETCH ci.caseMetaModel"
+                          + " WHERE ci.uuid = :uuid AND ci.tenancyId = :tid",
+                          CaseInstanceEntity.class)
+                  .setParameter("uuid", uuid)
+                  .setParameter("tid", tenancyId)
+                  .getResultList();
+        return results.isEmpty() ? java.util.Optional.empty() : java.util.Optional.of(fromEntity(results.get(0)));
+    }
 
   @Override
   public void updateStateAndAppendEvent(
