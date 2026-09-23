@@ -35,6 +35,10 @@ class EvolutionApiTest {
   private ImprovementCategoryTracker categoryTracker;
   private ImprovementCircuitBreaker circuitBreaker;
   private ReadinessValidator readinessValidator;
+  private HealthScoreTracker healthTracker;
+  private InMemoryResearchCorpus researchCorpus;
+  private InMemoryGatePolicyStore gatePolicyStore;
+  private InMemoryArtifactManifestStore artifactManifestStore;
 
   @BeforeEach
   void setUp() {
@@ -46,9 +50,13 @@ class EvolutionApiTest {
     categoryTracker = new ImprovementCategoryTracker();
     circuitBreaker = new ImprovementCircuitBreaker(new TestEvent<>());
     var areaRegistry = new CapabilityAreaRegistry();
+    healthTracker = new HealthScoreTracker(areaRegistry);
     readinessValidator =
         new ReadinessValidator(
             areaRegistry, new DefaultComplianceChecklistProvider(), new TestEvent<>());
+    researchCorpus = new InMemoryResearchCorpus();
+    gatePolicyStore = new InMemoryGatePolicyStore();
+    artifactManifestStore = new InMemoryArtifactManifestStore();
 
     api =
         new DefaultEngineEvolutionApi(
@@ -59,7 +67,11 @@ class EvolutionApiTest {
             coordinator,
             categoryTracker,
             circuitBreaker,
-            readinessValidator);
+            readinessValidator,
+            healthTracker,
+            researchCorpus,
+            gatePolicyStore,
+            artifactManifestStore);
 
     caseId = UUID.randomUUID();
   }
@@ -221,5 +233,69 @@ class EvolutionApiTest {
             caseId, "test-tenant", io.casehub.api.model.stigmergy.ComplianceLevel.L0_INERT, config);
     assertThat(report).isNotNull();
     assertThat(report.passed()).isTrue();
+  }
+
+  @Test
+  void getEvolutionStateComposesSnapshot() {
+    var config =
+        new io.casehub.api.model.stigmergy.ImprovementConfig(
+            null, null, null, null, null, null, null, null, null, null, null);
+    var snapshot = api.getEvolutionState(caseId, "test-tenant", config);
+    assertThat(snapshot).isNotNull();
+    assertThat(snapshot.caseId()).isEqualTo(caseId);
+    assertThat(snapshot.timestamp()).isNotNull();
+    assertThat(snapshot.circuitBreakerState())
+        .isEqualTo(io.casehub.api.model.stigmergy.CircuitBreakerState.CLOSED);
+    assertThat(snapshot.categoryStates()).isEmpty();
+    assertThat(snapshot.pendingInboxCount()).isZero();
+  }
+
+  @Test
+  void getResearchCorpusReturnsFindings() {
+    var view = api.getResearchCorpus("test-query", "area1", 10);
+    assertThat(view).isNotNull();
+    assertThat(view.findings()).isEmpty();
+    assertThat(view.pendingHilEntries()).isEmpty();
+  }
+
+  @Test
+  void setGatePolicyStoresPolicy() {
+    var policy =
+        new io.casehub.api.model.stigmergy.GatePolicy(
+            java.util.Map.of(
+                io.casehub.api.model.stigmergy.ImprovementStage.PR_REVIEW,
+                io.casehub.api.model.stigmergy.GatePolicy.GateMode.GATED),
+            null);
+    api.setGatePolicy(caseId, "test-tenant", policy);
+    assertThat(gatePolicyStore.find(caseId, "test-tenant")).isNotNull();
+    assertThat(
+            gatePolicyStore
+                .find(caseId, "test-tenant")
+                .effectiveMode(io.casehub.api.model.stigmergy.ImprovementStage.PR_REVIEW))
+        .isEqualTo(io.casehub.api.model.stigmergy.GatePolicy.GateMode.GATED);
+  }
+
+  @Test
+  void getArtifactTrailReturnsManifest() {
+    var improvementId = UUID.randomUUID();
+    var entry =
+        new io.casehub.api.model.stigmergy.ArtifactEntry(
+            "analysis.md",
+            io.casehub.api.model.stigmergy.ArtifactEntry.ArtifactType.ANALYSIS,
+            io.casehub.api.model.stigmergy.ImprovementStage.RESEARCH_SCOPE,
+            java.time.Instant.now());
+    artifactManifestStore.addEntry(caseId, improvementId, entry, "test-tenant");
+
+    var manifest = api.getArtifactTrail(caseId, "test-tenant", improvementId);
+    assertThat(manifest).isNotNull();
+    assertThat(manifest.entries()).hasSize(1);
+    assertThat(manifest.entries().get(0).path()).isEqualTo("analysis.md");
+  }
+
+  @Test
+  void getStreamProgressReturnsActiveStreams() {
+    var streams = api.getStreamProgress(caseId, "test-tenant");
+    assertThat(streams).isNotNull();
+    assertThat(streams).isEmpty();
   }
 }
