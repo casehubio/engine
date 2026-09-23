@@ -15,6 +15,8 @@
  */
 package io.casehub.engine.internal.improvement;
 
+import static org.assertj.core.api.Assertions.assertThat;
+
 import io.casehub.api.model.stigmergy.CapabilityAreaAssessment;
 import io.casehub.api.model.stigmergy.CircuitBreakerState;
 import io.casehub.api.model.stigmergy.HealthPolicy;
@@ -22,20 +24,17 @@ import io.casehub.api.model.stigmergy.ImprovementConfig;
 import io.casehub.api.model.stigmergy.TickTrace;
 import io.casehub.api.model.stigmergy.TickTrace.GateResult.GateVerdict;
 import io.casehub.api.spi.improvement.CapabilityArea;
-import io.casehub.engine.common.spi.event.CircuitBreakerStateChangedEvent;
-import io.casehub.engine.common.spi.event.RegressionDetectedEvent;
-import io.casehub.engine.common.spi.event.TickEvaluatedEvent;
 import io.casehub.api.spi.routing.GoalFormationResult;
 import io.casehub.api.spi.routing.GoalFormationService;
 import io.casehub.engine.common.internal.signal.SignalRegistry;
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Test;
-
+import io.casehub.engine.common.spi.event.CircuitBreakerStateChangedEvent;
+import io.casehub.engine.common.spi.event.RegressionDetectedEvent;
+import io.casehub.engine.common.spi.event.TickEvaluatedEvent;
 import java.time.Instant;
 import java.util.UUID;
 import java.util.concurrent.atomic.AtomicInteger;
-
-import static org.assertj.core.api.Assertions.assertThat;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
 class EvolutionTickerTest {
 
@@ -49,45 +48,45 @@ class EvolutionTickerTest {
   private UUID caseId;
   private TestEvent<TickEvaluatedEvent> tickEvaluatedEvents;
 
-
   @BeforeEach
   void setUp() {
-    registry      = new CapabilityAreaRegistry();
+    registry = new CapabilityAreaRegistry();
     healthTracker = new HealthScoreTracker(registry);
     var cbEvents = new TestEvent<CircuitBreakerStateChangedEvent>();
     circuitBreaker = new ImprovementCircuitBreaker(cbEvents);
-    var scorer           = new ConfidenceScorer();
-    var categoryTracker  = new ImprovementCategoryTracker();
-    var rollbackHistory  = new RollbackHistory();
+    var scorer = new ConfidenceScorer();
+    var categoryTracker = new ImprovementCategoryTracker();
+    var rollbackHistory = new RollbackHistory();
     var regressionEvents = new TestEvent<RegressionDetectedEvent>();
     regressionDetector =
-            new RegressionDetector(scorer, categoryTracker, rollbackHistory, healthTracker, regressionEvents);
+        new RegressionDetector(
+            scorer, categoryTracker, rollbackHistory, healthTracker, regressionEvents);
 
     var signalRegistry = new SignalRegistry();
-    var signalContext  = new ImprovementSignalContext();
+    var signalContext = new ImprovementSignalContext();
     var budgetEnforcer = new ImprovementBudgetEnforcer(new InMemoryDenyPatternStore());
     goalFormation =
-            new ImprovementGoalFormationStrategy(budgetEnforcer, signalRegistry, signalContext);
+        new ImprovementGoalFormationStrategy(budgetEnforcer, signalRegistry, signalContext);
 
     proposalCount = new AtomicInteger(0);
     GoalFormationService goalService =
-            (agentId, tenancyId, proposal) -> {
-              proposalCount.incrementAndGet();
-              return new GoalFormationResult(java.util.List.of(), java.util.List.of(), 0);
-            };
+        (agentId, tenancyId, proposal) -> {
+          proposalCount.incrementAndGet();
+          return new GoalFormationResult(java.util.List.of(), java.util.List.of(), 0);
+        };
 
     var traceBuffer = new TickTraceBuffer();
     tickEvaluatedEvents = new TestEvent<>();
-    ticker              =
-            new EvolutionTicker(
-                    goalFormation,
-                    circuitBreaker,
-                    healthTracker,
-                    regressionDetector,
-                    goalService,
-                    traceBuffer,
-                    tickEvaluatedEvents);
-    caseId              = UUID.randomUUID();
+    ticker =
+        new EvolutionTicker(
+            goalFormation,
+            circuitBreaker,
+            healthTracker,
+            regressionDetector,
+            goalService,
+            traceBuffer,
+            tickEvaluatedEvents);
+    caseId = UUID.randomUUID();
   }
 
   @Test
@@ -150,11 +149,10 @@ class EvolutionTickerTest {
   void noEventOnNoConsensus() {
     registry.register(area("stability", 0.8));
     var config =
-            new ImprovementConfig(null, null, null, null, null, true, null, null, null, null, null);
+        new ImprovementConfig(null, null, null, null, null, true, null, null, null, null, null);
     ticker.tick(caseId, "tenant-1", config);
     assertThat(tickEvaluatedEvents.fired()).isEmpty();
   }
-
 
   private CapabilityArea area(String id, double health) {
     return new CapabilityArea() {

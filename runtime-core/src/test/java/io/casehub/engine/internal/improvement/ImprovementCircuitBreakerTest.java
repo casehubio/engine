@@ -15,18 +15,17 @@
  */
 package io.casehub.engine.internal.improvement;
 
+import static org.assertj.core.api.Assertions.assertThat;
+
 import io.casehub.api.model.stigmergy.CapabilityAreaAssessment;
 import io.casehub.api.model.stigmergy.CircuitBreakerState;
 import io.casehub.api.model.stigmergy.HealthPolicy;
-import io.casehub.engine.common.spi.event.CircuitBreakerStateChangedEvent;
 import io.casehub.api.spi.improvement.CapabilityArea;
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Test;
-
+import io.casehub.engine.common.spi.event.CircuitBreakerStateChangedEvent;
 import java.time.Instant;
 import java.util.UUID;
-
-import static org.assertj.core.api.Assertions.assertThat;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
 class ImprovementCircuitBreakerTest {
 
@@ -36,15 +35,14 @@ class ImprovementCircuitBreakerTest {
   private UUID caseId;
   private TestEvent<CircuitBreakerStateChangedEvent> stateChangedEvents;
 
-
   @BeforeEach
-    void setUp() {
-        stateChangedEvents = new TestEvent<>();
-        breaker            = new ImprovementCircuitBreaker(stateChangedEvents);
-        registry           = new CapabilityAreaRegistry();
-        tracker            = new HealthScoreTracker(registry);
-        caseId             = UUID.randomUUID();
-    }
+  void setUp() {
+    stateChangedEvents = new TestEvent<>();
+    breaker = new ImprovementCircuitBreaker(stateChangedEvents);
+    registry = new CapabilityAreaRegistry();
+    tracker = new HealthScoreTracker(registry);
+    caseId = UUID.randomUUID();
+  }
 
   @Test
   void defaultStateIsClosed() {
@@ -179,7 +177,6 @@ class ImprovementCircuitBreakerTest {
     breaker.manualReset(caseId);
     assertThat(stateChangedEvents.fired()).isEmpty();
   }
-
 
   private CapabilityArea area(String id, double health) {
     return new CapabilityArea() {
