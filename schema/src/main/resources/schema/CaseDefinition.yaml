@@ -153,6 +153,18 @@ $defs:
     unevaluatedProperties: false
     required:
     - "on"
+  BudgetConfig:
+    type: object
+    properties:
+      maxContextMutations:
+        type: integer
+      maxDispatches:
+        type: integer
+      maxEvaluationCycles:
+        type: integer
+      maxSignalDeposits:
+        type: integer
+    unevaluatedProperties: false
   Capability:
     type: object
     properties:
@@ -185,6 +197,18 @@ $defs:
           \ override."
     additionalProperties:
       $ref: "#/$defs/GoalExpression"
+  CategoryEscalationRules:
+    type: object
+    properties:
+      alwaysEscalate:
+        type: array
+        items:
+          type: string
+      neverEscalate:
+        type: array
+        items:
+          type: string
+    unevaluatedProperties: false
   CloudEventTrigger:
     description: Fires on matching CloudEvents.
     oneOf:
@@ -244,6 +268,36 @@ $defs:
         $ref: "#/$defs/ExpressionOrOverride"
       listenLayer:
         type: string
+  ConvergenceThresholdConfig:
+    type: object
+    properties:
+      contextMutationRateThreshold:
+        type: number
+      dispatchRateThreshold:
+        type: number
+      evaluationRateThreshold:
+        type: number
+      maxWindowEntries:
+        type: integer
+      rateWindow:
+        type: string
+        format: duration
+      signalDepositRateThreshold:
+        type: number
+      stabilityWindow:
+        type: string
+        format: duration
+    unevaluatedProperties: false
+  CoordinationConfig:
+    type: object
+    properties:
+      consensusThreshold:
+        type: integer
+      interestHotspotThreshold:
+        type: number
+      stormRateMultiplier:
+        type: number
+    unevaluatedProperties: false
   DecompositionMethod(JsonNode):
     type: object
     properties:
@@ -263,6 +317,22 @@ $defs:
     unevaluatedProperties: false
   DecompositionStrategy(JsonNode):
     type: object
+    unevaluatedProperties: false
+  EscalationPolicy:
+    type: object
+    properties:
+      categoryRules:
+        $ref: "#/$defs/CategoryEscalationRules"
+      confidenceThreshold:
+        type: number
+    unevaluatedProperties: false
+  GatePolicy:
+    type: object
+    properties:
+      gateTimeoutMinutes:
+        type: integer
+      modes:
+        $ref: "#/$defs/Map(ImprovementStage,GateMode)"
     unevaluatedProperties: false
   Goal:
     type: object
@@ -286,6 +356,76 @@ $defs:
     required:
     - name
     - condition
+  HealthPolicy:
+    type: object
+    properties:
+      halfOpenMaxImprovements:
+        type: integer
+      healthDeltaThreshold:
+        type: number
+      healthThreshold:
+        type: number
+      healthWindowMinutes:
+        type: integer
+      recoveryWindowMinutes:
+        type: integer
+      weights:
+        $ref: "#/$defs/Map(String,Double)"
+    unevaluatedProperties: false
+  ImprovementBudget:
+    type: object
+    properties:
+      allowedRepos:
+        type: array
+        items:
+          type: string
+      cooldownMinutes:
+        type: integer
+      deniedPaths:
+        type: array
+        items:
+          type: string
+      maxConcurrent:
+        type: integer
+      maxPRSize:
+        type: integer
+      maxPerDay:
+        type: integer
+      requireReview:
+        type: boolean
+    unevaluatedProperties: false
+  ImprovementConfig:
+    type: object
+    properties:
+      budget:
+        $ref: "#/$defs/ImprovementBudget"
+      caseTemplateId:
+        type: string
+      conflictTrivialThreshold:
+        type: integer
+      consensusMinSources:
+        type: integer
+      enabledCategories:
+        type: array
+        items:
+          type: string
+      escalationPolicy:
+        $ref: "#/$defs/EscalationPolicy"
+      evolutionEnabled:
+        type: boolean
+      evolutionTickIntervalMinutes:
+        type: integer
+      gatePolicy:
+        $ref: "#/$defs/GatePolicy"
+      healthPolicy:
+        $ref: "#/$defs/HealthPolicy"
+      researchMethodology:
+        $ref: "#/$defs/ResearchMethodology"
+      rollbackPolicy:
+        $ref: "#/$defs/RollbackPolicy"
+      signalNamespace:
+        type: string
+    unevaluatedProperties: false
   InboundSignalMapping:
     type: object
     properties:
@@ -307,6 +447,16 @@ $defs:
     - connectorType
     - correlation
     - payload
+  IntegrationPolicy:
+    type: object
+    properties:
+      bootstrapRichness:
+        type: number
+      integrationDelay:
+        type: integer
+      selfDetermination:
+        type: number
+    unevaluatedProperties: false
   LabelRule:
     type: object
     properties:
@@ -370,6 +520,19 @@ $defs:
     required:
     - name
     - condition
+  ObservationConfig:
+    type: object
+    properties:
+      allowJqInterests:
+        type: boolean
+      maxHistoryAge:
+        type: string
+        format: duration
+      maxHistoryEntries:
+        type: integer
+      maxObserversPerCase:
+        type: integer
+    unevaluatedProperties: false
   OutcomePolicy:
     type: object
     properties:
@@ -396,8 +559,88 @@ $defs:
         - FAULT
         default: REROUTE
     unevaluatedProperties: false
+  OutputConvergenceConfig:
+    type: object
+    properties:
+      convergenceMinSamples:
+        type: integer
+      convergenceThreshold:
+        type: number
+      outputWindowSize:
+        type: integer
+    unevaluatedProperties: false
   Predicate(JsonNode):
     type: object
+    unevaluatedProperties: false
+  ProvisionBudget:
+    type: object
+    properties:
+      cooldownCycles:
+        type: integer
+      idleGraceCycles:
+        type: integer
+      idleThreshold:
+        type: number
+      maxConcurrent:
+        type: integer
+      maxProvisions:
+        type: integer
+    unevaluatedProperties: false
+  ResearchMethodology:
+    type: object
+    properties:
+      areaRefreshStalenessThresholdDays:
+        type: integer
+      horizonScanIntervalDays:
+        type: integer
+      maxSearchResultsPerTier:
+        type: integer
+      minTriangulationSources:
+        type: integer
+      searchChannels:
+        type: array
+        items:
+          type: string
+      strategyDwellTimeDays:
+        type: integer
+    unevaluatedProperties: false
+  RoleDomainWeights:
+    type: object
+    properties:
+      communication:
+        type: number
+      decision:
+        type: number
+      effect:
+        type: number
+      perception:
+        type: number
+    unevaluatedProperties: false
+  RollbackPolicy:
+    type: object
+    properties:
+      autoRevertThreshold:
+        type: number
+      pauseCategoryOnRegression:
+        type: boolean
+      pauseThreshold:
+        type: number
+      regressionWindowMinutes:
+        type: integer
+      requireReviewForRevert:
+        type: boolean
+      sustainedFailureCount:
+        type: integer
+    unevaluatedProperties: false
+  RuleConfig:
+    type: object
+    properties:
+      maxActionsPerCycle:
+        type: integer
+      maxRulesPerCase:
+        type: integer
+      ruleEvaluationTimeoutMs:
+        type: integer
     unevaluatedProperties: false
   ScheduleTrigger:
     type: object
@@ -417,6 +660,54 @@ $defs:
         type: string
   ScopeActivatedTrigger:
     type: object
+    unevaluatedProperties: false
+  SignalConfig:
+    type: object
+    properties:
+      defaultHalfLife:
+        type: string
+        format: duration
+      effectiveZeroThreshold:
+        type: number
+      maxSignalsPerCase:
+        type: integer
+    unevaluatedProperties: false
+  StigmergyConfig:
+    type: object
+    properties:
+      coordination:
+        $ref: "#/$defs/CoordinationConfig"
+      defaults:
+        $ref: "#/$defs/StigmergyDefaults"
+      improvement:
+        $ref: "#/$defs/ImprovementConfig"
+      swarm:
+        $ref: "#/$defs/SwarmConfig"
+    unevaluatedProperties: false
+  StigmergyDefaults:
+    type: object
+    properties:
+      effectiveZeroThreshold:
+        type: number
+      maxDispatches:
+        type: integer
+      maxEvaluationCycles:
+        type: integer
+      maxObserversPerCase:
+        type: integer
+      maxRulesPerCase:
+        type: integer
+      maxSignalsPerCase:
+        type: integer
+      rateWindow:
+        type: string
+        format: duration
+      signalHalfLife:
+        type: string
+        format: duration
+      stabilityWindow:
+        type: string
+        format: duration
     unevaluatedProperties: false
   SubCase:
     type: object
@@ -478,6 +769,32 @@ $defs:
         - KEEP
         - CANCEL
         default: KEEP
+  SwarmConfig:
+    type: object
+    properties:
+      detectionInterval:
+        type: integer
+      domainWeights:
+        $ref: "#/$defs/RoleDomainWeights"
+      integrationPolicy:
+        $ref: "#/$defs/IntegrationPolicy"
+      maxSwarmSize:
+        type: integer
+      progressChangeThreshold:
+        type: number
+      provisionBudget:
+        $ref: "#/$defs/ProvisionBudget"
+      roleDetectionWindow:
+        type: integer
+      roleMinClusterSize:
+        type: integer
+      roleSimilarityThreshold:
+        type: number
+      teamAffinityThreshold:
+        type: number
+      teamMinSize:
+        type: integer
+    unevaluatedProperties: false
   Trigger:
     type: object
     description: "Defines what the Worker observes. Exactly one of: contextChange,\
@@ -964,139 +1281,37 @@ $defs:
             type: integer
             minimum: 1
             default: 5
-      observation:
-        type: object
-        unevaluatedProperties: false
-        description: Per-case environment observation configuration.
-        properties:
-          maxHistoryEntries:
-            type: integer
-            minimum: 1
-            default: 50
-          maxHistoryAge:
-            type: string
-            description: ISO-8601 duration for history sliding window.
-            default: PT5M
-          maxObserversPerCase:
-            type: integer
-            minimum: 1
-            default: 20
-      signalConfig:
-        type: object
-        unevaluatedProperties: false
-        description: Per-case pheromone signal configuration for stigmergic coordination.
-        properties:
-          defaultHalfLife:
-            type: string
-            description: ISO-8601 duration for signal decay half-life.
-            default: PT5M
-          effectiveZeroThreshold:
-            type: number
-            minimum: 0
-            maximum: 1
-            default: 0.01
-          maxSignalsPerCase:
-            type: integer
-            minimum: 1
-            default: 100
-      budgetConfig:
-        type: object
-        unevaluatedProperties: false
-        description: Per-case cumulative activity budget caps.
-        properties:
-          maxDispatches:
-            type: integer
-            minimum: 0
-          maxSignalDeposits:
-            type: integer
-            minimum: 0
-          maxContextMutations:
-            type: integer
-            minimum: 0
-          maxEvaluationCycles:
-            type: integer
-            minimum: 0
-      convergenceThresholdConfig:
-        type: object
-        unevaluatedProperties: false
-        description: Per-case convergence detection thresholds and timing.
-        properties:
-          dispatchRateThreshold:
-            type: number
-            minimum: 0
-            default: 0.1
-          signalDepositRateThreshold:
-            type: number
-            minimum: 0
-            default: 0.1
-          contextMutationRateThreshold:
-            type: number
-            minimum: 0
-            default: 0.1
-          evaluationRateThreshold:
-            type: number
-            minimum: 0
-            default: 0.5
-          stabilityWindow:
-            type: string
-            description: ISO-8601 duration for sustained quiescence before convergence fires.
-            default: PT30S
-          rateWindow:
-            type: string
-            description: ISO-8601 duration for sliding window rate computation.
-            default: PT60S
-          maxWindowEntries:
-            type: integer
-            minimum: 1
-      outputConvergenceConfig:
-        type: object
-        unevaluatedProperties: false
-        description: Per-case output structural convergence monitoring.
-        properties:
-          convergenceThreshold:
-            type: number
-            minimum: 0
-            maximum: 1
-            default: 0.9
-          convergenceMinSamples:
-            type: integer
-            minimum: 2
-            default: 3
-          outputWindowSize:
-            type: integer
-            minimum: 2
-            default: 10
       adaptation:
         $ref: "#/$defs/AdaptationConfig"
         description: Per-case plan adaptation configuration.
-      _codegenAgentModel:
-        description: Code generation directive — ensures AgentModel type is generated
-          by jsonschema2pojo. Not a user-facing property.
-        $ref: "#/$defs/AgentModel"
-      _codegenGoogleAi:
-        description: Code generation directive — ensures GoogleAiGeminiModel type
-          is generated by jsonschema2pojo. Not a user-facing property.
-        $ref: "#/$defs/GoogleAiGeminiModel"
-      _codegenMistral:
-        description: Code generation directive — ensures MistralAiModel type is generated
-          by jsonschema2pojo. Not a user-facing property.
-        $ref: "#/$defs/MistralAiModel"
-      _codegenOllama:
-        description: Code generation directive — ensures OllamaModel type is generated
-          by jsonschema2pojo. Not a user-facing property.
-        $ref: "#/$defs/OllamaModel"
       _codegenAnthropic:
         description: Code generation directive — ensures AnthropicModel type is generated
           by jsonschema2pojo. Not a user-facing property.
         $ref: "#/$defs/AnthropicModel"
-      _codegenOpenAi:
-        description: Code generation directive — ensures OpenAiModel type is generated
+      _codegenOllama:
+        description: Code generation directive — ensures OllamaModel type is generated
           by jsonschema2pojo. Not a user-facing property.
-        $ref: "#/$defs/OpenAiModel"
+        $ref: "#/$defs/OllamaModel"
+      _codegenMistral:
+        description: Code generation directive — ensures MistralAiModel type is generated
+          by jsonschema2pojo. Not a user-facing property.
+        $ref: "#/$defs/MistralAiModel"
+      _codegenGoogleAi:
+        description: Code generation directive — ensures GoogleAiGeminiModel type
+          is generated by jsonschema2pojo. Not a user-facing property.
+        $ref: "#/$defs/GoogleAiGeminiModel"
+      _codegenAgentModel:
+        description: Code generation directive — ensures AgentModel type is generated
+          by jsonschema2pojo. Not a user-facing property.
+        $ref: "#/$defs/AgentModel"
       _codegenAgent:
         description: Code generation directive — ensures Agent type is generated by
           jsonschema2pojo. Not a user-facing property.
         $ref: "#/$defs/Agent"
+      _codegenOpenAi:
+        description: Code generation directive — ensures OpenAiModel type is generated
+          by jsonschema2pojo. Not a user-facing property.
+        $ref: "#/$defs/OpenAiModel"
   HumanTask:
     type: object
     unevaluatedProperties: false
@@ -1417,7 +1632,7 @@ $defs:
         - none
       tokenConfigKey:
         type: string
-  OpenAiModel:
+  GoogleAiGeminiModel:
     type: object
     unevaluatedProperties: false
     required:
@@ -1426,80 +1641,12 @@ $defs:
       apiKey:
         type: string
       modelName:
-        type: string
-      temperature:
-        oneOf:
-        - type: number
-          minimum: 0.0
-          maximum: 2.0
-        - type: string
-      maxTokens:
-        oneOf:
-        - type: integer
-        - type: string
-      topP:
-        type: number
-        minimum: 0.0
-        maximum: 1.0
-      frequencyPenalty:
-        type: number
-        minimum: -2.0
-        maximum: 2.0
-      presencePenalty:
-        type: number
-        minimum: -2.0
-        maximum: 2.0
-      organizationId:
-        type: string
-      baseUrl:
-        type: string
-  AnthropicModel:
-    type: object
-    unevaluatedProperties: false
-    required:
-    - modelName
-    properties:
-      apiKey:
-        type: string
-      modelName:
-        type: string
-      version:
         type: string
       temperature:
         oneOf:
         - type: number
           minimum: 0.0
           maximum: 1.0
-        - type: string
-      maxTokens:
-        oneOf:
-        - type: integer
-        - type: string
-      topP:
-        type: number
-        minimum: 0.0
-        maximum: 1.0
-      topK:
-        type: integer
-        minimum: 1
-      baseUrl:
-        type: string
-  OllamaModel:
-    type: object
-    unevaluatedProperties: false
-    required:
-    - baseUrl
-    - modelName
-    properties:
-      baseUrl:
-        type: string
-      modelName:
-        type: string
-      temperature:
-        oneOf:
-        - type: number
-          minimum: 0.0
-          maximum: 2.0
         - type: string
       maxTokens:
         oneOf:
@@ -1538,7 +1685,35 @@ $defs:
         maximum: 1.0
       baseUrl:
         type: string
-  GoogleAiGeminiModel:
+  OllamaModel:
+    type: object
+    unevaluatedProperties: false
+    required:
+    - baseUrl
+    - modelName
+    properties:
+      baseUrl:
+        type: string
+      modelName:
+        type: string
+      temperature:
+        oneOf:
+        - type: number
+          minimum: 0.0
+          maximum: 2.0
+        - type: string
+      maxTokens:
+        oneOf:
+        - type: integer
+        - type: string
+      topP:
+        type: number
+        minimum: 0.0
+        maximum: 1.0
+      topK:
+        type: integer
+        minimum: 1
+  AnthropicModel:
     type: object
     unevaluatedProperties: false
     required:
@@ -1547,6 +1722,8 @@ $defs:
       apiKey:
         type: string
       modelName:
+        type: string
+      version:
         type: string
       temperature:
         oneOf:
@@ -1565,6 +1742,44 @@ $defs:
       topK:
         type: integer
         minimum: 1
+      baseUrl:
+        type: string
+  OpenAiModel:
+    type: object
+    unevaluatedProperties: false
+    required:
+    - modelName
+    properties:
+      apiKey:
+        type: string
+      modelName:
+        type: string
+      temperature:
+        oneOf:
+        - type: number
+          minimum: 0.0
+          maximum: 2.0
+        - type: string
+      maxTokens:
+        oneOf:
+        - type: integer
+        - type: string
+      topP:
+        type: number
+        minimum: 0.0
+        maximum: 1.0
+      frequencyPenalty:
+        type: number
+        minimum: -2.0
+        maximum: 2.0
+      presencePenalty:
+        type: number
+        minimum: -2.0
+        maximum: 2.0
+      organizationId:
+        type: string
+      baseUrl:
+        type: string
 type: object
 properties:
   contextType:
