@@ -24,6 +24,7 @@ import io.casehub.api.model.event.CaseHubEventType;
 import io.casehub.api.model.event.EventStreamType;
 import io.casehub.api.model.stigmergy.ImprovementOutcome;
 import io.casehub.api.model.stigmergy.SummaryScope;
+import io.casehub.api.view.EvolutionSummary;
 import io.casehub.engine.common.internal.history.EventLog;
 import io.casehub.engine.common.spi.EventLogRepository;
 import java.time.Instant;
@@ -299,6 +300,103 @@ class DefaultSummarizationProviderTest {
   }
 
   // --- Helpers ---
+
+  // --- Combined scope filters ---
+
+  @Test
+  void categoryAndTimeWindowFiltersCombine() {
+    Instant now = Instant.now();
+    appendOutcome(
+        "dep-update", "old", ImprovementOutcome.OutcomeStatus.MERGED, now.minusSeconds(7200));
+    appendOutcome(
+        "dep-update", "recent", ImprovementOutcome.OutcomeStatus.MERGED, now.minusSeconds(1800));
+    appendOutcome(
+        "code-quality", "recent2", ImprovementOutcome.OutcomeStatus.MERGED, now.minusSeconds(1800));
+
+    var summary =
+        provider.summarize(caseId, TENANT, new SummaryScope(null, "dep-update", 60, null));
+
+    assertThat(summary.totalImprovements()).isEqualTo(1);
+    assertThat(summary.successCount()).isEqualTo(1);
+  }
+
+  // --- Edge cases ---
+
+  @Test
+  void eventWithNullPayloadIsSkipped() {
+    EventLog event = new EventLog();
+    event.setCaseId(caseId);
+    event.setEventType(CaseHubEventType.IMPROVEMENT_OUTCOME);
+    event.setTimestamp(Instant.now());
+    event.setPayload(null);
+    eventLogRepo.append(event, TENANT);
+
+    var summary = provider.summarize(caseId, TENANT, new SummaryScope(null, null, null, null));
+
+    assertThat(summary.totalImprovements()).isZero();
+  }
+
+  @Test
+  void allMergedOutcomesGiveFullSuccessRate() {
+    appendOutcome("cat", "a", ImprovementOutcome.OutcomeStatus.MERGED, Instant.now());
+    appendOutcome("cat", "b", ImprovementOutcome.OutcomeStatus.MERGED, Instant.now());
+
+    var summary = provider.summarize(caseId, TENANT, new SummaryScope(null, null, null, null));
+
+    var cat =
+        summary.categories().stream()
+            .filter(c -> c.category().equals("cat"))
+            .findFirst()
+            .orElseThrow();
+    assertThat(cat.successRate()).isEqualTo(1.0);
+  }
+
+  @Test
+  void notableEventPayloadFieldsExtracted() {
+    appendNotableEvent(
+        CaseHubEventType.CIRCUIT_BREAKER_TRIPPED,
+        Instant.now(),
+        Map.of("area", "stability", "reason", "3 consecutive failures"));
+
+    var summary = provider.summarize(caseId, TENANT, new SummaryScope(null, null, null, null));
+
+    var notable = summary.notableEvents().get(0);
+    assertThat(notable.summary()).containsEntry("area", "stability");
+    assertThat(notable.summary()).containsEntry("reason", "3 consecutive failures");
+  }
+
+  @Test
+  void researchDirectionsEmptyWithNoGoalEvents() {
+    appendOutcome("dep-update", "a", ImprovementOutcome.OutcomeStatus.MERGED, Instant.now());
+
+    var summary = provider.summarize(caseId, TENANT, new SummaryScope(null, null, null, null));
+
+    assertThat(summary.researchDirections()).isEmpty();
+  }
+
+  @Test
+  void categoriesSortedAlphabetically() {
+    appendOutcome("zebra", "a", ImprovementOutcome.OutcomeStatus.MERGED, Instant.now());
+    appendOutcome("alpha", "b", ImprovementOutcome.OutcomeStatus.MERGED, Instant.now());
+    appendOutcome("middle", "c", ImprovementOutcome.OutcomeStatus.MERGED, Instant.now());
+
+    var summary = provider.summarize(caseId, TENANT, new SummaryScope(null, null, null, null));
+
+    assertThat(summary.categories())
+        .extracting(EvolutionSummary.CategorySummary::category)
+        .containsExactly("alpha", "middle", "zebra");
+  }
+
+  @Test
+  void trendWithEqualHalvesReturnsZeroDelta() {
+    Instant now = Instant.now();
+    appendOutcome("cat", "a", ImprovementOutcome.OutcomeStatus.MERGED, now.minusSeconds(3000));
+    appendOutcome("cat", "b", ImprovementOutcome.OutcomeStatus.MERGED, now.minusSeconds(600));
+
+    var summary = provider.summarize(caseId, TENANT, new SummaryScope(null, null, 60, null));
+
+    assertThat(summary.successRateTrend()).isEqualTo(0.0);
+  }
 
   private void appendOutcome(
       String category, String target, ImprovementOutcome.OutcomeStatus status, Instant timestamp) {
