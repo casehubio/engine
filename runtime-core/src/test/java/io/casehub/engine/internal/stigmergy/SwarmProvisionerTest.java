@@ -72,7 +72,8 @@ class SwarmProvisionerTest {
             roleTracker,
             teamDetector,
             progressTracker,
-            new NoOpDispatchBudget());
+            new NoOpDispatchBudget(),
+            null);
     caseId = UUID.randomUUID();
   }
 
