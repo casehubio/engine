@@ -43,7 +43,8 @@ class ResearchPipelineOrchestratorTest {
             new DefaultResearchAnalyzer(),
             new DefaultHypothesisFormer(),
             corpus,
-            new ConductorInboxManager(new InMemoryConductorInboxRepository(), new InMemoryWatchPatternStore()),
+            new ConductorInboxManager(
+                new InMemoryConductorInboxRepository(), new InMemoryWatchPatternStore()),
             new DefaultEscalationProvider());
 
     var area =

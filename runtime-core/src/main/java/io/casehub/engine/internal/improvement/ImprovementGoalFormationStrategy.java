@@ -80,78 +80,78 @@ public class ImprovementGoalFormationStrategy implements GoalFormationStrategy {
     return null;
   }
 
-    public GoalFormationProposal proposeImprovements(UUID caseId, String tenancyId,
-                                                     ImprovementConfig config) {
-        String namespace  = config.effectiveSignalNamespace();
-        int    minSources = config.effectiveConsensusMinSources();
-        var    consensus  = signalRegistry.consensusSignals(caseId, minSources, 0.01);
+  public GoalFormationProposal proposeImprovements(
+      UUID caseId, String tenancyId, ImprovementConfig config) {
+    String namespace = config.effectiveSignalNamespace();
+    int minSources = config.effectiveConsensusMinSources();
+    var consensus = signalRegistry.consensusSignals(caseId, minSources, 0.01);
 
-        List<GoalFormationProposal.ProposedGoal> goals = new ArrayList<>();
-        for (var entry : consensus.entrySet()) {
-            String signalName = entry.getKey();
-            if (!signalName.startsWith(namespace + ":")) {
-                continue;
-            }
+    List<GoalFormationProposal.ProposedGoal> goals = new ArrayList<>();
+    for (var entry : consensus.entrySet()) {
+      String signalName = entry.getKey();
+      if (!signalName.startsWith(namespace + ":")) {
+        continue;
+      }
 
-            Optional<ImprovementRequest> ctxOpt = signalContext.get(caseId, signalName);
-            if (ctxOpt.isEmpty()) {
-                continue;
-            }
+      Optional<ImprovementRequest> ctxOpt = signalContext.get(caseId, signalName);
+      if (ctxOpt.isEmpty()) {
+        continue;
+      }
 
-            ImprovementRequest request = ctxOpt.get();
-            if (!config.effectiveEnabledCategories().contains(request.category())) {
-                continue;
-            }
+      ImprovementRequest request = ctxOpt.get();
+      if (!config.effectiveEnabledCategories().contains(request.category())) {
+        continue;
+      }
 
-            if (categoryTracker.isSuppressed(caseId, request.category())) {
-                continue;
-            }
+      if (categoryTracker.isSuppressed(caseId, request.category())) {
+        continue;
+      }
 
-            if (rollbackHistory.wasRecentlyRolledBack(
-                    caseId,
-                    request.category(),
-                    request.target(),
-                    java.time.Duration.ofMinutes(
-                            config.effectiveRollbackPolicy().effectiveRegressionWindowMinutes()))) {
-                continue;
-            }
+      if (rollbackHistory.wasRecentlyRolledBack(
+          caseId,
+          request.category(),
+          request.target(),
+          java.time.Duration.ofMinutes(
+              config.effectiveRollbackPolicy().effectiveRegressionWindowMinutes()))) {
+        continue;
+      }
 
-            var budgetCheck = budgetEnforcer.check(caseId, config.effectiveBudget(), request, tenancyId);
-            if (budgetCheck instanceof ImprovementBudgetEnforcer.BudgetCheck.Denied) {
-                continue;
-            }
+      var budgetCheck = budgetEnforcer.check(caseId, config.effectiveBudget(), request, tenancyId);
+      if (budgetCheck instanceof ImprovementBudgetEnforcer.BudgetCheck.Denied) {
+        continue;
+      }
 
-            var conflictCheck =
-                    conflictDetector.check(
-                            request,
-                            budgetEnforcer.activeImprovementRequests(),
-                            config.effectiveConflictTrivialThreshold());
-            if (conflictCheck instanceof ConflictDetector.ConflictCheck.Conflicting) {
-                continue;
-            }
+      var conflictCheck =
+          conflictDetector.check(
+              request,
+              budgetEnforcer.activeImprovementRequests(),
+              config.effectiveConflictTrivialThreshold());
+      if (conflictCheck instanceof ConflictDetector.ConflictCheck.Conflicting) {
+        continue;
+      }
 
-            Map<String, String> attributes = new LinkedHashMap<>();
-            attributes.put("improvement.type", request.improvementType());
-            attributes.put("improvement.category", request.category());
-            attributes.put("improvement.target", request.target());
-            attributes.put("improvement.targetRepo", request.targetRepo());
-            attributes.put("improvement.signalName", signalName);
+      Map<String, String> attributes = new LinkedHashMap<>();
+      attributes.put("improvement.type", request.improvementType());
+      attributes.put("improvement.category", request.category());
+      attributes.put("improvement.target", request.target());
+      attributes.put("improvement.targetRepo", request.targetRepo());
+      attributes.put("improvement.signalName", signalName);
 
-            goals.add(
-                    new GoalFormationProposal.ProposedGoal(
-                            "self_improvement:" + request.category() + ":" + request.target(),
-                            "Improve " + request.category() + " for " + request.target(),
-                            GoalPriority.SECONDARY,
-                            "Signal consensus reached for " + signalName,
-                            attributes));
-        }
-
-        if (goals.isEmpty()) {
-            return null;
-        }
-
-        return new GoalFormationProposal(
-                goals,
-                "Improvement signal consensus detected — " + goals.size() + " improvement(s) proposed");
+      goals.add(
+          new GoalFormationProposal.ProposedGoal(
+              "self_improvement:" + request.category() + ":" + request.target(),
+              "Improve " + request.category() + " for " + request.target(),
+              GoalPriority.SECONDARY,
+              "Signal consensus reached for " + signalName,
+              attributes));
     }
+
+    if (goals.isEmpty()) {
+      return null;
+    }
+
+    return new GoalFormationProposal(
+        goals,
+        "Improvement signal consensus detected — " + goals.size() + " improvement(s) proposed");
+  }
 }

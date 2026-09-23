@@ -15,71 +15,70 @@
  */
 package io.casehub.engine.internal.improvement;
 
+import static org.assertj.core.api.Assertions.assertThat;
+
+import java.util.UUID;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
-import java.util.UUID;
-
-import static org.assertj.core.api.Assertions.assertThat;
-
 class ImprovementCoordinatorTest {
 
-    private static final String                 TENANT = "test-tenant";
-    private              ImprovementCoordinator coordinator;
-    private              UUID                   caseId;
+  private static final String TENANT = "test-tenant";
+  private ImprovementCoordinator coordinator;
+  private UUID caseId;
 
-    @BeforeEach
-    void setUp() {
-        coordinator = new ImprovementCoordinator(new InMemoryImprovementBlockStore());
-        caseId      = UUID.randomUUID();
-    }
+  @BeforeEach
+  void setUp() {
+    coordinator = new ImprovementCoordinator(new InMemoryImprovementBlockStore());
+    caseId = UUID.randomUUID();
+  }
 
-    @Test
-    void blockAndCheckBlocked() {
-        var improvementId = UUID.randomUUID();
-        var blockerId     = UUID.randomUUID();
-        coordinator.block(caseId, improvementId, blockerId, TENANT);
+  @Test
+  void blockAndCheckBlocked() {
+    var improvementId = UUID.randomUUID();
+    var blockerId = UUID.randomUUID();
+    coordinator.block(caseId, improvementId, blockerId, TENANT);
 
-        assertThat(coordinator.isBlocked(caseId, improvementId, TENANT)).isTrue();
-    }
+    assertThat(coordinator.isBlocked(caseId, improvementId, TENANT)).isTrue();
+  }
 
-    @Test
-    void unblockReleasesBlock() {
-        var improvementId = UUID.randomUUID();
-        var blockerId     = UUID.randomUUID();
-        coordinator.block(caseId, improvementId, blockerId, TENANT);
-        coordinator.unblock(caseId, improvementId, TENANT);
+  @Test
+  void unblockReleasesBlock() {
+    var improvementId = UUID.randomUUID();
+    var blockerId = UUID.randomUUID();
+    coordinator.block(caseId, improvementId, blockerId, TENANT);
+    coordinator.unblock(caseId, improvementId, TENANT);
 
-        assertThat(coordinator.isBlocked(caseId, improvementId, TENANT)).isFalse();
-    }
+    assertThat(coordinator.isBlocked(caseId, improvementId, TENANT)).isFalse();
+  }
 
-    @Test
-    void unblockedByDefault() {
-        assertThat(coordinator.isBlocked(caseId, UUID.randomUUID(), TENANT)).isFalse();
-    }
+  @Test
+  void unblockedByDefault() {
+    assertThat(coordinator.isBlocked(caseId, UUID.randomUUID(), TENANT)).isFalse();
+  }
 
-    @Test
-    void blockedByReturnsBlocker() {
-        var improvementId = UUID.randomUUID();
-        var blockerId     = UUID.randomUUID();
-        coordinator.block(caseId, improvementId, blockerId, TENANT);
+  @Test
+  void blockedByReturnsBlocker() {
+    var improvementId = UUID.randomUUID();
+    var blockerId = UUID.randomUUID();
+    coordinator.block(caseId, improvementId, blockerId, TENANT);
 
-        assertThat(coordinator.blockedBy(caseId, improvementId, TENANT)).isEqualTo(blockerId);
-    }
+    assertThat(coordinator.blockedBy(caseId, improvementId, TENANT)).isEqualTo(blockerId);
+  }
 
-    @Test
-    void blockedByReturnsNullWhenNotBlocked() {
-        assertThat(coordinator.blockedBy(caseId, UUID.randomUUID(), TENANT)).isNull();
-    }
+  @Test
+  void blockedByReturnsNullWhenNotBlocked() {
+    assertThat(coordinator.blockedBy(caseId, UUID.randomUUID(), TENANT)).isNull();
+  }
 
-    @Test
-    void perCaseIsolation() {
-        var case2         = UUID.randomUUID();
-        var improvementId = UUID.randomUUID();
-        var blockerId     = UUID.randomUUID();
-        coordinator.block(caseId, improvementId, blockerId, TENANT);
+  @Test
+  void perCaseIsolation() {
+    var case2 = UUID.randomUUID();
+    var improvementId = UUID.randomUUID();
+    var blockerId = UUID.randomUUID();
+    coordinator.block(caseId, improvementId, blockerId, TENANT);
 
-        assertThat(coordinator.isBlocked(caseId, improvementId, TENANT)).isTrue();
-        assertThat(coordinator.isBlocked(case2, improvementId, TENANT)).isFalse();
-    }
+    assertThat(coordinator.isBlocked(caseId, improvementId, TENANT)).isTrue();
+    assertThat(coordinator.isBlocked(case2, improvementId, TENANT)).isFalse();
+  }
 }

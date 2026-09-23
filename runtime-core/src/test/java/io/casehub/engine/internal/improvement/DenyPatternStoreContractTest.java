@@ -42,7 +42,8 @@ public abstract class DenyPatternStoreContractTest {
     store.save(caseId, "pattern-a", tenancyId());
     store.save(caseId, "pattern-b", tenancyId());
 
-    assertThat(store.findAll(caseId, tenancyId())).containsExactlyInAnyOrder("pattern-a", "pattern-b");
+    assertThat(store.findAll(caseId, tenancyId()))
+        .containsExactlyInAnyOrder("pattern-a", "pattern-b");
   }
 
   @Test

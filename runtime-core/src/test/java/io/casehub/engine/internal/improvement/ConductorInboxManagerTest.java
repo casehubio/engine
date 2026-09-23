@@ -36,7 +36,9 @@ class ConductorInboxManagerTest {
 
   @BeforeEach
   void setUp() {
-    manager = new ConductorInboxManager(new InMemoryConductorInboxRepository(), new InMemoryWatchPatternStore());
+    manager =
+        new ConductorInboxManager(
+            new InMemoryConductorInboxRepository(), new InMemoryWatchPatternStore());
     caseId = UUID.randomUUID();
   }
 
@@ -142,8 +144,10 @@ class ConductorInboxManagerTest {
 
   @Test
   void watchPatternRemove() {
-    manager.addWatchPattern(caseId, new WatchPattern("w1", "security", null, null, null, Instant.now()), TENANT);
-    manager.addWatchPattern(caseId, new WatchPattern("w2", "architecture", null, null, null, Instant.now()), TENANT);
+    manager.addWatchPattern(
+        caseId, new WatchPattern("w1", "security", null, null, null, Instant.now()), TENANT);
+    manager.addWatchPattern(
+        caseId, new WatchPattern("w2", "architecture", null, null, null, Instant.now()), TENANT);
 
     manager.removeWatchPattern(caseId, "w1", TENANT);
 
@@ -154,7 +158,8 @@ class ConductorInboxManagerTest {
   @Test
   void watchPatternPerCaseIsolation() {
     var case2 = UUID.randomUUID();
-    manager.addWatchPattern(caseId, new WatchPattern("w1", "security", null, null, null, Instant.now()), TENANT);
+    manager.addWatchPattern(
+        caseId, new WatchPattern("w1", "security", null, null, null, Instant.now()), TENANT);
 
     assertThat(manager.activeWatchPatterns(caseId, TENANT)).hasSize(1);
     assertThat(manager.activeWatchPatterns(case2, TENANT)).isEmpty();

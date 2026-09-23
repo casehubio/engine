@@ -22,7 +22,6 @@ import io.casehub.engine.common.spi.ConductorInboxRepository;
 import io.casehub.engine.common.spi.WatchPatternStore;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
-
 import java.time.Instant;
 import java.util.List;
 import java.util.UUID;
@@ -30,54 +29,66 @@ import java.util.UUID;
 @ApplicationScoped
 public class ConductorInboxManager {
 
-    private final ConductorInboxRepository inboxRepository;
-    private final WatchPatternStore        watchPatternStore;
+  private final ConductorInboxRepository inboxRepository;
+  private final WatchPatternStore watchPatternStore;
 
-    @Inject
-    ConductorInboxManager(ConductorInboxRepository inboxRepository,
-                          WatchPatternStore watchPatternStore) {
-        this.inboxRepository   = inboxRepository;
-        this.watchPatternStore = watchPatternStore;
-    }
+  @Inject
+  ConductorInboxManager(
+      ConductorInboxRepository inboxRepository, WatchPatternStore watchPatternStore) {
+    this.inboxRepository = inboxRepository;
+    this.watchPatternStore = watchPatternStore;
+  }
 
-    public String enqueue(UUID caseId, ConductorInboxEntry entry, String tenancyId) {
-        inboxRepository.save(entry, tenancyId);
-        return entry.id();
-    }
+  public String enqueue(UUID caseId, ConductorInboxEntry entry, String tenancyId) {
+    inboxRepository.save(entry, tenancyId);
+    return entry.id();
+  }
 
-    public List<ConductorInboxEntry> pending(UUID caseId, String tenancyId) {
-        return inboxRepository.findPending(caseId, tenancyId);
-    }
+  public List<ConductorInboxEntry> pending(UUID caseId, String tenancyId) {
+    return inboxRepository.findPending(caseId, tenancyId);
+  }
 
-    public int pendingCount(UUID caseId, String tenancyId) {
-        return inboxRepository.countPending(caseId, tenancyId);
-    }
+  public int pendingCount(UUID caseId, String tenancyId) {
+    return inboxRepository.countPending(caseId, tenancyId);
+  }
 
-    public List<ConductorInboxEntry> allEntries(UUID caseId, String tenancyId) {
-        return inboxRepository.findAll(caseId, tenancyId);
-    }
+  public List<ConductorInboxEntry> allEntries(UUID caseId, String tenancyId) {
+    return inboxRepository.findAll(caseId, tenancyId);
+  }
 
-    public void resolve(UUID caseId, String entryId, ConductorDecision decision,
-                        String tenancyId) {
-        var existing = inboxRepository.findById(caseId, entryId, tenancyId);
-        if (existing == null) {return;}
-        var resolved = new ConductorInboxEntry(
-                existing.caseId(), existing.id(), existing.stage(), decision.outcome(),
-                existing.category(), existing.areaId(), existing.improvementCaseId(),
-                existing.summary(), existing.escalationTriggers(), existing.confidence(),
-                existing.queuedAt(), Instant.now(), existing.timeoutMinutes(), decision);
-        inboxRepository.save(resolved, tenancyId);
+  public void resolve(UUID caseId, String entryId, ConductorDecision decision, String tenancyId) {
+    var existing = inboxRepository.findById(caseId, entryId, tenancyId);
+    if (existing == null) {
+      return;
     }
+    var resolved =
+        new ConductorInboxEntry(
+            existing.caseId(),
+            existing.id(),
+            existing.stage(),
+            decision.outcome(),
+            existing.category(),
+            existing.areaId(),
+            existing.improvementCaseId(),
+            existing.summary(),
+            existing.escalationTriggers(),
+            existing.confidence(),
+            existing.queuedAt(),
+            Instant.now(),
+            existing.timeoutMinutes(),
+            decision);
+    inboxRepository.save(resolved, tenancyId);
+  }
 
-    public List<WatchPattern> activeWatchPatterns(UUID caseId, String tenancyId) {
-        return watchPatternStore.findActive(caseId, tenancyId);
-    }
+  public List<WatchPattern> activeWatchPatterns(UUID caseId, String tenancyId) {
+    return watchPatternStore.findActive(caseId, tenancyId);
+  }
 
-    public void addWatchPattern(UUID caseId, WatchPattern pattern, String tenancyId) {
-        watchPatternStore.save(caseId, pattern, tenancyId);
-    }
+  public void addWatchPattern(UUID caseId, WatchPattern pattern, String tenancyId) {
+    watchPatternStore.save(caseId, pattern, tenancyId);
+  }
 
-    public void removeWatchPattern(UUID caseId, String patternId, String tenancyId) {
-        watchPatternStore.remove(caseId, patternId, tenancyId);
-    }
+  public void removeWatchPattern(UUID caseId, String patternId, String tenancyId) {
+    watchPatternStore.remove(caseId, patternId, tenancyId);
+  }
 }

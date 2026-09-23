@@ -45,7 +45,9 @@ class ResearchPipelineCheckpointTest {
     var analyzer = new StubResearchAnalyzer();
     var hypothesisFormer = new StubHypothesisFormer();
     var corpus = new InMemoryResearchCorpus();
-    var inboxManager = new ConductorInboxManager(new InMemoryConductorInboxRepository(), new InMemoryWatchPatternStore());
+    var inboxManager =
+        new ConductorInboxManager(
+            new InMemoryConductorInboxRepository(), new InMemoryWatchPatternStore());
     var escalationProvider = new DefaultEscalationProvider();
 
     orchestrator =

@@ -19,34 +19,33 @@ import io.casehub.engine.common.spi.ImprovementBlockStore;
 import jakarta.annotation.Nullable;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
-
 import java.util.UUID;
 
 @ApplicationScoped
 public class ImprovementCoordinator {
 
-    private final ImprovementBlockStore blockStore;
+  private final ImprovementBlockStore blockStore;
 
-    @Inject
-    ImprovementCoordinator(ImprovementBlockStore blockStore) {
-        this.blockStore = blockStore;
-    }
+  @Inject
+  ImprovementCoordinator(ImprovementBlockStore blockStore) {
+    this.blockStore = blockStore;
+  }
 
-    public void block(UUID caseId, UUID improvementCaseId, UUID blockerImprovementId,
-                      String tenancyId) {
-        blockStore.save(caseId, improvementCaseId, blockerImprovementId, tenancyId);
-    }
+  public void block(
+      UUID caseId, UUID improvementCaseId, UUID blockerImprovementId, String tenancyId) {
+    blockStore.save(caseId, improvementCaseId, blockerImprovementId, tenancyId);
+  }
 
-    public void unblock(UUID caseId, UUID improvementCaseId, String tenancyId) {
-        blockStore.remove(caseId, improvementCaseId, tenancyId);
-    }
+  public void unblock(UUID caseId, UUID improvementCaseId, String tenancyId) {
+    blockStore.remove(caseId, improvementCaseId, tenancyId);
+  }
 
-    public boolean isBlocked(UUID caseId, UUID improvementCaseId, String tenancyId) {
-        return blockStore.isBlocked(caseId, improvementCaseId, tenancyId);
-    }
+  public boolean isBlocked(UUID caseId, UUID improvementCaseId, String tenancyId) {
+    return blockStore.isBlocked(caseId, improvementCaseId, tenancyId);
+  }
 
-    @Nullable
-    public UUID blockedBy(UUID caseId, UUID improvementCaseId, String tenancyId) {
-        return blockStore.blockedBy(caseId, improvementCaseId, tenancyId);
-    }
+  @Nullable
+  public UUID blockedBy(UUID caseId, UUID improvementCaseId, String tenancyId) {
+    return blockStore.blockedBy(caseId, improvementCaseId, tenancyId);
+  }
 }

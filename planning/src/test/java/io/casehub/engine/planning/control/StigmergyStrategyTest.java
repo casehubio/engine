@@ -15,6 +15,9 @@
  */
 package io.casehub.engine.planning.control;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+
 import io.casehub.api.engine.PlanExecutionContext;
 import io.casehub.api.model.Binding;
 import io.casehub.api.model.CaseDefinition;
@@ -26,14 +29,10 @@ import io.casehub.engine.common.internal.signal.SignalRegistry;
 import io.casehub.engine.internal.stigmergy.StigmergyCoordinator;
 import io.casehub.engine.planning.plan.DefaultCasePlanModel;
 import io.casehub.worker.api.Capability;
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Test;
-
 import java.util.List;
 import java.util.UUID;
-
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertTrue;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
 class StigmergyStrategyTest {
 

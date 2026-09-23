@@ -42,7 +42,8 @@ class InMemoryConductorInboxRepositoryContractTest extends ConductorInboxReposit
   void resetClearsAllEntries() {
     var caseId = UUID.randomUUID();
     store.save(
-        makeEntry(caseId, "e1", ImprovementStage.RESEARCH_SCOPE, ConductorInboxEntry.Status.PENDING),
+        makeEntry(
+            caseId, "e1", ImprovementStage.RESEARCH_SCOPE, ConductorInboxEntry.Status.PENDING),
         tenancyId());
     assertThat(store.findAll(caseId, tenancyId())).isNotEmpty();
 
