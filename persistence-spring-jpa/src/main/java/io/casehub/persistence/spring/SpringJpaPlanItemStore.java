@@ -19,6 +19,7 @@ import io.casehub.api.model.TaskStatus;
 import io.casehub.engine.common.internal.model.PlanItemRecord;
 import io.casehub.engine.common.internal.model.PlanItemSaveRequest;
 import io.casehub.engine.common.internal.model.PlanItemType;
+import io.casehub.engine.common.spi.CrossTenantPlanItemStore;
 import io.casehub.engine.common.spi.PlanItemStore;
 import io.casehub.persistence.jpa.PlanItemEntity;
 import io.casehub.persistence.jpa.TenantContextManager;
@@ -28,7 +29,7 @@ import java.util.UUID;
 import org.springframework.transaction.annotation.Transactional;
 
 @Transactional
-class SpringJpaPlanItemStore implements PlanItemStore {
+class SpringJpaPlanItemStore implements PlanItemStore, CrossTenantPlanItemStore {
 
   private final EntityManager em;
   private final TenantContextManager tcm;

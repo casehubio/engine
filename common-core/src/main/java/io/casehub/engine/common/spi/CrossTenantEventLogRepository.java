@@ -27,37 +27,25 @@ import java.util.UUID;
  */
 public interface CrossTenantEventLogRepository {
 
-    /**
-     * All events of the given types across all tenants.
-     */
-    List<EventLog> findByTypes(Collection<CaseHubEventType> types);
+  /** All events of the given types across all tenants. */
+  List<EventLog> findByTypes(Collection<CaseHubEventType> types);
 
-    /**
-     * Events for a specific case — caseId is UUID (globally unique).
-     */
-    List<EventLog> findByCaseAndTypes(UUID caseId, Collection<CaseHubEventType> types);
+  /** Events for a specific case — caseId is UUID (globally unique). */
+  List<EventLog> findByCaseAndTypes(UUID caseId, Collection<CaseHubEventType> types);
 
-    /**
-     * Find WORK_SUBMITTED events with no matching WORK_COMPLETED across all tenants.
-     */
-    List<String> findSubmittedWorkWithoutCompletion();
+  /** Find WORK_SUBMITTED events with no matching WORK_COMPLETED across all tenants. */
+  List<String> findSubmittedWorkWithoutCompletion();
 
-    /**
-     * Cross-tenant variant of findByWorkerAndType.
-     */
-    List<EventLog> findByWorkerAndTypeAcrossTenants(String workerId, CaseHubEventType type);
+  /** Cross-tenant variant of findByWorkerAndType. */
+  List<EventLog> findByWorkerAndTypeAcrossTenants(String workerId, CaseHubEventType type);
 
-    /**
-     * Look up an event log entry by surrogate id without tenant filter.
-     */
-    EventLog findById(Long id);
+  /** Look up an event log entry by surrogate id without tenant filter. */
+  EventLog findById(Long id);
 
-    /**
-     * Cross-tenant variant of findByCaseAndWorkerAndType.
-     */
-    List<EventLog> findByCaseAndWorkerAndType(UUID caseId, String workerId, CaseHubEventType type);
+  /** Cross-tenant variant of findByCaseAndWorkerAndType. */
+  List<EventLog> findByCaseAndWorkerAndType(UUID caseId, String workerId, CaseHubEventType type);
 
-    default List<EventLog> findByTypesAfterId(Collection<CaseHubEventType> types, long afterId) {
-        return findByTypes(types).stream().filter(e -> e.id != null && e.id > afterId).toList();
-    }
+  default List<EventLog> findByTypesAfterId(Collection<CaseHubEventType> types, long afterId) {
+    return findByTypes(types).stream().filter(e -> e.id != null && e.id > afterId).toList();
+  }
 }

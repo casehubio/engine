@@ -18,6 +18,7 @@ package io.casehub.persistence.memory;
 import io.casehub.api.model.TaskStatus;
 import io.casehub.engine.common.internal.model.PlanItemRecord;
 import io.casehub.engine.common.internal.model.PlanItemSaveRequest;
+import io.casehub.engine.common.spi.CrossTenantPlanItemStore;
 import io.casehub.engine.common.spi.PlanItemStore;
 import java.util.List;
 import java.util.UUID;
@@ -29,7 +30,7 @@ import java.util.stream.Collectors;
  * quarkus.arc.selected-alternatives} — never active in production.
  */
 public class InMemoryPlanItemStore
-    implements PlanItemStore, io.casehub.engine.common.spi.Resettable {
+    implements PlanItemStore, CrossTenantPlanItemStore, io.casehub.engine.common.spi.Resettable {
 
   private final ConcurrentHashMap<String, PlanItemRecord> records = new ConcurrentHashMap<>();
 
@@ -99,6 +100,17 @@ public class InMemoryPlanItemStore
   public List<PlanItemRecord> findByCaseId(UUID caseId, String tenancyId) {
     return records.values().stream()
         .filter(r -> caseId.equals(r.caseId()) && tenancyId.equals(r.tenancyId()))
+        .collect(Collectors.toList());
+  }
+
+  @Override
+  public List<PlanItemRecord> findDelegated(UUID caseId, String tenancyId) {
+    return records.values().stream()
+        .filter(
+            r ->
+                caseId.equals(r.caseId())
+                    && tenancyId.equals(r.tenancyId())
+                    && r.status() == TaskStatus.DELEGATED)
         .collect(Collectors.toList());
   }
 

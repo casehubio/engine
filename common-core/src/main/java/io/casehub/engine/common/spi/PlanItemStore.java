@@ -24,8 +24,8 @@ import java.util.UUID;
 /**
  * Blocking SPI for durable PlanItem status persistence.
  *
- * <p>tenancyId is explicit on all tenant-scoped methods. Cross-tenant methods are explicitly named
- * ({@code findDelegatedCrossTenant}, {@code findAllDelegated}).
+ * <p>tenancyId is explicit on all methods. Cross-tenant access is on the separate {@link
+ * CrossTenantPlanItemStore} interface.
  */
 public interface PlanItemStore {
 
@@ -35,12 +35,5 @@ public interface PlanItemStore {
 
   List<PlanItemRecord> findByCaseId(UUID caseId, String tenancyId);
 
-  /** Tenant-scoped overload for callers that have tenancyId. */
-  default List<PlanItemRecord> findDelegated(UUID caseId, String tenancyId) {
-    return findDelegatedCrossTenant(caseId);
-  }
-
-  List<PlanItemRecord> findDelegatedCrossTenant(UUID caseId);
-
-  List<PlanItemRecord> findAllDelegated();
+  List<PlanItemRecord> findDelegated(UUID caseId, String tenancyId);
 }

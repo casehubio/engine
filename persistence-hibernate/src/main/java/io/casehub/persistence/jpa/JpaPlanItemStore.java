@@ -19,6 +19,7 @@ import io.casehub.api.model.TaskStatus;
 import io.casehub.engine.common.internal.model.PlanItemRecord;
 import io.casehub.engine.common.internal.model.PlanItemSaveRequest;
 import io.casehub.engine.common.internal.model.PlanItemType;
+import io.casehub.engine.common.spi.CrossTenantPlanItemStore;
 import io.casehub.engine.common.spi.PlanItemStore;
 import jakarta.annotation.Priority;
 import jakarta.enterprise.context.ApplicationScoped;
@@ -32,7 +33,7 @@ import java.util.UUID;
 @Alternative
 @Priority(2)
 @ApplicationScoped
-public class JpaPlanItemStore implements PlanItemStore {
+public class JpaPlanItemStore implements PlanItemStore, CrossTenantPlanItemStore {
 
   private final EntityManager em;
   private final TenantContextManager tcm;

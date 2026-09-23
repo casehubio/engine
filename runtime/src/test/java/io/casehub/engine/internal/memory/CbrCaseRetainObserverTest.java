@@ -631,7 +631,8 @@ class CbrCaseRetainObserverTest {
     }
   }
 
-  static class StubPlanItemStore implements PlanItemStore {
+  static class StubPlanItemStore
+      implements PlanItemStore, io.casehub.engine.common.spi.CrossTenantPlanItemStore {
     List<PlanItemRecord> items = List.of();
 
     @Override
@@ -644,6 +645,11 @@ class CbrCaseRetainObserverTest {
 
     @Override
     public void updateStatus(String id, TaskStatus s, String tenancyId) {}
+
+    @Override
+    public List<PlanItemRecord> findDelegated(java.util.UUID caseId, String tenancyId) {
+      return List.of();
+    }
 
     @Override
     public List<PlanItemRecord> findDelegatedCrossTenant(UUID id) {

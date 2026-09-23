@@ -18,6 +18,7 @@ package io.casehub.work.engine;
 import io.casehub.api.model.TaskStatus;
 import io.casehub.engine.common.internal.model.PlanItemRecord;
 import io.casehub.engine.common.internal.model.PlanItemSaveRequest;
+import io.casehub.engine.common.spi.CrossTenantPlanItemStore;
 import io.casehub.engine.common.spi.PlanItemStore;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
@@ -34,7 +35,7 @@ import java.util.stream.Collectors;
  * and workItemService.create() either both commit or both roll back.
  */
 @ApplicationScoped
-public class JpaPlanItemStore implements PlanItemStore {
+public class JpaPlanItemStore implements PlanItemStore, CrossTenantPlanItemStore {
 
   @Inject EntityManager em;
 
@@ -75,6 +76,21 @@ public class JpaPlanItemStore implements PlanItemStore {
         .stream()
         .map(this::toRecord)
         .collect(Collectors.toList());
+  }
+
+  @Override
+  public List<PlanItemRecord> findDelegated(UUID caseId, String tenancyId) {
+    return em
+        .createQuery(
+            "SELECT e FROM WorkAdapterPlanItemEntity e WHERE e.caseId = :caseId AND e.status = :status AND e.tenancyId = :tenancyId",
+            WorkAdapterPlanItemEntity.class)
+        .setParameter("caseId", caseId)
+        .setParameter("status", TaskStatus.DELEGATED)
+        .setParameter("tenancyId", tenancyId)
+        .getResultList()
+        .stream()
+        .map(this::toRecord)
+        .collect(java.util.stream.Collectors.toList());
   }
 
   @Override
