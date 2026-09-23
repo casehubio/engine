@@ -168,6 +168,53 @@ class EventLogReplayRecoveryStrategyTest {
     assertNull(instance.getContextSnapshot());
   }
 
+  @Test
+  void recoverInitializesEpisodicBaseline() {
+    UUID caseId = UUID.randomUUID();
+    ObjectNode startPayload = MAPPER.createObjectNode();
+    startPayload.putObject("working").put("status", "active");
+
+    eventLogRepo.events =
+        List.of(eventLog(caseId, CaseHubEventType.CASE_STARTED, startPayload, null));
+
+    CaseInstance instance = new CaseInstance();
+    instance.setUuid(caseId);
+
+    CaseContext ctx = strategy.recover(instance);
+    io.casehub.api.context.ReadableLayer episodic =
+        ctx.layer(io.casehub.api.context.ContextLayer.EPISODIC);
+    org.junit.jupiter.api.Assertions.assertNotNull(episodic.get("workers"));
+    org.junit.jupiter.api.Assertions.assertNotNull(episodic.get("milestones"));
+    org.junit.jupiter.api.Assertions.assertNotNull(episodic.get("goals"));
+  }
+
+  @Test
+  void recoverReplaysGoalReachedIntoEpisodicLayer() {
+    UUID caseId = UUID.randomUUID();
+    ObjectNode startPayload = MAPPER.createObjectNode();
+    startPayload.putObject("working").put("status", "active");
+
+    ObjectNode goalMetadata = MAPPER.createObjectNode();
+    goalMetadata.put("name", "data-collected");
+    goalMetadata.put("kind", "COMPLETION");
+
+    eventLogRepo.events =
+        List.of(
+            eventLog(caseId, CaseHubEventType.CASE_STARTED, startPayload, null),
+            eventLog(caseId, CaseHubEventType.GOAL_REACHED, null, goalMetadata));
+
+    CaseInstance instance = new CaseInstance();
+    instance.setUuid(caseId);
+
+    CaseContext ctx = strategy.recover(instance);
+    io.casehub.api.context.ReadableLayer episodic =
+        ctx.layer(io.casehub.api.context.ContextLayer.EPISODIC);
+    @SuppressWarnings("unchecked")
+    List<String> goals = (List<String>) episodic.get("goals");
+    org.junit.jupiter.api.Assertions.assertNotNull(goals);
+    org.junit.jupiter.api.Assertions.assertTrue(goals.contains("data-collected"));
+  }
+
   private EventLog eventLog(
       UUID caseId,
       CaseHubEventType type,
