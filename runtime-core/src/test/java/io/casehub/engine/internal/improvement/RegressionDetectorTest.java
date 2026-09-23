@@ -15,18 +15,20 @@
  */
 package io.casehub.engine.internal.improvement;
 
-import static org.assertj.core.api.Assertions.assertThat;
-
 import io.casehub.api.model.stigmergy.CapabilityAreaAssessment;
 import io.casehub.api.model.stigmergy.HealthPolicy;
 import io.casehub.api.model.stigmergy.ImprovementOutcome;
 import io.casehub.api.model.stigmergy.RollbackPolicy;
 import io.casehub.api.spi.improvement.CapabilityArea;
+import io.casehub.engine.common.spi.event.RegressionDetectedEvent;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+
 import java.time.Instant;
 import java.util.Map;
 import java.util.UUID;
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Test;
+
+import static org.assertj.core.api.Assertions.assertThat;
 
 class RegressionDetectorTest {
 
@@ -37,16 +39,19 @@ class RegressionDetectorTest {
   private HealthScoreTracker healthTracker;
   private CapabilityAreaRegistry registry;
   private UUID caseId;
+  private TestEvent<RegressionDetectedEvent> regressionDetectedEvents;
+
 
   @BeforeEach
   void setUp() {
-    scorer = new ConfidenceScorer();
-    categoryTracker = new ImprovementCategoryTracker();
-    rollbackHistory = new RollbackHistory();
-    registry = new CapabilityAreaRegistry();
-    healthTracker = new HealthScoreTracker(registry);
-    detector = new RegressionDetector(scorer, categoryTracker, rollbackHistory, healthTracker);
-    caseId = UUID.randomUUID();
+    scorer                   = new ConfidenceScorer();
+    categoryTracker          = new ImprovementCategoryTracker();
+    rollbackHistory          = new RollbackHistory();
+    registry                 = new CapabilityAreaRegistry();
+    healthTracker            = new HealthScoreTracker(registry);
+    regressionDetectedEvents = new TestEvent<>();
+    detector                 = new RegressionDetector(scorer, categoryTracker, rollbackHistory, healthTracker, regressionDetectedEvents);
+    caseId                   = UUID.randomUUID();
   }
 
   @Test
@@ -114,6 +119,45 @@ class RegressionDetectorTest {
 
     assertThat(detector.activeMonitorCount(caseId)).isEqualTo(0);
   }
+
+  @Test
+  void firesEventOnRegressionDetected() {
+    registry.register(area("stability", 0.8));
+    var healthPolicy = new HealthPolicy(null, null, null, null, null, null);
+    healthTracker.refresh(caseId, "test-tenant", healthPolicy);
+
+    var outcome = outcome(ImprovementOutcome.OutcomeStatus.MERGED);
+    detector.onOutcome(caseId, outcome);
+
+    registry.deprecate("stability");
+    registry.register(area("stability", 0.3));
+    healthTracker.refresh(caseId, "test-tenant", healthPolicy);
+
+    var rollbackPolicy = new RollbackPolicy(null, 0.1, null, null, null, null);
+    detector.checkActiveMonitors(caseId, healthTracker, rollbackPolicy);
+
+    assertThat(regressionDetectedEvents.fired()).hasSize(1);
+    var event = regressionDetectedEvents.fired().get(0);
+    assertThat(event.caseId()).isEqualTo(caseId);
+    assertThat(event.category()).isEqualTo("lint-fix");
+    assertThat(event.confidence()).isGreaterThan(0.0);
+  }
+
+  @Test
+  void noEventWhenHealthStable() {
+    registry.register(area("stability", 0.8));
+    var healthPolicy = new HealthPolicy(null, null, null, null, null, null);
+    healthTracker.refresh(caseId, "test-tenant", healthPolicy);
+
+    var outcome = outcome(ImprovementOutcome.OutcomeStatus.MERGED);
+    detector.onOutcome(caseId, outcome);
+
+    var rollbackPolicy = new RollbackPolicy(null, null, null, null, null, null);
+    detector.checkActiveMonitors(caseId, healthTracker, rollbackPolicy);
+
+    assertThat(regressionDetectedEvents.fired()).isEmpty();
+  }
+
 
   private ImprovementOutcome outcome(ImprovementOutcome.OutcomeStatus status) {
     return new ImprovementOutcome(

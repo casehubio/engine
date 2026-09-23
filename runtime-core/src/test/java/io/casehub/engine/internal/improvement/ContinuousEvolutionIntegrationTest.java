@@ -15,8 +15,6 @@
  */
 package io.casehub.engine.internal.improvement;
 
-import static org.assertj.core.api.Assertions.assertThat;
-
 import io.casehub.api.model.stigmergy.CapabilityAreaAssessment;
 import io.casehub.api.model.stigmergy.CircuitBreakerState;
 import io.casehub.api.model.stigmergy.HealthPolicy;
@@ -28,14 +26,17 @@ import io.casehub.api.spi.improvement.CapabilityArea;
 import io.casehub.api.spi.routing.GoalFormationResult;
 import io.casehub.api.spi.routing.GoalFormationService;
 import io.casehub.engine.common.internal.signal.SignalRegistry;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+
 import java.time.Duration;
 import java.time.Instant;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.atomic.AtomicInteger;
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Test;
+
+import static org.assertj.core.api.Assertions.assertThat;
 
 class ContinuousEvolutionIntegrationTest {
 
@@ -55,48 +56,49 @@ class ContinuousEvolutionIntegrationTest {
   private AtomicInteger proposalCount;
   private UUID caseId;
 
-  @BeforeEach
-  void setUp() {
-    signalRegistry = new SignalRegistry();
-    signalContext = new ImprovementSignalContext();
-    budgetEnforcer = new ImprovementBudgetEnforcer(new InMemoryDenyPatternStore());
-    categoryTracker = new ImprovementCategoryTracker();
-    rollbackHistory = new RollbackHistory();
-    conflictDetector = new ConflictDetector();
-    goalFormation =
-        new ImprovementGoalFormationStrategy(
-            budgetEnforcer,
-            signalRegistry,
-            signalContext,
-            categoryTracker,
-            rollbackHistory,
-            conflictDetector);
+    @BeforeEach
+    void setUp() {
+        signalRegistry   = new SignalRegistry();
+        signalContext    = new ImprovementSignalContext();
+        budgetEnforcer   = new ImprovementBudgetEnforcer(new InMemoryDenyPatternStore());
+        categoryTracker  = new ImprovementCategoryTracker();
+        rollbackHistory  = new RollbackHistory();
+        conflictDetector = new ConflictDetector();
+        goalFormation    =
+                new ImprovementGoalFormationStrategy(
+                        budgetEnforcer,
+                        signalRegistry,
+                        signalContext,
+                        categoryTracker,
+                        rollbackHistory,
+                        conflictDetector);
 
-    areaRegistry = new CapabilityAreaRegistry();
-    healthTracker = new HealthScoreTracker(areaRegistry);
-    circuitBreaker = new ImprovementCircuitBreaker();
-    confidenceScorer = new ConfidenceScorer();
-    regressionDetector =
-        new RegressionDetector(confidenceScorer, categoryTracker, rollbackHistory, healthTracker);
+        areaRegistry       = new CapabilityAreaRegistry();
+        healthTracker      = new HealthScoreTracker(areaRegistry);
+        circuitBreaker     = new ImprovementCircuitBreaker(new NoOpEvent<>());
+        confidenceScorer   = new ConfidenceScorer();
+        regressionDetector =
+                new RegressionDetector(confidenceScorer, categoryTracker, rollbackHistory, healthTracker, new NoOpEvent<>());
 
-    proposalCount = new AtomicInteger(0);
-    GoalFormationService goalService =
-        (agentId, tenancyId, proposal) -> {
-          proposalCount.incrementAndGet();
-          return new GoalFormationResult(List.of(), List.of(), 0);
-        };
+        proposalCount = new AtomicInteger(0);
+        GoalFormationService goalService =
+                (agentId, tenancyId, proposal) -> {
+                    proposalCount.incrementAndGet();
+                    return new GoalFormationResult(List.of(), List.of(), 0);
+                };
 
-    var traceBuffer = new TickTraceBuffer();
-    ticker =
-        new EvolutionTicker(
-            goalFormation,
-            circuitBreaker,
-            healthTracker,
-            regressionDetector,
-            goalService,
-            traceBuffer);
-    caseId = UUID.randomUUID();
-  }
+        var traceBuffer = new TickTraceBuffer();
+        ticker =
+                new EvolutionTicker(
+                        goalFormation,
+                        circuitBreaker,
+                        healthTracker,
+                        regressionDetector,
+                        goalService,
+                        traceBuffer,
+                        new NoOpEvent<>());
+        caseId = UUID.randomUUID();
+    }
 
   @Test
   void evolutionOptIn_defaultConfigDoesNothing() {
