@@ -27,6 +27,8 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import io.casehub.api.context.CaseContext;
 import io.casehub.api.context.ContextLayer;
 import io.casehub.api.context.WritableLayer;
+import io.casehub.api.model.Binding;
+import io.casehub.api.model.CaseDefinition;
 import io.casehub.api.model.JudgmentTarget;
 import io.casehub.api.model.TaskStatus;
 import io.casehub.api.spi.event.EventDispatcher;
@@ -35,6 +37,7 @@ import io.casehub.engine.common.internal.event.CaseContextChangedEvent;
 import io.casehub.engine.common.internal.jq.JQEvaluator;
 import io.casehub.engine.common.internal.jq.ValidationResult;
 import io.casehub.engine.common.internal.model.CaseInstance;
+import io.casehub.engine.common.internal.model.CaseMetaModel;
 import io.casehub.engine.common.spi.CaseDefinitionRegistry;
 import io.casehub.engine.common.spi.CrossTenantCaseInstanceRepository;
 import io.casehub.engine.common.spi.event.PlanItemObsoleteEvent;
@@ -59,6 +62,7 @@ class PlanItemCompletionApplierTest {
   private Consumer<PlanItemStateChangedEvent> stateChangedEvents;
   private Consumer<PlanItemObsoleteEvent> obsoleteEvents;
   private JQEvaluator jqEvaluator;
+  private CaseDefinitionRegistry caseDefinitionRegistry;
 
   private static final UUID CASE_ID = UUID.randomUUID();
   private static final String PLAN_ITEM_ID = "pi-001";
@@ -73,6 +77,7 @@ class PlanItemCompletionApplierTest {
     stateChangedEvents = mock(Consumer.class);
     obsoleteEvents = mock(Consumer.class);
     jqEvaluator = mock(JQEvaluator.class);
+    caseDefinitionRegistry = mock(CaseDefinitionRegistry.class);
 
     applier =
         new PlanItemCompletionApplier(
@@ -81,7 +86,7 @@ class PlanItemCompletionApplierTest {
             eventDispatcher,
             jqEvaluator,
             mock(BridgeResolver.class),
-            mock(CaseDefinitionRegistry.class),
+            caseDefinitionRegistry,
             stateChangedEvents,
             obsoleteEvents);
   }
@@ -246,6 +251,44 @@ class PlanItemCompletionApplierTest {
     when(item.id()).thenReturn(PLAN_ITEM_ID);
     when(item.getBindingName()).thenReturn("test-binding");
     return item;
+  }
+
+  @Test
+  void completed_withOutputMapping_handlesNullConflictResolverStrategy() {
+    JudgmentTarget target =
+        JudgmentTarget.builder()
+            .prompt("Review judgment")
+            .title("Review")
+            .outputMapping("{ approved: .approved }")
+            .build();
+    PlanItem item = mockPlanItem(TaskStatus.DELEGATED);
+    when(item.getTarget()).thenReturn(target);
+    when(item.getBindingName()).thenReturn("judgment-binding");
+
+    CaseInstance instance = mockCaseInstance();
+    CaseMetaModel metaModel = mock(CaseMetaModel.class);
+    when(instance.getCaseMetaModel()).thenReturn(metaModel);
+
+    CaseDefinition def =
+        CaseDefinition.builder()
+            .namespace("test")
+            .name("judgment-test")
+            .version("1.0.0")
+            .binding(Binding.builder().name("judgment-binding").judgment(target).on("true").build())
+            .build();
+    when(caseDefinitionRegistry.getCaseDefinition(metaModel)).thenReturn(def);
+
+    ObjectMapper mapper = new ObjectMapper();
+    ValidationResult vr = mock(ValidationResult.class);
+    when(vr.ok()).thenReturn(true);
+    when(vr.output()).thenReturn(List.of(mapper.createObjectNode().put("approved", true)));
+    when(jqEvaluator.eval(eq("{ approved: .approved }"), any(JsonNode.class))).thenReturn(vr);
+
+    applier.apply(CASE_ID, PLAN_ITEM_ID, TaskStatus.COMPLETED, null, null);
+
+    verify(item).markCompleted();
+    verify(instance.getCaseContext()).set(eq("approved"), eq(true));
+    verify(eventDispatcher).dispatch(any(CaseContextChangedEvent.class));
   }
 
   private CaseInstance mockCaseInstance() {

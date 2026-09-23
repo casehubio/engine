@@ -17,8 +17,13 @@ package io.casehub.work.engine;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import io.casehub.api.model.Binding;
+import io.casehub.api.model.CaseDefinition;
+import io.casehub.api.model.JudgmentTarget;
 import io.casehub.api.model.TaskStatus;
 import io.casehub.engine.common.internal.model.CaseInstance;
+import io.casehub.engine.common.internal.model.CaseMetaModel;
+import io.casehub.engine.common.spi.CaseDefinitionRegistry;
 import io.casehub.engine.common.spi.CaseInstanceRepository;
 import io.casehub.engine.internal.context.CaseContextImpl;
 import io.casehub.engine.planning.plan.PlanItem;
@@ -37,6 +42,7 @@ import org.junit.jupiter.api.Test;
 class PlanItemCompletionApplierTest {
 
   @Inject BlackboardRegistry registry;
+  @Inject CaseDefinitionRegistry caseDefinitionRegistry;
   @Inject CaseInstanceRepository caseInstanceRepository;
   @Inject PlanItemCompletionApplier applier;
 
@@ -157,5 +163,66 @@ class PlanItemCompletionApplierTest {
     applier.apply(caseId, planItemId, WorkItemStatus.COMPLETED, ref, null);
 
     assertThat(planItem.getStatus()).isEqualTo(TaskStatus.COMPLETED);
+  }
+
+  @Test
+  void completed_withOutputMapping_appliesResolutionToContext() {
+    JudgmentTarget target =
+        JudgmentTarget.builder()
+            .prompt("Review judgment")
+            .title("Review")
+            .outputMapping("{ approved: .approved }")
+            .build();
+
+    UUID outputCaseId = UUID.randomUUID();
+    PlanItem outputItem =
+        PlanItem.create(
+            "judgment-binding", io.casehub.api.model.ExecutorRef.of("judgment-worker"), 10, target);
+    outputItem.tryMarkDispatching();
+    outputItem.markDelegated();
+    String outputPlanItemId = outputItem.getPlanItemId();
+    registry.getOrCreate(outputCaseId, "test-tenant").addPlanItem(outputItem);
+
+    CaseDefinition def =
+        CaseDefinition.builder()
+            .namespace("test")
+            .name("judgment-output-test")
+            .version("1.0.0")
+            .binding(Binding.builder().name("judgment-binding").judgment(target).on("true").build())
+            .build();
+    CaseMetaModel metaModel = caseDefinitionRegistry.registerCaseDefinition(def);
+
+    CaseInstance instance = new CaseInstance();
+    instance.setUuid(outputCaseId);
+    instance.setState(io.casehub.api.model.CaseStatus.RUNNING);
+    instance.setCaseMetaModel(metaModel);
+    instance.setCaseContext(new CaseContextImpl(Map.of("stage", "review")));
+    caseInstanceRepository.save(instance, "test-tenant");
+
+    WorkItemRef ref =
+        new WorkItemRef(
+            UUID.randomUUID(),
+            WorkItemStatus.COMPLETED,
+            PlanItemRef.encode(outputCaseId, outputPlanItemId),
+            null,
+            "{\"approved\": true}",
+            null,
+            null,
+            "test-tenant",
+            null,
+            null,
+            null,
+            null);
+
+    applier.apply(outputCaseId, outputPlanItemId, WorkItemStatus.COMPLETED, ref, null);
+
+    assertThat(outputItem.getStatus()).isEqualTo(TaskStatus.COMPLETED);
+
+    CaseInstance updated = caseInstanceRepository.findByUuid(outputCaseId, "test-tenant");
+    assertThat(updated.getCaseContext().get("approved"))
+        .as("outputMapping must apply resolution to CaseContext — Refs #1167")
+        .isEqualTo(true);
+
+    registry.evict(outputCaseId);
   }
 }
