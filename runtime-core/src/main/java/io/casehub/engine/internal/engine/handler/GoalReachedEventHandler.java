@@ -88,6 +88,12 @@ public class GoalReachedEventHandler {
 
         eventLogRepository.append(eventLog, caseInstance.tenancyId);
 
+        if (caseInstance.getCaseContext()
+            instanceof io.casehub.api.context.MutableCaseContext mctx) {
+          io.casehub.engine.internal.context.EpisodicLayerUpdater.recordGoalReached(
+              mctx, goal.getName());
+        }
+
         lifecycleEventConsumer.accept(
             CaseLifecycleEvent.of(
                 caseInstance, "ReachGoal", "GoalReached", null, "System", traceId));

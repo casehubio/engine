@@ -81,7 +81,8 @@ public class EventLogReplayRecoveryStrategy implements CaseContextRecoveryStrate
                 CaseHubEventType.CONTEXT_SIGNAL_APPLIED,
                 CaseHubEventType.MILESTONE_ACTIVATED,
                 CaseHubEventType.MILESTONE_COMPLETED,
-                CaseHubEventType.MILESTONE_SLA_VIOLATED));
+                CaseHubEventType.MILESTONE_SLA_VIOLATED,
+                CaseHubEventType.GOAL_REACHED));
 
     CaseContextImpl caseContext = new CaseContextImpl();
     EventLog caseStartedEvent =
@@ -93,6 +94,8 @@ public class EventLogReplayRecoveryStrategy implements CaseContextRecoveryStrate
     if (caseStartedEvent != null) {
       caseContext = CaseContextImpl.fromLayerDocument(caseStartedEvent.getPayload());
     }
+
+    EpisodicLayerUpdater.initBaseline(caseContext);
 
     for (EventLog eventLog : eventLogs) {
       if (eventLog.getEventType() == CaseHubEventType.CASE_STARTED) {
@@ -147,6 +150,14 @@ public class EventLogReplayRecoveryStrategy implements CaseContextRecoveryStrate
         }
       } else if (eventLog.getEventType() == CaseHubEventType.MILESTONE_SLA_VIOLATED) {
         applyMilestoneSLAViolatedEvent(caseContext, eventLog);
+      } else if (eventLog.getEventType() == CaseHubEventType.GOAL_REACHED) {
+        JsonNode metadata = eventLog.getMetadata();
+        if (metadata != null) {
+          String goalName = metadata.path("name").asText(null);
+          if (goalName != null) {
+            EpisodicLayerUpdater.recordGoalReached(caseContext, goalName);
+          }
+        }
       } else {
         LOG.warnf("Unexpected event type in rebuildStateContext: %s", eventLog.getEventType());
       }
