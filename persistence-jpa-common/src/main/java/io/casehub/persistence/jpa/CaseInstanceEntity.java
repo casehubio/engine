@@ -100,4 +100,8 @@ public class CaseInstanceEntity {
   @Column(name = "pending_action_gate", columnDefinition = "jsonb")
   @JdbcTypeCode(SqlTypes.JSON)
   public String pendingActionGate;
+
+  @Column(name = "context_snapshot", columnDefinition = "jsonb")
+  @JdbcTypeCode(SqlTypes.JSON)
+  public com.fasterxml.jackson.databind.JsonNode contextSnapshot;
 }
