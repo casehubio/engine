@@ -15,18 +15,20 @@
  */
 package io.casehub.engine.internal.improvement;
 
-import static org.assertj.core.api.Assertions.assertThat;
-
 import io.casehub.api.model.stigmergy.CapabilityAreaAssessment;
 import io.casehub.api.model.stigmergy.ComplianceLevel;
 import io.casehub.api.model.stigmergy.HealthPolicy;
 import io.casehub.api.model.stigmergy.ImprovementConfig;
 import io.casehub.api.model.stigmergy.RollbackPolicy;
 import io.casehub.api.spi.improvement.CapabilityArea;
-import java.time.Instant;
-import java.util.UUID;
+import io.casehub.engine.common.spi.event.ComplianceLevelChangedEvent;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+
+import java.time.Instant;
+import java.util.UUID;
+
+import static org.assertj.core.api.Assertions.assertThat;
 
 class ReadinessValidatorTest {
 
@@ -34,13 +36,16 @@ class ReadinessValidatorTest {
   private ReadinessValidator validator;
   private UUID caseId;
   private static final String TENANCY = "test-tenant";
+  private              TestEvent<ComplianceLevelChangedEvent> complianceLevelChangedEvents;
+
 
   @BeforeEach
   void setUp() {
     registry = new CapabilityAreaRegistry();
     var checklistProvider = new DefaultComplianceChecklistProvider();
-    validator = new ReadinessValidator(registry, checklistProvider);
-    caseId = UUID.randomUUID();
+    complianceLevelChangedEvents = new TestEvent<>();
+    validator                    = new ReadinessValidator(registry, checklistProvider, complianceLevelChangedEvents);
+    caseId                       = UUID.randomUUID();
   }
 
   @Test
@@ -137,6 +142,42 @@ class ReadinessValidatorTest {
     var report = validator.validate(caseId, TENANCY, ComplianceLevel.L1_OBSERVE, config);
     assertThat(report.projectLevel()).isEqualTo(ComplianceLevel.L1_OBSERVE);
   }
+
+  @Test
+  void firesEventWhenComplianceLevelChanges() {
+    registry.register(areaWithData("stability", 0.8));
+    var config = new ImprovementConfig(null, null, null, null, null);
+    validator.validate(caseId, TENANCY, ComplianceLevel.L1_OBSERVE, config);
+    assertThat(complianceLevelChangedEvents.fired()).isEmpty();
+
+    var configL2 =
+            new ImprovementConfig(null, 2, null, null, null, true, null, null, null, null, null);
+    validator.validate(caseId, TENANCY, ComplianceLevel.L2_PROPOSE, configL2);
+
+    assertThat(complianceLevelChangedEvents.fired()).hasSize(1);
+    var event = complianceLevelChangedEvents.fired().get(0);
+    assertThat(event.caseId()).isEqualTo(caseId);
+    assertThat(event.oldLevel()).isEqualTo(ComplianceLevel.L1_OBSERVE);
+    assertThat(event.newLevel()).isEqualTo(ComplianceLevel.L2_PROPOSE);
+  }
+
+  @Test
+  void noEventOnFirstValidation() {
+    registry.register(areaWithData("stability", 0.8));
+    var config = new ImprovementConfig(null, null, null, null, null);
+    validator.validate(caseId, TENANCY, ComplianceLevel.L1_OBSERVE, config);
+    assertThat(complianceLevelChangedEvents.fired()).isEmpty();
+  }
+
+  @Test
+  void noEventWhenLevelUnchanged() {
+    registry.register(areaWithData("stability", 0.8));
+    var config = new ImprovementConfig(null, null, null, null, null);
+    validator.validate(caseId, TENANCY, ComplianceLevel.L1_OBSERVE, config);
+    validator.validate(caseId, TENANCY, ComplianceLevel.L1_OBSERVE, config);
+    assertThat(complianceLevelChangedEvents.fired()).isEmpty();
+  }
+
 
   private CapabilityArea areaWithData(String id, double health) {
     return new CapabilityArea() {
