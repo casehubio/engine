@@ -38,7 +38,7 @@ import java.util.List;
 import java.util.Objects;
 
 @ApplicationScoped
-@McpDomain("engine/definitions")
+@McpDomain(value = "engine/definitions", app = "engine")
 public class DefaultEngineCaseDefinitionApi {
 
   @Inject CaseMetaModelRepository metaModelRepository;

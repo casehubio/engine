@@ -22,7 +22,7 @@ import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
 import java.util.Map;
 
-@McpDomain("engine")
+@McpDomain(value = "engine", app = "engine")
 @ApplicationScoped
 public class EngineModelEnricher implements ModelEnricher {
 

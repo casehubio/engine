@@ -38,7 +38,7 @@ import java.util.Map;
 import java.util.UUID;
 
 @ApplicationScoped
-@McpDomain("engine/events")
+@McpDomain(value = "engine/events", app = "engine")
 public class DefaultEngineEventLogApi {
 
   @Inject CaseService caseService;
