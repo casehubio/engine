@@ -19,12 +19,13 @@ import io.casehub.engine.common.internal.model.CaseInstance;
 import java.util.UUID;
 
 /**
- * Blocking cross-tenant case instance access for startup recovery services only.
- *
- * @see CrossTenantCaseInstanceRepository
+ * Blocking cross-tenant case instance access for system-level services (recovery, scheduling,
+ * bridges) that operate without tenant principal.
  */
 public interface CrossTenantCaseInstanceRepository {
 
-  /** Load a case instance without tenant filter. caseId is UUID (globally unique). */
-  CaseInstance findByUuid(UUID caseId);
+    /**
+     * Load a case instance without tenant filter. caseId is UUID (globally unique).
+     */
+    CaseInstance findByUuid(UUID caseId);
 }
