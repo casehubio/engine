@@ -29,6 +29,7 @@ import io.casehub.platform.api.mcp.McpDomain;
 import io.casehub.platform.api.mcp.PaginatedResponse;
 import io.casehub.platform.api.mcp.PathParam;
 import io.casehub.platform.api.mcp.PlatformQuery;
+import io.casehub.platform.api.mcp.QueryParam;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
 import java.util.Collections;
@@ -52,8 +53,8 @@ public class DefaultEngineEventLogApi {
       String tenancyId,
       Integer offset,
       Integer limit,
-      List<String> eventTypes,
-      List<String> streamTypes) {
+      @QueryParam("eventTypes") List<String> eventTypes,
+      @QueryParam("streamTypes") List<String> streamTypes) {
     caseService.requireCaseAccess(caseId, AclAction.READ);
     String resolvedTenancyId = tenancyId != null ? tenancyId : currentPrincipal.tenancyId();
     int page = offset != null ? offset : 0;
