@@ -13,9 +13,10 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.casehub.engine.plan.execution;
+package io.casehub.engine.common.internal.store;
 
 import io.casehub.engine.common.spi.recovery.PlanVersionStore;
+import io.casehub.engine.plan.execution.PlanVersion;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;

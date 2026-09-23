@@ -16,13 +16,12 @@
 package io.casehub.engine.rest;
 
 import io.casehub.api.model.CaseDefinition;
-import io.casehub.engine.common.internal.model.CaseInstance;
 import io.casehub.engine.common.spi.CaseDefinitionRegistry;
 import io.casehub.engine.common.spi.CaseInstanceRepository;
 import io.casehub.engine.common.spi.event.CaseContextUpdatedEvent;
 import io.casehub.engine.common.spi.event.PlanItemStateChangedEvent;
+import io.casehub.engine.common.spi.recovery.ExecutionSnapshotStore;
 import io.casehub.engine.plan.execution.CasePlanModelSnapshotProvider;
-import io.casehub.engine.plan.execution.ExecutionSnapshotStore;
 import io.casehub.engine.rest.dto.ExecutionStateSnapshot;
 import io.smallrye.mutiny.Multi;
 import io.smallrye.mutiny.operators.multi.processors.BroadcastProcessor;

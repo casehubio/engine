@@ -17,8 +17,8 @@ package io.casehub.persistence.jpa;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import io.casehub.engine.common.spi.recovery.ExecutionSnapshotStore;
 import io.casehub.engine.plan.execution.DagResultSnapshot;
-import io.casehub.engine.plan.execution.ExecutionSnapshotStore;
 import io.casehub.engine.plan.snapshot.DagPlanSnapshot;
 import io.casehub.engine.plan.snapshot.DecompositionSnapshot;
 import io.casehub.engine.plan.snapshot.LeafTaskSnapshot;

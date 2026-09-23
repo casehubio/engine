@@ -15,6 +15,7 @@
  */
 package io.casehub.engine.plan.execution;
 
+import io.casehub.engine.common.spi.recovery.ExecutionSnapshotStore;
 import io.casehub.engine.plan.DagEventListener;
 import io.casehub.engine.plan.DagPlan;
 import io.casehub.engine.plan.DagResult;

@@ -13,8 +13,10 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.casehub.engine.plan.execution;
+package io.casehub.engine.common.internal.store;
 
+import io.casehub.engine.common.spi.recovery.ExecutionSnapshotStore;
+import io.casehub.engine.plan.execution.DagResultSnapshot;
 import io.casehub.engine.plan.snapshot.DagPlanSnapshot;
 import io.casehub.engine.plan.snapshot.DecompositionSnapshot;
 import java.time.Duration;
