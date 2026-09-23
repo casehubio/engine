@@ -13,10 +13,6 @@
     <name>CaseHub Engine :: Work Adapter</name>
     <description>Bridge between casehub-work WorkItemLifecycleEvent and CaseHub engine planning PlanItem lifecycle</description>
 
-    <properties>
-        <maven.test.skip>true</maven.test.skip>
-    </properties>
-
     <dependencies>
         <dependency>
             <groupId>io.casehub</groupId>
