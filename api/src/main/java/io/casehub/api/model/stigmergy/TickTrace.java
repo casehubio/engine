@@ -45,19 +45,9 @@ public record TickTrace(
 
     record NoProposal(String reason) implements TickOutcome {}
 
-    record ProposalGenerated(int goalCount, SignalFilteringSummary filtering)
+    record ProposalGenerated(int goalCount, @Nullable ProposalFilteringSummary filtering)
         implements TickOutcome {}
 
     record Heartbeat() implements TickOutcome {}
   }
-
-  public record SignalFilteringSummary(
-      int consensusSignals,
-      int afterNamespaceFilter,
-      int afterCategoryFilter,
-      int afterSuppressionFilter,
-      int afterAntiOscillationFilter,
-      int afterBudgetFilter,
-      int afterConflictFilter,
-      int proposed) {}
 }

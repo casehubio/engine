@@ -18,7 +18,6 @@ package io.casehub.engine.internal.improvement;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.casehub.api.model.stigmergy.ConductorInboxEntry;
-import io.casehub.api.model.stigmergy.ImprovementStage;
 import io.casehub.engine.common.spi.ConductorInboxRepository;
 import java.util.UUID;
 import org.junit.jupiter.api.Test;
@@ -43,7 +42,7 @@ class InMemoryConductorInboxRepositoryContractTest extends ConductorInboxReposit
     var caseId = UUID.randomUUID();
     store.save(
         makeEntry(
-            caseId, "e1", ImprovementStage.RESEARCH_SCOPE, ConductorInboxEntry.Status.PENDING),
+            caseId, "e1", CodeEvolutionStages.RESEARCH_SCOPE, ConductorInboxEntry.Status.PENDING),
         tenancyId());
     assertThat(store.findAll(caseId, tenancyId())).isNotEmpty();
 

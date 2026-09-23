@@ -21,7 +21,6 @@ import io.casehub.api.model.stigmergy.CategoryEscalationRules;
 import io.casehub.api.model.stigmergy.EscalationContext;
 import io.casehub.api.model.stigmergy.EscalationPolicy;
 import io.casehub.api.model.stigmergy.EscalationTrigger.EscalationLayer;
-import io.casehub.api.model.stigmergy.ImprovementStage;
 import io.casehub.api.model.stigmergy.WatchPattern;
 import java.time.Instant;
 import java.util.List;
@@ -49,7 +48,7 @@ class DefaultEscalationProviderTest {
 
     var result =
         provider.evaluate(
-            caseId, "t1", ImprovementStage.RESEARCH_SCOPE, context, policy, List.of());
+            caseId, "t1", CodeEvolutionStages.RESEARCH_SCOPE, context, policy, List.of());
 
     assertThat(result.escalate()).isTrue();
     assertThat(result.triggers()).anyMatch(t -> t.layer() == EscalationLayer.CATEGORY_RULE);
@@ -63,7 +62,7 @@ class DefaultEscalationProviderTest {
 
     var result =
         provider.evaluate(
-            caseId, "t1", ImprovementStage.RESEARCH_SCOPE, context, policy, List.of());
+            caseId, "t1", CodeEvolutionStages.RESEARCH_SCOPE, context, policy, List.of());
 
     assertThat(result.triggers()).noneMatch(t -> t.layer() == EscalationLayer.CATEGORY_RULE);
   }
@@ -76,7 +75,7 @@ class DefaultEscalationProviderTest {
 
     var result =
         provider.evaluate(
-            caseId, "t1", ImprovementStage.RESEARCH_SCOPE, context, policy, List.of(pattern));
+            caseId, "t1", CodeEvolutionStages.RESEARCH_SCOPE, context, policy, List.of(pattern));
 
     assertThat(result.escalate()).isTrue();
     assertThat(result.triggers()).anyMatch(t -> t.layer() == EscalationLayer.WATCH_PATTERN);
@@ -91,7 +90,7 @@ class DefaultEscalationProviderTest {
 
     var result =
         provider.evaluate(
-            caseId, "t1", ImprovementStage.RESEARCH_SCOPE, context, policy, List.of(pattern));
+            caseId, "t1", CodeEvolutionStages.RESEARCH_SCOPE, context, policy, List.of(pattern));
 
     assertThat(result.escalate()).isTrue();
     assertThat(result.triggers()).anyMatch(t -> t.layer() == EscalationLayer.WATCH_PATTERN);
@@ -105,7 +104,7 @@ class DefaultEscalationProviderTest {
 
     var result =
         provider.evaluate(
-            caseId, "t1", ImprovementStage.RESEARCH_SCOPE, context, policy, List.of(pattern));
+            caseId, "t1", CodeEvolutionStages.RESEARCH_SCOPE, context, policy, List.of(pattern));
 
     assertThat(result.escalate()).isTrue();
   }
@@ -118,7 +117,7 @@ class DefaultEscalationProviderTest {
 
     var result =
         provider.evaluate(
-            caseId, "t1", ImprovementStage.RESEARCH_SCOPE, context, policy, List.of(pattern));
+            caseId, "t1", CodeEvolutionStages.RESEARCH_SCOPE, context, policy, List.of(pattern));
 
     assertThat(result.escalate()).isTrue();
   }
@@ -130,7 +129,7 @@ class DefaultEscalationProviderTest {
 
     var result =
         provider.evaluate(
-            caseId, "t1", ImprovementStage.RESEARCH_SCOPE, context, policy, List.of());
+            caseId, "t1", CodeEvolutionStages.RESEARCH_SCOPE, context, policy, List.of());
 
     assertThat(result.escalate()).isFalse();
     assertThat(result.triggers()).isEmpty();
@@ -143,7 +142,7 @@ class DefaultEscalationProviderTest {
 
     var result =
         provider.evaluate(
-            caseId, "t1", ImprovementStage.RESEARCH_SCOPE, context, policy, List.of());
+            caseId, "t1", CodeEvolutionStages.RESEARCH_SCOPE, context, policy, List.of());
 
     assertThat(result.confidence()).isBetween(0.0, 1.0);
   }
@@ -157,7 +156,7 @@ class DefaultEscalationProviderTest {
 
     var result =
         provider.evaluate(
-            caseId, "t1", ImprovementStage.RESEARCH_SCOPE, context, policy, List.of(pattern));
+            caseId, "t1", CodeEvolutionStages.RESEARCH_SCOPE, context, policy, List.of(pattern));
 
     assertThat(result.escalate()).isTrue();
     assertThat(result.triggers()).hasSizeGreaterThanOrEqualTo(2);

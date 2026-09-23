@@ -20,7 +20,6 @@ import static org.assertj.core.api.Assertions.assertThat;
 import io.casehub.api.model.stigmergy.ConductorDecision;
 import io.casehub.api.model.stigmergy.ConductorInboxEntry;
 import io.casehub.api.model.stigmergy.ConductorInboxEntry.Status;
-import io.casehub.api.model.stigmergy.ImprovementStage;
 import io.casehub.api.model.stigmergy.WatchPattern;
 import java.time.Instant;
 import java.util.List;
@@ -44,7 +43,7 @@ class ConductorInboxManagerTest {
 
   @Test
   void enqueueAndRetrievePending() {
-    var entry = makeEntry(caseId, "e1", ImprovementStage.RESEARCH_SCOPE);
+    var entry = makeEntry(caseId, "e1", CodeEvolutionStages.RESEARCH_SCOPE);
     manager.enqueue(caseId, entry, TENANT);
 
     var pending = manager.pending(caseId, TENANT);
@@ -55,7 +54,7 @@ class ConductorInboxManagerTest {
 
   @Test
   void resolveGateApproved() {
-    manager.enqueue(caseId, makeEntry(caseId, "e1", ImprovementStage.RESEARCH_SCOPE), TENANT);
+    manager.enqueue(caseId, makeEntry(caseId, "e1", CodeEvolutionStages.RESEARCH_SCOPE), TENANT);
     var decision = new ConductorDecision(Status.APPROVED, null, "looks good", null);
 
     manager.resolve(caseId, "e1", decision, TENANT);
@@ -66,7 +65,8 @@ class ConductorInboxManagerTest {
 
   @Test
   void resolveGateRejected() {
-    manager.enqueue(caseId, makeEntry(caseId, "e1", ImprovementStage.HYPOTHESIS_APPROVAL), TENANT);
+    manager.enqueue(
+        caseId, makeEntry(caseId, "e1", CodeEvolutionStages.HYPOTHESIS_APPROVAL), TENANT);
     var decision = new ConductorDecision(Status.REJECTED, null, "not viable", null);
 
     manager.resolve(caseId, "e1", decision, TENANT);
@@ -76,7 +76,8 @@ class ConductorInboxManagerTest {
 
   @Test
   void resolveGateRedirected() {
-    manager.enqueue(caseId, makeEntry(caseId, "e1", ImprovementStage.IMPLEMENTATION_PLAN), TENANT);
+    manager.enqueue(
+        caseId, makeEntry(caseId, "e1", CodeEvolutionStages.IMPLEMENTATION_PLAN), TENANT);
     var decision = new ConductorDecision(Status.REDIRECTED, null, "try different approach", null);
 
     manager.resolve(caseId, "e1", decision, TENANT);
@@ -86,8 +87,9 @@ class ConductorInboxManagerTest {
 
   @Test
   void pendingCountMatchesPendingEntries() {
-    manager.enqueue(caseId, makeEntry(caseId, "e1", ImprovementStage.RESEARCH_SCOPE), TENANT);
-    manager.enqueue(caseId, makeEntry(caseId, "e2", ImprovementStage.HYPOTHESIS_APPROVAL), TENANT);
+    manager.enqueue(caseId, makeEntry(caseId, "e1", CodeEvolutionStages.RESEARCH_SCOPE), TENANT);
+    manager.enqueue(
+        caseId, makeEntry(caseId, "e2", CodeEvolutionStages.HYPOTHESIS_APPROVAL), TENANT);
 
     assertThat(manager.pendingCount(caseId, TENANT)).isEqualTo(2);
 
@@ -99,8 +101,8 @@ class ConductorInboxManagerTest {
   @Test
   void perCaseIsolation() {
     var case2 = UUID.randomUUID();
-    manager.enqueue(caseId, makeEntry(caseId, "e1", ImprovementStage.RESEARCH_SCOPE), TENANT);
-    manager.enqueue(case2, makeEntry(case2, "e2", ImprovementStage.RESEARCH_SCOPE), TENANT);
+    manager.enqueue(caseId, makeEntry(caseId, "e1", CodeEvolutionStages.RESEARCH_SCOPE), TENANT);
+    manager.enqueue(case2, makeEntry(case2, "e2", CodeEvolutionStages.RESEARCH_SCOPE), TENANT);
 
     assertThat(manager.pending(caseId, TENANT)).hasSize(1);
     assertThat(manager.pending(case2, TENANT)).hasSize(1);
@@ -118,7 +120,7 @@ class ConductorInboxManagerTest {
 
   @Test
   void resolvedEntryRetainsDecision() {
-    manager.enqueue(caseId, makeEntry(caseId, "e1", ImprovementStage.PR_REVIEW), TENANT);
+    manager.enqueue(caseId, makeEntry(caseId, "e1", CodeEvolutionStages.PR_REVIEW), TENANT);
     var decision = new ConductorDecision(Status.APPROVED, null, "LGTM", "nice work");
 
     manager.resolve(caseId, "e1", decision, TENANT);
@@ -171,7 +173,7 @@ class ConductorInboxManagerTest {
     assertThat(manager.pendingCount(UUID.randomUUID(), TENANT)).isZero();
   }
 
-  private ConductorInboxEntry makeEntry(UUID caseId, String id, ImprovementStage stage) {
+  private ConductorInboxEntry makeEntry(UUID caseId, String id, String stage) {
     return new ConductorInboxEntry(
         caseId,
         id,

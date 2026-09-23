@@ -127,12 +127,12 @@ public class ImprovementBudgetEnforcer implements Resettable {
       }
     }
 
-    if (request.estimatedSize() > budget.effectiveMaxPRSize()) {
+    if (request.estimatedSize() > budget.effectiveMaxChangeSize()) {
       return new BudgetCheck.Denied(
           "Estimated change size "
               + request.estimatedSize()
               + " exceeds limit "
-              + budget.effectiveMaxPRSize());
+              + budget.effectiveMaxChangeSize());
     }
 
     return new BudgetCheck.Allowed();

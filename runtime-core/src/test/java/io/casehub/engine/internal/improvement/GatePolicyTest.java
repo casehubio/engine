@@ -16,24 +16,24 @@
 package io.casehub.engine.internal.improvement;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import io.casehub.api.model.stigmergy.GatePolicy;
 import io.casehub.api.model.stigmergy.GatePolicy.GateMode;
-import io.casehub.api.model.stigmergy.ImprovementStage;
 import java.util.Map;
 import org.junit.jupiter.api.Test;
 
 class GatePolicyTest {
 
   @Test
-  void defaultModePrReviewIsGatedOthersAuto() {
+  void defaultModeIsAutoForAllStages() {
     var policy = new GatePolicy(null, null);
 
-    assertThat(policy.effectiveMode(ImprovementStage.PR_REVIEW)).isEqualTo(GateMode.GATED);
-    assertThat(policy.effectiveMode(ImprovementStage.RESEARCH_SCOPE)).isEqualTo(GateMode.AUTO);
-    assertThat(policy.effectiveMode(ImprovementStage.HYPOTHESIS_APPROVAL)).isEqualTo(GateMode.AUTO);
-    assertThat(policy.effectiveMode(ImprovementStage.IMPLEMENTATION_PLAN)).isEqualTo(GateMode.AUTO);
+    assertThat(policy.effectiveMode(CodeEvolutionStages.PR_REVIEW)).isEqualTo(GateMode.AUTO);
+    assertThat(policy.effectiveMode(CodeEvolutionStages.RESEARCH_SCOPE)).isEqualTo(GateMode.AUTO);
+    assertThat(policy.effectiveMode(CodeEvolutionStages.HYPOTHESIS_APPROVAL))
+        .isEqualTo(GateMode.AUTO);
+    assertThat(policy.effectiveMode(CodeEvolutionStages.IMPLEMENTATION_PLAN))
+        .isEqualTo(GateMode.AUTO);
   }
 
   @Test
@@ -41,22 +41,22 @@ class GatePolicyTest {
     var policy =
         new GatePolicy(
             Map.of(
-                ImprovementStage.RESEARCH_SCOPE,
+                CodeEvolutionStages.RESEARCH_SCOPE,
                 GateMode.GATED,
-                ImprovementStage.PR_REVIEW,
-                GateMode.AUTO),
+                CodeEvolutionStages.PR_REVIEW,
+                GateMode.GATED),
             null);
 
-    assertThat(policy.effectiveMode(ImprovementStage.RESEARCH_SCOPE)).isEqualTo(GateMode.GATED);
-    assertThat(policy.effectiveMode(ImprovementStage.PR_REVIEW)).isEqualTo(GateMode.AUTO);
-    assertThat(policy.effectiveMode(ImprovementStage.HYPOTHESIS_APPROVAL)).isEqualTo(GateMode.AUTO);
+    assertThat(policy.effectiveMode(CodeEvolutionStages.RESEARCH_SCOPE)).isEqualTo(GateMode.GATED);
+    assertThat(policy.effectiveMode(CodeEvolutionStages.PR_REVIEW)).isEqualTo(GateMode.GATED);
+    assertThat(policy.effectiveMode(CodeEvolutionStages.HYPOTHESIS_APPROVAL))
+        .isEqualTo(GateMode.AUTO);
   }
 
   @Test
-  void rejectsNonCheckpointStage() {
-    assertThatThrownBy(() -> new GatePolicy(Map.of(ImprovementStage.SEARCH, GateMode.GATED), null))
-        .isInstanceOf(IllegalArgumentException.class)
-        .hasMessageContaining("not a gate checkpoint");
+  void anyStringKeyAccepted() {
+    var policy = new GatePolicy(Map.of(CodeEvolutionStages.SEARCH, GateMode.GATED), null);
+    assertThat(policy.effectiveMode(CodeEvolutionStages.SEARCH)).isEqualTo(GateMode.GATED);
   }
 
   @Test
@@ -74,9 +74,9 @@ class GatePolicyTest {
   @Test
   void notifyModeAccepted() {
     var policy =
-        new GatePolicy(Map.of(ImprovementStage.HYPOTHESIS_APPROVAL, GateMode.NOTIFY), null);
+        new GatePolicy(Map.of(CodeEvolutionStages.HYPOTHESIS_APPROVAL, GateMode.NOTIFY), null);
 
-    assertThat(policy.effectiveMode(ImprovementStage.HYPOTHESIS_APPROVAL))
+    assertThat(policy.effectiveMode(CodeEvolutionStages.HYPOTHESIS_APPROVAL))
         .isEqualTo(GateMode.NOTIFY);
   }
 }

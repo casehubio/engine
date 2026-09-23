@@ -25,7 +25,7 @@ public record ImprovementBudget(
     @Nullable List<String> allowedRepos,
     @Nullable List<String> deniedPaths,
     @Nullable Boolean requireReview,
-    @Nullable Integer maxPRSize) {
+    @Nullable Integer maxChangeSize) {
 
   public int effectiveMaxConcurrent() {
     return maxConcurrent != null ? maxConcurrent : 3;
@@ -51,7 +51,7 @@ public record ImprovementBudget(
     return requireReview != null ? requireReview : true;
   }
 
-  public int effectiveMaxPRSize() {
-    return maxPRSize != null ? maxPRSize : 500;
+  public int effectiveMaxChangeSize() {
+    return maxChangeSize != null ? maxChangeSize : 500;
   }
 }
