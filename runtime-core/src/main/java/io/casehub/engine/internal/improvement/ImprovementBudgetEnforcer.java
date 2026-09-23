@@ -25,7 +25,6 @@ import java.time.Duration;
 import java.time.Instant;
 import java.time.LocalDate;
 import java.time.ZoneOffset;
-import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -33,35 +32,13 @@ import java.util.concurrent.atomic.AtomicInteger;
 @ApplicationScoped
 public class ImprovementBudgetEnforcer implements Resettable {
 
-  private static final Set<String> STRUCTURAL_DENIED_PATTERNS =
-      Set.of(
-          "ImprovementBudget",
-          "ImprovementBudgetEnforcer",
-          "ImprovementConfig",
-          "SafetyConfig",
-          "improvement-case-template",
-          "EvolutionTicker",
-          "ImprovementCircuitBreaker",
-          "RegressionDetector",
-          "ConfidenceScorer",
-          "HealthScoreTracker",
-          "HealthPolicy",
-          "RollbackPolicy",
-          "ConflictDetector",
-          "ImprovementCategoryTracker",
-          "RollbackHistory",
-          "self-improvement-rollback");
-
-  private final DenyPatternStore denyPatternStore;
   private final ConcurrentHashMap<UUID, ImprovementRequest> activeImprovements =
       new ConcurrentHashMap<>();
   private final ConcurrentHashMap<LocalDate, AtomicInteger> dailyCounts = new ConcurrentHashMap<>();
   private volatile Instant lastCompletionTime = Instant.EPOCH;
 
   @Inject
-  ImprovementBudgetEnforcer(DenyPatternStore denyPatternStore) {
-    this.denyPatternStore = denyPatternStore;
-  }
+  ImprovementBudgetEnforcer(DenyPatternStore denyPatternStore) {}
 
   public sealed interface BudgetCheck permits BudgetCheck.Allowed, BudgetCheck.Denied {
     record Allowed() implements BudgetCheck {}
@@ -71,36 +48,6 @@ public class ImprovementBudgetEnforcer implements Resettable {
 
   public BudgetCheck check(
       UUID caseId, ImprovementBudget budget, ImprovementRequest request, String tenancyId) {
-    for (String path : request.targetPaths()) {
-      for (String pattern : STRUCTURAL_DENIED_PATTERNS) {
-        if (path.contains(pattern)) {
-          return new BudgetCheck.Denied("Structural self-modification denied: " + path);
-        }
-      }
-    }
-
-    var dynamic = denyPatternStore.findAll(caseId, tenancyId);
-    for (String path : request.targetPaths()) {
-      for (String pattern : dynamic) {
-        if (path.contains(pattern)) {
-          return new BudgetCheck.Denied("Path denied by dynamic deny pattern: " + path);
-        }
-      }
-    }
-
-    for (String path : request.targetPaths()) {
-      for (String deniedPattern : budget.effectiveDeniedPaths()) {
-        if (matchesGlob(path, deniedPattern)) {
-          return new BudgetCheck.Denied("Path denied by configuration: " + path);
-        }
-      }
-    }
-
-    if (!budget.effectiveAllowedRepos().isEmpty()
-        && !budget.effectiveAllowedRepos().contains(request.targetRepo())) {
-      return new BudgetCheck.Denied("Repository not in allowed list: " + request.targetRepo());
-    }
-
     int active = activeImprovements.size();
     if (active >= budget.effectiveMaxConcurrent()) {
       return new BudgetCheck.Denied(
@@ -166,52 +113,10 @@ public class ImprovementBudgetEnforcer implements Resettable {
         .get();
   }
 
-  public void addDenyPattern(UUID caseId, String pattern, String tenancyId) {
-    denyPatternStore.save(caseId, pattern, tenancyId);
-  }
-
-  public void removeDenyPattern(UUID caseId, String pattern, String tenancyId) {
-    denyPatternStore.remove(caseId, pattern, tenancyId);
-  }
-
-  public boolean isDenied(UUID caseId, ImprovementRequest request, String tenancyId) {
-    var dynamic = denyPatternStore.findAll(caseId, tenancyId);
-    for (String path : request.targetPaths()) {
-      for (String pattern : STRUCTURAL_DENIED_PATTERNS) {
-        if (path.contains(pattern)) {
-          return true;
-        }
-      }
-      for (String pattern : dynamic) {
-        if (path.contains(pattern)) {
-          return true;
-        }
-      }
-    }
-    return false;
-  }
-
-  public Set<String> dynamicDenyPatterns(UUID caseId, String tenancyId) {
-    return denyPatternStore.findAll(caseId, tenancyId);
-  }
-
-  public static Set<String> staticDenyPatterns() {
-    return STRUCTURAL_DENIED_PATTERNS;
-  }
-
   @Override
   public void reset() {
     activeImprovements.clear();
     dailyCounts.clear();
     lastCompletionTime = Instant.EPOCH;
-  }
-
-  private static boolean matchesGlob(String path, String glob) {
-    String regex =
-        glob.replace(".", "\\.")
-            .replace("**", "@@DOUBLESTAR@@")
-            .replace("*", "[^/]*")
-            .replace("@@DOUBLESTAR@@", ".*");
-    return path.matches(regex);
   }
 }

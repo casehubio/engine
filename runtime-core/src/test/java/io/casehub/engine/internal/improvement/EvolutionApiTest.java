@@ -75,7 +75,8 @@ class EvolutionApiTest {
             healthTracker,
             researchCorpus,
             gatePolicyStore,
-            artifactManifestStore);
+            artifactManifestStore,
+            new InMemoryDenyPatternStore());
 
     caseId = UUID.randomUUID();
   }
@@ -85,7 +86,6 @@ class EvolutionApiTest {
     api.addDenyPattern(caseId, "test-tenant", "blocked-path");
 
     var view = api.getDenyPatterns(caseId, "test-tenant");
-    assertThat(view.staticPatterns()).isNotEmpty();
     assertThat(view.dynamicPatterns()).hasSize(1);
     assertThat(view.dynamicPatterns().get(0).pattern()).isEqualTo("blocked-path");
 

@@ -44,7 +44,6 @@ class ContinuousEvolutionIntegrationTest {
   private ImprovementBudgetEnforcer budgetEnforcer;
   private ImprovementCategoryTracker categoryTracker;
   private RollbackHistory rollbackHistory;
-  private ConflictDetector conflictDetector;
   private ImprovementGoalFormationStrategy goalFormation;
   private CapabilityAreaRegistry areaRegistry;
   private HealthScoreTracker healthTracker;
