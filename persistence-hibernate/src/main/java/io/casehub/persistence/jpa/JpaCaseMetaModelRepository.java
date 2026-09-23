@@ -39,23 +39,26 @@ public class JpaCaseMetaModelRepository implements CaseMetaModelRepository {
     this.tcm = tcm;
   }
 
-    @Override
-    @Transactional
-    public java.util.Optional<CaseMetaModel> findByKey(String namespace, String name, String version, String tenancyId) {
-        tcm.setTenantContext(tenancyId);
-        List<CaseMetaModelEntity> results =
-                em.createQuery(
-                          "SELECT m FROM CaseMetaModelEntity m"
-                          + " WHERE m.namespace = :ns AND m.name = :name AND m.version = :ver"
-                          + " AND m.tenancyId = :tid",
-                          CaseMetaModelEntity.class)
-                  .setParameter("ns", namespace)
-                  .setParameter("name", name)
-                  .setParameter("ver", version)
-                  .setParameter("tid", tenancyId)
-                  .getResultList();
-        return results.isEmpty() ? java.util.Optional.empty() : java.util.Optional.of(fromEntity(results.get(0)));
-    }
+  @Override
+  @Transactional
+  public java.util.Optional<CaseMetaModel> findByKey(
+      String namespace, String name, String version, String tenancyId) {
+    tcm.setTenantContext(tenancyId);
+    List<CaseMetaModelEntity> results =
+        em.createQuery(
+                "SELECT m FROM CaseMetaModelEntity m"
+                    + " WHERE m.namespace = :ns AND m.name = :name AND m.version = :ver"
+                    + " AND m.tenancyId = :tid",
+                CaseMetaModelEntity.class)
+            .setParameter("ns", namespace)
+            .setParameter("name", name)
+            .setParameter("ver", version)
+            .setParameter("tid", tenancyId)
+            .getResultList();
+    return results.isEmpty()
+        ? java.util.Optional.empty()
+        : java.util.Optional.of(fromEntity(results.get(0)));
+  }
 
   @Override
   @Transactional

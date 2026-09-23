@@ -17,6 +17,7 @@ package io.casehub.engine.plan.execution;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import io.casehub.engine.common.internal.store.InMemoryExecutionSnapshotStore;
 import io.casehub.engine.plan.DagPlan;
 import io.casehub.engine.plan.DagResult;
 import io.casehub.engine.plan.NodeState;

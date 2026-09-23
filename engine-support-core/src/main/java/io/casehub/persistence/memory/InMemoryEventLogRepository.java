@@ -293,15 +293,15 @@ public class InMemoryEventLogRepository
     }
   }
 
-    @Override
-    public java.util.Optional<EventLog> findById(Long id) {
-        rwLock.readLock().lock();
-        try {
-            return java.util.Optional.ofNullable(store.get(id));
-        } finally {
-            rwLock.readLock().unlock();
-        }
+  @Override
+  public java.util.Optional<EventLog> findById(Long id) {
+    rwLock.readLock().lock();
+    try {
+      return java.util.Optional.ofNullable(store.get(id));
+    } finally {
+      rwLock.readLock().unlock();
     }
+  }
 
   @Override
   public List<EventLog> findByCaseAndWorkerAndType(

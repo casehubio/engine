@@ -91,7 +91,8 @@ class SignalAutoActivationTest {
     instance.setCaseMetaModel(meta);
 
     when(caseInstanceCache.get(caseId)).thenReturn(null);
-    when(crossTenantCaseInstanceRepository.findByUuid(caseId)).thenReturn(java.util.Optional.of(instance));
+    when(crossTenantCaseInstanceRepository.findByUuid(caseId))
+        .thenReturn(java.util.Optional.of(instance));
     when(caseDefinitionRegistry.getCaseDefinition(meta)).thenReturn(null);
     // reactor.signalTyped is void — no stub needed
 

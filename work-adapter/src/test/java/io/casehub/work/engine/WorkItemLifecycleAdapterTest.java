@@ -368,7 +368,8 @@ class WorkItemLifecycleAdapterTest {
         .atMost(3, TimeUnit.SECONDS)
         .untilAsserted(
             () -> {
-              CaseInstance updated = caseInstanceRepository.findByUuid(caseId, "test-tenant").orElse(null);
+              CaseInstance updated =
+                  caseInstanceRepository.findByUuid(caseId, "test-tenant").orElse(null);
               assertThat(updated.getCaseContext().get("irbOutcome")).isEqualTo("Approved");
             });
   }
@@ -438,7 +439,8 @@ class WorkItemLifecycleAdapterTest {
         .atMost(3, TimeUnit.SECONDS)
         .untilAsserted(
             () -> {
-              CaseInstance updated = caseInstanceRepository.findByUuid(caseId, "test-tenant").orElse(null);
+              CaseInstance updated =
+                  caseInstanceRepository.findByUuid(caseId, "test-tenant").orElse(null);
               Object humanApproval = updated.getCaseContext().get("humanApproval");
               assertThat(humanApproval).isInstanceOf(Map.class);
               @SuppressWarnings("unchecked")

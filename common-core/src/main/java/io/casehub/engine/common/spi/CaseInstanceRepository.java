@@ -39,7 +39,7 @@ public interface CaseInstanceRepository {
   /** Update mutable fields. tenancyId is included in the WHERE clause. */
   CaseInstance update(CaseInstance instance, String tenancyId);
 
-    java.util.Optional<CaseInstance> findByUuid(UUID uuid, String tenancyId);
+  java.util.Optional<CaseInstance> findByUuid(UUID uuid, String tenancyId);
 
   /** Atomically update state and append event log entry within the same tenant. */
   void updateStateAndAppendEvent(CaseInstance instance, EventLog eventLog, String tenancyId);
