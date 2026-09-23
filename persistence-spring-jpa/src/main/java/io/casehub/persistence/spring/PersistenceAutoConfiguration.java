@@ -108,4 +108,10 @@ public class PersistenceAutoConfiguration {
   ExecutionSnapshotStore executionSnapshotStore(EntityManager em, TenantContextManager tcm) {
     return new SpringJpaExecutionSnapshotStore(em, tcm);
   }
+
+  @Bean
+  io.casehub.engine.queue.spi.CaseQueueEntryStore caseQueueEntryStore(
+      EntityManager em, TenantContextManager tcm) {
+    return new SpringJpaCaseQueueEntryStore(em, tcm);
+  }
 }

@@ -28,13 +28,13 @@ import java.util.UUID;
  * methods. {@link #evict(UUID)} is cross-tenant (keyed by globally unique caseId).
  */
 public interface PlanVersionStore {
-    void store(PlanVersion version, String tenancyId);
+  void store(PlanVersion version, String tenancyId);
 
-    List<PlanVersion> getHistory(UUID caseId, String tenancyId);
+  List<PlanVersion> getHistory(UUID caseId, String tenancyId);
 
-    Optional<PlanVersion> getVersion(UUID caseId, int version, String tenancyId);
+  Optional<PlanVersion> getVersion(UUID caseId, int version, String tenancyId);
 
-    Optional<PlanVersion> getLatest(UUID caseId, String tenancyId);
+  Optional<PlanVersion> getLatest(UUID caseId, String tenancyId);
 
-    void evict(UUID caseId);
+  void evict(UUID caseId);
 }
