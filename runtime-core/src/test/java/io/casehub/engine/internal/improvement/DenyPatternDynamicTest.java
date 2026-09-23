@@ -27,74 +27,75 @@ import org.junit.jupiter.api.Test;
 
 class DenyPatternDynamicTest {
 
+  private static final String TENANT = "test-tenant";
   private ImprovementBudgetEnforcer enforcer;
   private UUID caseId;
 
   @BeforeEach
   void setUp() {
-    enforcer = new ImprovementBudgetEnforcer();
+    enforcer = new ImprovementBudgetEnforcer(new InMemoryDenyPatternStore());
     caseId = UUID.randomUUID();
   }
 
   @Test
   void addDynamicPatternBlocksMatchingPath() {
-    enforcer.addDenyPattern(caseId, "auth-service");
+    enforcer.addDenyPattern(caseId, "auth-service", TENANT);
     var request = makeRequest(List.of("src/main/java/auth-service/AuthProvider.java"));
 
-    assertThat(enforcer.isDenied(caseId, request)).isTrue();
+    assertThat(enforcer.isDenied(caseId, request, TENANT)).isTrue();
   }
 
   @Test
   void removeDynamicPatternUnblocksPath() {
-    enforcer.addDenyPattern(caseId, "auth-service");
-    enforcer.removeDenyPattern(caseId, "auth-service");
+    enforcer.addDenyPattern(caseId, "auth-service", TENANT);
+    enforcer.removeDenyPattern(caseId, "auth-service", TENANT);
     var request = makeRequest(List.of("src/main/java/auth-service/AuthProvider.java"));
 
-    assertThat(enforcer.isDenied(caseId, request)).isFalse();
+    assertThat(enforcer.isDenied(caseId, request, TENANT)).isFalse();
   }
 
   @Test
   void staticPatternsCannotBeRemovedDynamically() {
-    enforcer.removeDenyPattern(caseId, "EvolutionTicker");
+    enforcer.removeDenyPattern(caseId, "EvolutionTicker", TENANT);
     var request =
         makeRequest(
             List.of("src/main/java/io/casehub/engine/internal/improvement/EvolutionTicker.java"));
 
-    assertThat(enforcer.isDenied(caseId, request)).isTrue();
+    assertThat(enforcer.isDenied(caseId, request, TENANT)).isTrue();
   }
 
   @Test
   void effectiveDenySetIsStaticUnionDynamic() {
-    enforcer.addDenyPattern(caseId, "custom-deny");
+    enforcer.addDenyPattern(caseId, "custom-deny", TENANT);
 
     var staticRequest =
         makeRequest(List.of("src/main/java/io/casehub/api/model/stigmergy/ImprovementConfig.java"));
-    assertThat(enforcer.isDenied(caseId, staticRequest)).isTrue();
+    assertThat(enforcer.isDenied(caseId, staticRequest, TENANT)).isTrue();
 
     var dynamicRequest = makeRequest(List.of("src/main/java/custom-deny/Foo.java"));
-    assertThat(enforcer.isDenied(caseId, dynamicRequest)).isTrue();
+    assertThat(enforcer.isDenied(caseId, dynamicRequest, TENANT)).isTrue();
 
     var allowedRequest = makeRequest(List.of("src/main/java/other/Bar.java"));
-    assertThat(enforcer.isDenied(caseId, allowedRequest)).isFalse();
+    assertThat(enforcer.isDenied(caseId, allowedRequest, TENANT)).isFalse();
   }
 
   @Test
   void perCaseIsolation() {
     var case2 = UUID.randomUUID();
-    enforcer.addDenyPattern(caseId, "my-pattern");
+    enforcer.addDenyPattern(caseId, "my-pattern", TENANT);
     var request = makeRequest(List.of("src/my-pattern/Foo.java"));
 
-    assertThat(enforcer.isDenied(caseId, request)).isTrue();
-    assertThat(enforcer.isDenied(case2, request)).isFalse();
+    assertThat(enforcer.isDenied(caseId, request, TENANT)).isTrue();
+    assertThat(enforcer.isDenied(case2, request, TENANT)).isFalse();
   }
 
   @Test
   void checkMethodIncludesDynamicDenyPatterns() {
-    enforcer.addDenyPattern(caseId, "dynamic-blocked");
+    enforcer.addDenyPattern(caseId, "dynamic-blocked", TENANT);
     var budget = new ImprovementBudget(null, null, null, null, null, null, null);
     var request = makeRequest(List.of("src/dynamic-blocked/Foo.java"));
 
-    var result = enforcer.check(caseId, budget, request);
+    var result = enforcer.check(caseId, budget, request, TENANT);
 
     assertThat(result).isInstanceOf(ImprovementBudgetEnforcer.BudgetCheck.Denied.class);
     assertThat(((ImprovementBudgetEnforcer.BudgetCheck.Denied) result).reason())
@@ -103,16 +104,16 @@ class DenyPatternDynamicTest {
 
   @Test
   void dynamicDenyPatternsReturnsAddedPatterns() {
-    enforcer.addDenyPattern(caseId, "pattern-a");
-    enforcer.addDenyPattern(caseId, "pattern-b");
+    enforcer.addDenyPattern(caseId, "pattern-a", TENANT);
+    enforcer.addDenyPattern(caseId, "pattern-b", TENANT);
 
-    assertThat(enforcer.dynamicDenyPatterns(caseId))
+    assertThat(enforcer.dynamicDenyPatterns(caseId, TENANT))
         .containsExactlyInAnyOrder("pattern-a", "pattern-b");
   }
 
   @Test
   void dynamicDenyPatternsReturnsEmptyForUnknownCase() {
-    assertThat(enforcer.dynamicDenyPatterns(UUID.randomUUID())).isEmpty();
+    assertThat(enforcer.dynamicDenyPatterns(UUID.randomUUID(), TENANT)).isEmpty();
   }
 
   @Test
@@ -122,26 +123,18 @@ class DenyPatternDynamicTest {
   }
 
   @Test
-  void resetClearsDynamicPatterns() {
-    enforcer.addDenyPattern(caseId, "will-be-cleared");
-    enforcer.reset();
-
-    assertThat(enforcer.dynamicDenyPatterns(caseId)).isEmpty();
-  }
-
-  @Test
   void duplicateAddIsIdempotent() {
-    enforcer.addDenyPattern(caseId, "same-pattern");
-    enforcer.addDenyPattern(caseId, "same-pattern");
+    enforcer.addDenyPattern(caseId, "same-pattern", TENANT);
+    enforcer.addDenyPattern(caseId, "same-pattern", TENANT);
 
-    assertThat(enforcer.dynamicDenyPatterns(caseId)).hasSize(1);
+    assertThat(enforcer.dynamicDenyPatterns(caseId, TENANT)).hasSize(1);
   }
 
   @Test
   void removeNonexistentPatternIsNoOp() {
-    enforcer.removeDenyPattern(caseId, "never-added");
+    enforcer.removeDenyPattern(caseId, "never-added", TENANT);
 
-    assertThat(enforcer.dynamicDenyPatterns(caseId)).isEmpty();
+    assertThat(enforcer.dynamicDenyPatterns(caseId, TENANT)).isEmpty();
   }
 
   private ImprovementRequest makeRequest(List<String> paths) {

@@ -30,21 +30,22 @@ import org.junit.jupiter.api.Test;
 
 class ConductorInboxManagerTest {
 
+  private static final String TENANT = "test-tenant";
   private ConductorInboxManager manager;
   private UUID caseId;
 
   @BeforeEach
   void setUp() {
-    manager = new ConductorInboxManager();
+    manager = new ConductorInboxManager(new InMemoryConductorInboxRepository(), new InMemoryWatchPatternStore());
     caseId = UUID.randomUUID();
   }
 
   @Test
   void enqueueAndRetrievePending() {
-    var entry = makeEntry("e1", ImprovementStage.RESEARCH_SCOPE);
-    manager.enqueue(caseId, entry);
+    var entry = makeEntry(caseId, "e1", ImprovementStage.RESEARCH_SCOPE);
+    manager.enqueue(caseId, entry, TENANT);
 
-    var pending = manager.pending(caseId);
+    var pending = manager.pending(caseId, TENANT);
     assertThat(pending).hasSize(1);
     assertThat(pending.get(0).id()).isEqualTo("e1");
     assertThat(pending.get(0).status()).isEqualTo(Status.PENDING);
@@ -52,76 +53,76 @@ class ConductorInboxManagerTest {
 
   @Test
   void resolveGateApproved() {
-    manager.enqueue(caseId, makeEntry("e1", ImprovementStage.RESEARCH_SCOPE));
+    manager.enqueue(caseId, makeEntry(caseId, "e1", ImprovementStage.RESEARCH_SCOPE), TENANT);
     var decision = new ConductorDecision(Status.APPROVED, null, "looks good", null);
 
-    manager.resolve(caseId, "e1", decision);
+    manager.resolve(caseId, "e1", decision, TENANT);
 
-    assertThat(manager.pending(caseId)).isEmpty();
-    assertThat(manager.pendingCount(caseId)).isZero();
+    assertThat(manager.pending(caseId, TENANT)).isEmpty();
+    assertThat(manager.pendingCount(caseId, TENANT)).isZero();
   }
 
   @Test
   void resolveGateRejected() {
-    manager.enqueue(caseId, makeEntry("e1", ImprovementStage.HYPOTHESIS_APPROVAL));
+    manager.enqueue(caseId, makeEntry(caseId, "e1", ImprovementStage.HYPOTHESIS_APPROVAL), TENANT);
     var decision = new ConductorDecision(Status.REJECTED, null, "not viable", null);
 
-    manager.resolve(caseId, "e1", decision);
+    manager.resolve(caseId, "e1", decision, TENANT);
 
-    assertThat(manager.pending(caseId)).isEmpty();
+    assertThat(manager.pending(caseId, TENANT)).isEmpty();
   }
 
   @Test
   void resolveGateRedirected() {
-    manager.enqueue(caseId, makeEntry("e1", ImprovementStage.IMPLEMENTATION_PLAN));
+    manager.enqueue(caseId, makeEntry(caseId, "e1", ImprovementStage.IMPLEMENTATION_PLAN), TENANT);
     var decision = new ConductorDecision(Status.REDIRECTED, null, "try different approach", null);
 
-    manager.resolve(caseId, "e1", decision);
+    manager.resolve(caseId, "e1", decision, TENANT);
 
-    assertThat(manager.pending(caseId)).isEmpty();
+    assertThat(manager.pending(caseId, TENANT)).isEmpty();
   }
 
   @Test
   void pendingCountMatchesPendingEntries() {
-    manager.enqueue(caseId, makeEntry("e1", ImprovementStage.RESEARCH_SCOPE));
-    manager.enqueue(caseId, makeEntry("e2", ImprovementStage.HYPOTHESIS_APPROVAL));
+    manager.enqueue(caseId, makeEntry(caseId, "e1", ImprovementStage.RESEARCH_SCOPE), TENANT);
+    manager.enqueue(caseId, makeEntry(caseId, "e2", ImprovementStage.HYPOTHESIS_APPROVAL), TENANT);
 
-    assertThat(manager.pendingCount(caseId)).isEqualTo(2);
+    assertThat(manager.pendingCount(caseId, TENANT)).isEqualTo(2);
 
-    manager.resolve(caseId, "e1", new ConductorDecision(Status.APPROVED, null, null, null));
+    manager.resolve(caseId, "e1", new ConductorDecision(Status.APPROVED, null, null, null), TENANT);
 
-    assertThat(manager.pendingCount(caseId)).isEqualTo(1);
+    assertThat(manager.pendingCount(caseId, TENANT)).isEqualTo(1);
   }
 
   @Test
   void perCaseIsolation() {
     var case2 = UUID.randomUUID();
-    manager.enqueue(caseId, makeEntry("e1", ImprovementStage.RESEARCH_SCOPE));
-    manager.enqueue(case2, makeEntry("e2", ImprovementStage.RESEARCH_SCOPE));
+    manager.enqueue(caseId, makeEntry(caseId, "e1", ImprovementStage.RESEARCH_SCOPE), TENANT);
+    manager.enqueue(case2, makeEntry(case2, "e2", ImprovementStage.RESEARCH_SCOPE), TENANT);
 
-    assertThat(manager.pending(caseId)).hasSize(1);
-    assertThat(manager.pending(case2)).hasSize(1);
-    assertThat(manager.pending(caseId).get(0).id()).isEqualTo("e1");
-    assertThat(manager.pending(case2).get(0).id()).isEqualTo("e2");
+    assertThat(manager.pending(caseId, TENANT)).hasSize(1);
+    assertThat(manager.pending(case2, TENANT)).hasSize(1);
+    assertThat(manager.pending(caseId, TENANT).get(0).id()).isEqualTo("e1");
+    assertThat(manager.pending(case2, TENANT).get(0).id()).isEqualTo("e2");
   }
 
   @Test
   void resolveNonexistentEntryIsNoOp() {
     manager.resolve(
-        caseId, "nonexistent", new ConductorDecision(Status.APPROVED, null, null, null));
+        caseId, "nonexistent", new ConductorDecision(Status.APPROVED, null, null, null), TENANT);
 
-    assertThat(manager.pending(caseId)).isEmpty();
+    assertThat(manager.pending(caseId, TENANT)).isEmpty();
   }
 
   @Test
   void resolvedEntryRetainsDecision() {
-    manager.enqueue(caseId, makeEntry("e1", ImprovementStage.PR_REVIEW));
+    manager.enqueue(caseId, makeEntry(caseId, "e1", ImprovementStage.PR_REVIEW), TENANT);
     var decision = new ConductorDecision(Status.APPROVED, null, "LGTM", "nice work");
 
-    manager.resolve(caseId, "e1", decision);
+    manager.resolve(caseId, "e1", decision, TENANT);
 
     var resolved =
-        manager.allEntries(caseId).stream()
+        manager.allEntries(caseId, TENANT).stream()
             .filter(e -> e.id().equals("e1"))
             .findFirst()
             .orElseThrow();
@@ -133,55 +134,41 @@ class ConductorInboxManagerTest {
   @Test
   void watchPatternAddAndList() {
     var pattern = new WatchPattern("w1", "security", null, null, null, Instant.now());
-    manager.addWatchPattern(caseId, pattern);
+    manager.addWatchPattern(caseId, pattern, TENANT);
 
-    assertThat(manager.activeWatchPatterns(caseId)).hasSize(1);
-    assertThat(manager.activeWatchPatterns(caseId).get(0).id()).isEqualTo("w1");
+    assertThat(manager.activeWatchPatterns(caseId, TENANT)).hasSize(1);
+    assertThat(manager.activeWatchPatterns(caseId, TENANT).get(0).id()).isEqualTo("w1");
   }
 
   @Test
   void watchPatternRemove() {
-    manager.addWatchPattern(
-        caseId, new WatchPattern("w1", "security", null, null, null, Instant.now()));
-    manager.addWatchPattern(
-        caseId, new WatchPattern("w2", "architecture", null, null, null, Instant.now()));
+    manager.addWatchPattern(caseId, new WatchPattern("w1", "security", null, null, null, Instant.now()), TENANT);
+    manager.addWatchPattern(caseId, new WatchPattern("w2", "architecture", null, null, null, Instant.now()), TENANT);
 
-    manager.removeWatchPattern(caseId, "w1");
+    manager.removeWatchPattern(caseId, "w1", TENANT);
 
-    assertThat(manager.activeWatchPatterns(caseId)).hasSize(1);
-    assertThat(manager.activeWatchPatterns(caseId).get(0).id()).isEqualTo("w2");
+    assertThat(manager.activeWatchPatterns(caseId, TENANT)).hasSize(1);
+    assertThat(manager.activeWatchPatterns(caseId, TENANT).get(0).id()).isEqualTo("w2");
   }
 
   @Test
   void watchPatternPerCaseIsolation() {
     var case2 = UUID.randomUUID();
-    manager.addWatchPattern(
-        caseId, new WatchPattern("w1", "security", null, null, null, Instant.now()));
+    manager.addWatchPattern(caseId, new WatchPattern("w1", "security", null, null, null, Instant.now()), TENANT);
 
-    assertThat(manager.activeWatchPatterns(caseId)).hasSize(1);
-    assertThat(manager.activeWatchPatterns(case2)).isEmpty();
-  }
-
-  @Test
-  void resetClearsAllState() {
-    manager.enqueue(caseId, makeEntry("e1", ImprovementStage.RESEARCH_SCOPE));
-    manager.addWatchPattern(
-        caseId, new WatchPattern("w1", "security", null, null, null, Instant.now()));
-
-    manager.reset();
-
-    assertThat(manager.pending(caseId)).isEmpty();
-    assertThat(manager.activeWatchPatterns(caseId)).isEmpty();
+    assertThat(manager.activeWatchPatterns(caseId, TENANT)).hasSize(1);
+    assertThat(manager.activeWatchPatterns(case2, TENANT)).isEmpty();
   }
 
   @Test
   void emptyPendingForUnknownCase() {
-    assertThat(manager.pending(UUID.randomUUID())).isEmpty();
-    assertThat(manager.pendingCount(UUID.randomUUID())).isZero();
+    assertThat(manager.pending(UUID.randomUUID(), TENANT)).isEmpty();
+    assertThat(manager.pendingCount(UUID.randomUUID(), TENANT)).isZero();
   }
 
-  private ConductorInboxEntry makeEntry(String id, ImprovementStage stage) {
+  private ConductorInboxEntry makeEntry(UUID caseId, String id, ImprovementStage stage) {
     return new ConductorInboxEntry(
+        caseId,
         id,
         stage,
         Status.PENDING,

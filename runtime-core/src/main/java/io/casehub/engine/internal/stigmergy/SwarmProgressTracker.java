@@ -22,7 +22,6 @@ import io.casehub.engine.common.internal.signal.SignalRegistry;
 import io.casehub.engine.common.spi.Resettable;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
-
 import java.time.Instant;
 import java.util.ArrayDeque;
 import java.util.Deque;

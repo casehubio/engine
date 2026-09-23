@@ -59,7 +59,7 @@ class ContinuousEvolutionIntegrationTest {
   void setUp() {
     signalRegistry = new SignalRegistry();
     signalContext = new ImprovementSignalContext();
-    budgetEnforcer = new ImprovementBudgetEnforcer();
+    budgetEnforcer = new ImprovementBudgetEnforcer(new InMemoryDenyPatternStore());
     categoryTracker = new ImprovementCategoryTracker();
     rollbackHistory = new RollbackHistory();
     conflictDetector = new ConflictDetector();

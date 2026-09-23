@@ -88,7 +88,7 @@ public class ResearchPipelineOrchestrator {
 
     if (scopeOutcome == GateOutcome.BLOCK) {
       var checkpoint = new GateCheckpoint.ScopeCheckpoint(scope);
-      var entryId = enqueueForApproval(caseId, ImprovementStage.RESEARCH_SCOPE, checkpoint);
+      var entryId = enqueueForApproval(caseId, tenancyId, ImprovementStage.RESEARCH_SCOPE, checkpoint);
       return new ResearchPipelineResult.AwaitingGate(
           ImprovementStage.RESEARCH_SCOPE, entryId, checkpoint);
     }
@@ -130,7 +130,7 @@ public class ResearchPipelineOrchestrator {
     }
     var result =
         escalationProvider.evaluate(
-            caseId, tenancyId, stage, context, policy, inboxManager.activeWatchPatterns(caseId));
+            caseId, tenancyId, stage, context, policy, inboxManager.activeWatchPatterns(caseId, tenancyId));
     if (result.escalate()) {
       return GateOutcome.BLOCK;
     }
@@ -142,24 +142,25 @@ public class ResearchPipelineOrchestrator {
   }
 
   private String enqueueForApproval(
-      UUID caseId, ImprovementStage stage, GateCheckpoint checkpoint) {
+          UUID caseId, String tenancyId, ImprovementStage stage, GateCheckpoint checkpoint) {
     var entryId = UUID.randomUUID().toString();
     var entry =
-        new ConductorInboxEntry(
-            entryId,
-            stage,
-            ConductorInboxEntry.Status.PENDING,
-            null,
-            null,
-            null,
-            "Gate checkpoint at " + stage,
-            List.of(),
-            1.0,
-            Instant.now(),
-            null,
-            null,
-            null);
-    inboxManager.enqueue(caseId, entry);
+            new ConductorInboxEntry(
+                    caseId,
+                    entryId,
+                    stage,
+                    ConductorInboxEntry.Status.PENDING,
+                    null,
+                    null,
+                    null,
+                    "Gate checkpoint at " + stage,
+                    List.of(),
+                    1.0,
+                    Instant.now(),
+                    null,
+                    null,
+                    null);
+    inboxManager.enqueue(caseId, entry, tenancyId);
     return entryId;
   }
 }

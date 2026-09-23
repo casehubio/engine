@@ -15,6 +15,9 @@
  */
 package io.casehub.engine.internal.improvement;
 
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+
 import io.casehub.api.model.event.CaseHubEventType;
 import io.casehub.api.model.event.EventStreamType;
 import io.casehub.api.model.stigmergy.ImprovementConfig;
@@ -24,9 +27,6 @@ import io.casehub.engine.common.internal.history.EventLog;
 import io.casehub.engine.common.internal.signal.SignalRegistry;
 import io.casehub.engine.common.spi.EventLogRepository;
 import io.casehub.engine.internal.improvement.worker.ImprovementIntegrationWorker;
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Test;
-
 import java.time.Duration;
 import java.time.Instant;
 import java.util.Collection;
@@ -34,9 +34,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.CopyOnWriteArrayList;
-
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.junit.jupiter.api.Assertions.assertThrows;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
 class SelfImprovementIntegrationTest {
 
@@ -56,7 +55,7 @@ class SelfImprovementIntegrationTest {
   void setUp() {
     signalRegistry = new SignalRegistry();
     signalContext = new ImprovementSignalContext();
-    budgetEnforcer = new ImprovementBudgetEnforcer();
+    budgetEnforcer = new ImprovementBudgetEnforcer(new InMemoryDenyPatternStore());
     goalStrategy =
         new ImprovementGoalFormationStrategy(budgetEnforcer, signalRegistry, signalContext);
     eventLogRepo = new RecordingEventLogRepository();
@@ -86,7 +85,7 @@ class SelfImprovementIntegrationTest {
             20,
             Map.of()));
 
-    var proposal = goalStrategy.proposeImprovements(caseId, config);
+    var proposal = goalStrategy.proposeImprovements(caseId, "test-tenant", config);
     assertThat(proposal).isNotNull();
     assertThat(proposal.goals()).hasSize(1);
     var goal = proposal.goals().get(0);
@@ -144,7 +143,7 @@ class SelfImprovementIntegrationTest {
     signalRegistry.deposit(caseId, signalName, 1.0, Duration.ofHours(1), "agent-1", 100);
     signalRegistry.deposit(caseId, signalName, 1.0, Duration.ofHours(1), "agent-2", 100);
 
-    var proposal = goalStrategy.proposeImprovements(caseId, config);
+    var proposal = goalStrategy.proposeImprovements(caseId, "test-tenant", config);
 
     assertThat(proposal).isNull();
   }

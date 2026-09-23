@@ -35,9 +35,9 @@ class EvolutionApiTest {
 
   @BeforeEach
   void setUp() {
-    var budgetEnforcer = new ImprovementBudgetEnforcer();
-    inboxManager = new ConductorInboxManager();
-    coordinator = new ImprovementCoordinator();
+    var budgetEnforcer = new ImprovementBudgetEnforcer(new InMemoryDenyPatternStore());
+    inboxManager = new ConductorInboxManager(new InMemoryConductorInboxRepository(), new InMemoryWatchPatternStore());
+    coordinator = new ImprovementCoordinator(new InMemoryImprovementBlockStore());
 
     api =
         new DefaultEngineEvolutionApi(
@@ -52,15 +52,15 @@ class EvolutionApiTest {
 
   @Test
   void addAndRemoveDenyPattern() {
-    api.addDenyPattern(caseId, "blocked-path");
+    api.addDenyPattern(caseId, "test-tenant", "blocked-path");
 
-    var view = api.getDenyPatterns(caseId);
+    var view = api.getDenyPatterns(caseId, "test-tenant");
     assertThat(view.staticPatterns()).isNotEmpty();
     assertThat(view.dynamicPatterns()).hasSize(1);
     assertThat(view.dynamicPatterns().get(0).pattern()).isEqualTo("blocked-path");
 
-    api.removeDenyPattern(caseId, "blocked-path");
-    var viewAfter = api.getDenyPatterns(caseId);
+    api.removeDenyPattern(caseId, "test-tenant", "blocked-path");
+    var viewAfter = api.getDenyPatterns(caseId, "test-tenant");
     assertThat(viewAfter.dynamicPatterns()).isEmpty();
   }
 
@@ -68,6 +68,7 @@ class EvolutionApiTest {
   void getInboxReturnsPendingEntries() {
     var entry =
         new ConductorInboxEntry(
+            caseId,
             "e1",
             ImprovementStage.RESEARCH_SCOPE,
             Status.PENDING,
@@ -81,9 +82,9 @@ class EvolutionApiTest {
             null,
             null,
             null);
-    inboxManager.enqueue(caseId, entry);
+    inboxManager.enqueue(caseId, entry, "test-tenant");
 
-    var inbox = api.getInbox(caseId);
+    var inbox = api.getInbox(caseId, "test-tenant");
     assertThat(inbox).hasSize(1);
     assertThat(inbox.get(0).id()).isEqualTo("e1");
   }
@@ -92,6 +93,7 @@ class EvolutionApiTest {
   void resolveGateUpdatesEntryStatus() {
     var entry =
         new ConductorInboxEntry(
+            caseId,
             "e1",
             ImprovementStage.RESEARCH_SCOPE,
             Status.PENDING,
@@ -105,11 +107,11 @@ class EvolutionApiTest {
             null,
             null,
             null);
-    inboxManager.enqueue(caseId, entry);
+    inboxManager.enqueue(caseId, entry, "test-tenant");
 
-    api.resolveGate(caseId, "e1", Status.APPROVED, "looks good", null);
+    api.resolveGate(caseId, "test-tenant", "e1", Status.APPROVED, "looks good", null);
 
-    assertThat(api.getInbox(caseId)).isEmpty();
+    assertThat(api.getInbox(caseId, "test-tenant")).isEmpty();
   }
 
   @Test
@@ -122,14 +124,14 @@ class EvolutionApiTest {
 
   @Test
   void addAndRemoveWatchPattern() {
-    api.addWatchPattern(caseId, "security", null, null, null);
+    api.addWatchPattern(caseId, "test-tenant", "security", null, null, null);
 
-    var patterns = inboxManager.activeWatchPatterns(caseId);
+    var patterns = inboxManager.activeWatchPatterns(caseId, "test-tenant");
     assertThat(patterns).hasSize(1);
     assertThat(patterns.get(0).category()).isEqualTo("security");
 
-    api.removeWatchPattern(caseId, patterns.get(0).id());
-    assertThat(inboxManager.activeWatchPatterns(caseId)).isEmpty();
+    api.removeWatchPattern(caseId, "test-tenant", patterns.get(0).id());
+    assertThat(inboxManager.activeWatchPatterns(caseId, "test-tenant")).isEmpty();
   }
 
   @Test
@@ -137,11 +139,11 @@ class EvolutionApiTest {
     var improvementId = UUID.randomUUID();
     var blockerId = UUID.randomUUID();
 
-    api.blockImprovement(caseId, improvementId, blockerId);
-    assertThat(coordinator.isBlocked(caseId, improvementId)).isTrue();
+    api.blockImprovement(caseId, "test-tenant", improvementId, blockerId);
+    assertThat(coordinator.isBlocked(caseId, improvementId, "test-tenant")).isTrue();
 
-    api.unblockImprovement(caseId, improvementId);
-    assertThat(coordinator.isBlocked(caseId, improvementId)).isFalse();
+    api.unblockImprovement(caseId, "test-tenant", improvementId);
+    assertThat(coordinator.isBlocked(caseId, improvementId, "test-tenant")).isFalse();
   }
 
   @Test

@@ -55,12 +55,12 @@ public class DefaultEngineEvolutionApi {
     return tickTraceBuffer.recent(caseId, limit != null ? limit : 20);
   }
 
-  public DenyPatternView getDenyPatterns(UUID caseId) {
+  public DenyPatternView getDenyPatterns(UUID caseId, String tenancyId) {
     return new DenyPatternView(
-        List.copyOf(ImprovementBudgetEnforcer.staticDenyPatterns()),
-        budgetEnforcer.dynamicDenyPatterns(caseId).stream()
-            .map(p -> new DenyPatternView.DynamicDenyEntry(p, "operator", Instant.now()))
-            .toList());
+            List.copyOf(ImprovementBudgetEnforcer.staticDenyPatterns()),
+            budgetEnforcer.dynamicDenyPatterns(caseId, tenancyId).stream()
+                          .map(p -> new DenyPatternView.DynamicDenyEntry(p, "operator", Instant.now()))
+                          .toList());
   }
 
   public EvolutionSummary getSummary(
@@ -74,54 +74,56 @@ public class DefaultEngineEvolutionApi {
     return summarizationProvider.summarize(caseId, tenancyId, scope);
   }
 
-  public void addDenyPattern(UUID caseId, String pattern) {
-    budgetEnforcer.addDenyPattern(caseId, pattern);
+  public void addDenyPattern(UUID caseId, String tenancyId, String pattern) {
+    budgetEnforcer.addDenyPattern(caseId, pattern, tenancyId);
   }
 
-  public void removeDenyPattern(UUID caseId, String pattern) {
-    budgetEnforcer.removeDenyPattern(caseId, pattern);
+  public void removeDenyPattern(UUID caseId, String tenancyId, String pattern) {
+    budgetEnforcer.removeDenyPattern(caseId, pattern, tenancyId);
   }
 
-  public List<ConductorInboxEntry> getInbox(UUID caseId) {
-    return inboxManager.pending(caseId);
+  public List<ConductorInboxEntry> getInbox(UUID caseId, String tenancyId) {
+    return inboxManager.pending(caseId, tenancyId);
   }
 
   public void resolveGate(
-      UUID caseId,
-      String entryId,
-      ConductorInboxEntry.Status outcome,
-      @Nullable String reason,
-      @Nullable String feedback) {
+          UUID caseId,
+          String tenancyId,
+          String entryId,
+          ConductorInboxEntry.Status outcome,
+          @Nullable String reason,
+          @Nullable String feedback) {
     var decision = new ConductorDecision(outcome, null, reason, feedback);
-    inboxManager.resolve(caseId, entryId, decision);
+    inboxManager.resolve(caseId, entryId, decision, tenancyId);
   }
 
   public void addWatchPattern(
-      UUID caseId,
-      @Nullable String category,
-      @Nullable String areaId,
-      @Nullable String targetPattern,
-      @Nullable Integer minEstimatedSize) {
+          UUID caseId,
+          String tenancyId,
+          @Nullable String category,
+          @Nullable String areaId,
+          @Nullable String targetPattern,
+          @Nullable Integer minEstimatedSize) {
     var pattern =
-        new WatchPattern(
-            UUID.randomUUID().toString(),
-            category,
-            areaId,
-            targetPattern,
-            minEstimatedSize,
-            Instant.now());
-    inboxManager.addWatchPattern(caseId, pattern);
+            new WatchPattern(
+                    UUID.randomUUID().toString(),
+                    category,
+                    areaId,
+                    targetPattern,
+                    minEstimatedSize,
+                    Instant.now());
+    inboxManager.addWatchPattern(caseId, pattern, tenancyId);
   }
 
-  public void removeWatchPattern(UUID caseId, String patternId) {
-    inboxManager.removeWatchPattern(caseId, patternId);
+  public void removeWatchPattern(UUID caseId, String tenancyId, String patternId) {
+    inboxManager.removeWatchPattern(caseId, patternId, tenancyId);
   }
 
-  public void blockImprovement(UUID caseId, UUID improvementId, UUID blockedBy) {
-    coordinator.block(caseId, improvementId, blockedBy);
-  }
+    public void blockImprovement(UUID caseId, String tenancyId, UUID improvementId, UUID blockedBy) {
+        coordinator.block(caseId, improvementId, blockedBy, tenancyId);
+    }
 
-  public void unblockImprovement(UUID caseId, UUID improvementId) {
-    coordinator.unblock(caseId, improvementId);
+  public void unblockImprovement(UUID caseId, String tenancyId, UUID improvementId) {
+    coordinator.unblock(caseId, improvementId, tenancyId);
   }
 }
