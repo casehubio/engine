@@ -98,6 +98,7 @@ public class JpaCaseInstanceRepository implements CaseInstanceRepository {
             ? null
             : new java.util.LinkedHashMap<>(instance.getExchangeHeaders());
     entity.pendingActionGate = PendingActionGateMapper.toJson(instance.getPendingActionGate());
+    entity.contextSnapshot = instance.getContextSnapshot();
     return instance;
   }
 
@@ -133,6 +134,7 @@ public class JpaCaseInstanceRepository implements CaseInstanceRepository {
     entity.parentPlanItemId = instance.getParentPlanItemId();
     entity.waitingForWorkId = instance.getWaitingForWorkId();
     entity.pendingActionGate = PendingActionGateMapper.toJson(instance.getPendingActionGate());
+    entity.contextSnapshot = instance.getContextSnapshot();
     em.merge(entity);
 
     EventLogEntity logEntity = new EventLogEntity();
@@ -274,6 +276,7 @@ public class JpaCaseInstanceRepository implements CaseInstanceRepository {
       instance.setExchangeHeaders(new java.util.LinkedHashMap<>(entity.exchangeHeaders));
     }
     instance.setPendingActionGate(PendingActionGateMapper.fromJson(entity.pendingActionGate));
+    instance.setContextSnapshot(entity.contextSnapshot);
     return instance;
   }
 
