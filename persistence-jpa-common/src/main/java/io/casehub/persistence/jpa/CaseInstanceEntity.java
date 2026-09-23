@@ -30,15 +30,14 @@ import jakarta.persistence.Index;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
 import jakarta.persistence.Table;
-import org.hibernate.annotations.DynamicUpdate;
-import org.hibernate.annotations.JdbcTypeCode;
-import org.hibernate.type.SqlTypes;
-
 import java.time.Instant;
 import java.util.LinkedHashSet;
 import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
+import org.hibernate.annotations.DynamicUpdate;
+import org.hibernate.annotations.JdbcTypeCode;
+import org.hibernate.type.SqlTypes;
 
 @Entity
 @DynamicUpdate
@@ -101,8 +100,8 @@ public class CaseInstanceEntity {
   @Column(name = "pending_action_gate", columnDefinition = "jsonb")
   @JdbcTypeCode(SqlTypes.JSON)
   public String pendingActionGate;
+
   @Column(name = "context_snapshot", columnDefinition = "jsonb")
   @JdbcTypeCode(SqlTypes.JSON)
   public com.fasterxml.jackson.databind.JsonNode contextSnapshot;
-
 }
