@@ -207,6 +207,17 @@ All per-case-selectable strategies extend `NamedStrategy` (from `casehub-platfor
 - **Optional module SPIs** (e.g. `AgentEmbeddingProvider` in `engine-ai`, `CaseQueueEntryStore` in `queue`) → within the optional module's own `spi/` package
 - **Exception:** if an operational SPI takes `CaseInstance` or other `common-core/internal/` types as parameters, it must go in `common-core/spi/` to avoid circular dependency (`api` ← `common-core` ← `api`). `WorkOrchestrator` is the current example.
 
+### Naming Convention: Repository vs Store
+
+Persistence SPIs use two naming patterns that reflect a domain distinction:
+
+- **`*Repository`** — entity lifecycle over domain aggregates. The persisted object has identity, state transitions, and cross-references. Examples: `CaseInstanceRepository`, `EventLogRepository`, `CaseMetaModelRepository`, `SubCaseGroupRepository`.
+- **`*Store`** — record/value storage. The persisted object is a value or projection with no independent lifecycle — it exists to support a higher-level aggregate. Examples: `PlanItemStore`, `PlanVersionStore`, `ExecutionSnapshotStore`, `CaseQueueEntryStore`.
+
+**Cross-tenant access** uses a separate interface prefixed with `CrossTenant*` (e.g. `CrossTenantCaseInstanceRepository`, `CrossTenantPlanItemStore`). The same implementation class typically implements both interfaces. Callers declare which access level they need via the injected type.
+
+When adding a new persistence SPI: if the object has identity and lifecycle transitions, name it `*Repository`. If it stores records or projections owned by another aggregate, name it `*Store`.
+
 ### Adding a New SPI
 
 1. Define the interface in `api/spi/`
