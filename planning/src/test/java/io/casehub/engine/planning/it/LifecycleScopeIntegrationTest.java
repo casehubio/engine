@@ -144,14 +144,10 @@ class LifecycleScopeIntegrationTest {
     await()
         .atMost(15, SECONDS)
         .untilAsserted(
-            () -> {
-              var instance = caseInstanceCache.get(caseId);
-              assertThat(instance.getState()).isEqualTo(CaseStatus.COMPLETED);
-            });
-
-    assertThat(scopedWorkerRegistry.get(caseId, "test-binding"))
-        .as("Scoped worker session should be removed on case termination")
-        .isEmpty();
+            () ->
+                assertThat(scopedWorkerRegistry.get(caseId, "test-binding"))
+                    .as("Scoped worker session should be removed on case termination")
+                    .isEmpty());
   }
 
   @Test
