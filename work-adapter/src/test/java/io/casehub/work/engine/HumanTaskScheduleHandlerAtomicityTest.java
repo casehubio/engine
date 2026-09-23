@@ -25,11 +25,6 @@ import io.casehub.engine.common.spi.PlanItemStore;
 import io.casehub.engine.planning.plan.PlanItem;
 import io.casehub.engine.planning.registry.BlackboardRegistry;
 import io.casehub.ledger.testing.NoOpLedgerEntryRepository;
-import io.casehub.persistence.memory.InMemoryCaseInstanceRepository;
-import io.casehub.persistence.memory.InMemoryCaseMetaModelRepository;
-import io.casehub.persistence.memory.InMemoryEventLogRepository;
-import io.casehub.persistence.memory.InMemoryPlanItemStore;
-import io.casehub.persistence.memory.InMemorySubCaseGroupRepository;
 import io.casehub.work.api.WorkItem;
 import io.casehub.work.api.WorkItemQuery;
 import io.casehub.work.api.spi.WorkItemStore;
@@ -71,11 +66,6 @@ class HumanTaskScheduleHandlerAtomicityTest {
     public Set<Class<?>> getEnabledAlternatives() {
       return Set.of(
           FailingWorkItemStore.class,
-          InMemoryCaseInstanceRepository.class,
-          InMemoryCaseMetaModelRepository.class,
-          InMemoryEventLogRepository.class,
-          InMemorySubCaseGroupRepository.class,
-          InMemoryPlanItemStore.class,
           NoOpLedgerEntryRepository.class,
           NoOpPreferenceProvider.class);
     }
@@ -129,8 +119,8 @@ class HumanTaskScheduleHandlerAtomicityTest {
     FailingWorkItemStore failing = (FailingWorkItemStore) workItemStore;
     failing.clear();
     FailingWorkItemStore.shouldFail.set(false);
-    if (planItemStore instanceof InMemoryPlanItemStore mem) {
-      mem.clear();
+    if (planItemStore instanceof io.casehub.engine.common.spi.Resettable resettable) {
+      resettable.reset();
     }
     caseId = UUID.randomUUID();
     planItem =
