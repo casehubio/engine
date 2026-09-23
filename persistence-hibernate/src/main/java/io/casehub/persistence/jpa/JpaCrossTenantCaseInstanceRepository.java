@@ -78,6 +78,7 @@ public class JpaCrossTenantCaseInstanceRepository implements CrossTenantCaseInst
       m.setCreatedAt(entity.caseMetaModel.createdAt);
       instance.setCaseMetaModel(m);
     }
+    instance.setContextSnapshot(entity.contextSnapshot);
     return instance;
   }
 }

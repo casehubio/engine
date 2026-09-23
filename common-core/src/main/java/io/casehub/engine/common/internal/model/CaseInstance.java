@@ -75,6 +75,16 @@ public class CaseInstance {
     this.caseContext = caseContext;
   }
 
+  private com.fasterxml.jackson.databind.JsonNode contextSnapshot;
+
+  public com.fasterxml.jackson.databind.JsonNode getContextSnapshot() {
+    return contextSnapshot;
+  }
+
+  public void setContextSnapshot(com.fasterxml.jackson.databind.JsonNode contextSnapshot) {
+    this.contextSnapshot = contextSnapshot;
+  }
+
   public PropagationContext getPropagationContext() {
     return propagationContext;
   }

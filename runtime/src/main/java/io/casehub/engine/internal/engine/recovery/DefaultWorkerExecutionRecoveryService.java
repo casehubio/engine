@@ -15,11 +15,7 @@
  */
 package io.casehub.engine.internal.engine.recovery;
 
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import io.casehub.api.context.CaseContext;
-import io.casehub.api.context.ContextLayer;
-import io.casehub.api.context.MutableCaseContext;
 import io.casehub.api.model.event.CaseHubEventType;
 import io.casehub.engine.common.internal.history.EventLog;
 import io.casehub.engine.common.internal.model.CaseInstance;
@@ -29,29 +25,19 @@ import io.casehub.engine.common.spi.CrossTenantEventLogRepository;
 import io.casehub.engine.common.spi.cache.CaseInstanceCache;
 import io.casehub.engine.common.spi.recovery.WorkerExecutionRecoveryService;
 import io.casehub.engine.common.spi.scheduler.WorkerExecutionManager;
-import io.casehub.engine.internal.context.CaseContextImpl;
-import io.casehub.engine.internal.context.EpisodicLayerUpdater;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
 import java.util.EnumSet;
 import java.util.HashSet;
 import java.util.List;
-import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
 import org.jboss.logging.Logger;
 
-/**
- * Default implementation of {@link WorkerExecutionRecoveryService}.
- *
- * <p>Restores in-flight workers and case state after a restart. Uses the repository SPI — no direct
- * Hibernate session access.
- */
 @ApplicationScoped
 public class DefaultWorkerExecutionRecoveryService implements WorkerExecutionRecoveryService {
 
   private static final Logger LOG = Logger.getLogger(DefaultWorkerExecutionRecoveryService.class);
-  private static final ObjectMapper OBJECT_MAPPER = new ObjectMapper();
 
   private static final EnumSet<CaseHubEventType> RELEVANT_RECOVERY_EVENTS =
       EnumSet.of(
@@ -71,6 +57,8 @@ public class DefaultWorkerExecutionRecoveryService implements WorkerExecutionRec
 
   @Inject WorkerExecutionManager workflowExecutionManager;
 
+  @Inject io.casehub.engine.common.spi.recovery.CaseContextRecoveryStrategy recoveryStrategy;
+
   @Override
   public CaseInstance loadOrRestoreCaseInstance(UUID caseId) {
     CaseInstance cached = caseInstanceCache.get(caseId);
@@ -82,7 +70,7 @@ public class DefaultWorkerExecutionRecoveryService implements WorkerExecutionRec
     if (instance == null) {
       throw new IllegalStateException("CaseInstance not found for caseId=" + caseId);
     }
-    CaseContext stateContext = rebuildStateContext(caseId);
+    CaseContext stateContext = recoveryStrategy.recover(instance);
     instance.setCaseContext(stateContext);
     caseInstanceCache.put(instance);
     return instance;
@@ -117,214 +105,15 @@ public class DefaultWorkerExecutionRecoveryService implements WorkerExecutionRec
         .forEach(workflowExecutionManager::schedulePersistedEvent);
   }
 
-  @SuppressWarnings("unchecked")
-  private CaseContext rebuildStateContext(UUID caseId) {
-    List<EventLog> eventLogs =
-        eventLogRepository.findByCaseAndTypes(
-            caseId,
-            EnumSet.of(
-                CaseHubEventType.CASE_STARTED,
-                CaseHubEventType.WORKER_EXECUTION_COMPLETED,
-                CaseHubEventType.SUBCASE_COMPLETED,
-                CaseHubEventType.SIGNAL_RECEIVED,
-                CaseHubEventType.MILESTONE_ACTIVATED,
-                CaseHubEventType.MILESTONE_COMPLETED,
-                CaseHubEventType.MILESTONE_SLA_VIOLATED));
-
-    CaseContextImpl caseContext = new CaseContextImpl();
-    EventLog caseStartedEvent =
-        eventLogs.stream()
-            .filter(e -> e.getEventType() == CaseHubEventType.CASE_STARTED)
-            .findFirst()
-            .orElse(null);
-
-    if (caseStartedEvent != null) {
-      caseContext = CaseContextImpl.fromLayerDocument(caseStartedEvent.getPayload());
-    }
-
-    for (EventLog eventLog : eventLogs) {
-      if (eventLog.getEventType() == CaseHubEventType.CASE_STARTED) {
-        continue;
-      }
-      if (eventLog.getEventType() == CaseHubEventType.SIGNAL_RECEIVED) {
-        JsonNode patch = payloadAsPatch(eventLog.getPayload());
-        if (patch != null) {
-          caseContext.applyDiff(patch);
-        }
-      } else if (eventLog.getEventType() == CaseHubEventType.WORKER_EXECUTION_COMPLETED) {
-        JsonNode contextChanges = getContextChanges(eventLog.getMetadata());
-        if (contextChanges != null) {
-          if (contextChanges.isArray()) {
-            caseContext.applyDiff(contextChanges);
-          } else if (contextChanges.isObject()) {
-            applyTopLevelChanges(caseContext, contextChanges);
-          }
-        } else {
-          LOG.warnf(
-              "WORKER_EXECUTION_COMPLETED has no contextChanges metadata — "
-                  + "falling back to payload merge for caseId=%s seq=%s",
-              caseId, eventLog.getSeq());
-          caseContext.setAll(payloadAsMap(eventLog.getPayload()));
-        }
-        String workerId = eventLog.getWorkerId();
-        if (workerId != null) {
-          EpisodicLayerUpdater.recordWorkerCompletion(caseContext, workerId, "COMPLETED");
-        }
-      } else if (eventLog.getEventType() == CaseHubEventType.SUBCASE_COMPLETED) {
-        caseContext.setAll(payloadAsMap(eventLog.getPayload()));
-      } else if (eventLog.getEventType() == CaseHubEventType.MILESTONE_ACTIVATED) {
-        applyMilestoneActivatedEvent(caseContext, eventLog);
-      } else if (eventLog.getEventType() == CaseHubEventType.MILESTONE_COMPLETED) {
-        applyMilestoneCompletedEvent(caseContext, eventLog);
-        JsonNode payload = eventLog.getPayload();
-        if (payload != null) {
-          String milestoneName = payload.path("milestoneName").asText(null);
-          if (milestoneName != null) {
-            EpisodicLayerUpdater.recordMilestoneReached(caseContext, milestoneName);
-          }
-        }
-      } else if (eventLog.getEventType() == CaseHubEventType.MILESTONE_SLA_VIOLATED) {
-        applyMilestoneSLAViolatedEvent(caseContext, eventLog);
-      } else {
-        LOG.warnf("Unexpected event type in rebuildStateContext: %s", eventLog.getEventType());
-      }
-    }
-    caseContext.freezeLayer(ContextLayer.SEMANTIC);
-    caseContext.freezeLayer(ContextLayer.EPISODIC);
-    return caseContext;
-  }
-
-  @SuppressWarnings("unchecked")
-  private Map<String, Object> payloadAsMap(JsonNode payload) {
-    return OBJECT_MAPPER.convertValue(
-        payload == null ? OBJECT_MAPPER.createObjectNode() : payload, Map.class);
-  }
-
-  private JsonNode payloadAsPatch(JsonNode payload) {
-    if (payload == null || payload.isNull()) return null;
-    JsonNode patch = payload.get("patch");
-    return patch != null && patch.isArray() ? patch : null;
-  }
-
-  private JsonNode getContextChanges(JsonNode metadata) {
-    if (metadata == null || metadata.isNull()) return null;
-    JsonNode contextChanges = metadata.get("contextChanges");
-    // Support both JSON Patch (array) and TopLevel (object) formats
-    if (contextChanges != null && (contextChanges.isArray() || contextChanges.isObject())) {
-      return contextChanges;
-    }
-    return null;
-  }
-
   private String executionKey(EventLog eventLog) {
-    JsonNode metadata = eventLog.getMetadata();
+    com.fasterxml.jackson.databind.JsonNode metadata = eventLog.getMetadata();
     if (metadata == null || eventLog.getCaseId() == null || eventLog.getWorkerId() == null) {
       return null;
     }
-    JsonNode inputDataHash = metadata.get("inputDataHash");
-    if (inputDataHash == null || inputDataHash.isNull()) return null;
+    com.fasterxml.jackson.databind.JsonNode inputDataHash = metadata.get("inputDataHash");
+    if (inputDataHash == null || inputDataHash.isNull()) {
+      return null;
+    }
     return eventLog.getCaseId() + "|" + eventLog.getWorkerId() + "|" + inputDataHash.asText();
-  }
-
-  private void applyMilestoneActivatedEvent(CaseContext caseContext, EventLog eventLog) {
-    JsonNode payload = eventLog.getPayload();
-    if (payload == null || payload.isNull()) {
-      return;
-    }
-    String milestoneName = payload.path("milestoneName").asText(null);
-    if (milestoneName == null) {
-      return;
-    }
-    String prefix = "milestones." + milestoneName + ".";
-    String currentLifecycleStatus = caseContext.getPathAsString(prefix + "lifecycleStatus");
-    if (isTerminalMilestoneLifecycleStatus(currentLifecycleStatus)) {
-      return;
-    }
-    caseContext.setPath(
-        prefix + "lifecycleStatus", payload.path("lifecycleStatus").asText("ACTIVE"));
-    caseContext.setPath(prefix + "slaStatus", payload.path("slaStatus").asText("ON_TRACK"));
-    if (payload.has("activatedAt")) {
-      caseContext.setPath(prefix + "activatedAt", payload.get("activatedAt").asText());
-    }
-    if (payload.has("slaDeadline")) {
-      caseContext.setPath(prefix + "slaDeadline", payload.get("slaDeadline").asText());
-    }
-  }
-
-  private void applyMilestoneCompletedEvent(CaseContext caseContext, EventLog eventLog) {
-    JsonNode payload = eventLog.getPayload();
-    if (payload == null || payload.isNull()) {
-      return;
-    }
-    String milestoneName = payload.path("milestoneName").asText(null);
-    if (milestoneName == null) {
-      return;
-    }
-    String prefix = "milestones." + milestoneName + ".";
-    caseContext.setPath(
-        prefix + "lifecycleStatus", payload.path("lifecycleStatus").asText("COMPLETED"));
-    caseContext.setPath(prefix + "slaStatus", payload.path("slaStatus").asText("ON_TRACK"));
-    if (payload.has("completedAt")) {
-      caseContext.setPath(prefix + "completedAt", payload.get("completedAt").asText());
-    }
-  }
-
-  private void applyMilestoneSLAViolatedEvent(CaseContext caseContext, EventLog eventLog) {
-    JsonNode payload = eventLog.getPayload();
-    if (payload == null || payload.isNull()) {
-      return;
-    }
-    String milestoneName = payload.path("milestoneName").asText(null);
-    if (milestoneName == null) {
-      return;
-    }
-    String prefix = "milestones." + milestoneName + ".";
-    caseContext.setPath(prefix + "slaStatus", payload.path("slaStatus").asText("BREACHED"));
-  }
-
-  private boolean isTerminalMilestoneLifecycleStatus(String lifecycleStatus) {
-    return "COMPLETED".equals(lifecycleStatus)
-        || "FAILED".equals(lifecycleStatus)
-        || "CANCELLED".equals(lifecycleStatus);
-  }
-
-  /**
-   * Applies TopLevel format context changes: {"key": {"before": oldVal, "after": newVal}}
-   *
-   * <p>This format is produced by TopLevelContextDiffStrategy. Each field contains "before" and/or
-   * "after" nodes. Missing "after" means removal.
-   */
-  private void applyTopLevelChanges(CaseContext caseContext, JsonNode changes) {
-    // After the layers migration, top-level keys in the diff are layer names (working, semantic,
-    // episodic). Each changeNode has "before"/"after" for the layer's full contents — not a
-    // single flat key. We must update the named layer rather than setting the layer name as a key
-    // inside the working layer (which is what CaseContext.set() would do via the flat API).
-    MutableCaseContext mctx = caseContext instanceof MutableCaseContext m ? m : null;
-
-    changes
-        .fieldNames()
-        .forEachRemaining(
-            key -> {
-              JsonNode changeNode = changes.get(key);
-              if (changeNode == null || !changeNode.isObject()) {
-                return;
-              }
-              JsonNode afterNode = changeNode.get("after");
-              if (afterNode == null || afterNode.isNull()) {
-                // Removal — layer cleared; call remove on flat API (no-op for layers but safe)
-                caseContext.remove(key);
-              } else if (mctx != null && afterNode.isObject()) {
-                // Layer-level diff: afterNode is the layer's FULL new contents — replace, not
-                // merge.
-                // clear() then setAll() ensures removed keys are not left behind.
-                @SuppressWarnings("unchecked")
-                Map<String, Object> afterMap = OBJECT_MAPPER.convertValue(afterNode, Map.class);
-                mctx.writableLayer(key).clear().setAll(afterMap);
-              } else {
-                // Flat scalar (rare/legacy): fall back to flat set
-                Object value = OBJECT_MAPPER.convertValue(afterNode, Object.class);
-                caseContext.set(key, value);
-              }
-            });
   }
 }
