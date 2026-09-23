@@ -15,7 +15,8 @@
  */
 package io.casehub.engine.internal.engine.recovery;
 
-import static org.junit.jupiter.api.Assertions.*;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNull;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ObjectNode;
@@ -102,6 +103,33 @@ class EventLogReplayRecoveryStrategyTest {
     CaseContext ctx = strategy.recover(instance);
     assertEquals("sub-done", ctx.getString("result"));
     assertEquals("initial", ctx.getString("status"));
+  }
+
+  @Test
+  void recoverReplaysScopedWorkerOutputContextChanges() {
+    UUID caseId = UUID.randomUUID();
+    ObjectNode startPayload = MAPPER.createObjectNode();
+    startPayload.putObject("working").put("status", "running");
+
+    ObjectNode scopedMeta = MAPPER.createObjectNode();
+    ObjectNode scopedChanges = scopedMeta.putObject("contextChanges");
+    ObjectNode progressChange = scopedChanges.putObject("progress");
+    progressChange.put("before", (String) null);
+    progressChange.put("after", "50%");
+
+    EventLog scopedEvent =
+        eventLog(caseId, CaseHubEventType.SCOPED_WORKER_OUTPUT, null, scopedMeta);
+    scopedEvent.setWorkerId("persistent-worker-1");
+
+    eventLogRepo.events =
+        List.of(eventLog(caseId, CaseHubEventType.CASE_STARTED, startPayload, null), scopedEvent);
+
+    CaseInstance instance = new CaseInstance();
+    instance.setUuid(caseId);
+
+    CaseContext ctx = strategy.recover(instance);
+    assertEquals("running", ctx.getString("status"));
+    assertEquals("50%", ctx.getString("progress"));
   }
 
   @Test
