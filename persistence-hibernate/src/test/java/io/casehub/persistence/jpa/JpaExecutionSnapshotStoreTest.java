@@ -18,10 +18,9 @@ package io.casehub.persistence.jpa;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.casehub.engine.common.spi.recovery.ExecutionSnapshotStore;
+import io.casehub.engine.common.spi.recovery.ExecutionSnapshotStoreContractTest;
 import io.casehub.engine.plan.execution.DagResultSnapshot;
 import io.casehub.engine.plan.snapshot.DagPlanSnapshot;
-import io.casehub.engine.plan.snapshot.DecompositionSnapshot;
-import io.casehub.engine.plan.snapshot.LeafTaskSnapshot;
 import io.quarkus.test.junit.QuarkusTest;
 import jakarta.inject.Inject;
 import java.time.Duration;
@@ -34,89 +33,40 @@ import org.junit.jupiter.api.Timeout;
 
 @QuarkusTest
 @Timeout(value = 60, unit = TimeUnit.SECONDS)
-class JpaExecutionSnapshotStoreTest {
+class JpaExecutionSnapshotStoreTest extends ExecutionSnapshotStoreContractTest {
 
-  @Inject ExecutionSnapshotStore store;
+  @Inject ExecutionSnapshotStore injectedStore;
 
-  @Test
-  void storeAndRetrieveDagPlan() {
-    UUID caseId = UUID.randomUUID();
-    var snapshot = new DagPlanSnapshot(Map.of(), Instant.now());
-
-    store.storeDagPlan(caseId, "test-tenant", snapshot);
-
-    var result = store.getDagPlan(caseId, "test-tenant");
-    assertThat(result).isPresent();
-    assertThat(result.get().timestamp()).isNotNull();
+  @Override
+  protected ExecutionSnapshotStore store() {
+    return injectedStore;
   }
 
-  @Test
-  void storeAndRetrieveDagResult() {
-    UUID caseId = UUID.randomUUID();
-    var snapshot =
-        new DagResultSnapshot(Map.of(), Map.of(), true, Duration.ofSeconds(1), Instant.now());
-
-    store.storeDagResult(caseId, "test-tenant", snapshot);
-
-    var result = store.getDagResult(caseId, "test-tenant");
-    assertThat(result).isPresent();
-    assertThat(result.get().allSucceeded()).isTrue();
-  }
-
-  @Test
-  void storeAndRetrieveDecomposition() {
-    UUID caseId = UUID.randomUUID();
-    var snapshot =
-        new DecompositionSnapshot(new LeafTaskSnapshot("l1", "desc", null), Instant.now());
-
-    store.storeDecomposition(caseId, "test-tenant", snapshot);
-
-    var result = store.getDecomposition(caseId, "test-tenant");
-    assertThat(result).isPresent();
+  @Override
+  protected String tenancyId() {
+    return "test-tenant";
   }
 
   @Test
   void upsertOverwritesSingleColumn() {
     UUID caseId = UUID.randomUUID();
-    store.storeDagPlan(caseId, "test-tenant", new DagPlanSnapshot(Map.of(), Instant.now()));
-    store.storeDagResult(
-        caseId,
-        "test-tenant",
-        new DagResultSnapshot(Map.of(), Map.of(), true, Duration.ofMillis(50), Instant.now()));
+    store().storeDagPlan(caseId, "test-tenant", new DagPlanSnapshot(Map.of(), Instant.now()));
+    store()
+        .storeDagResult(
+            caseId,
+            "test-tenant",
+            new DagResultSnapshot(Map.of(), Map.of(), true, Duration.ofMillis(50), Instant.now()));
 
-    assertThat(store.getDagPlan(caseId, "test-tenant")).isPresent();
-    assertThat(store.getDagResult(caseId, "test-tenant")).isPresent();
+    assertThat(store().getDagPlan(caseId, "test-tenant")).isPresent();
+    assertThat(store().getDagResult(caseId, "test-tenant")).isPresent();
   }
 
   @Test
   void tenantIsolation() {
     UUID caseId = UUID.randomUUID();
-    store.storeDagPlan(caseId, "tenant-a", new DagPlanSnapshot(Map.of(), Instant.now()));
+    store().storeDagPlan(caseId, "tenant-a", new DagPlanSnapshot(Map.of(), Instant.now()));
 
-    assertThat(store.getDagPlan(caseId, "tenant-a")).isPresent();
-    assertThat(store.getDagPlan(caseId, "tenant-b")).isEmpty();
-  }
-
-  @Test
-  void evictRemovesAllSnapshots() {
-    UUID caseId = UUID.randomUUID();
-    store.storeDagPlan(caseId, "test-tenant", new DagPlanSnapshot(Map.of(), Instant.now()));
-    store.storeDagResult(
-        caseId,
-        "test-tenant",
-        new DagResultSnapshot(Map.of(), Map.of(), true, Duration.ofMillis(10), Instant.now()));
-
-    store.evict(caseId);
-
-    assertThat(store.getDagPlan(caseId, "test-tenant")).isEmpty();
-    assertThat(store.getDagResult(caseId, "test-tenant")).isEmpty();
-  }
-
-  @Test
-  void getReturnsEmptyForUnknownCase() {
-    UUID caseId = UUID.randomUUID();
-    assertThat(store.getDagPlan(caseId, "test-tenant")).isEmpty();
-    assertThat(store.getDagResult(caseId, "test-tenant")).isEmpty();
-    assertThat(store.getDecomposition(caseId, "test-tenant")).isEmpty();
+    assertThat(store().getDagPlan(caseId, "tenant-a")).isPresent();
+    assertThat(store().getDagPlan(caseId, "tenant-b")).isEmpty();
   }
 }
