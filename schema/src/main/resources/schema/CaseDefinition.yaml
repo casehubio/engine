@@ -115,10 +115,7 @@ $defs:
       judgment:
         $ref: "#/$defs/Judgment"
       signal:
-        type: object
-        additionalProperties: true
-        description: Context signal payload. Written to the case context when the
-          binding fires. No worker dispatch.
+        $ref: "#/$defs/SignalPayload"
       replanAfter:
         type: string
         enum:
@@ -831,11 +828,7 @@ $defs:
             type: integer
             minimum: 0
           importanceWeights:
-            type: object
-            description: Per-outcome importance weights for the worker-reasoning domain.
-              Overrides ReflectionTriggerConfig defaults.
-            additionalProperties:
-              type: number
+            $ref: "#/$defs/ImportanceWeights"
       milestones:
         description: Observable progress markers derived from CaseContext.
         type: array
@@ -853,9 +846,7 @@ $defs:
             type: integer
             minimum: 1
           weights:
-            type: object
-            additionalProperties:
-              type: number
+            $ref: "#/$defs/Weights"
           costBudgets:
             type: object
             additionalProperties:
@@ -944,9 +935,7 @@ $defs:
             type: integer
             minimum: 1
           importanceWeights:
-            type: object
-            additionalProperties:
-              type: number
+            $ref: "#/$defs/ImportanceWeights"
       monitoring:
         type: object
         unevaluatedProperties: false
@@ -1253,6 +1242,20 @@ $defs:
         type: array
         items:
           type: string
+  Weights:
+    type: object
+    additionalProperties:
+      type: number
+  ImportanceWeights:
+    type: object
+    description: Per-outcome importance weights. Overrides defaults.
+    additionalProperties:
+      type: number
+  SignalPayload:
+    type: object
+    additionalProperties: true
+    description: Context signal payload. Written to the case context when the binding
+      fires. No worker dispatch.
   Cbr:
     type: object
     unevaluatedProperties: false
@@ -1264,9 +1267,7 @@ $defs:
         additionalProperties:
           type: string
       weights:
-        type: object
-        additionalProperties:
-          type: number
+        $ref: "#/$defs/Weights"
       topK:
         type: integer
         minimum: 1
