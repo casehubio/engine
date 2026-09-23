@@ -33,6 +33,8 @@ public abstract class PlanItemStoreContractTest {
 
   protected abstract PlanItemStore store();
 
+  protected abstract CrossTenantPlanItemStore crossTenantStore();
+
   private PlanItemSaveRequest request(UUID caseId, String planItemId, TaskStatus status) {
     return PlanItemSaveRequest.primitive(
         caseId,
@@ -82,13 +84,25 @@ public abstract class PlanItemStoreContractTest {
   }
 
   @Test
+  void findDelegated_returns_only_delegated_for_tenant() {
+    UUID caseId = UUID.randomUUID();
+    String delegatedId = UUID.randomUUID().toString();
+    String pendingId = UUID.randomUUID().toString();
+    store().save(request(caseId, delegatedId, TaskStatus.DELEGATED), TEST_TENANT);
+    store().save(request(caseId, pendingId, TaskStatus.PENDING), TEST_TENANT);
+    List<PlanItemRecord> results = store().findDelegated(caseId, TEST_TENANT);
+    assertThat(results).hasSize(1);
+    assertThat(results.get(0).planItemId()).isEqualTo(delegatedId);
+  }
+
+  @Test
   void findDelegated_returns_only_delegated_CrossTenant_for_case() {
     UUID caseId = UUID.randomUUID();
     String delegatedId = UUID.randomUUID().toString();
     String pendingId = UUID.randomUUID().toString();
     store().save(request(caseId, delegatedId, TaskStatus.DELEGATED), TEST_TENANT);
     store().save(request(caseId, pendingId, TaskStatus.PENDING), TEST_TENANT);
-    List<PlanItemRecord> results = store().findDelegatedCrossTenant(caseId);
+    List<PlanItemRecord> results = crossTenantStore().findDelegatedCrossTenant(caseId);
     assertThat(results).hasSize(1);
     assertThat(results.get(0).planItemId()).isEqualTo(delegatedId);
   }
@@ -101,7 +115,7 @@ public abstract class PlanItemStoreContractTest {
     String id2 = UUID.randomUUID().toString();
     store().save(request(case1, id1, TaskStatus.DELEGATED), TEST_TENANT);
     store().save(request(case2, id2, TaskStatus.DELEGATED), TEST_TENANT);
-    List<PlanItemRecord> results = store().findAllDelegated();
+    List<PlanItemRecord> results = crossTenantStore().findAllDelegated();
     assertThat(results.stream().map(PlanItemRecord::planItemId))
         .containsExactlyInAnyOrder(id1, id2);
   }

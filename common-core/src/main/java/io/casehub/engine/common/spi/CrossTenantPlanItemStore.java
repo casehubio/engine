@@ -15,15 +15,17 @@
  */
 package io.casehub.engine.common.spi;
 
-import io.casehub.engine.common.internal.model.CaseInstance;
+import io.casehub.engine.common.internal.model.PlanItemRecord;
+import java.util.List;
 import java.util.UUID;
 
 /**
- * Blocking cross-tenant case instance access for system-level services (recovery, scheduling,
- * bridges) that operate without tenant principal.
+ * Cross-tenant PlanItem access for system-level services (recovery, scheduling, bridges) that
+ * operate without tenant principal.
  */
-public interface CrossTenantCaseInstanceRepository {
+public interface CrossTenantPlanItemStore {
 
-  /** Load a case instance without tenant filter. caseId is UUID (globally unique). */
-  CaseInstance findByUuid(UUID caseId);
+  List<PlanItemRecord> findDelegatedCrossTenant(UUID caseId);
+
+  List<PlanItemRecord> findAllDelegated();
 }

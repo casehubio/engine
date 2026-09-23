@@ -18,17 +18,23 @@ package io.casehub.engine.internal.worker;
 import io.casehub.api.model.TaskStatus;
 import io.casehub.engine.common.internal.model.PlanItemRecord;
 import io.casehub.engine.common.internal.model.PlanItemSaveRequest;
+import io.casehub.engine.common.spi.CrossTenantPlanItemStore;
 import io.casehub.engine.common.spi.PlanItemStore;
 import java.util.List;
 import java.util.UUID;
 
-public class NoOpPlanItemStore implements PlanItemStore {
+public class NoOpPlanItemStore implements PlanItemStore, CrossTenantPlanItemStore {
 
   @Override
   public void save(PlanItemSaveRequest request, String tenancyId) {}
 
   @Override
   public void updateStatus(String planItemId, TaskStatus status, String tenancyId) {}
+
+  @Override
+  public List<PlanItemRecord> findDelegated(UUID caseId, String tenancyId) {
+    return List.of();
+  }
 
   @Override
   public List<PlanItemRecord> findByCaseId(UUID caseId, String tenancyId) {
