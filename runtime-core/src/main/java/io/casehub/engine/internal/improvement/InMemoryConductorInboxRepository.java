@@ -34,8 +34,7 @@ public class InMemoryConductorInboxRepository implements ConductorInboxRepositor
 
   @Override
   public void save(ConductorInboxEntry entry, String tenancyId) {
-    entries.computeIfAbsent(entry.caseId(), k -> new ConcurrentHashMap<>())
-        .put(entry.id(), entry);
+    entries.computeIfAbsent(entry.caseId(), k -> new ConcurrentHashMap<>()).put(entry.id(), entry);
   }
 
   @Nullable
@@ -62,9 +61,10 @@ public class InMemoryConductorInboxRepository implements ConductorInboxRepositor
     if (caseEntries == null) {
       return 0;
     }
-    return (int) caseEntries.values().stream()
-        .filter(e -> e.status() == ConductorInboxEntry.Status.PENDING)
-        .count();
+    return (int)
+        caseEntries.values().stream()
+            .filter(e -> e.status() == ConductorInboxEntry.Status.PENDING)
+            .count();
   }
 
   @Override

@@ -15,6 +15,8 @@
  */
 package io.casehub.engine.internal.improvement;
 
+import static org.assertj.core.api.Assertions.assertThat;
+
 import io.casehub.api.model.stigmergy.CapabilityAreaAssessment;
 import io.casehub.api.model.stigmergy.ComplianceLevel;
 import io.casehub.api.model.stigmergy.HealthPolicy;
@@ -22,13 +24,10 @@ import io.casehub.api.model.stigmergy.ImprovementConfig;
 import io.casehub.api.model.stigmergy.RollbackPolicy;
 import io.casehub.api.spi.improvement.CapabilityArea;
 import io.casehub.engine.common.spi.event.ComplianceLevelChangedEvent;
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Test;
-
 import java.time.Instant;
 import java.util.UUID;
-
-import static org.assertj.core.api.Assertions.assertThat;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
 class ReadinessValidatorTest {
 
@@ -36,16 +35,15 @@ class ReadinessValidatorTest {
   private ReadinessValidator validator;
   private UUID caseId;
   private static final String TENANCY = "test-tenant";
-  private              TestEvent<ComplianceLevelChangedEvent> complianceLevelChangedEvents;
-
+  private TestEvent<ComplianceLevelChangedEvent> complianceLevelChangedEvents;
 
   @BeforeEach
   void setUp() {
     registry = new CapabilityAreaRegistry();
     var checklistProvider = new DefaultComplianceChecklistProvider();
     complianceLevelChangedEvents = new TestEvent<>();
-    validator                    = new ReadinessValidator(registry, checklistProvider, complianceLevelChangedEvents);
-    caseId                       = UUID.randomUUID();
+    validator = new ReadinessValidator(registry, checklistProvider, complianceLevelChangedEvents);
+    caseId = UUID.randomUUID();
   }
 
   @Test
@@ -151,7 +149,7 @@ class ReadinessValidatorTest {
     assertThat(complianceLevelChangedEvents.fired()).isEmpty();
 
     var configL2 =
-            new ImprovementConfig(null, 2, null, null, null, true, null, null, null, null, null);
+        new ImprovementConfig(null, 2, null, null, null, true, null, null, null, null, null);
     validator.validate(caseId, TENANCY, ComplianceLevel.L2_PROPOSE, configL2);
 
     assertThat(complianceLevelChangedEvents.fired()).hasSize(1);
@@ -177,7 +175,6 @@ class ReadinessValidatorTest {
     validator.validate(caseId, TENANCY, ComplianceLevel.L1_OBSERVE, config);
     assertThat(complianceLevelChangedEvents.fired()).isEmpty();
   }
-
 
   private CapabilityArea areaWithData(String id, double health) {
     return new CapabilityArea() {

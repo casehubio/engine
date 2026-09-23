@@ -43,8 +43,20 @@ public abstract class ConductorInboxRepositoryContractTest {
   protected ConductorInboxEntry makeEntry(
       UUID caseId, String id, ImprovementStage stage, Status status) {
     return new ConductorInboxEntry(
-        caseId, id, stage, status, null, null, null, "test", List.of(), 0.8, Instant.now(), null,
-        null, null);
+        caseId,
+        id,
+        stage,
+        status,
+        null,
+        null,
+        null,
+        "test",
+        List.of(),
+        0.8,
+        Instant.now(),
+        null,
+        null,
+        null);
   }
 
   @Test
@@ -63,8 +75,11 @@ public abstract class ConductorInboxRepositoryContractTest {
   @Test
   void findPendingFiltersByStatus() {
     var caseId = UUID.randomUUID();
-    store.save(makeEntry(caseId, "e1", ImprovementStage.RESEARCH_SCOPE, Status.PENDING), tenancyId());
-    store.save(makeEntry(caseId, "e2", ImprovementStage.HYPOTHESIS_APPROVAL, Status.APPROVED), tenancyId());
+    store.save(
+        makeEntry(caseId, "e1", ImprovementStage.RESEARCH_SCOPE, Status.PENDING), tenancyId());
+    store.save(
+        makeEntry(caseId, "e2", ImprovementStage.HYPOTHESIS_APPROVAL, Status.APPROVED),
+        tenancyId());
     store.save(makeEntry(caseId, "e3", ImprovementStage.PR_REVIEW, Status.PENDING), tenancyId());
 
     var pending = store.findPending(caseId, tenancyId());
@@ -75,8 +90,11 @@ public abstract class ConductorInboxRepositoryContractTest {
   @Test
   void countPendingMatchesPendingSize() {
     var caseId = UUID.randomUUID();
-    store.save(makeEntry(caseId, "e1", ImprovementStage.RESEARCH_SCOPE, Status.PENDING), tenancyId());
-    store.save(makeEntry(caseId, "e2", ImprovementStage.HYPOTHESIS_APPROVAL, Status.APPROVED), tenancyId());
+    store.save(
+        makeEntry(caseId, "e1", ImprovementStage.RESEARCH_SCOPE, Status.PENDING), tenancyId());
+    store.save(
+        makeEntry(caseId, "e2", ImprovementStage.HYPOTHESIS_APPROVAL, Status.APPROVED),
+        tenancyId());
 
     assertThat(store.countPending(caseId, tenancyId())).isEqualTo(1);
   }
@@ -84,8 +102,11 @@ public abstract class ConductorInboxRepositoryContractTest {
   @Test
   void findAllReturnsAllEntries() {
     var caseId = UUID.randomUUID();
-    store.save(makeEntry(caseId, "e1", ImprovementStage.RESEARCH_SCOPE, Status.PENDING), tenancyId());
-    store.save(makeEntry(caseId, "e2", ImprovementStage.HYPOTHESIS_APPROVAL, Status.APPROVED), tenancyId());
+    store.save(
+        makeEntry(caseId, "e1", ImprovementStage.RESEARCH_SCOPE, Status.PENDING), tenancyId());
+    store.save(
+        makeEntry(caseId, "e2", ImprovementStage.HYPOTHESIS_APPROVAL, Status.APPROVED),
+        tenancyId());
 
     assertThat(store.findAll(caseId, tenancyId())).hasSize(2);
   }
@@ -94,8 +115,10 @@ public abstract class ConductorInboxRepositoryContractTest {
   void perCaseIsolation() {
     var case1 = UUID.randomUUID();
     var case2 = UUID.randomUUID();
-    store.save(makeEntry(case1, "e1", ImprovementStage.RESEARCH_SCOPE, Status.PENDING), tenancyId());
-    store.save(makeEntry(case2, "e2", ImprovementStage.RESEARCH_SCOPE, Status.PENDING), tenancyId());
+    store.save(
+        makeEntry(case1, "e1", ImprovementStage.RESEARCH_SCOPE, Status.PENDING), tenancyId());
+    store.save(
+        makeEntry(case2, "e2", ImprovementStage.RESEARCH_SCOPE, Status.PENDING), tenancyId());
 
     assertThat(store.findAll(case1, tenancyId())).hasSize(1);
     assertThat(store.findAll(case1, tenancyId()).get(0).id()).isEqualTo("e1");
@@ -106,8 +129,10 @@ public abstract class ConductorInboxRepositoryContractTest {
   @Test
   void saveIdempotency() {
     var caseId = UUID.randomUUID();
-    store.save(makeEntry(caseId, "e1", ImprovementStage.RESEARCH_SCOPE, Status.PENDING), tenancyId());
-    store.save(makeEntry(caseId, "e1", ImprovementStage.RESEARCH_SCOPE, Status.APPROVED), tenancyId());
+    store.save(
+        makeEntry(caseId, "e1", ImprovementStage.RESEARCH_SCOPE, Status.PENDING), tenancyId());
+    store.save(
+        makeEntry(caseId, "e1", ImprovementStage.RESEARCH_SCOPE, Status.APPROVED), tenancyId());
 
     assertThat(store.findAll(caseId, tenancyId())).hasSize(1);
     assertThat(store.findById(caseId, "e1", tenancyId()).status()).isEqualTo(Status.APPROVED);
