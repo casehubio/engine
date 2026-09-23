@@ -11,6 +11,8 @@ imports:
   AdaptationConfig: io.casehub.api.model.AdaptationConfig
   JsonNode: com.fasterxml.jackson.databind.JsonNode
   SubCaseMapping: io.casehub.api.model.SubCaseMapping
+  ImprovementStage: io.casehub.api.model.stigmergy.ImprovementStage
+  GateMode: io.casehub.api.model.stigmergy.GatePolicy.GateMode
 
 deserializers:
   TriggerDeserializer: io.casehub.api.model.converter.deser.TriggerDeserializer
@@ -512,3 +514,23 @@ types:
     extra:
       - { name: maxActiveTaskCount, type: Integer }
       - { name: loadBalanceWeight, type: Double }
+
+  # ── Conductor types (evolution conductor) ──
+
+  GatePolicy:
+    record: YamlGatePolicy
+    extra:
+      - { name: modes, type: "Map<ImprovementStage, GateMode>" }
+      - { name: gateTimeoutMinutes, type: Integer }
+
+  EscalationPolicy:
+    record: YamlEscalationPolicy
+    extra:
+      - { name: categoryRules, type: YamlCategoryEscalationRules }
+      - { name: confidenceThreshold, type: Double }
+
+  CategoryEscalationRules:
+    record: YamlCategoryEscalationRules
+    extra:
+      - { name: alwaysEscalate, type: "List<String>" }
+      - { name: neverEscalate, type: "List<String>" }
