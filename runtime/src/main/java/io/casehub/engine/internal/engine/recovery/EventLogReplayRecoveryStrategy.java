@@ -77,6 +77,7 @@ public class EventLogReplayRecoveryStrategy implements CaseContextRecoveryStrate
                 CaseHubEventType.WORKER_EXECUTION_COMPLETED,
                 CaseHubEventType.SUBCASE_COMPLETED,
                 CaseHubEventType.SIGNAL_RECEIVED,
+                CaseHubEventType.SCOPED_WORKER_OUTPUT,
                 CaseHubEventType.MILESTONE_ACTIVATED,
                 CaseHubEventType.MILESTONE_COMPLETED,
                 CaseHubEventType.MILESTONE_SLA_VIOLATED));
@@ -122,6 +123,15 @@ public class EventLogReplayRecoveryStrategy implements CaseContextRecoveryStrate
         }
       } else if (eventLog.getEventType() == CaseHubEventType.SUBCASE_COMPLETED) {
         caseContext.setAll(payloadAsMap(eventLog.getPayload()));
+      } else if (eventLog.getEventType() == CaseHubEventType.SCOPED_WORKER_OUTPUT) {
+        JsonNode contextChanges = getContextChanges(eventLog.getMetadata());
+        if (contextChanges != null) {
+          if (contextChanges.isArray()) {
+            caseContext.applyDiff(contextChanges);
+          } else if (contextChanges.isObject()) {
+            applyTopLevelChanges(caseContext, contextChanges);
+          }
+        }
       } else if (eventLog.getEventType() == CaseHubEventType.MILESTONE_ACTIVATED) {
         applyMilestoneActivatedEvent(caseContext, eventLog);
       } else if (eventLog.getEventType() == CaseHubEventType.MILESTONE_COMPLETED) {
