@@ -15,16 +15,18 @@
  */
 package io.casehub.engine.internal.improvement;
 
-import static org.assertj.core.api.Assertions.assertThat;
-
 import io.casehub.api.model.stigmergy.CapabilityAreaAssessment;
 import io.casehub.api.model.stigmergy.CircuitBreakerState;
 import io.casehub.api.model.stigmergy.HealthPolicy;
+import io.casehub.engine.common.spi.event.CircuitBreakerStateChangedEvent;
 import io.casehub.api.spi.improvement.CapabilityArea;
-import java.time.Instant;
-import java.util.UUID;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+
+import java.time.Instant;
+import java.util.UUID;
+
+import static org.assertj.core.api.Assertions.assertThat;
 
 class ImprovementCircuitBreakerTest {
 
@@ -32,14 +34,17 @@ class ImprovementCircuitBreakerTest {
   private HealthScoreTracker tracker;
   private CapabilityAreaRegistry registry;
   private UUID caseId;
+  private TestEvent<CircuitBreakerStateChangedEvent> stateChangedEvents;
+
 
   @BeforeEach
-  void setUp() {
-    breaker = new ImprovementCircuitBreaker();
-    registry = new CapabilityAreaRegistry();
-    tracker = new HealthScoreTracker(registry);
-    caseId = UUID.randomUUID();
-  }
+    void setUp() {
+        stateChangedEvents = new TestEvent<>();
+        breaker            = new ImprovementCircuitBreaker(stateChangedEvents);
+        registry           = new CapabilityAreaRegistry();
+        tracker            = new HealthScoreTracker(registry);
+        caseId             = UUID.randomUUID();
+    }
 
   @Test
   void defaultStateIsClosed() {
@@ -126,6 +131,55 @@ class ImprovementCircuitBreakerTest {
     breaker.reset();
     assertThat(breaker.state(caseId)).isEqualTo(CircuitBreakerState.CLOSED);
   }
+
+  @Test
+  void firesEventOnStateTransition() {
+    registry.register(area("stability", 0.3));
+    var policy = new HealthPolicy(0.6, null, null, null, null, null);
+    tracker.refresh(caseId, "test-tenant", policy);
+
+    breaker.evaluate(caseId, "test-tenant", tracker, policy);
+
+    assertThat(stateChangedEvents.fired()).hasSize(1);
+    var event = stateChangedEvents.fired().get(0);
+    assertThat(event.caseId()).isEqualTo(caseId);
+    assertThat(event.oldState()).isEqualTo(CircuitBreakerState.CLOSED);
+    assertThat(event.newState()).isEqualTo(CircuitBreakerState.OPEN);
+  }
+
+  @Test
+  void noEventWhenStateUnchanged() {
+    registry.register(area("stability", 0.8));
+    var policy = new HealthPolicy(0.6, null, null, null, null, null);
+    tracker.refresh(caseId, "test-tenant", policy);
+
+    breaker.evaluate(caseId, "test-tenant", tracker, policy);
+
+    assertThat(stateChangedEvents.fired()).isEmpty();
+  }
+
+  @Test
+  void firesEventOnManualReset() {
+    registry.register(area("stability", 0.3));
+    var policy = new HealthPolicy(0.6, null, null, null, null, null);
+    tracker.refresh(caseId, "test-tenant", policy);
+    breaker.evaluate(caseId, "test-tenant", tracker, policy);
+    stateChangedEvents.clear();
+
+    breaker.manualReset(caseId);
+
+    assertThat(stateChangedEvents.fired()).hasSize(1);
+    var event = stateChangedEvents.fired().get(0);
+    assertThat(event.oldState()).isEqualTo(CircuitBreakerState.OPEN);
+    assertThat(event.newState()).isEqualTo(CircuitBreakerState.CLOSED);
+  }
+
+  @Test
+  void noEventOnManualResetWhenAlreadyClosed() {
+    breaker.manualReset(caseId);
+    assertThat(stateChangedEvents.fired()).isEmpty();
+  }
+
 
   private CapabilityArea area(String id, double health) {
     return new CapabilityArea() {

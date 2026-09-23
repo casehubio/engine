@@ -18,63 +18,85 @@ package io.casehub.engine.internal.improvement;
 import io.casehub.api.model.stigmergy.CircuitBreakerState;
 import io.casehub.api.model.stigmergy.HealthPolicy;
 import io.casehub.engine.common.spi.Resettable;
+import io.casehub.engine.common.spi.event.CircuitBreakerStateChangedEvent;
 import jakarta.enterprise.context.ApplicationScoped;
+import jakarta.enterprise.event.Event;
+import jakarta.inject.Inject;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 
 @ApplicationScoped
 public class ImprovementCircuitBreaker implements Resettable {
 
-  private final ConcurrentHashMap<UUID, CircuitBreakerState> states = new ConcurrentHashMap<>();
-  private final ConcurrentHashMap<UUID, Integer> halfOpenCount = new ConcurrentHashMap<>();
+    private final ConcurrentHashMap<UUID, CircuitBreakerState> states        = new ConcurrentHashMap<>();
+    private final ConcurrentHashMap<UUID, Integer>             halfOpenCount = new ConcurrentHashMap<>();
+    private final Event<CircuitBreakerStateChangedEvent>       stateChangedEvent;
 
-  public CircuitBreakerState state(UUID caseId) {
-    return states.getOrDefault(caseId, CircuitBreakerState.CLOSED);
-  }
-
-  public void evaluate(
-      UUID caseId, String tenancyId, HealthScoreTracker tracker, HealthPolicy policy) {
-    double score = tracker.computeScore(caseId, tenancyId, policy);
-    double delta = tracker.delta(caseId, policy.effectiveHealthWindowMinutes());
-    var current = state(caseId);
-
-    switch (current) {
-      case CLOSED -> {
-        if (score < policy.effectiveHealthThreshold()
-            || delta < -policy.effectiveHealthDeltaThreshold()) {
-          states.put(caseId, CircuitBreakerState.OPEN);
-        }
-      }
-      case OPEN -> {
-        if (score >= policy.effectiveHealthThreshold()) {
-          states.put(caseId, CircuitBreakerState.HALF_OPEN);
-          halfOpenCount.put(caseId, 0);
-        }
-      }
-      case HALF_OPEN -> {
-        int completed = halfOpenCount.getOrDefault(caseId, 0);
-        if (score < policy.effectiveHealthThreshold()) {
-          states.put(caseId, CircuitBreakerState.OPEN);
-        } else if (completed >= policy.effectiveHalfOpenMaxImprovements()) {
-          states.put(caseId, CircuitBreakerState.CLOSED);
-          halfOpenCount.remove(caseId);
-        }
-      }
+    @Inject
+    public ImprovementCircuitBreaker(Event<CircuitBreakerStateChangedEvent> stateChangedEvent) {
+        this.stateChangedEvent = stateChangedEvent;
     }
-  }
 
-  public void recordImprovementInHalfOpen(UUID caseId) {
-    halfOpenCount.computeIfPresent(caseId, (k, v) -> v + 1);
-  }
+    public CircuitBreakerState state(UUID caseId) {
+        return states.getOrDefault(caseId, CircuitBreakerState.CLOSED);
+    }
 
-  public void manualReset(UUID caseId) {
-    states.put(caseId, CircuitBreakerState.CLOSED);
-    halfOpenCount.remove(caseId);
-  }
+    public void evaluate(
+            UUID caseId, String tenancyId, HealthScoreTracker tracker, HealthPolicy policy) {
+        double              score    = tracker.computeScore(caseId, tenancyId, policy);
+        double              delta    = tracker.delta(caseId, policy.effectiveHealthWindowMinutes());
+        var                 current  = state(caseId);
+        CircuitBreakerState newState = current;
 
-  @Override
-  public void reset() {
-    states.clear();
-    halfOpenCount.clear();
-  }
+        switch (current) {
+            case CLOSED -> {
+                if (score < policy.effectiveHealthThreshold()
+                    || delta < -policy.effectiveHealthDeltaThreshold()) {
+                    newState = CircuitBreakerState.OPEN;
+                    states.put(caseId, newState);
+                }
+            }
+            case OPEN -> {
+                if (score >= policy.effectiveHealthThreshold()) {
+                    newState = CircuitBreakerState.HALF_OPEN;
+                    states.put(caseId, newState);
+                    halfOpenCount.put(caseId, 0);
+                }
+            }
+            case HALF_OPEN -> {
+                int completed = halfOpenCount.getOrDefault(caseId, 0);
+                if (score < policy.effectiveHealthThreshold()) {
+                    newState = CircuitBreakerState.OPEN;
+                    states.put(caseId, newState);
+                } else if (completed >= policy.effectiveHalfOpenMaxImprovements()) {
+                    newState = CircuitBreakerState.CLOSED;
+                    states.put(caseId, newState);
+                    halfOpenCount.remove(caseId);
+                }
+            }
+        }
+
+        if (newState != current) {
+            stateChangedEvent.fireAsync(new CircuitBreakerStateChangedEvent(caseId, current, newState));
+        }
+    }
+
+    public void recordImprovementInHalfOpen(UUID caseId) {
+        halfOpenCount.computeIfPresent(caseId, (k, v) -> v + 1);
+    }
+
+    public void manualReset(UUID caseId) {
+        var previous = states.put(caseId, CircuitBreakerState.CLOSED);
+        halfOpenCount.remove(caseId);
+        if (previous != null && previous != CircuitBreakerState.CLOSED) {
+            stateChangedEvent.fireAsync(
+                    new CircuitBreakerStateChangedEvent(caseId, previous, CircuitBreakerState.CLOSED));
+        }
+    }
+
+    @Override
+    public void reset() {
+        states.clear();
+        halfOpenCount.clear();
+    }
 }

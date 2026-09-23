@@ -45,21 +45,22 @@ public class ImprovementOutcomeEventCapture {
     this.regressionDetector = regressionDetector;
   }
 
-  public ImprovementOutcomeEventCapture(
-      ImprovementOutcomeRecorder outcomeRecorder,
-      ImprovementSignalProjector signalProjector,
-      ImprovementCbrProjector cbrProjector,
-      ImprovementBudgetEnforcer budgetEnforcer) {
-    this(
-        outcomeRecorder,
-        signalProjector,
-        cbrProjector,
-        budgetEnforcer,
-        new ImprovementCategoryTracker(),
-        new RegressionDetector(
-            new ConfidenceScorer(), new ImprovementCategoryTracker(),
-            new RollbackHistory(), new HealthScoreTracker(new CapabilityAreaRegistry())));
-  }
+    public ImprovementOutcomeEventCapture(
+            ImprovementOutcomeRecorder outcomeRecorder,
+            ImprovementSignalProjector signalProjector,
+            ImprovementCbrProjector cbrProjector,
+            ImprovementBudgetEnforcer budgetEnforcer) {
+        this(
+                outcomeRecorder,
+                signalProjector,
+                cbrProjector,
+                budgetEnforcer,
+                new ImprovementCategoryTracker(),
+                new RegressionDetector(
+                        new ConfidenceScorer(), new ImprovementCategoryTracker(),
+                        new RollbackHistory(), new HealthScoreTracker(new CapabilityAreaRegistry()),
+                        new NoOpEvent<>()));
+    }
 
   public void onImprovementComplete(@ObservesAsync ImprovementCaseCompleted event) {
     var outcome = event.outcome();
