@@ -62,15 +62,22 @@ class ContinuousEvolutionIntegrationTest {
     budgetEnforcer = new ImprovementBudgetEnforcer(new InMemoryDenyPatternStore());
     categoryTracker = new ImprovementCategoryTracker();
     rollbackHistory = new RollbackHistory();
-    conflictDetector = new ConflictDetector();
+    var proposalSourceRegistry = new ImprovementProposalSourceRegistry();
+    proposalSourceRegistry.register(
+        new SignalConsensusProposalSource(signalRegistry, signalContext));
+    var categoryRegistryLocal = new ImprovementCategoryRegistry();
+    categoryRegistryLocal.registerProvider(new CodeEvolutionCategoryProvider());
+    var conflictStrategyRegistry = new ConflictStrategyRegistry();
+    conflictStrategyRegistry.register(new FilePathConflictStrategy());
     goalFormation =
         new ImprovementGoalFormationStrategy(
             budgetEnforcer,
-            signalRegistry,
-            signalContext,
+            proposalSourceRegistry,
+            categoryRegistryLocal,
             categoryTracker,
             rollbackHistory,
-            conflictDetector);
+            conflictStrategyRegistry,
+            new DenyPatternProviderRegistry());
 
     areaRegistry = new CapabilityAreaRegistry();
     healthTracker = new HealthScoreTracker(areaRegistry);
@@ -191,7 +198,8 @@ class ContinuousEvolutionIntegrationTest {
             "casehubio/engine",
             List.of("module-a/src/Foo.java"),
             50,
-            Map.of());
+            CodeEvolutionMetadata.encode("casehubio/engine", List.of("module-a/src/Foo.java")),
+            "code-evolution");
     budgetEnforcer.recordStart(UUID.randomUUID(), existingRequest);
 
     String signalName = "improvement:quality:lint:violation";
@@ -207,7 +215,8 @@ class ContinuousEvolutionIntegrationTest {
             "casehubio/engine",
             List.of("module-a/src/Bar.java"),
             50,
-            Map.of()));
+            CodeEvolutionMetadata.encode("casehubio/engine", List.of("module-a/src/Bar.java")),
+            "code-evolution"));
 
     var config =
         new ImprovementConfig(null, 2, null, null, null, true, null, null, null, null, null);

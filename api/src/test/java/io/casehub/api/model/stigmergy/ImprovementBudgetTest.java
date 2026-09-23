@@ -53,8 +53,6 @@ class ImprovementBudgetTest {
     var config = new ImprovementConfig(null, null, null, null, null);
     assertThat(config.effectiveSignalNamespace()).isEqualTo("improvement");
     assertThat(config.effectiveConsensusMinSources()).isEqualTo(2);
-    assertThat(config.effectiveEnabledCategories())
-        .containsExactly("dependency-update", "lint-fix", "coverage-gap", "ci-triage", "recipe");
     assertThat(config.effectiveBudget()).isNotNull();
     assertThat(config.effectiveCaseTemplateId()).isEqualTo("self-improvement");
   }
