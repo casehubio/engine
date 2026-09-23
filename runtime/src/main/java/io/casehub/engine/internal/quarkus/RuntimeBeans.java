@@ -1271,4 +1271,36 @@ public class RuntimeBeans {
     }
     return factory;
   }
+
+  @Produces
+  @ApplicationScoped
+  io.casehub.engine.internal.stigmergy.SwarmProvisioner swarmProvisioner(
+      io.casehub.api.spi.WorkerProvisioner workerProvisioner,
+      io.casehub.engine.internal.stigmergy.StigmergyCoordinator coordinator,
+      io.casehub.engine.common.internal.signal.SignalRegistry signalRegistry,
+      io.casehub.engine.common.internal.convergence.ActivityTracker activityTracker,
+      io.casehub.engine.internal.stigmergy.RoleTracker roleTracker,
+      io.casehub.engine.internal.stigmergy.TeamDetector teamDetector,
+      io.casehub.engine.internal.stigmergy.SwarmProgressTracker progressTracker,
+      io.casehub.api.spi.DispatchBudget dispatchBudget,
+      Instance<io.casehub.api.spi.stigmergy.SwarmProvisioningAdvisor> advisorInstance) {
+    return new io.casehub.engine.internal.stigmergy.SwarmProvisioner(
+        workerProvisioner, coordinator, signalRegistry, activityTracker,
+        roleTracker, teamDetector, progressTracker, dispatchBudget,
+        advisorInstance.isResolvable() ? advisorInstance.get() : null);
+  }
+
+  @Produces
+  @ApplicationScoped
+  io.casehub.engine.internal.improvement.EvolutionTicker evolutionTicker(
+      io.casehub.engine.internal.improvement.ImprovementGoalFormationStrategy goalFormation,
+      io.casehub.engine.internal.improvement.ImprovementCircuitBreaker circuitBreaker,
+      io.casehub.engine.internal.improvement.HealthScoreTracker healthTracker,
+      io.casehub.engine.internal.improvement.RegressionDetector regressionDetector,
+      io.casehub.api.spi.routing.GoalFormationService goalFormationService,
+      io.casehub.engine.internal.improvement.TickTraceBuffer traceBuffer) {
+    return new io.casehub.engine.internal.improvement.EvolutionTicker(
+        goalFormation, circuitBreaker, healthTracker, regressionDetector,
+        goalFormationService, traceBuffer);
+  }
 }
