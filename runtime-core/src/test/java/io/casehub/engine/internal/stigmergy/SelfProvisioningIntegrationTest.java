@@ -77,7 +77,8 @@ class SelfProvisioningIntegrationTest {
             roleTracker,
             teamDetector,
             progressTracker,
-            q -> Integer.MAX_VALUE);
+            q -> Integer.MAX_VALUE,
+            null);
     roleTracker.setSwarmProvisioner(swarmProvisioner);
 
     caseId = UUID.randomUUID();
