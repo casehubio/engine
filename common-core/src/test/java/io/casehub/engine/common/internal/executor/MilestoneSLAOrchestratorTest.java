@@ -15,6 +15,8 @@
  */
 package io.casehub.engine.common.internal.executor;
 
+import static org.assertj.core.api.Assertions.assertThat;
+
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.casehub.api.model.CaseStatus;
 import io.casehub.api.model.event.CaseHubEventType;
@@ -26,15 +28,12 @@ import io.casehub.engine.common.internal.model.CaseInstance;
 import io.casehub.engine.common.spi.CrossTenantCaseInstanceRepository;
 import io.casehub.engine.common.spi.CrossTenantEventLogRepository;
 import io.casehub.engine.common.spi.cache.CaseInstanceCache;
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Test;
-
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
-
-import static org.assertj.core.api.Assertions.assertThat;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
 class MilestoneSLAOrchestratorTest {
 
@@ -208,10 +207,10 @@ class MilestoneSLAOrchestratorTest {
       return List.of();
     }
 
-      @Override
-      public java.util.Optional<EventLog> findById(Long id) {
-          return java.util.Optional.empty();
-      }
+    @Override
+    public java.util.Optional<EventLog> findById(Long id) {
+      return java.util.Optional.empty();
+    }
 
     @Override
     public List<EventLog> findByCaseAndWorkerAndType(

@@ -84,19 +84,19 @@ public class InMemoryCaseInstanceRepository
     }
   }
 
-    @Override
-    public java.util.Optional<CaseInstance> findByUuid(UUID uuid, String tenancyId) {
-        rwLock.readLock().lock();
-        try {
-            CaseInstance instance = store.get(uuid);
-            if (instance != null && !tenancyId.equals(instance.tenancyId)) {
-                return java.util.Optional.empty();
-            }
-            return java.util.Optional.ofNullable(instance);
-        } finally {
-            rwLock.readLock().unlock();
-        }
+  @Override
+  public java.util.Optional<CaseInstance> findByUuid(UUID uuid, String tenancyId) {
+    rwLock.readLock().lock();
+    try {
+      CaseInstance instance = store.get(uuid);
+      if (instance != null && !tenancyId.equals(instance.tenancyId)) {
+        return java.util.Optional.empty();
+      }
+      return java.util.Optional.ofNullable(instance);
+    } finally {
+      rwLock.readLock().unlock();
     }
+  }
 
   @Override
   public java.util.Optional<CaseInstance> findByUuid(UUID uuid) {

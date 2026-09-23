@@ -93,7 +93,8 @@ class CaseLifecycleStateTest {
         .untilAsserted(() -> assertThat(caseInstanceCache.get(caseId)).isNotNull());
 
     // Repository must store RUNNING — not the legacy ACTIVE value.
-    var stored = caseInstanceRepository.findByUuid(caseId, TenancyConstants.DEFAULT_TENANT_ID).orElse(null);
+    var stored =
+        caseInstanceRepository.findByUuid(caseId, TenancyConstants.DEFAULT_TENANT_ID).orElse(null);
 
     assertThat(stored).as("CaseInstance must be findable by UUID after start").isNotNull();
     assertThat(stored.getState())

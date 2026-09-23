@@ -107,20 +107,22 @@ public class JpaCaseInstanceRepository implements CaseInstanceRepository {
     return instance;
   }
 
-    @Override
-    @Transactional
-    public java.util.Optional<CaseInstance> findByUuid(UUID uuid, String tenancyId) {
-        tcm.setTenantContext(tenancyId);
-        List<CaseInstanceEntity> results =
-                em.createQuery(
-                          "SELECT ci FROM CaseInstanceEntity ci JOIN FETCH ci.caseMetaModel"
-                          + " WHERE ci.uuid = :uuid AND ci.tenancyId = :tid",
-                          CaseInstanceEntity.class)
-                  .setParameter("uuid", uuid)
-                  .setParameter("tid", tenancyId)
-                  .getResultList();
-        return results.isEmpty() ? java.util.Optional.empty() : java.util.Optional.of(fromEntity(results.get(0)));
-    }
+  @Override
+  @Transactional
+  public java.util.Optional<CaseInstance> findByUuid(UUID uuid, String tenancyId) {
+    tcm.setTenantContext(tenancyId);
+    List<CaseInstanceEntity> results =
+        em.createQuery(
+                "SELECT ci FROM CaseInstanceEntity ci JOIN FETCH ci.caseMetaModel"
+                    + " WHERE ci.uuid = :uuid AND ci.tenancyId = :tid",
+                CaseInstanceEntity.class)
+            .setParameter("uuid", uuid)
+            .setParameter("tid", tenancyId)
+            .getResultList();
+    return results.isEmpty()
+        ? java.util.Optional.empty()
+        : java.util.Optional.of(fromEntity(results.get(0)));
+  }
 
   @Override
   @Transactional

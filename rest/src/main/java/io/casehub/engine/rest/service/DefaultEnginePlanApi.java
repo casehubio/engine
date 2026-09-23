@@ -15,8 +15,8 @@
  */
 package io.casehub.engine.rest.service;
 
+import io.casehub.engine.common.spi.recovery.ExecutionSnapshotStore;
 import io.casehub.engine.plan.execution.CasePlanModelSnapshotProvider;
-import io.casehub.engine.plan.execution.ExecutionSnapshotStore;
 import io.casehub.engine.plan.snapshot.DagPlanSnapshot;
 import io.casehub.engine.plan.snapshot.DecompositionSnapshot;
 import io.casehub.engine.plan.snapshot.PlanItemDefinitionSnapshot;

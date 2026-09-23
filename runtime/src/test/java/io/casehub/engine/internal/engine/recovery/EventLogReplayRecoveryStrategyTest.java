@@ -15,6 +15,9 @@
  */
 package io.casehub.engine.internal.engine.recovery;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNull;
+
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import io.casehub.api.context.CaseContext;
@@ -22,16 +25,12 @@ import io.casehub.api.model.event.CaseHubEventType;
 import io.casehub.engine.common.internal.history.EventLog;
 import io.casehub.engine.common.internal.model.CaseInstance;
 import io.casehub.engine.common.spi.CrossTenantEventLogRepository;
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Test;
-
 import java.time.Instant;
 import java.util.Collection;
 import java.util.List;
 import java.util.UUID;
-
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNull;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
 class EventLogReplayRecoveryStrategyTest {
 
@@ -255,10 +254,10 @@ class EventLogReplayRecoveryStrategyTest {
       return List.of();
     }
 
-      @Override
-      public java.util.Optional<EventLog> findById(Long id) {
-          return java.util.Optional.empty();
-      }
+    @Override
+    public java.util.Optional<EventLog> findById(Long id) {
+      return java.util.Optional.empty();
+    }
 
     @Override
     public List<EventLog> findByCaseAndWorkerAndType(

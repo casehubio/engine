@@ -13,10 +13,11 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.casehub.engine.plan.execution;
+package io.casehub.engine.common.internal.store;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import io.casehub.engine.plan.execution.PlanVersion;
 import io.casehub.engine.plan.snapshot.PlanVersionDelta;
 import io.casehub.engine.plan.snapshot.PlanVersionTrigger;
 import java.time.Instant;

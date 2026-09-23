@@ -175,7 +175,9 @@ class PersistenceIntegrationTest {
 
     // Verify child can be found by its UUID
     CaseInstance foundChild =
-        run(() -> instanceRepository.findByUuid(childInstance.getUuid(), "test-tenant").orElse(null));
+        run(
+            () ->
+                instanceRepository.findByUuid(childInstance.getUuid(), "test-tenant").orElse(null));
     assertThat(foundChild).isNotNull();
     assertThat(foundChild.getParentCaseId()).isEqualTo(parentCaseId);
   }
@@ -338,7 +340,11 @@ class PersistenceIntegrationTest {
         .containsExactlyInAnyOrder(child1.getUuid(), child2.getUuid());
 
     CaseInstance foundParent =
-        run(() -> instanceRepository.findByUuid(parentInstance.getUuid(), "test-tenant").orElse(null));
+        run(
+            () ->
+                instanceRepository
+                    .findByUuid(parentInstance.getUuid(), "test-tenant")
+                    .orElse(null));
     assertThat(foundParent.getState()).isEqualTo(CaseStatus.RUNNING);
 
     CaseInstance foundChild1 =
