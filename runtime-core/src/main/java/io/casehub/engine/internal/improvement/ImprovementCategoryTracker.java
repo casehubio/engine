@@ -121,6 +121,14 @@ public class ImprovementCategoryTracker implements Resettable {
                 null));
   }
 
+  public java.util.Map<String, CategoryState> states(UUID caseId) {
+    var caseStates = states.get(caseId);
+    if (caseStates == null) {
+      return java.util.Map.of();
+    }
+    return java.util.Map.copyOf(caseStates);
+  }
+
   @Override
   public void reset() {
     states.clear();

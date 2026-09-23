@@ -158,6 +158,14 @@ public class ImprovementBudgetEnforcer implements Resettable {
     return activeImprovements.size();
   }
 
+  public int dailyCount() {
+    return dailyCounts
+        .getOrDefault(
+            java.time.LocalDate.now(java.time.ZoneOffset.UTC),
+            new java.util.concurrent.atomic.AtomicInteger(0))
+        .get();
+  }
+
   public void addDenyPattern(UUID caseId, String pattern, String tenancyId) {
     denyPatternStore.save(caseId, pattern, tenancyId);
   }
