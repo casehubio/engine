@@ -25,6 +25,7 @@ import io.casehub.api.model.stigmergy.ReadinessReport;
 import io.casehub.api.model.stigmergy.SummaryScope;
 import io.casehub.api.model.stigmergy.TickTrace;
 import io.casehub.api.model.stigmergy.WatchPattern;
+import io.casehub.api.spi.improvement.EngineEvolutionApi;
 import io.casehub.api.spi.improvement.ResearchCorpus;
 import io.casehub.api.spi.improvement.SummarizationProvider;
 import io.casehub.api.view.DenyPatternView;
@@ -44,7 +45,7 @@ import java.util.Map;
 import java.util.UUID;
 
 @ApplicationScoped
-public class DefaultEngineEvolutionApi {
+public class DefaultEngineEvolutionApi implements EngineEvolutionApi {
 
   private final TickTraceBuffer tickTraceBuffer;
   private final ImprovementBudgetEnforcer budgetEnforcer;
@@ -86,10 +87,12 @@ public class DefaultEngineEvolutionApi {
     this.artifactManifestStore = artifactManifestStore;
   }
 
+  @Override
   public List<TickTrace> getTickHistory(UUID caseId, @Nullable Integer limit) {
     return tickTraceBuffer.recent(caseId, limit != null ? limit : 20);
   }
 
+  @Override
   public DenyPatternView getDenyPatterns(UUID caseId, String tenancyId) {
     return new DenyPatternView(
         List.copyOf(ImprovementBudgetEnforcer.staticDenyPatterns()),
@@ -98,6 +101,7 @@ public class DefaultEngineEvolutionApi {
             .toList());
   }
 
+  @Override
   public EvolutionSummary getSummary(
       UUID caseId,
       String tenancyId,
@@ -109,18 +113,22 @@ public class DefaultEngineEvolutionApi {
     return summarizationProvider.summarize(caseId, tenancyId, scope);
   }
 
+  @Override
   public void addDenyPattern(UUID caseId, String tenancyId, String pattern) {
     budgetEnforcer.addDenyPattern(caseId, pattern, tenancyId);
   }
 
+  @Override
   public void removeDenyPattern(UUID caseId, String tenancyId, String pattern) {
     budgetEnforcer.removeDenyPattern(caseId, pattern, tenancyId);
   }
 
+  @Override
   public List<ConductorInboxEntry> getInbox(UUID caseId, String tenancyId) {
     return inboxManager.pending(caseId, tenancyId);
   }
 
+  @Override
   public void resolveGate(
       UUID caseId,
       String tenancyId,
@@ -132,6 +140,7 @@ public class DefaultEngineEvolutionApi {
     inboxManager.resolve(caseId, entryId, decision, tenancyId);
   }
 
+  @Override
   public void addWatchPattern(
       UUID caseId,
       String tenancyId,
@@ -150,40 +159,49 @@ public class DefaultEngineEvolutionApi {
     inboxManager.addWatchPattern(caseId, pattern, tenancyId);
   }
 
+  @Override
   public void removeWatchPattern(UUID caseId, String tenancyId, String patternId) {
     inboxManager.removeWatchPattern(caseId, patternId, tenancyId);
   }
 
+  @Override
   public void blockImprovement(UUID caseId, String tenancyId, UUID improvementId, UUID blockedBy) {
     coordinator.block(caseId, improvementId, blockedBy, tenancyId);
   }
 
+  @Override
   public void unblockImprovement(UUID caseId, String tenancyId, UUID improvementId) {
     coordinator.unblock(caseId, improvementId, tenancyId);
   }
 
+  @Override
   public void pauseCategory(UUID caseId, String tenancyId, String category, int durationMinutes) {
     categoryTracker.pauseCategory(caseId, category, java.time.Duration.ofMinutes(durationMinutes));
   }
 
+  @Override
   public void unpauseCategory(UUID caseId, String tenancyId, String category) {
     categoryTracker.unpauseCategory(caseId, category);
   }
 
+  @Override
   public void resetCircuitBreaker(UUID caseId) {
     circuitBreaker.manualReset(caseId);
   }
 
+  @Override
   public ReadinessReport getReadinessReport(
       UUID caseId, String tenancyId, ComplianceLevel targetLevel, ImprovementConfig config) {
     return readinessValidator.validate(caseId, tenancyId, targetLevel, config);
   }
 
+  @Override
   public ReadinessReport triggerReadinessValidation(
       UUID caseId, String tenancyId, ComplianceLevel targetLevel, ImprovementConfig config) {
     return readinessValidator.validate(caseId, tenancyId, targetLevel, config);
   }
 
+  @Override
   public EvolutionStateSnapshot getEvolutionState(
       UUID caseId, String tenancyId, ImprovementConfig config) {
     var latest = healthTracker.latestSnapshot(caseId);
@@ -231,24 +249,30 @@ public class DefaultEngineEvolutionApi {
         pendingInbox);
   }
 
+  @Override
   public ResearchCorpusView getResearchCorpus(String query, String areaId, int limit) {
     var findings = researchCorpus.search(query, areaId, limit);
     var pending = researchCorpus.pendingHilEntries();
     return new ResearchCorpusView(findings, pending);
   }
 
+  @Override
   public void setGatePolicy(UUID caseId, String tenancyId, GatePolicy policy) {
     gatePolicyStore.save(caseId, policy, tenancyId);
   }
 
+  @Override
   public ArtifactManifest getArtifactTrail(UUID caseId, String tenancyId, UUID improvementCaseId) {
     return artifactManifestStore.find(caseId, improvementCaseId, tenancyId);
   }
 
+  @Override
   public List<EvolutionStateSnapshot.ImprovementStreamView> getStreamProgress(
       UUID caseId, String tenancyId) {
     var active = budgetEnforcer.activeImprovementRequests();
-    if (active.isEmpty()) return List.of();
+    if (active.isEmpty()) {
+      return List.of();
+    }
     List<EvolutionStateSnapshot.ImprovementStreamView> streams = new ArrayList<>();
     for (var entry : active.entrySet()) {
       var req = entry.getValue();
