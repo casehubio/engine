@@ -8,6 +8,8 @@
 
 ### `areaId` (`java.lang.String`)
 
+### `caseId` (`java.util.UUID`)
+
 ### `category` (`java.lang.String`)
 
 ### `confidence` (`double`)
@@ -36,6 +38,8 @@
 
 ### `areaId` (`java.lang.String`)
 
+### `caseId` (`java.util.UUID`)
+
 ### `category` (`java.lang.String`)
 
 ### `confidence` (`double`)
@@ -62,10 +66,11 @@
 
 ## Constructors
 
-### `public ConductorInboxEntry(java.lang.String id, io.casehub.api.model.stigmergy.ImprovementStage stage, io.casehub.api.model.stigmergy.ConductorInboxEntry.Status status, java.lang.String category, java.lang.String areaId, java.util.UUID improvementCaseId, java.lang.String summary, java.util.List<io.casehub.api.model.stigmergy.EscalationTrigger> escalationTriggers, double confidence, java.time.Instant queuedAt, java.time.Instant resolvedAt, java.lang.Integer timeoutMinutes, io.casehub.api.model.stigmergy.ConductorDecision decision)`
+### `public ConductorInboxEntry(java.util.UUID caseId, java.lang.String id, io.casehub.api.model.stigmergy.ImprovementStage stage, io.casehub.api.model.stigmergy.ConductorInboxEntry.Status status, java.lang.String category, java.lang.String areaId, java.util.UUID improvementCaseId, java.lang.String summary, java.util.List<io.casehub.api.model.stigmergy.EscalationTrigger> escalationTriggers, double confidence, java.time.Instant queuedAt, java.time.Instant resolvedAt, java.lang.Integer timeoutMinutes, io.casehub.api.model.stigmergy.ConductorDecision decision)`
 
 #### Parameters
 
+- `caseId` (`java.util.UUID`)
 - `id` (`java.lang.String`)
 - `stage` (`io.casehub.api.model.stigmergy.ImprovementStage`)
 - `status` (`io.casehub.api.model.stigmergy.ConductorInboxEntry.Status`)
@@ -83,6 +88,8 @@
 ## Methods
 
 ### `public java.lang.String areaId()`
+
+### `public java.util.UUID caseId()`
 
 ### `public java.lang.String category()`
 
