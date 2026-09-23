@@ -20,14 +20,21 @@ import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
+/**
+ * Blocking SPI for plan version persistence. Stores immutable snapshots of the case plan at each
+ * adaptation cycle, enabling version history, rollback, and audit.
+ *
+ * <p>Implementations handle their own transactions. tenancyId is explicit on all tenant-scoped
+ * methods. {@link #evict(UUID)} is cross-tenant (keyed by globally unique caseId).
+ */
 public interface PlanVersionStore {
-  void store(PlanVersion version, String tenancyId);
+    void store(PlanVersion version, String tenancyId);
 
-  List<PlanVersion> getHistory(UUID caseId, String tenancyId);
+    List<PlanVersion> getHistory(UUID caseId, String tenancyId);
 
-  Optional<PlanVersion> getVersion(UUID caseId, int version, String tenancyId);
+    Optional<PlanVersion> getVersion(UUID caseId, int version, String tenancyId);
 
-  Optional<PlanVersion> getLatest(UUID caseId, String tenancyId);
+    Optional<PlanVersion> getLatest(UUID caseId, String tenancyId);
 
-  void evict(UUID caseId);
+    void evict(UUID caseId);
 }

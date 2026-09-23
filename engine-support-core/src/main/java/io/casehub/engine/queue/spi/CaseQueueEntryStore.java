@@ -20,25 +20,33 @@ import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
+/**
+ * Blocking SPI for case queue entry persistence. Manages work queue entries that track case
+ * visibility in agent queue views — supports claiming, filtering by view, and lifecycle deletion.
+ *
+ * <p>Implementations handle their own transactions. tenancyId is explicit where required for
+ * tenant-scoped queries. Methods keyed by globally unique UUID (caseId, entryId, viewId) are
+ * inherently cross-tenant safe.
+ */
 public interface CaseQueueEntryStore {
 
-  CaseQueueEntry save(CaseQueueEntry entry);
+    CaseQueueEntry save(CaseQueueEntry entry);
 
-  CaseQueueEntry upsertByCaseAndView(CaseQueueEntry entry);
+    CaseQueueEntry upsertByCaseAndView(CaseQueueEntry entry);
 
-  Optional<CaseQueueEntry> findById(UUID id);
+    Optional<CaseQueueEntry> findById(UUID id);
 
-  Optional<CaseQueueEntry> findByCaseAndView(UUID caseId, UUID viewId);
+    Optional<CaseQueueEntry> findByCaseAndView(UUID caseId, UUID viewId);
 
-  List<CaseQueueEntry> findByView(UUID viewId, String tenancyId);
+    List<CaseQueueEntry> findByView(UUID viewId, String tenancyId);
 
-  List<CaseQueueEntry> findByCaseId(UUID caseId);
+    List<CaseQueueEntry> findByCaseId(UUID caseId);
 
-  long countByView(UUID viewId, String tenancyId);
+    long countByView(UUID viewId, String tenancyId);
 
-  boolean delete(UUID id);
+    boolean delete(UUID id);
 
-  void deleteByCaseId(UUID caseId);
+    void deleteByCaseId(UUID caseId);
 
-  Optional<CaseQueueEntry> claimIfPending(UUID entryId, String userId);
+    Optional<CaseQueueEntry> claimIfPending(UUID entryId, String userId);
 }
