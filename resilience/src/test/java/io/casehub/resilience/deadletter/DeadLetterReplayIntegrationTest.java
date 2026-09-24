@@ -29,6 +29,7 @@ import io.casehub.api.model.GoalExpression;
 import io.casehub.api.model.GoalKind;
 import io.casehub.engine.common.internal.model.CaseInstance;
 import io.casehub.engine.common.spi.cache.CaseInstanceCache;
+import io.casehub.engine.internal.recovery.CaseRecoveryService;
 import io.casehub.platform.api.governance.BackoffStrategy;
 import io.casehub.platform.api.governance.ExecutionPolicy;
 import io.casehub.platform.api.governance.RetryPolicy;
@@ -59,6 +60,7 @@ class DeadLetterReplayIntegrationTest {
   @Inject CaseInstanceCache caseInstanceCache;
   @Inject DeadLetterQueue deadLetterQueue;
   @Inject DeadLetterReplayService replayService;
+  @Inject CaseRecoveryService caseRecoveryService;
 
   @BeforeEach
   void setup() {
@@ -94,10 +96,11 @@ class DeadLetterReplayIntegrationTest {
     DeadLetterEntry entry =
         deadLetterQueue.query(DeadLetterQuery.withStatus(DeadLetterStatus.PENDING_REVIEW)).get(0);
 
-    // Simulate admin recovery: reset case to RUNNING, fix the worker
-    CaseInstance instance = caseInstanceCache.get(caseId);
-    instance.setState(CaseStatus.RUNNING);
+    // Admin recovery: unfault the case, fix the worker
     FailThenSucceedCaseHub.shouldFail.set(false);
+    Optional<CaseInstance> recovered = caseRecoveryService.unfault(caseId);
+    assertThat(recovered).isPresent();
+    assertThat(recovered.get().getState()).isEqualTo(CaseStatus.RUNNING);
 
     // Trigger DLQ replay
     Optional<DeadLetterEntry> result = replayService.replay(entry.deadLetterId());
@@ -136,6 +139,31 @@ class DeadLetterReplayIntegrationTest {
     Optional<DeadLetterEntry> result = replayService.replay(entry.deadLetterId());
     assertThat(result).isEmpty();
     assertThat(entry.status()).isEqualTo(DeadLetterStatus.PENDING_REVIEW);
+  }
+
+  @Test
+  void unfault_onNonFaultedCase_returnsEmpty() {
+    FailThenSucceedCaseHub.shouldFail.set(false);
+    UUID caseId = failThenSucceedCase.startCase(Map.of("status", "start"));
+
+    // Wait for worker to succeed — case completes
+    await()
+        .atMost(30, TimeUnit.SECONDS)
+        .untilAsserted(
+            () -> {
+              CaseInstance instance = caseInstanceCache.get(caseId);
+              assertThat(instance).isNotNull();
+              assertThat(instance.getState()).isNotEqualTo(CaseStatus.FAULTED);
+            });
+
+    Optional<CaseInstance> result = caseRecoveryService.unfault(caseId);
+    assertThat(result).isEmpty();
+  }
+
+  @Test
+  void unfault_unknownCase_returnsEmpty() {
+    Optional<CaseInstance> result = caseRecoveryService.unfault(UUID.randomUUID());
+    assertThat(result).isEmpty();
   }
 
   // ---- CaseHub bean: fails initially, succeeds after flag flip ----
