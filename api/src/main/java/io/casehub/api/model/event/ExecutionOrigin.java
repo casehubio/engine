@@ -33,5 +33,8 @@ public enum ExecutionOrigin {
   SUBCASE_COMPLETION,
 
   /** Worker execution triggered by recovery coordinator (restart/resume operations). */
-  RECOVERY
+  RECOVERY,
+
+  /** Worker execution triggered by dead-letter queue replay. */
+  REPLAY
 }

@@ -17,7 +17,9 @@ package io.casehub.resilience.deadletter;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import io.casehub.api.model.CaseDefinition;
+import io.casehub.api.model.ExecutionMode;
 import io.casehub.api.model.event.CaseHubEventType;
+import io.casehub.api.model.event.ExecutionOrigin;
 import io.casehub.api.spi.event.EventDispatcher;
 import io.casehub.engine.common.internal.event.WorkerScheduleEvent;
 import io.casehub.engine.common.internal.history.EventLog;
@@ -173,7 +175,21 @@ public class DeadLetterReplayService {
       return Optional.empty();
     }
 
-    eventDispatcher.dispatch(new WorkerScheduleEvent(caseInstance, worker, capability));
+    eventDispatcher.dispatch(
+        new WorkerScheduleEvent(
+            caseInstance,
+            worker,
+            capability,
+            null,
+            null,
+            null,
+            ExecutionOrigin.REPLAY,
+            List.of(),
+            null,
+            ExecutionMode.REINVOKED,
+            null,
+            null,
+            null));
 
     entry.incrementReplayAttempts();
     deadLetterQueue.markReplayed(entry.deadLetterId());
