@@ -15,6 +15,7 @@
  */
 package io.casehub.engine.internal.improvement;
 
+import io.casehub.api.model.stigmergy.HealthScoreSnapshot;
 import io.casehub.api.model.stigmergy.ImprovementOutcome;
 import io.casehub.api.model.stigmergy.RollbackPolicy;
 import io.casehub.engine.common.spi.Resettable;
@@ -36,7 +37,7 @@ public class RegressionDetector implements Resettable {
       UUID improvementCaseId,
       String category,
       String target,
-      HealthScoreTracker.HealthSnapshot baseline,
+      HealthScoreSnapshot baseline,
       Instant mergedAt,
       int checksRemaining) {}
 
@@ -115,8 +116,8 @@ public class RegressionDetector implements Resettable {
       UUID caseId,
       MonitoredImprovement monitor,
       RollbackPolicy policy,
-      HealthScoreTracker.HealthSnapshot before,
-      HealthScoreTracker.HealthSnapshot after) {
+      HealthScoreSnapshot before,
+      HealthScoreSnapshot after) {
     double confidence = scorer.score(caseId, monitor.improvementCaseId(), before, after);
 
     regressionDetectedEvent.fireAsync(

@@ -18,6 +18,7 @@ package io.casehub.engine.internal.improvement;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.within;
 
+import io.casehub.api.model.stigmergy.HealthScoreSnapshot;
 import java.time.Instant;
 import java.util.Map;
 import java.util.UUID;
@@ -69,7 +70,7 @@ class ConfidenceScorerTest {
     assertThat(score).isLessThanOrEqualTo(1.0);
   }
 
-  private HealthScoreTracker.HealthSnapshot snapshot(double score, Map<String, Double> components) {
-    return new HealthScoreTracker.HealthSnapshot(score, Instant.now(), components);
+  private HealthScoreSnapshot snapshot(double score, Map<String, Double> components) {
+    return new HealthScoreSnapshot(score, Instant.now(), components);
   }
 }
