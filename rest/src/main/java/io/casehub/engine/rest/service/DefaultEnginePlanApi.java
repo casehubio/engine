@@ -35,7 +35,7 @@ import java.util.List;
 import java.util.UUID;
 
 @ApplicationScoped
-@McpDomain(value = "engine/plan", app = "engine")
+@McpDomain(value = "engine/plan", app = "engine", summary = "Plan — get, live operations")
 public class DefaultEnginePlanApi {
 
   @Inject CaseService caseService;
