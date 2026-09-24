@@ -82,9 +82,16 @@ class ContinuousEvolutionIntegrationTest {
     healthTracker = new HealthScoreTracker(areaRegistry);
     circuitBreaker = new ImprovementCircuitBreaker(new NoOpEvent<>());
     confidenceScorer = new ConfidenceScorer();
+    var evaluatorReg = new RegressionEvaluatorRegistry();
+    evaluatorReg.register(new HealthScoreDeltaRegressionEvaluator(confidenceScorer));
     regressionDetector =
         new RegressionDetector(
-            confidenceScorer, categoryTracker, rollbackHistory, healthTracker, new NoOpEvent<>());
+            evaluatorReg,
+            categoryRegistryLocal,
+            categoryTracker,
+            rollbackHistory,
+            healthTracker,
+            new NoOpEvent<>());
 
     proposalCount = new AtomicInteger(0);
     GoalFormationService goalService =
