@@ -61,13 +61,7 @@ class ImprovementOutcomeEventCaptureTest {
     budgetEnforcer.recordStart(
         improvementCaseId,
         new ImprovementRequest(
-            "operational",
-            "dependency-update",
-            "hibernate-core",
-            "casehubio/engine",
-            java.util.List.of("pom.xml"),
-            20,
-            java.util.Map.of()));
+            "operational", "dependency-update", "hibernate-core", 20, java.util.Map.of(), null));
 
     var outcome =
         new ImprovementOutcome(

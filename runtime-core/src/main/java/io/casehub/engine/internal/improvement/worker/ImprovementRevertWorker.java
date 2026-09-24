@@ -17,6 +17,7 @@ package io.casehub.engine.internal.improvement.worker;
 
 import io.casehub.api.model.stigmergy.ImprovementRequest;
 import io.casehub.api.model.stigmergy.IntrospectionResult;
+import io.casehub.engine.internal.improvement.CodeEvolutionMetadata;
 import jakarta.enterprise.context.ApplicationScoped;
 import java.util.Map;
 
@@ -31,7 +32,7 @@ public class ImprovementRevertWorker {
     return new IntrospectionResult(
         category(),
         "Revert improvement: " + request.category() + " — " + request.target(),
-        request.targetPaths(),
+        CodeEvolutionMetadata.extractPaths(request),
         request.estimatedSize() > 0 ? request.estimatedSize() : 10,
         "Revert a regressed improvement via git revert of the merge commit",
         Map.of("originalCategory", request.category(), "originalTarget", request.target()));

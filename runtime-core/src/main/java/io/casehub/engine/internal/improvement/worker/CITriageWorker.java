@@ -17,6 +17,7 @@ package io.casehub.engine.internal.improvement.worker;
 
 import io.casehub.api.model.stigmergy.ImprovementRequest;
 import io.casehub.api.model.stigmergy.IntrospectionResult;
+import io.casehub.engine.internal.improvement.CodeEvolutionMetadata;
 import jakarta.enterprise.context.ApplicationScoped;
 import java.util.Map;
 
@@ -31,7 +32,7 @@ public class CITriageWorker {
     return new IntrospectionResult(
         category(),
         "CI triage: " + request.target(),
-        request.targetPaths(),
+        CodeEvolutionMetadata.extractPaths(request),
         request.estimatedSize() > 0 ? request.estimatedSize() : 25,
         "Diagnose CI failure pattern for " + request.target(),
         Map.of("source", "ci-failure-log"));

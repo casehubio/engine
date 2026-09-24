@@ -42,13 +42,7 @@ class ImprovementBudgetEnforcerTest {
     var budget = new ImprovementBudget(null, null, null, null, null, null, null);
     var request =
         new ImprovementRequest(
-            "operational",
-            "dependency-update",
-            "hibernate-core",
-            "casehubio/engine",
-            List.of("pom.xml"),
-            20,
-            Map.of());
+            "operational", "dependency-update", "hibernate-core", 20, Map.of(), null);
 
     var result = enforcer.check(caseId, budget, request, TENANT);
 
@@ -59,14 +53,7 @@ class ImprovementBudgetEnforcerTest {
   void concurrentLimitDeniesWhenExceeded() {
     var budget = new ImprovementBudget(1, null, null, null, null, null, null);
     var request =
-        new ImprovementRequest(
-            "operational",
-            "lint-fix",
-            "checkstyle",
-            "casehubio/engine",
-            List.of("src/Foo.java"),
-            10,
-            Map.of());
+        new ImprovementRequest("operational", "lint-fix", "checkstyle", 10, Map.of(), null);
 
     enforcer.recordStart(caseId, request);
 
@@ -81,14 +68,7 @@ class ImprovementBudgetEnforcerTest {
   void dailyLimitDeniesWhenExceeded() {
     var budget = new ImprovementBudget(null, 1, null, null, null, null, null);
     var request =
-        new ImprovementRequest(
-            "operational",
-            "lint-fix",
-            "checkstyle",
-            "casehubio/engine",
-            List.of("src/Foo.java"),
-            10,
-            Map.of());
+        new ImprovementRequest("operational", "lint-fix", "checkstyle", 10, Map.of(), null);
 
     enforcer.recordStart(caseId, request);
     enforcer.recordCompletion(caseId);
@@ -103,15 +83,7 @@ class ImprovementBudgetEnforcerTest {
   @Test
   void prSizeLimitDeniesOversizedChange() {
     var budget = new ImprovementBudget(null, null, null, null, null, null, 50);
-    var request =
-        new ImprovementRequest(
-            "operational",
-            "recipe",
-            "cleanup",
-            "casehubio/engine",
-            List.of("src/Foo.java"),
-            100,
-            Map.of());
+    var request = new ImprovementRequest("operational", "recipe", "cleanup", 100, Map.of(), null);
 
     var result = enforcer.check(caseId, budget, request, TENANT);
 
@@ -124,14 +96,7 @@ class ImprovementBudgetEnforcerTest {
   void emptyRepoAllowListAllowsAll() {
     var budget = new ImprovementBudget(null, null, null, List.of(), null, null, null);
     var request =
-        new ImprovementRequest(
-            "operational",
-            "lint-fix",
-            "checkstyle",
-            "casehubio/engine",
-            List.of("src/Foo.java"),
-            10,
-            Map.of());
+        new ImprovementRequest("operational", "lint-fix", "checkstyle", 10, Map.of(), null);
 
     var result = enforcer.check(caseId, budget, request, TENANT);
 
@@ -140,15 +105,7 @@ class ImprovementBudgetEnforcerTest {
 
   @Test
   void activeCountTracksState() {
-    var request =
-        new ImprovementRequest(
-            "operational",
-            "lint-fix",
-            "target",
-            "casehubio/engine",
-            List.of("src/Foo.java"),
-            10,
-            Map.of());
+    var request = new ImprovementRequest("operational", "lint-fix", "target", 10, Map.of(), null);
     assertThat(enforcer.activeCount()).isEqualTo(0);
     enforcer.recordStart(caseId, request);
     assertThat(enforcer.activeCount()).isEqualTo(1);

@@ -148,14 +148,7 @@ class ContinuousEvolutionIntegrationTest {
     signalContext.register(
         caseId,
         signalName,
-        new ImprovementRequest(
-            "operational",
-            "lint-fix",
-            "checkstyle",
-            "casehubio/engine",
-            List.of("src/Foo.java"),
-            10,
-            Map.of()));
+        new ImprovementRequest("operational", "lint-fix", "checkstyle", 10, Map.of(), null));
 
     var config =
         new ImprovementConfig(null, 2, null, null, null, true, null, null, null, null, null);
@@ -176,14 +169,7 @@ class ContinuousEvolutionIntegrationTest {
     signalContext.register(
         caseId,
         signalName,
-        new ImprovementRequest(
-            "operational",
-            "lint-fix",
-            "checkstyle",
-            "casehubio/engine",
-            List.of("src/Foo.java"),
-            10,
-            Map.of()));
+        new ImprovementRequest("operational", "lint-fix", "checkstyle", 10, Map.of(), null));
 
     var config =
         new ImprovementConfig(null, 2, null, null, null, true, null, null, null, null, null);
@@ -201,8 +187,6 @@ class ContinuousEvolutionIntegrationTest {
             "operational",
             "dependency-update",
             "hibernate",
-            "casehubio/engine",
-            List.of("module-a/src/Foo.java"),
             50,
             CodeEvolutionMetadata.encode("casehubio/engine", List.of("module-a/src/Foo.java")),
             "code-evolution");
@@ -218,8 +202,6 @@ class ContinuousEvolutionIntegrationTest {
             "operational",
             "lint-fix",
             "checkstyle",
-            "casehubio/engine",
-            List.of("module-a/src/Bar.java"),
             50,
             CodeEvolutionMetadata.encode("casehubio/engine", List.of("module-a/src/Bar.java")),
             "code-evolution"));
