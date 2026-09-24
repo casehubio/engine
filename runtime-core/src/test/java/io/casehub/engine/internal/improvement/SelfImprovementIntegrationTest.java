@@ -89,13 +89,7 @@ class SelfImprovementIntegrationTest {
         caseId,
         signalName,
         new ImprovementRequest(
-            "operational",
-            "dependency-update",
-            "hibernate-core",
-            "casehubio/engine",
-            List.of("pom.xml"),
-            20,
-            Map.of()));
+            "operational", "dependency-update", "hibernate-core", 20, Map.of(), null));
 
     var proposal = goalStrategy.proposeImprovements(caseId, "test-tenant", config);
     assertThat(proposal).isNotNull();
@@ -107,13 +101,7 @@ class SelfImprovementIntegrationTest {
     budgetEnforcer.recordStart(
         improvementCaseId,
         new ImprovementRequest(
-            "operational",
-            "dependency-update",
-            "hibernate-core",
-            "casehubio/engine",
-            List.of("pom.xml"),
-            20,
-            Map.of()));
+            "operational", "dependency-update", "hibernate-core", 20, Map.of(), null));
 
     var outcome =
         new ImprovementOutcome(

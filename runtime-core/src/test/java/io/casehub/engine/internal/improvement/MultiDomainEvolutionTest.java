@@ -78,17 +78,9 @@ class MultiDomainEvolutionTest {
   void proposalsFromBothSourcesCollected() {
     var codeRequest =
         new ImprovementRequest(
-            "operational",
-            "dependency-update",
-            "lodash",
-            "",
-            List.of(),
-            5,
-            Map.of(),
-            "code-evolution");
+            "operational", "dependency-update", "lodash", 5, Map.of(), "code-evolution");
     var tradingRequest =
-        new ImprovementRequest(
-            "operational", "parameter-tuning", "sharpe", "", List.of(), 3, Map.of(), "trading");
+        new ImprovementRequest("operational", "parameter-tuning", "sharpe", 3, Map.of(), "trading");
 
     proposalSourceRegistry.register(
         staticSource("code-src", "code-evolution", List.of(codeRequest)));
@@ -109,14 +101,11 @@ class MultiDomainEvolutionTest {
             "operational",
             "dependency-update",
             "target",
-            null,
-            null,
             5,
             CodeEvolutionMetadata.encode(null, List.of("src/ImprovementBudgetEnforcer.java")),
             "code-evolution");
     var tradingRequest =
-        new ImprovementRequest(
-            "operational", "parameter-tuning", "sharpe", "", List.of(), 3, Map.of(), "trading");
+        new ImprovementRequest("operational", "parameter-tuning", "sharpe", 3, Map.of(), "trading");
 
     proposalSourceRegistry.register(
         staticSource("code-src", "code-evolution", List.of(codeRequest)));
@@ -143,8 +132,6 @@ class MultiDomainEvolutionTest {
             "operational",
             "dependency-update",
             "existing",
-            "",
-            List.of(),
             50,
             CodeEvolutionMetadata.encode(null, List.of("src/Foo.java")),
             "code-evolution");
@@ -155,14 +142,11 @@ class MultiDomainEvolutionTest {
             "operational",
             "dependency-update",
             "new",
-            "",
-            List.of(),
             50,
             CodeEvolutionMetadata.encode(null, List.of("src/Foo.java")),
             "code-evolution");
     var tradingRequest =
-        new ImprovementRequest(
-            "operational", "parameter-tuning", "sharpe", "", List.of(), 3, Map.of(), "trading");
+        new ImprovementRequest("operational", "parameter-tuning", "sharpe", 3, Map.of(), "trading");
 
     proposalSourceRegistry.register(
         staticSource("code-src", "code-evolution", List.of(conflictingCodeRequest)));

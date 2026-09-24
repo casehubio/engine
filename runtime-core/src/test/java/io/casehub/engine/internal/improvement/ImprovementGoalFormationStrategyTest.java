@@ -73,14 +73,7 @@ class ImprovementGoalFormationStrategyTest {
   void collectsFromSourceAndProposesGoal() {
     var request =
         new ImprovementRequest(
-            "operational",
-            "dependency-update",
-            "hibernate-core",
-            "repo",
-            List.of("pom.xml"),
-            20,
-            Map.of(),
-            "code-evolution");
+            "operational", "dependency-update", "hibernate-core", 20, Map.of(), "code-evolution");
     proposalSourceRegistry.register(staticSource("s1", "code-evolution", List.of(request)));
 
     var config = new ImprovementConfig(null, null, null, null, null);
@@ -97,24 +90,10 @@ class ImprovementGoalFormationStrategyTest {
   void collectsFromMultipleSourcesAndFilters() {
     var codeRequest =
         new ImprovementRequest(
-            "operational",
-            "dependency-update",
-            "lodash",
-            "repo",
-            List.of(),
-            5,
-            Map.of(),
-            "code-evolution");
+            "operational", "dependency-update", "lodash", 5, Map.of(), "code-evolution");
     var tradingRequest =
         new ImprovementRequest(
-            "operational",
-            "parameter-tuning",
-            "sharpe-ratio",
-            "",
-            List.of(),
-            3,
-            Map.of(),
-            "trading");
+            "operational", "parameter-tuning", "sharpe-ratio", 3, Map.of(), "trading");
 
     proposalSourceRegistry.register(staticSource("s1", "code-evolution", List.of(codeRequest)));
     proposalSourceRegistry.register(staticSource("s2", "trading", List.of(tradingRequest)));
@@ -150,14 +129,7 @@ class ImprovementGoalFormationStrategyTest {
   void disabledCategoryFiltersProposal() {
     var request =
         new ImprovementRequest(
-            "operational",
-            "lint-fix",
-            "checkstyle",
-            "repo",
-            List.of(),
-            10,
-            Map.of(),
-            "code-evolution");
+            "operational", "lint-fix", "checkstyle", 10, Map.of(), "code-evolution");
     proposalSourceRegistry.register(staticSource("s1", "code-evolution", List.of(request)));
 
     var config = new ImprovementConfig(null, null, List.of("dependency-update"), null, null);
@@ -173,19 +145,11 @@ class ImprovementGoalFormationStrategyTest {
 
     budgetEnforcer.recordStart(
         UUID.randomUUID(),
-        new ImprovementRequest(
-            "operational", "lint-fix", "checkstyle", "repo", List.of(), 10, Map.of()));
+        new ImprovementRequest("operational", "lint-fix", "checkstyle", 10, Map.of(), null));
 
     var request =
         new ImprovementRequest(
-            "operational",
-            "lint-fix",
-            "checkstyle",
-            "repo",
-            List.of(),
-            10,
-            Map.of(),
-            "code-evolution");
+            "operational", "lint-fix", "checkstyle", 10, Map.of(), "code-evolution");
     proposalSourceRegistry.register(staticSource("s1", "code-evolution", List.of(request)));
 
     var proposal = strategy.proposeImprovements(caseId, "test-tenant", config);
@@ -200,8 +164,6 @@ class ImprovementGoalFormationStrategyTest {
             "operational",
             "dependency-update",
             "target",
-            null,
-            null,
             5,
             CodeEvolutionMetadata.encode(null, List.of("src/ImprovementBudgetEnforcer.java")),
             "code-evolution");

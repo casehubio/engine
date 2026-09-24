@@ -21,7 +21,6 @@ import io.casehub.api.model.stigmergy.ImprovementConfig;
 import io.casehub.api.model.stigmergy.ImprovementRequest;
 import io.casehub.engine.common.internal.signal.SignalRegistry;
 import java.time.Duration;
-import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 import org.junit.jupiter.api.BeforeEach;
@@ -57,14 +56,7 @@ class SignalConsensusProposalSourceTest {
         caseId, "improvement:dep-update:lodash", 1.0, Duration.ofHours(1), "source-b", 100);
     var request =
         new ImprovementRequest(
-            "upgrade",
-            "dependency-update",
-            "lodash",
-            "repo",
-            List.of(),
-            5,
-            Map.of(),
-            "code-evolution");
+            "upgrade", "dependency-update", "lodash", 5, Map.of(), "code-evolution");
     signalContext.register(caseId, "improvement:dep-update:lodash", request);
 
     var proposals = source.propose(caseId, "t1", config);
@@ -76,8 +68,7 @@ class SignalConsensusProposalSourceTest {
   void filtersNonMatchingNamespace() {
     signalRegistry.deposit(caseId, "other:some-signal", 1.0, Duration.ofHours(1), "source-a", 100);
     signalRegistry.deposit(caseId, "other:some-signal", 1.0, Duration.ofHours(1), "source-b", 100);
-    var request =
-        new ImprovementRequest("upgrade", "dep", "target", "repo", List.of(), 5, Map.of());
+    var request = new ImprovementRequest("upgrade", "dep", "target", 5, Map.of(), null);
     signalContext.register(caseId, "other:some-signal", request);
 
     var proposals = source.propose(caseId, "t1", config);

@@ -57,7 +57,8 @@ public class ImprovementOutcomeEventCapture {
         budgetEnforcer,
         new ImprovementCategoryTracker(),
         new RegressionDetector(
-            new ConfidenceScorer(),
+            new RegressionEvaluatorRegistry(),
+            new ImprovementCategoryRegistry(),
             new ImprovementCategoryTracker(),
             new RollbackHistory(),
             new HealthScoreTracker(new CapabilityAreaRegistry()),

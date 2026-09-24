@@ -28,22 +28,14 @@ class CodeEvolutionMetadataTest {
   void extractPathsFromMetadata() {
     var request =
         new ImprovementRequest(
-            "upgrade",
-            "dep",
-            "lodash",
-            "repo",
-            List.of(),
-            5,
-            Map.of("target-paths", "src/a.java,src/b.java"),
-            null);
+            "upgrade", "dep", "lodash", 5, Map.of("target-paths", "src/a.java,src/b.java"), null);
     assertThat(CodeEvolutionMetadata.extractPaths(request))
         .containsExactly("src/a.java", "src/b.java");
   }
 
   @Test
   void extractPathsEmptyWhenNoKey() {
-    var request =
-        new ImprovementRequest("upgrade", "dep", "lodash", "repo", List.of(), 5, Map.of(), null);
+    var request = new ImprovementRequest("upgrade", "dep", "lodash", 5, Map.of(), null);
     assertThat(CodeEvolutionMetadata.extractPaths(request)).isEmpty();
   }
 
@@ -51,14 +43,7 @@ class CodeEvolutionMetadataTest {
   void extractPathsSinglePath() {
     var request =
         new ImprovementRequest(
-            "upgrade",
-            "dep",
-            "lodash",
-            "repo",
-            List.of(),
-            5,
-            Map.of("target-paths", "src/a.java"),
-            null);
+            "upgrade", "dep", "lodash", 5, Map.of("target-paths", "src/a.java"), null);
     assertThat(CodeEvolutionMetadata.extractPaths(request)).containsExactly("src/a.java");
   }
 
@@ -66,21 +51,13 @@ class CodeEvolutionMetadataTest {
   void extractRepoFromMetadata() {
     var request =
         new ImprovementRequest(
-            "upgrade",
-            "dep",
-            "lodash",
-            "repo",
-            List.of(),
-            5,
-            Map.of("target-repo", "casehubio/engine"),
-            null);
+            "upgrade", "dep", "lodash", 5, Map.of("target-repo", "casehubio/engine"), null);
     assertThat(CodeEvolutionMetadata.extractRepo(request)).isEqualTo("casehubio/engine");
   }
 
   @Test
   void extractRepoReturnsNullWhenMissing() {
-    var request =
-        new ImprovementRequest("upgrade", "dep", "lodash", "repo", List.of(), 5, Map.of(), null);
+    var request = new ImprovementRequest("upgrade", "dep", "lodash", 5, Map.of(), null);
     assertThat(CodeEvolutionMetadata.extractRepo(request)).isNull();
   }
 
@@ -88,7 +65,7 @@ class CodeEvolutionMetadataTest {
   void encodeRoundTrip() {
     var metadata =
         CodeEvolutionMetadata.encode("casehubio/engine", List.of("src/a.java", "src/b.java"));
-    var request = new ImprovementRequest("upgrade", "dep", "lodash", null, null, 5, metadata, null);
+    var request = new ImprovementRequest("upgrade", "dep", "lodash", 5, metadata, null);
     assertThat(CodeEvolutionMetadata.extractRepo(request)).isEqualTo("casehubio/engine");
     assertThat(CodeEvolutionMetadata.extractPaths(request))
         .containsExactly("src/a.java", "src/b.java");

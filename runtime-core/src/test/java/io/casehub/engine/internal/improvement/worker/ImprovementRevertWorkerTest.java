@@ -19,7 +19,6 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import io.casehub.api.model.stigmergy.ImprovementRequest;
 import io.casehub.api.model.stigmergy.IntrospectionResult;
-import java.util.List;
 import java.util.Map;
 import org.junit.jupiter.api.Test;
 
@@ -33,10 +32,9 @@ class ImprovementRevertWorkerTest {
             "operational",
             "lint-fix",
             "checkstyle",
-            "casehubio/engine",
-            List.of("src/Foo.java"),
             10,
-            Map.of("commitSha", "abc123"));
+            Map.of("commitSha", "abc123", "target-paths", "src/Foo.java"),
+            null);
 
     IntrospectionResult result = worker.introspect(request);
 

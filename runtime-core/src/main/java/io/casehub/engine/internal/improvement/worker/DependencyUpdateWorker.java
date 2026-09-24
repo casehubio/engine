@@ -17,6 +17,7 @@ package io.casehub.engine.internal.improvement.worker;
 
 import io.casehub.api.model.stigmergy.ImprovementRequest;
 import io.casehub.api.model.stigmergy.IntrospectionResult;
+import io.casehub.engine.internal.improvement.CodeEvolutionMetadata;
 import jakarta.enterprise.context.ApplicationScoped;
 import java.util.List;
 import java.util.Map;
@@ -32,7 +33,9 @@ public class DependencyUpdateWorker {
     return new IntrospectionResult(
         category(),
         "Dependency update: " + request.target(),
-        request.targetPaths().isEmpty() ? List.of("pom.xml") : request.targetPaths(),
+        CodeEvolutionMetadata.extractPaths(request).isEmpty()
+            ? List.of("pom.xml")
+            : CodeEvolutionMetadata.extractPaths(request),
         request.estimatedSize() > 0 ? request.estimatedSize() : 30,
         "Update " + request.target() + " to latest version",
         Map.of("source", "dependency-staleness-check"));

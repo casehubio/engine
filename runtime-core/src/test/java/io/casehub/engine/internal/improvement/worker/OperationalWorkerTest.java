@@ -18,6 +18,7 @@ package io.casehub.engine.internal.improvement.worker;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.casehub.api.model.stigmergy.ImprovementRequest;
+import io.casehub.engine.internal.improvement.CodeEvolutionMetadata;
 import java.util.List;
 import java.util.Map;
 import org.junit.jupiter.api.Test;
@@ -57,10 +58,9 @@ class OperationalWorkerTest {
             "operational",
             "dependency-update",
             "hibernate-core",
-            "casehubio/engine",
-            List.of("pom.xml"),
             20,
-            Map.of());
+            CodeEvolutionMetadata.encode("casehubio/engine", List.of("pom.xml")),
+            null);
     var result = worker.introspect(request);
     assertThat(result).isNotNull();
     assertThat(result.category()).isEqualTo("dependency-update");
@@ -73,13 +73,7 @@ class OperationalWorkerTest {
     var worker = new DependencyUpdateWorker();
     var request =
         new ImprovementRequest(
-            "operational",
-            "dependency-update",
-            "hibernate-core",
-            "casehubio/engine",
-            List.of(),
-            0,
-            Map.of());
+            "operational", "dependency-update", "hibernate-core", 0, Map.of(), null);
     var result = worker.introspect(request);
     assertThat(result.affectedPaths()).containsExactly("pom.xml");
     assertThat(result.estimatedSize()).isEqualTo(30);
