@@ -375,6 +375,17 @@ public class RuntimeBeans {
 
   @Produces
   @ApplicationScoped
+  io.casehub.engine.internal.recovery.CaseRecoveryService caseRecoveryService(
+      io.casehub.engine.common.spi.cache.CaseInstanceCache caseInstanceCache,
+      io.casehub.engine.common.spi.CrossTenantCaseInstanceRepository caseInstanceRepository,
+      CaseCompletionTracker caseCompletionTracker,
+      io.casehub.api.spi.event.EventDispatcher eventDispatcher) {
+    return new io.casehub.engine.internal.recovery.CaseRecoveryService(
+        caseInstanceCache, caseInstanceRepository, caseCompletionTracker, eventDispatcher);
+  }
+
+  @Produces
+  @ApplicationScoped
   SelectionContextStore selectionContextStore() {
     return new SelectionContextStore();
   }
