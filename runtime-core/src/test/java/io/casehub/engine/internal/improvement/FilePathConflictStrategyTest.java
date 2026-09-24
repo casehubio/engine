@@ -87,8 +87,6 @@ class FilePathConflictStrategyTest {
         "upgrade",
         "dependency-update",
         "target",
-        null,
-        null,
         size,
         CodeEvolutionMetadata.encode(null, paths),
         "code-evolution");

@@ -102,26 +102,12 @@ class CodeEvolutionDenyPatternProviderTest {
 
   private ImprovementRequest makeRequest(List<String> paths) {
     return new ImprovementRequest(
-        "upgrade",
-        "dep",
-        "target",
-        null,
-        null,
-        5,
-        CodeEvolutionMetadata.encode(null, paths),
-        "code-evolution");
+        "upgrade", "dep", "target", 5, CodeEvolutionMetadata.encode(null, paths), "code-evolution");
   }
 
   private ImprovementRequest makeRequestWithRepo(List<String> paths, String repo) {
     return new ImprovementRequest(
-        "upgrade",
-        "dep",
-        "target",
-        null,
-        null,
-        5,
-        CodeEvolutionMetadata.encode(repo, paths),
-        "code-evolution");
+        "upgrade", "dep", "target", 5, CodeEvolutionMetadata.encode(repo, paths), "code-evolution");
   }
 
   static class InMemoryDenyPatternStore implements DenyPatternStore {

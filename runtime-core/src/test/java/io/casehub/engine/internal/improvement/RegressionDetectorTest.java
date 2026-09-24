@@ -18,12 +18,16 @@ package io.casehub.engine.internal.improvement;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.casehub.api.model.stigmergy.CapabilityAreaAssessment;
+import io.casehub.api.model.stigmergy.CategoryDescriptor;
 import io.casehub.api.model.stigmergy.HealthPolicy;
 import io.casehub.api.model.stigmergy.ImprovementOutcome;
 import io.casehub.api.model.stigmergy.RollbackPolicy;
+import io.casehub.api.model.stigmergy.StageDescriptor;
 import io.casehub.api.spi.improvement.CapabilityArea;
+import io.casehub.api.spi.improvement.ImprovementCategoryProvider;
 import io.casehub.engine.common.spi.event.RegressionDetectedEvent;
 import java.time.Instant;
+import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 import org.junit.jupiter.api.BeforeEach;
@@ -32,7 +36,9 @@ import org.junit.jupiter.api.Test;
 class RegressionDetectorTest {
 
   private RegressionDetector detector;
-  private ConfidenceScorer scorer;
+  private RegressionEvaluatorRegistry evaluatorRegistry;
+  private ImprovementCategoryRegistry improvementCategoryRegistry;
+
   private ImprovementCategoryTracker categoryTracker;
   private RollbackHistory rollbackHistory;
   private HealthScoreTracker healthTracker;
@@ -42,7 +48,27 @@ class RegressionDetectorTest {
 
   @BeforeEach
   void setUp() {
-    scorer = new ConfidenceScorer();
+    evaluatorRegistry = new RegressionEvaluatorRegistry();
+    improvementCategoryRegistry = new ImprovementCategoryRegistry();
+    improvementCategoryRegistry.registerProvider(
+        new ImprovementCategoryProvider() {
+          @Override
+          public String domainId() {
+            return "code-evolution";
+          }
+
+          @Override
+          public List<CategoryDescriptor> categories() {
+            return List.of(
+                new CategoryDescriptor("lint-fix", "Lint Fix", "test", "code-evolution"));
+          }
+
+          @Override
+          public List<StageDescriptor> stages() {
+            return List.of();
+          }
+        });
+    evaluatorRegistry.register(new HealthScoreDeltaRegressionEvaluator(new ConfidenceScorer()));
     categoryTracker = new ImprovementCategoryTracker();
     rollbackHistory = new RollbackHistory();
     registry = new CapabilityAreaRegistry();
@@ -50,7 +76,12 @@ class RegressionDetectorTest {
     regressionDetectedEvents = new TestEvent<>();
     detector =
         new RegressionDetector(
-            scorer, categoryTracker, rollbackHistory, healthTracker, regressionDetectedEvents);
+            evaluatorRegistry,
+            improvementCategoryRegistry,
+            categoryTracker,
+            rollbackHistory,
+            healthTracker,
+            regressionDetectedEvents);
     caseId = UUID.randomUUID();
   }
 

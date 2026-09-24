@@ -43,14 +43,7 @@ public class HealthScoreDeltaRegressionEvaluator implements RegressionEvaluator 
   @Override
   public RegressionVerdict evaluate(
       UUID caseId, HealthScoreSnapshot baseline, HealthScoreSnapshot current, String category) {
-    var baselineSnapshot =
-        new HealthScoreTracker.HealthSnapshot(
-            baseline.score(), baseline.timestamp(), baseline.componentScores());
-    var currentSnapshot =
-        new HealthScoreTracker.HealthSnapshot(
-            current.score(), current.timestamp(), current.componentScores());
-
-    double confidence = scorer.score(caseId, null, baselineSnapshot, currentSnapshot);
+    double confidence = scorer.score(caseId, null, baseline, current);
     if (confidence > 0.0) {
       return new RegressionVerdict.Detected(confidence, "Health score regression detected");
     }

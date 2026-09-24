@@ -15,7 +15,9 @@
  */
 package io.casehub.engine.internal.improvement;
 
+import io.casehub.api.model.stigmergy.HealthScoreSnapshot;
 import io.casehub.api.model.stigmergy.ImprovementOutcome;
+import io.casehub.api.model.stigmergy.RegressionVerdict;
 import io.casehub.api.model.stigmergy.RollbackPolicy;
 import io.casehub.engine.common.spi.Resettable;
 import io.casehub.engine.common.spi.event.RegressionDetectedEvent;
@@ -36,14 +38,16 @@ public class RegressionDetector implements Resettable {
       UUID improvementCaseId,
       String category,
       String target,
-      HealthScoreTracker.HealthSnapshot baseline,
+      HealthScoreSnapshot baseline,
       Instant mergedAt,
       int checksRemaining) {}
 
   private final ConcurrentHashMap<UUID, List<MonitoredImprovement>> monitors =
       new ConcurrentHashMap<>();
 
-  private final ConfidenceScorer scorer;
+  private final RegressionEvaluatorRegistry evaluatorRegistry;
+  private final ImprovementCategoryRegistry categoryRegistry;
+
   private final ImprovementCategoryTracker categoryTracker;
   private final RollbackHistory rollbackHistory;
   private final HealthScoreTracker healthTracker;
@@ -51,12 +55,14 @@ public class RegressionDetector implements Resettable {
 
   @Inject
   public RegressionDetector(
-      ConfidenceScorer scorer,
+      RegressionEvaluatorRegistry evaluatorRegistry,
+      ImprovementCategoryRegistry categoryRegistry,
       ImprovementCategoryTracker categoryTracker,
       RollbackHistory rollbackHistory,
       HealthScoreTracker healthTracker,
       Event<RegressionDetectedEvent> regressionDetectedEvent) {
-    this.scorer = scorer;
+    this.evaluatorRegistry = evaluatorRegistry;
+    this.categoryRegistry = categoryRegistry;
     this.categoryTracker = categoryTracker;
     this.rollbackHistory = rollbackHistory;
     this.healthTracker = healthTracker;
@@ -115,22 +121,33 @@ public class RegressionDetector implements Resettable {
       UUID caseId,
       MonitoredImprovement monitor,
       RollbackPolicy policy,
-      HealthScoreTracker.HealthSnapshot before,
-      HealthScoreTracker.HealthSnapshot after) {
-    double confidence = scorer.score(caseId, monitor.improvementCaseId(), before, after);
+      HealthScoreSnapshot before,
+      HealthScoreSnapshot after) {
+    String domainId = categoryRegistry.domainForCategory(monitor.category()).orElse("");
+
+    double maxConfidence = 0.0;
+    for (var evaluator : evaluatorRegistry.all()) {
+      if (!evaluator.domainId().equals(domainId)) {
+        continue;
+      }
+      var verdict = evaluator.evaluate(caseId, before, after, monitor.category());
+      if (verdict instanceof RegressionVerdict.Detected detected) {
+        maxConfidence = Math.max(maxConfidence, detected.confidence());
+      }
+    }
 
     regressionDetectedEvent.fireAsync(
         new RegressionDetectedEvent(
-            caseId, monitor.improvementCaseId(), confidence, monitor.category()));
+            caseId, monitor.improvementCaseId(), maxConfidence, monitor.category()));
 
-    if (confidence >= policy.effectiveAutoRevertThreshold()) {
+    if (maxConfidence >= policy.effectiveAutoRevertThreshold()) {
       rollbackHistory.record(
           caseId, monitor.improvementCaseId(), monitor.category(), monitor.target());
       categoryTracker.pauseCategory(
           caseId,
           monitor.category(),
           Duration.ofMinutes(policy.effectiveRegressionWindowMinutes()));
-    } else if (confidence >= policy.effectivePauseThreshold()) {
+    } else if (maxConfidence >= policy.effectivePauseThreshold()) {
       categoryTracker.pauseCategory(
           caseId,
           monitor.category(),

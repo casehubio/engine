@@ -17,6 +17,7 @@ package io.casehub.engine.internal.improvement;
 
 import io.casehub.api.model.stigmergy.CapabilityAreaAssessment;
 import io.casehub.api.model.stigmergy.HealthPolicy;
+import io.casehub.api.model.stigmergy.HealthScoreSnapshot;
 import io.casehub.api.spi.improvement.CapabilityArea;
 import io.casehub.engine.common.spi.Resettable;
 import jakarta.enterprise.context.ApplicationScoped;
@@ -34,10 +35,8 @@ public class HealthScoreTracker implements Resettable {
 
   private static final int MAX_HISTORY_SIZE = 1000;
 
-  public record HealthSnapshot(
-      double score, Instant timestamp, Map<String, Double> componentScores) {}
-
-  private final ConcurrentHashMap<UUID, Deque<HealthSnapshot>> history = new ConcurrentHashMap<>();
+  private final ConcurrentHashMap<UUID, Deque<HealthScoreSnapshot>> history =
+      new ConcurrentHashMap<>();
   private final CapabilityAreaRegistry areaRegistry;
 
   public HealthScoreTracker(CapabilityAreaRegistry areaRegistry) {
@@ -77,7 +76,7 @@ public class HealthScoreTracker implements Resettable {
       totalWeight += weight;
     }
     double score = totalWeight > 0 ? weightedSum / totalWeight : 0.0;
-    var snapshot = new HealthSnapshot(score, Instant.now(), components);
+    var snapshot = new HealthScoreSnapshot(score, Instant.now(), components);
     var deque = history.computeIfAbsent(caseId, k -> new ArrayDeque<>());
     deque.addLast(snapshot);
     while (deque.size() > MAX_HISTORY_SIZE) {
@@ -85,7 +84,7 @@ public class HealthScoreTracker implements Resettable {
     }
   }
 
-  public HealthSnapshot latestSnapshot(UUID caseId) {
+  public HealthScoreSnapshot latestSnapshot(UUID caseId) {
     var deque = history.get(caseId);
     return (deque != null && !deque.isEmpty()) ? deque.peekLast() : null;
   }
@@ -97,7 +96,7 @@ public class HealthScoreTracker implements Resettable {
     var current = deque.peekLast();
     Instant cutoff = Instant.now().minus(Duration.ofMinutes(windowMinutes));
 
-    HealthSnapshot baseline = null;
+    HealthScoreSnapshot baseline = null;
     for (var snapshot : deque) {
       if (snapshot.timestamp().isBefore(cutoff) || snapshot.timestamp().equals(cutoff)) {
         baseline = snapshot;

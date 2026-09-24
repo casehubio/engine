@@ -53,18 +53,24 @@ class EvolutionTickerTest {
     healthTracker = new HealthScoreTracker(registry);
     var cbEvents = new TestEvent<CircuitBreakerStateChangedEvent>();
     circuitBreaker = new ImprovementCircuitBreaker(cbEvents);
-    var scorer = new ConfidenceScorer();
     var categoryTracker = new ImprovementCategoryTracker();
     var rollbackHistory = new RollbackHistory();
     var regressionEvents = new TestEvent<RegressionDetectedEvent>();
+    var evaluatorReg = new RegressionEvaluatorRegistry();
+    var categoryRegistryLocal = new ImprovementCategoryRegistry();
+    categoryRegistryLocal.registerProvider(new CodeEvolutionCategoryProvider());
+    evaluatorReg.register(new HealthScoreDeltaRegressionEvaluator(new ConfidenceScorer()));
     regressionDetector =
         new RegressionDetector(
-            scorer, categoryTracker, rollbackHistory, healthTracker, regressionEvents);
+            evaluatorReg,
+            categoryRegistryLocal,
+            categoryTracker,
+            rollbackHistory,
+            healthTracker,
+            regressionEvents);
 
     var budgetEnforcer = new ImprovementBudgetEnforcer(new InMemoryDenyPatternStore());
     var proposalSourceRegistry = new ImprovementProposalSourceRegistry();
-    var categoryRegistryLocal = new ImprovementCategoryRegistry();
-    categoryRegistryLocal.registerProvider(new CodeEvolutionCategoryProvider());
     goalFormation =
         new ImprovementGoalFormationStrategy(
             budgetEnforcer,

@@ -15,6 +15,7 @@
  */
 package io.casehub.engine.internal.improvement;
 
+import io.casehub.api.model.stigmergy.HealthScoreSnapshot;
 import jakarta.enterprise.context.ApplicationScoped;
 import java.util.UUID;
 
@@ -22,10 +23,7 @@ import java.util.UUID;
 public class ConfidenceScorer {
 
   public double score(
-      UUID caseId,
-      UUID improvementCaseId,
-      HealthScoreTracker.HealthSnapshot before,
-      HealthScoreTracker.HealthSnapshot after) {
+      UUID caseId, UUID improvementCaseId, HealthScoreSnapshot before, HealthScoreSnapshot after) {
     double confidence = 0.0;
 
     if (regressionWithinWindow(before, after)) {
@@ -38,13 +36,11 @@ public class ConfidenceScorer {
     return Math.max(0.0, Math.min(1.0, confidence));
   }
 
-  private boolean regressionWithinWindow(
-      HealthScoreTracker.HealthSnapshot before, HealthScoreTracker.HealthSnapshot after) {
+  private boolean regressionWithinWindow(HealthScoreSnapshot before, HealthScoreSnapshot after) {
     return after.score() < before.score();
   }
 
-  private boolean multipleAreasDegraded(
-      HealthScoreTracker.HealthSnapshot before, HealthScoreTracker.HealthSnapshot after) {
+  private boolean multipleAreasDegraded(HealthScoreSnapshot before, HealthScoreSnapshot after) {
     int degradedCount = 0;
     for (var entry : before.componentScores().entrySet()) {
       Double afterScore = after.componentScores().get(entry.getKey());
