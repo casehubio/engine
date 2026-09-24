@@ -51,7 +51,7 @@ import java.util.Map;
 import java.util.UUID;
 
 @ApplicationScoped
-@McpDomain(value = "engine/cases", app = "engine")
+@McpDomain(value = "engine/cases", app = "engine", summary = "CMMN case instances — start, query, complete, reactivate")
 public class DefaultEngineCaseApi {
 
   @Inject CaseService caseService;
