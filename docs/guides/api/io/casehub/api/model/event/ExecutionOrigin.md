@@ -17,6 +17,10 @@ Worker execution triggered by a capability binding dispatch (standard case-drive
 
 Worker execution triggered by recovery coordinator (restart/resume operations).
 
+### `REPLAY` (`io.casehub.api.model.event.ExecutionOrigin`)
+
+Worker execution triggered by dead-letter queue replay.
+
 ### `SCHEDULE_TRIGGER` (`io.casehub.api.model.event.ExecutionOrigin`)
 
 Worker execution triggered by a scheduled timer or cron trigger.
