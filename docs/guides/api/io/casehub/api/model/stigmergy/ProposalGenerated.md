@@ -6,24 +6,24 @@
 
 ## Fields
 
-### `filtering` (`io.casehub.api.model.stigmergy.TickTrace.SignalFilteringSummary`)
+### `filtering` (`io.casehub.api.model.stigmergy.ProposalFilteringSummary`)
 
 ### `goalCount` (`int`)
 
 ## Record Components
 
-### `filtering` (`io.casehub.api.model.stigmergy.TickTrace.SignalFilteringSummary`)
+### `filtering` (`io.casehub.api.model.stigmergy.ProposalFilteringSummary`)
 
 ### `goalCount` (`int`)
 
 ## Constructors
 
-### `public ProposalGenerated(int goalCount, io.casehub.api.model.stigmergy.TickTrace.SignalFilteringSummary filtering)`
+### `public ProposalGenerated(int goalCount, io.casehub.api.model.stigmergy.ProposalFilteringSummary filtering)`
 
 #### Parameters
 
 - `goalCount` (`int`)
-- `filtering` (`io.casehub.api.model.stigmergy.TickTrace.SignalFilteringSummary`)
+- `filtering` (`io.casehub.api.model.stigmergy.ProposalFilteringSummary`)
 
 ## Methods
 
@@ -33,7 +33,7 @@
 
 - `o` (`java.lang.Object`)
 
-### `public io.casehub.api.model.stigmergy.TickTrace.SignalFilteringSummary filtering()`
+### `public io.casehub.api.model.stigmergy.ProposalFilteringSummary filtering()`
 
 ### `public int goalCount()`
 

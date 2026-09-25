@@ -6,13 +6,13 @@
 
 ## Methods
 
-### `public abstract io.casehub.api.model.stigmergy.EscalationResult evaluate(java.util.UUID caseId, java.lang.String tenancyId, io.casehub.api.model.stigmergy.ImprovementStage stage, io.casehub.api.model.stigmergy.EscalationContext context, io.casehub.api.model.stigmergy.EscalationPolicy policy, java.util.List<io.casehub.api.model.stigmergy.WatchPattern> activeWatchPatterns)`
+### `public abstract io.casehub.api.model.stigmergy.EscalationResult evaluate(java.util.UUID caseId, java.lang.String tenancyId, java.lang.String stage, io.casehub.api.model.stigmergy.EscalationContext context, io.casehub.api.model.stigmergy.EscalationPolicy policy, java.util.List<io.casehub.api.model.stigmergy.WatchPattern> activeWatchPatterns)`
 
 #### Parameters
 
 - `caseId` (`java.util.UUID`)
 - `tenancyId` (`java.lang.String`)
-- `stage` (`io.casehub.api.model.stigmergy.ImprovementStage`)
+- `stage` (`java.lang.String`)
 - `context` (`io.casehub.api.model.stigmergy.EscalationContext`)
 - `policy` (`io.casehub.api.model.stigmergy.EscalationPolicy`)
 - `activeWatchPatterns` (`java.util.List<io.casehub.api.model.stigmergy.WatchPattern>`)

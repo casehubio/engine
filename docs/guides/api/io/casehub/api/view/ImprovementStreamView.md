@@ -12,7 +12,7 @@
 
 ### `conflictBlocked` (`boolean`)
 
-### `currentStage` (`io.casehub.api.model.stigmergy.ImprovementStage`)
+### `currentStage` (`java.lang.String`)
 
 ### `improvementCaseId` (`java.util.UUID`)
 
@@ -30,7 +30,7 @@
 
 ### `conflictBlocked` (`boolean`)
 
-### `currentStage` (`io.casehub.api.model.stigmergy.ImprovementStage`)
+### `currentStage` (`java.lang.String`)
 
 ### `improvementCaseId` (`java.util.UUID`)
 
@@ -42,14 +42,14 @@
 
 ## Constructors
 
-### `public ImprovementStreamView(java.util.UUID improvementCaseId, java.lang.String category, java.lang.String target, io.casehub.api.model.stigmergy.ImprovementStage currentStage, java.util.List<io.casehub.api.view.EvolutionStateSnapshot.StageProgress> stageHistory, java.util.UUID blockedBy, boolean conflictBlocked, java.time.Instant startedAt)`
+### `public ImprovementStreamView(java.util.UUID improvementCaseId, java.lang.String category, java.lang.String target, java.lang.String currentStage, java.util.List<io.casehub.api.view.EvolutionStateSnapshot.StageProgress> stageHistory, java.util.UUID blockedBy, boolean conflictBlocked, java.time.Instant startedAt)`
 
 #### Parameters
 
 - `improvementCaseId` (`java.util.UUID`)
 - `category` (`java.lang.String`)
 - `target` (`java.lang.String`)
-- `currentStage` (`io.casehub.api.model.stigmergy.ImprovementStage`)
+- `currentStage` (`java.lang.String`)
 - `stageHistory` (`java.util.List<io.casehub.api.view.EvolutionStateSnapshot.StageProgress>`)
 - `blockedBy` (`java.util.UUID`)
 - `conflictBlocked` (`boolean`)
@@ -63,7 +63,7 @@
 
 ### `public boolean conflictBlocked()`
 
-### `public io.casehub.api.model.stigmergy.ImprovementStage currentStage()`
+### `public java.lang.String currentStage()`
 
 ### `public final boolean equals(java.lang.Object o)`
 

@@ -26,7 +26,7 @@
 
 ### `resolvedAt` (`java.time.Instant`)
 
-### `stage` (`io.casehub.api.model.stigmergy.ImprovementStage`)
+### `stage` (`java.lang.String`)
 
 ### `status` (`io.casehub.api.model.stigmergy.ConductorInboxEntry.Status`)
 
@@ -56,7 +56,7 @@
 
 ### `resolvedAt` (`java.time.Instant`)
 
-### `stage` (`io.casehub.api.model.stigmergy.ImprovementStage`)
+### `stage` (`java.lang.String`)
 
 ### `status` (`io.casehub.api.model.stigmergy.ConductorInboxEntry.Status`)
 
@@ -66,13 +66,13 @@
 
 ## Constructors
 
-### `public ConductorInboxEntry(java.util.UUID caseId, java.lang.String id, io.casehub.api.model.stigmergy.ImprovementStage stage, io.casehub.api.model.stigmergy.ConductorInboxEntry.Status status, java.lang.String category, java.lang.String areaId, java.util.UUID improvementCaseId, java.lang.String summary, java.util.List<io.casehub.api.model.stigmergy.EscalationTrigger> escalationTriggers, double confidence, java.time.Instant queuedAt, java.time.Instant resolvedAt, java.lang.Integer timeoutMinutes, io.casehub.api.model.stigmergy.ConductorDecision decision)`
+### `public ConductorInboxEntry(java.util.UUID caseId, java.lang.String id, java.lang.String stage, io.casehub.api.model.stigmergy.ConductorInboxEntry.Status status, java.lang.String category, java.lang.String areaId, java.util.UUID improvementCaseId, java.lang.String summary, java.util.List<io.casehub.api.model.stigmergy.EscalationTrigger> escalationTriggers, double confidence, java.time.Instant queuedAt, java.time.Instant resolvedAt, java.lang.Integer timeoutMinutes, io.casehub.api.model.stigmergy.ConductorDecision decision)`
 
 #### Parameters
 
 - `caseId` (`java.util.UUID`)
 - `id` (`java.lang.String`)
-- `stage` (`io.casehub.api.model.stigmergy.ImprovementStage`)
+- `stage` (`java.lang.String`)
 - `status` (`io.casehub.api.model.stigmergy.ConductorInboxEntry.Status`)
 - `category` (`java.lang.String`)
 - `areaId` (`java.lang.String`)
@@ -115,7 +115,7 @@
 
 ### `public java.time.Instant resolvedAt()`
 
-### `public io.casehub.api.model.stigmergy.ImprovementStage stage()`
+### `public java.lang.String stage()`
 
 ### `public io.casehub.api.model.stigmergy.ConductorInboxEntry.Status status()`
 

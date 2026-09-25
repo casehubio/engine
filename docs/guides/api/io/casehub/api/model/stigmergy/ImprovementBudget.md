@@ -12,9 +12,9 @@
 
 ### `deniedPaths` (`java.util.List<java.lang.String>`)
 
-### `maxConcurrent` (`java.lang.Integer`)
+### `maxChangeSize` (`java.lang.Integer`)
 
-### `maxPRSize` (`java.lang.Integer`)
+### `maxConcurrent` (`java.lang.Integer`)
 
 ### `maxPerDay` (`java.lang.Integer`)
 
@@ -28,9 +28,9 @@
 
 ### `deniedPaths` (`java.util.List<java.lang.String>`)
 
-### `maxConcurrent` (`java.lang.Integer`)
+### `maxChangeSize` (`java.lang.Integer`)
 
-### `maxPRSize` (`java.lang.Integer`)
+### `maxConcurrent` (`java.lang.Integer`)
 
 ### `maxPerDay` (`java.lang.Integer`)
 
@@ -38,7 +38,7 @@
 
 ## Constructors
 
-### `public ImprovementBudget(java.lang.Integer maxConcurrent, java.lang.Integer maxPerDay, java.lang.Integer cooldownMinutes, java.util.List<java.lang.String> allowedRepos, java.util.List<java.lang.String> deniedPaths, java.lang.Boolean requireReview, java.lang.Integer maxPRSize)`
+### `public ImprovementBudget(java.lang.Integer maxConcurrent, java.lang.Integer maxPerDay, java.lang.Integer cooldownMinutes, java.util.List<java.lang.String> allowedRepos, java.util.List<java.lang.String> deniedPaths, java.lang.Boolean requireReview, java.lang.Integer maxChangeSize)`
 
 #### Parameters
 
@@ -48,7 +48,7 @@
 - `allowedRepos` (`java.util.List<java.lang.String>`)
 - `deniedPaths` (`java.util.List<java.lang.String>`)
 - `requireReview` (`java.lang.Boolean`)
-- `maxPRSize` (`java.lang.Integer`)
+- `maxChangeSize` (`java.lang.Integer`)
 
 ## Methods
 
@@ -64,9 +64,9 @@
 
 ### `public java.util.List<java.lang.String> effectiveDeniedPaths()`
 
-### `public int effectiveMaxConcurrent()`
+### `public int effectiveMaxChangeSize()`
 
-### `public int effectiveMaxPRSize()`
+### `public int effectiveMaxConcurrent()`
 
 ### `public int effectiveMaxPerDay()`
 
@@ -80,9 +80,9 @@
 
 ### `public final int hashCode()`
 
-### `public java.lang.Integer maxConcurrent()`
+### `public java.lang.Integer maxChangeSize()`
 
-### `public java.lang.Integer maxPRSize()`
+### `public java.lang.Integer maxConcurrent()`
 
 ### `public java.lang.Integer maxPerDay()`
 

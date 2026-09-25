@@ -124,8 +124,6 @@
 
 ### `public int effectiveConsensusMinSources()`
 
-### `public java.util.List<java.lang.String> effectiveEnabledCategories()`
-
 ### `public io.casehub.api.model.stigmergy.EscalationPolicy effectiveEscalationPolicy()`
 
 ### `public boolean effectiveEvolutionEnabled()`

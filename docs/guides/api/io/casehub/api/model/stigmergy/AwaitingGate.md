@@ -10,7 +10,7 @@
 
 ### `inboxEntryId` (`java.lang.String`)
 
-### `stage` (`io.casehub.api.model.stigmergy.ImprovementStage`)
+### `stage` (`java.lang.String`)
 
 ## Record Components
 
@@ -18,15 +18,15 @@
 
 ### `inboxEntryId` (`java.lang.String`)
 
-### `stage` (`io.casehub.api.model.stigmergy.ImprovementStage`)
+### `stage` (`java.lang.String`)
 
 ## Constructors
 
-### `public AwaitingGate(io.casehub.api.model.stigmergy.ImprovementStage stage, java.lang.String inboxEntryId, io.casehub.api.model.stigmergy.GateCheckpoint checkpoint)`
+### `public AwaitingGate(java.lang.String stage, java.lang.String inboxEntryId, io.casehub.api.model.stigmergy.GateCheckpoint checkpoint)`
 
 #### Parameters
 
-- `stage` (`io.casehub.api.model.stigmergy.ImprovementStage`)
+- `stage` (`java.lang.String`)
 - `inboxEntryId` (`java.lang.String`)
 - `checkpoint` (`io.casehub.api.model.stigmergy.GateCheckpoint`)
 
@@ -44,6 +44,6 @@
 
 ### `public java.lang.String inboxEntryId()`
 
-### `public io.casehub.api.model.stigmergy.ImprovementStage stage()`
+### `public java.lang.String stage()`
 
 ### `public final java.lang.String toString()`

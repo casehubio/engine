@@ -1,4 +1,4 @@
-# io.casehub.api.model.stigmergy.TickTrace.SignalFilteringSummary
+# io.casehub.api.model.stigmergy.ProposalFilteringSummary
 
 **Package:** `io.casehub.api.model.stigmergy`
 
@@ -14,11 +14,11 @@
 
 ### `afterConflictFilter` (`int`)
 
-### `afterNamespaceFilter` (`int`)
+### `afterDenyFilter` (`int`)
 
 ### `afterSuppressionFilter` (`int`)
 
-### `consensusSignals` (`int`)
+### `proposalsBySource` (`java.util.Map<java.lang.String,java.lang.Integer>`)
 
 ### `proposed` (`int`)
 
@@ -32,25 +32,25 @@
 
 ### `afterConflictFilter` (`int`)
 
-### `afterNamespaceFilter` (`int`)
+### `afterDenyFilter` (`int`)
 
 ### `afterSuppressionFilter` (`int`)
 
-### `consensusSignals` (`int`)
+### `proposalsBySource` (`java.util.Map<java.lang.String,java.lang.Integer>`)
 
 ### `proposed` (`int`)
 
 ## Constructors
 
-### `public SignalFilteringSummary(int consensusSignals, int afterNamespaceFilter, int afterCategoryFilter, int afterSuppressionFilter, int afterAntiOscillationFilter, int afterBudgetFilter, int afterConflictFilter, int proposed)`
+### `public ProposalFilteringSummary(java.util.Map<java.lang.String,java.lang.Integer> proposalsBySource, int afterCategoryFilter, int afterSuppressionFilter, int afterAntiOscillationFilter, int afterDenyFilter, int afterBudgetFilter, int afterConflictFilter, int proposed)`
 
 #### Parameters
 
-- `consensusSignals` (`int`)
-- `afterNamespaceFilter` (`int`)
+- `proposalsBySource` (`java.util.Map<java.lang.String,java.lang.Integer>`)
 - `afterCategoryFilter` (`int`)
 - `afterSuppressionFilter` (`int`)
 - `afterAntiOscillationFilter` (`int`)
+- `afterDenyFilter` (`int`)
 - `afterBudgetFilter` (`int`)
 - `afterConflictFilter` (`int`)
 - `proposed` (`int`)
@@ -65,11 +65,9 @@
 
 ### `public int afterConflictFilter()`
 
-### `public int afterNamespaceFilter()`
+### `public int afterDenyFilter()`
 
 ### `public int afterSuppressionFilter()`
-
-### `public int consensusSignals()`
 
 ### `public final boolean equals(java.lang.Object o)`
 
@@ -78,6 +76,8 @@
 - `o` (`java.lang.Object`)
 
 ### `public final int hashCode()`
+
+### `public java.util.Map<java.lang.String,java.lang.Integer> proposalsBySource()`
 
 ### `public int proposed()`
 
