@@ -10,7 +10,7 @@
 
 ### `enteredAt` (`java.time.Instant`)
 
-### `stage` (`io.casehub.api.model.stigmergy.ImprovementStage`)
+### `stage` (`java.lang.String`)
 
 ### `status` (`io.casehub.api.view.EvolutionStateSnapshot.StageProgress.StageStatus`)
 
@@ -20,17 +20,17 @@
 
 ### `enteredAt` (`java.time.Instant`)
 
-### `stage` (`io.casehub.api.model.stigmergy.ImprovementStage`)
+### `stage` (`java.lang.String`)
 
 ### `status` (`io.casehub.api.view.EvolutionStateSnapshot.StageProgress.StageStatus`)
 
 ## Constructors
 
-### `public StageProgress(io.casehub.api.model.stigmergy.ImprovementStage stage, io.casehub.api.view.EvolutionStateSnapshot.StageProgress.StageStatus status, java.time.Instant enteredAt, java.time.Instant completedAt)`
+### `public StageProgress(java.lang.String stage, io.casehub.api.view.EvolutionStateSnapshot.StageProgress.StageStatus status, java.time.Instant enteredAt, java.time.Instant completedAt)`
 
 #### Parameters
 
-- `stage` (`io.casehub.api.model.stigmergy.ImprovementStage`)
+- `stage` (`java.lang.String`)
 - `status` (`io.casehub.api.view.EvolutionStateSnapshot.StageProgress.StageStatus`)
 - `enteredAt` (`java.time.Instant`)
 - `completedAt` (`java.time.Instant`)
@@ -49,7 +49,7 @@
 
 ### `public final int hashCode()`
 
-### `public io.casehub.api.model.stigmergy.ImprovementStage stage()`
+### `public java.lang.String stage()`
 
 ### `public io.casehub.api.view.EvolutionStateSnapshot.StageProgress.StageStatus status()`
 
