@@ -518,9 +518,8 @@ types:
 
   GatePolicy:
     record: YamlGatePolicy
-    extra:
-      - { name: modes, type: "Map<String, GateMode>" }
-      - { name: gateTimeoutMinutes, type: Integer }
+    fields:
+      modes: { type: "Map<String, GateMode>" }
 
   EscalationPolicy:
     record: YamlEscalationPolicy
