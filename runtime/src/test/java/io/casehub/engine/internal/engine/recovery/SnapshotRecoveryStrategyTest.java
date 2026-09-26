@@ -17,13 +17,14 @@ package io.casehub.engine.internal.engine.recovery;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.node.NullNode;
 import io.casehub.api.context.CaseContext;
 import io.casehub.engine.common.internal.model.CaseInstance;
 import io.casehub.engine.internal.context.CaseContextImpl;
+import io.casehub.persistence.memory.InMemoryEventLogRepository;
 import java.util.UUID;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -34,7 +35,9 @@ class SnapshotRecoveryStrategyTest {
 
   @BeforeEach
   void setUp() {
-    strategy = new SnapshotRecoveryStrategy();
+    EventLogReplayRecoveryStrategy fallback =
+        new EventLogReplayRecoveryStrategy(new InMemoryEventLogRepository());
+    strategy = new SnapshotRecoveryStrategy(fallback);
   }
 
   @Test
@@ -69,11 +72,24 @@ class SnapshotRecoveryStrategyTest {
   }
 
   @Test
-  void recoverWithNullSnapshotThrows() {
+  void recoverWithNullSnapshotDelegatesToFallback() {
     CaseInstance instance = new CaseInstance();
     instance.setUuid(UUID.randomUUID());
 
-    assertThrows(IllegalStateException.class, () -> strategy.recover(instance));
+    CaseContext recovered = strategy.recover(instance);
+
+    assertNotNull(recovered);
+  }
+
+  @Test
+  void recoverWithNullNodeSnapshotDelegatesToFallback() {
+    CaseInstance instance = new CaseInstance();
+    instance.setUuid(UUID.randomUUID());
+    instance.setContextSnapshot(NullNode.getInstance());
+
+    CaseContext recovered = strategy.recover(instance);
+
+    assertNotNull(recovered);
   }
 
   @Test
