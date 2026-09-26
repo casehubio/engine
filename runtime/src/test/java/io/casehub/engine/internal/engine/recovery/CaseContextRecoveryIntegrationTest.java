@@ -22,6 +22,8 @@ import io.casehub.api.context.CaseContext;
 import io.casehub.engine.common.internal.model.CaseInstance;
 import io.casehub.engine.common.spi.recovery.CaseContextRecoveryStrategy;
 import io.casehub.engine.internal.context.CaseContextImpl;
+import io.casehub.persistence.memory.InMemoryEventLogRepository;
+import jakarta.enterprise.inject.Typed;
 import java.util.UUID;
 import org.junit.jupiter.api.Test;
 
@@ -35,16 +37,13 @@ class CaseContextRecoveryIntegrationTest {
   }
 
   @Test
-  void eventLogStrategyHasIfBuildPropertyAnnotation() {
+  void eventLogStrategyHasTypedAnnotation() {
     assertTrue(
-        EventLogReplayRecoveryStrategy.class.isAnnotationPresent(
-            io.quarkus.arc.properties.IfBuildProperty.class),
-        "EventLogReplayRecoveryStrategy must be @IfBuildProperty");
-    var annotation =
-        EventLogReplayRecoveryStrategy.class.getAnnotation(
-            io.quarkus.arc.properties.IfBuildProperty.class);
-    assertEquals("casehub.context.recovery-strategy", annotation.name());
-    assertEquals("event-log", annotation.stringValue());
+        EventLogReplayRecoveryStrategy.class.isAnnotationPresent(Typed.class),
+        "EventLogReplayRecoveryStrategy must be @Typed");
+    var annotation = EventLogReplayRecoveryStrategy.class.getAnnotation(Typed.class);
+    assertEquals(1, annotation.value().length);
+    assertEquals(EventLogReplayRecoveryStrategy.class, annotation.value()[0]);
   }
 
   @Test
@@ -64,7 +63,9 @@ class CaseContextRecoveryIntegrationTest {
     CaseInstance instance = new CaseInstance();
     instance.setUuid(UUID.randomUUID());
 
-    SnapshotRecoveryStrategy snapshot = new SnapshotRecoveryStrategy();
+    EventLogReplayRecoveryStrategy fallback =
+        new EventLogReplayRecoveryStrategy(new InMemoryEventLogRepository());
+    SnapshotRecoveryStrategy snapshot = new SnapshotRecoveryStrategy(fallback);
     snapshot.onContextChanged(instance, context);
 
     CaseInstance loaded = new CaseInstance();

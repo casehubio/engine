@@ -28,6 +28,7 @@ import io.casehub.engine.common.spi.recovery.CaseContextRecoveryStrategy;
 import io.casehub.engine.internal.context.CaseContextImpl;
 import io.casehub.engine.internal.context.EpisodicLayerUpdater;
 import jakarta.enterprise.context.ApplicationScoped;
+import jakarta.enterprise.inject.Typed;
 import java.util.EnumSet;
 import java.util.List;
 import java.util.Map;
@@ -40,9 +41,7 @@ import org.jboss.logging.Logger;
  *
  * <p>Extracted from {@code DefaultWorkerExecutionRecoveryService.rebuildStateContext()}.
  */
-@io.quarkus.arc.properties.IfBuildProperty(
-    name = "casehub.context.recovery-strategy",
-    stringValue = "event-log")
+@Typed(EventLogReplayRecoveryStrategy.class)
 @ApplicationScoped
 public class EventLogReplayRecoveryStrategy implements CaseContextRecoveryStrategy {
 
