@@ -114,20 +114,8 @@ class CaseHubRuntimeImpl implements CaseHubRuntime {
   }
 
   private io.casehub.api.context.CaseContextStoreFactory resolveFactory(CaseDefinition definition) {
-    var factory =
-        strategyResolver.resolve(
-            io.casehub.api.context.CaseContextStoreFactory.class,
-            definition.getContextStoreFactory());
-    if (factory.isDurable()) {
-      throw new UnsupportedOperationException(
-          "CaseContextStoreFactory '"
-              + factory.id()
-              + "' reports isDurable()=true but "
-              + "recovery path is not yet wired — durable factories will silently lose case "
-              + "state on JVM restart. Implement recovery migration before deploying "
-              + "durable factories.");
-    }
-    return factory;
+    return strategyResolver.resolve(
+        io.casehub.api.context.CaseContextStoreFactory.class, definition.getContextStoreFactory());
   }
 
   private CaseContextImpl createContext(
