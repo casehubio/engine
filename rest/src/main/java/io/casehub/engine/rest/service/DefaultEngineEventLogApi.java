@@ -38,7 +38,10 @@ import java.util.Map;
 import java.util.UUID;
 
 @ApplicationScoped
-@McpDomain(value = "engine/events", app = "engine", summary = "Case event log — audit trail of all case actions")
+@McpDomain(
+    value = "engine/events",
+    app = "engine",
+    summary = "Case event log — audit trail of all case actions")
 public class DefaultEngineEventLogApi {
 
   @Inject CaseService caseService;
