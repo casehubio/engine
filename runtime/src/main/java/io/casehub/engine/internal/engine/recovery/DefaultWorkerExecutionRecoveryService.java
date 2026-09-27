@@ -16,15 +16,20 @@
 package io.casehub.engine.internal.engine.recovery;
 
 import io.casehub.api.context.CaseContext;
+import io.casehub.api.context.CaseContextStoreFactory;
+import io.casehub.api.model.CaseDefinition;
 import io.casehub.api.model.event.CaseHubEventType;
 import io.casehub.engine.common.internal.history.EventLog;
 import io.casehub.engine.common.internal.model.CaseInstance;
+import io.casehub.engine.common.internal.model.CaseMetaModel;
 import io.casehub.engine.common.qualifier.CrossTenant;
+import io.casehub.engine.common.spi.CaseDefinitionRegistry;
 import io.casehub.engine.common.spi.CrossTenantCaseInstanceRepository;
 import io.casehub.engine.common.spi.CrossTenantEventLogRepository;
 import io.casehub.engine.common.spi.cache.CaseInstanceCache;
 import io.casehub.engine.common.spi.recovery.WorkerExecutionRecoveryService;
 import io.casehub.engine.common.spi.scheduler.WorkerExecutionManager;
+import io.casehub.engine.internal.context.CaseContextImpl;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
 import java.util.EnumSet;
@@ -59,6 +64,10 @@ public class DefaultWorkerExecutionRecoveryService implements WorkerExecutionRec
 
   @Inject io.casehub.engine.common.spi.recovery.CaseContextRecoveryStrategy recoveryStrategy;
 
+  @Inject CaseDefinitionRegistry caseDefinitionRegistry;
+
+  @Inject io.casehub.platform.api.routing.StrategyResolver strategyResolver;
+
   @Override
   public CaseInstance loadOrRestoreCaseInstance(UUID caseId) {
     CaseInstance cached = caseInstanceCache.get(caseId);
@@ -71,10 +80,48 @@ public class DefaultWorkerExecutionRecoveryService implements WorkerExecutionRec
             .findByUuid(caseId)
             .orElseThrow(
                 () -> new IllegalStateException("CaseInstance not found for caseId=" + caseId));
-    CaseContext stateContext = recoveryStrategy.recover(instance);
+
+    CaseContextStoreFactory factory = resolveFactory(instance);
+    CaseContext stateContext;
+    if (factory != null && factory.isDurable()) {
+      stateContext = CaseContextImpl.loadFromStore(factory, instance.getUuid());
+    } else {
+      stateContext = recoveryStrategy.recover(instance);
+    }
+
     instance.setCaseContext(stateContext);
     caseInstanceCache.put(instance);
     return instance;
+  }
+
+  private CaseContextStoreFactory resolveFactory(CaseInstance instance) {
+    CaseMetaModel metaModel = instance.getCaseMetaModel();
+    if (metaModel == null) {
+      return null;
+    }
+    CaseDefinition definition = caseDefinitionRegistry.getCaseDefinition(metaModel);
+    if (definition == null) {
+      LOG.errorf(
+          "Cannot resolve factory for caseId=%s — CaseDefinition not registered "
+              + "for metaModel '%s'. Falling back to volatile recovery.",
+          instance.getUuid(), metaModel.getName());
+      return null;
+    }
+    String factoryName = definition.getContextStoreFactory();
+    if (factoryName == null || factoryName.isBlank()) {
+      return null;
+    }
+    try {
+      return strategyResolver.resolve(CaseContextStoreFactory.class, factoryName);
+    } catch (Exception e) {
+      LOG.errorf(
+          e,
+          "Cannot resolve CaseContextStoreFactory '%s' for caseId=%s. "
+              + "Falling back to volatile recovery.",
+          factoryName,
+          instance.getUuid());
+      return null;
+    }
   }
 
   @Override
