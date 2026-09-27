@@ -16,7 +16,7 @@
 package io.casehub.engine.internal.engine;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 
 import io.casehub.api.context.CaseContextStore;
 import io.casehub.api.context.CaseContextStoreFactory;
@@ -47,7 +47,7 @@ class CaseHubRuntimeImplTest {
   }
 
   @Test
-  void resolveFactory_durableFactory_throwsUnsupported() {
+  void durableFactoryIsAccepted() {
     var durable =
         new CaseContextStoreFactory() {
           @Override
@@ -66,18 +66,7 @@ class CaseHubRuntimeImplTest {
           }
         };
 
-    assertThatThrownBy(
-            () -> {
-              if (durable.isDurable()) {
-                throw new UnsupportedOperationException(
-                    "CaseContextStoreFactory '"
-                        + durable.id()
-                        + "' reports isDurable()=true but "
-                        + "recovery path is not yet wired");
-              }
-            })
-        .isInstanceOf(UnsupportedOperationException.class)
-        .hasMessageContaining("isDurable()=true");
+    assertDoesNotThrow(() -> new CaseContextImpl(durable, UUID.randomUUID()));
   }
 
   @Test
