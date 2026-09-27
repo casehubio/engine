@@ -377,11 +377,20 @@ public class RuntimeBeans {
   @ApplicationScoped
   io.casehub.engine.internal.recovery.CaseRecoveryService caseRecoveryService(
       io.casehub.engine.common.spi.cache.CaseInstanceCache caseInstanceCache,
-      io.casehub.engine.common.spi.CrossTenantCaseInstanceRepository caseInstanceRepository,
+      io.casehub.engine.common.spi.CrossTenantCaseInstanceRepository crossTenantRepository,
       CaseCompletionTracker caseCompletionTracker,
-      io.casehub.api.spi.event.EventDispatcher eventDispatcher) {
+      io.casehub.api.spi.event.EventDispatcher eventDispatcher,
+      io.casehub.engine.common.spi.CaseInstanceRepository caseInstanceRepository,
+      io.casehub.api.spi.CaseChannelProvider caseChannelProvider,
+      io.casehub.engine.internal.scheduler.SchedulerService schedulerService) {
     return new io.casehub.engine.internal.recovery.CaseRecoveryService(
-        caseInstanceCache, caseInstanceRepository, caseCompletionTracker, eventDispatcher);
+        caseInstanceCache,
+        crossTenantRepository,
+        caseCompletionTracker,
+        eventDispatcher,
+        caseInstanceRepository,
+        caseChannelProvider,
+        schedulerService);
   }
 
   @Produces
