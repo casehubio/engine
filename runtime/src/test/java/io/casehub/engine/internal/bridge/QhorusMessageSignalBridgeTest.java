@@ -203,7 +203,7 @@ class QhorusMessageSignalBridgeTest {
   @Test
   void declineWithEventLogNotFound_fallsThroughToSignal() {
     UUID caseId = UUID.randomUUID();
-    when(eventLogRepository.findById(999L)).thenReturn(null);
+    when(eventLogRepository.findById(999L)).thenReturn(java.util.Optional.empty());
 
     bridge.onMessage(
         event(
@@ -226,7 +226,7 @@ class QhorusMessageSignalBridgeTest {
     UUID caseId = UUID.randomUUID();
     long eventLogId = 42L;
     stubEventLog(eventLogId, "worker-1", "binding-1", "hash-1");
-    when(caseInstanceRepository.findByUuid(caseId)).thenReturn(null);
+    when(caseInstanceRepository.findByUuid(caseId)).thenReturn(java.util.Optional.empty());
 
     bridge.onMessage(
         event(

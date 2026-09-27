@@ -16,10 +16,12 @@
 package io.casehub.testing;
 
 import io.casehub.engine.common.spi.CaseInstanceRepository;
+import io.casehub.engine.common.spi.recovery.CaseContextRecoveryStrategy;
 import io.casehub.persistence.memory.InMemoryCaseInstanceRepository;
 import jakarta.annotation.Priority;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.enterprise.inject.Alternative;
+import jakarta.enterprise.inject.Instance;
 
 /** Auto-selected in-memory {@link CaseInstanceRepository} for {@code @QuarkusTest}. */
 @Alternative
@@ -32,7 +34,11 @@ public class TestCaseInstanceRepository extends InMemoryCaseInstanceRepository {
 
   @jakarta.inject.Inject
   public TestCaseInstanceRepository(
-      io.casehub.engine.common.spi.EventLogRepository eventLogRepository) {
+      io.casehub.engine.common.spi.EventLogRepository eventLogRepository,
+      Instance<CaseContextRecoveryStrategy> recoveryStrategy) {
     super(eventLogRepository);
+    if (recoveryStrategy.isResolvable()) {
+      setRecoveryStrategy(recoveryStrategy.get());
+    }
   }
 }
