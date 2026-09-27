@@ -37,7 +37,8 @@ class ExecutionOriginTest {
             ExecutionOrigin.SIGNAL,
             ExecutionOrigin.SCHEDULE_TRIGGER,
             ExecutionOrigin.SUBCASE_COMPLETION,
-            ExecutionOrigin.RECOVERY);
+            ExecutionOrigin.RECOVERY,
+            ExecutionOrigin.REPLAY);
   }
 
   @Test
