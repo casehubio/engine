@@ -16,7 +16,9 @@
 package io.casehub.codegen.record;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import java.util.TreeSet;
 
@@ -105,10 +107,16 @@ public final class RecordEmitter {
       SchemaType schemaType, TypeMapping typeMapping, RecordMapping mapping) {
     List<ComponentInfo> components = new ArrayList<>();
 
+    Map<String, ExtraField> extraByName = new HashMap<>();
+    for (ExtraField extra : typeMapping.extra()) {
+      extraByName.put(extra.name(), extra);
+    }
+
     for (SchemaField field : schemaType.fields()) {
       if (shouldSkip(field.name(), mapping.skipPatterns())) continue;
 
       FieldOverride override = typeMapping.fields().get(field.name());
+      ExtraField extra = extraByName.remove(field.name());
 
       String fieldName = field.name();
       if (override != null && override.name() != null) {
@@ -116,7 +124,9 @@ public final class RecordEmitter {
       }
 
       String javaType;
-      if (override != null && override.type() != null) {
+      if (extra != null) {
+        javaType = extra.type();
+      } else if (override != null && override.type() != null) {
         javaType = override.type();
       } else {
         javaType = resolveJavaType(field, mapping);
@@ -124,20 +134,17 @@ public final class RecordEmitter {
 
       String annotations = buildAnnotations(field.name(), fieldName, override, mapping);
       String defVal =
-          (override != null && override.defaultValue() != null)
-              ? override.defaultValue()
-              : defaultForType(javaType);
+          extra != null && extra.defaultValue() != null
+              ? extra.defaultValue()
+              : (override != null && override.defaultValue() != null)
+                  ? override.defaultValue()
+                  : defaultForType(javaType);
       boolean needsDef = defVal != null;
       components.add(new ComponentInfo(fieldName, javaType, annotations, needsDef, defVal));
     }
 
-    Set<String> componentNames = new java.util.HashSet<>();
-    for (ComponentInfo c : components) {
-      componentNames.add(c.name());
-    }
-
     for (ExtraField extra : typeMapping.extra()) {
-      if (componentNames.contains(extra.name())) continue;
+      if (!extraByName.containsKey(extra.name())) continue;
       FieldOverride override = typeMapping.fields().get(extra.name());
       String annotations =
           override != null ? buildAnnotations(extra.name(), extra.name(), override, mapping) : null;

@@ -58,7 +58,7 @@ public final class JsonNodeForEachAdapter implements ForEachAdapter<JsonNode> {
   }
 
   @Override
-  public String getWhen(JsonNode element) {
+  public String getCondition(JsonNode element) {
     if (whenField == null) return null;
     JsonNode node = element.get(whenField);
     if (node == null || node.isNull()) return null;

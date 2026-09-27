@@ -1296,8 +1296,14 @@ public class RuntimeBeans {
       io.casehub.api.spi.DispatchBudget dispatchBudget,
       Instance<io.casehub.api.spi.stigmergy.SwarmProvisioningAdvisor> advisorInstance) {
     return new io.casehub.engine.internal.stigmergy.SwarmProvisioner(
-        workerProvisioner, coordinator, signalRegistry, activityTracker,
-        roleTracker, teamDetector, progressTracker, dispatchBudget,
+        workerProvisioner,
+        coordinator,
+        signalRegistry,
+        activityTracker,
+        roleTracker,
+        teamDetector,
+        progressTracker,
+        dispatchBudget,
         advisorInstance.isResolvable() ? advisorInstance.get() : null);
   }
 
@@ -1309,9 +1315,16 @@ public class RuntimeBeans {
       io.casehub.engine.internal.improvement.HealthScoreTracker healthTracker,
       io.casehub.engine.internal.improvement.RegressionDetector regressionDetector,
       io.casehub.api.spi.routing.GoalFormationService goalFormationService,
-      io.casehub.engine.internal.improvement.TickTraceBuffer traceBuffer) {
+      io.casehub.engine.internal.improvement.TickTraceBuffer traceBuffer,
+      jakarta.enterprise.event.Event<io.casehub.engine.common.spi.event.TickEvaluatedEvent>
+          tickEvaluatedEvent) {
     return new io.casehub.engine.internal.improvement.EvolutionTicker(
-        goalFormation, circuitBreaker, healthTracker, regressionDetector,
-        goalFormationService, traceBuffer);
+        goalFormation,
+        circuitBreaker,
+        healthTracker,
+        regressionDetector,
+        goalFormationService,
+        traceBuffer,
+        tickEvaluatedEvent);
   }
 }

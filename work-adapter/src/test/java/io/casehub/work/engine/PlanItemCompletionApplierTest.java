@@ -218,7 +218,8 @@ class PlanItemCompletionApplierTest {
 
     assertThat(outputItem.getStatus()).isEqualTo(TaskStatus.COMPLETED);
 
-    CaseInstance updated = caseInstanceRepository.findByUuid(outputCaseId, "test-tenant");
+    CaseInstance updated =
+        caseInstanceRepository.findByUuid(outputCaseId, "test-tenant").orElseThrow();
     assertThat(updated.getCaseContext().get("approved"))
         .as("outputMapping must apply resolution to CaseContext — Refs #1167")
         .isEqualTo(true);
