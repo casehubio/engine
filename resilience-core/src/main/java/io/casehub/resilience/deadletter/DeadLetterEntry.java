@@ -36,7 +36,7 @@ public final class DeadLetterEntry {
   private final String idempotencyHash;
   private final Map<String, Object> inputContext;
   private final RetryState retryState;
-  private final Instant arrivedAt;
+  private Instant arrivedAt;
   private volatile DeadLetterStatus status;
   private volatile int replayAttempts = 0;
   private volatile Instant lastReplayAttemptAt = null;
@@ -80,6 +80,10 @@ public final class DeadLetterEntry {
 
   public Instant arrivedAt() {
     return arrivedAt;
+  }
+
+  public void setArrivedAt(Instant arrivedAt) {
+    this.arrivedAt = arrivedAt;
   }
 
   public DeadLetterStatus status() {
