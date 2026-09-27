@@ -36,12 +36,12 @@ public final class DeadLetterEntry {
   private final String idempotencyHash;
   private final Map<String, Object> inputContext;
   private final RetryState retryState;
-  private final Instant arrivedAt;
+  private Instant arrivedAt;
   private volatile DeadLetterStatus status;
   private volatile int replayAttempts = 0;
   private volatile Instant lastReplayAttemptAt = null;
 
-  DeadLetterEntry(
+  public DeadLetterEntry(
       String deadLetterId,
       UUID caseId,
       String workerId,
@@ -82,11 +82,15 @@ public final class DeadLetterEntry {
     return arrivedAt;
   }
 
+  public void setArrivedAt(Instant arrivedAt) {
+    this.arrivedAt = arrivedAt;
+  }
+
   public DeadLetterStatus status() {
     return status;
   }
 
-  void setStatus(DeadLetterStatus status) {
+  public void setStatus(DeadLetterStatus status) {
     this.status = status;
   }
 
@@ -102,8 +106,13 @@ public final class DeadLetterEntry {
     return retryState;
   }
 
-  void incrementReplayAttempts() {
+  public void incrementReplayAttempts() {
     replayAttempts++;
     lastReplayAttemptAt = Instant.now();
+  }
+
+  public void setReplayState(int attempts, Instant lastAttemptAt) {
+    this.replayAttempts = attempts;
+    this.lastReplayAttemptAt = lastAttemptAt;
   }
 }

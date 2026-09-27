@@ -24,9 +24,11 @@ import io.casehub.engine.common.spi.CrossTenantEventLogRepository;
 import io.casehub.engine.common.spi.cache.CaseInstanceCache;
 import io.casehub.resilience.conflict.LastWriterWinsConflictResolver;
 import io.casehub.resilience.deadletter.DeadLetterAutoReplayJob;
+import io.casehub.resilience.deadletter.DeadLetterEntryStore;
 import io.casehub.resilience.deadletter.DeadLetterEventHandler;
 import io.casehub.resilience.deadletter.DeadLetterQueue;
 import io.casehub.resilience.deadletter.DeadLetterReplayService;
+import io.casehub.resilience.deadletter.InMemoryDeadLetterEntryStore;
 import io.casehub.resilience.poison.PoisonPillDetector;
 import io.casehub.resilience.poison.PoisonPillWorkerExecutionGuard;
 import io.casehub.resilience.timeout.CaseTimeoutEnforcer;
@@ -49,8 +51,14 @@ public class ResilienceBeans {
 
   @Produces
   @ApplicationScoped
-  DeadLetterQueue deadLetterQueue() {
-    return new DeadLetterQueue();
+  DeadLetterQueue deadLetterQueue(DeadLetterEntryStore store) {
+    return new DeadLetterQueue(store);
+  }
+
+  @Produces
+  @ApplicationScoped
+  DeadLetterEntryStore deadLetterEntryStore() {
+    return new InMemoryDeadLetterEntryStore();
   }
 
   @Produces

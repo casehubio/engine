@@ -34,7 +34,7 @@ class DeadLetterQueueTest {
 
   @BeforeEach
   void setUp() {
-    queue = new DeadLetterQueue();
+    queue = new DeadLetterQueue(new InMemoryDeadLetterEntryStore());
   }
 
   // ---- add ------------------------------------------------------------------
