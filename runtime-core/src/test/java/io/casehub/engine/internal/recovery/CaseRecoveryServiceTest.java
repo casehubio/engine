@@ -15,9 +15,11 @@
  */
 package io.casehub.engine.internal.recovery;
 
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.any;
 import static org.mockito.Mockito.inOrder;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -88,6 +90,94 @@ class CaseRecoveryServiceTest {
     service.unfault(caseId);
 
     verify(cache).put(instance);
+  }
+
+  @Test
+  void unfault_cancelledCase_returnsEmpty() {
+    UUID caseId = UUID.randomUUID();
+    CaseInstance instance = new CaseInstance();
+    instance.setUuid(caseId);
+    instance.setState(CaseStatus.CANCELLED);
+    instance.tenancyId = "test-tenant";
+    when(cache.get(caseId)).thenReturn(instance);
+
+    Optional<CaseInstance> result = service.unfault(caseId);
+
+    assertThat(result).isEmpty();
+    verify(caseInstanceRepo, never()).update(any(), any());
+    verify(eventDispatcher, never()).dispatch(any());
+  }
+
+  @Test
+  void unfault_completedCase_returnsEmpty() {
+    UUID caseId = UUID.randomUUID();
+    CaseInstance instance = new CaseInstance();
+    instance.setUuid(caseId);
+    instance.setState(CaseStatus.COMPLETED);
+    instance.tenancyId = "test-tenant";
+    when(cache.get(caseId)).thenReturn(instance);
+
+    Optional<CaseInstance> result = service.unfault(caseId);
+
+    assertThat(result).isEmpty();
+    verify(caseInstanceRepo, never()).update(any(), any());
+  }
+
+  @Test
+  void unfault_reopensChannelAndReregistersScheduledTriggers() {
+    UUID caseId = UUID.randomUUID();
+    CaseInstance instance = createFaultedInstance(caseId);
+    when(cache.get(caseId)).thenReturn(instance);
+
+    service.unfault(caseId);
+
+    verify(channelProvider).openChannel(caseId, "coordination");
+    verify(schedulerService).registerScheduledTriggers(instance);
+  }
+
+  @Test
+  void unfault_cacheMiss_loadsFromCrossTenantRepo() {
+    UUID caseId = UUID.randomUUID();
+    CaseInstance instance = createFaultedInstance(caseId);
+    when(cache.get(caseId)).thenReturn(null);
+    when(crossTenantRepo.findByUuid(caseId)).thenReturn(Optional.of(instance));
+
+    Optional<CaseInstance> result = service.unfault(caseId);
+
+    assertThat(result).isPresent();
+    assertThat(result.get().getState()).isEqualTo(CaseStatus.RUNNING);
+    verify(crossTenantRepo).findByUuid(caseId);
+    verify(caseInstanceRepo).update(instance, "test-tenant");
+    verify(cache).put(instance);
+  }
+
+  @Test
+  void unfault_fullOrdering_persistBeforeChannelBeforeTriggerBeforeDispatch() {
+    UUID caseId = UUID.randomUUID();
+    CaseInstance instance = createFaultedInstance(caseId);
+    when(cache.get(caseId)).thenReturn(instance);
+
+    service.unfault(caseId);
+
+    var inOrder =
+        inOrder(caseInstanceRepo, cache, channelProvider, schedulerService, eventDispatcher);
+    inOrder.verify(caseInstanceRepo).update(instance, "test-tenant");
+    inOrder.verify(cache).put(instance);
+    inOrder.verify(channelProvider).openChannel(caseId, "coordination");
+    inOrder.verify(schedulerService).registerScheduledTriggers(instance);
+    inOrder.verify(eventDispatcher).dispatch(any());
+  }
+
+  @Test
+  void unfault_unknownCase_returnsEmpty() {
+    UUID caseId = UUID.randomUUID();
+    when(cache.get(caseId)).thenReturn(null);
+    when(crossTenantRepo.findByUuid(caseId)).thenReturn(Optional.empty());
+
+    Optional<CaseInstance> result = service.unfault(caseId);
+
+    assertThat(result).isEmpty();
+    verify(caseInstanceRepo, never()).update(any(), any());
   }
 
   private CaseInstance createFaultedInstance(UUID caseId) {
