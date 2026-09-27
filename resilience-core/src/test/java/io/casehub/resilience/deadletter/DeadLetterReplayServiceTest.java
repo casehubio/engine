@@ -58,7 +58,7 @@ class DeadLetterReplayServiceTest {
 
   @BeforeEach
   void setup() {
-    queue = new DeadLetterQueue();
+    queue = new DeadLetterQueue(new InMemoryDeadLetterEntryStore());
     eventLogRepository = mock(CrossTenantEventLogRepository.class);
     caseInstanceRepository = mock(CrossTenantCaseInstanceRepository.class);
     caseDefinitionRegistry = mock(CaseDefinitionRegistry.class);

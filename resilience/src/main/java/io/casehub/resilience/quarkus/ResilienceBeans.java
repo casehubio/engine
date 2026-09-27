@@ -34,9 +34,10 @@ import jakarta.annotation.Priority;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.enterprise.inject.Alternative;
 import jakarta.enterprise.inject.Produces;
+import org.eclipse.microprofile.config.inject.ConfigProperty;
+
 import java.time.Duration;
 import java.util.List;
-import org.eclipse.microprofile.config.inject.ConfigProperty;
 
 @ApplicationScoped
 public class ResilienceBeans {
@@ -47,11 +48,18 @@ public class ResilienceBeans {
     return new LastWriterWinsConflictResolver();
   }
 
+    @Produces
+    @ApplicationScoped
+    DeadLetterQueue deadLetterQueue(DeadLetterEntryStore store) {
+        return new DeadLetterQueue(store);
+    }
+
   @Produces
   @ApplicationScoped
-  DeadLetterQueue deadLetterQueue() {
-    return new DeadLetterQueue();
+  DeadLetterEntryStore deadLetterEntryStore() {
+    return new InMemoryDeadLetterEntryStore();
   }
+
 
   @Produces
   @ApplicationScoped
