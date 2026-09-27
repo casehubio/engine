@@ -32,7 +32,7 @@ class DeadLetterAutoReplayJobTest {
 
   @Test
   void isEligible_newEntry_firstDelayZero_returnsTrue() {
-    DeadLetterQueue queue = new DeadLetterQueue();
+    DeadLetterQueue queue = new DeadLetterQueue(new InMemoryDeadLetterEntryStore());
     DeadLetterEntry entry = queue.add(UUID.randomUUID(), "w", "h", Map.of(), RetryState.empty());
     assertThat(
             DeadLetterAutoReplayJob.isEligible(
@@ -42,7 +42,7 @@ class DeadLetterAutoReplayJobTest {
 
   @Test
   void isEligible_afterFirstAttempt_secondDelayNotElapsed_returnsFalse() {
-    DeadLetterQueue queue = new DeadLetterQueue();
+    DeadLetterQueue queue = new DeadLetterQueue(new InMemoryDeadLetterEntryStore());
     DeadLetterEntry entry = queue.add(UUID.randomUUID(), "w", "h", Map.of(), RetryState.empty());
     entry.incrementReplayAttempts(); // replayAttempts=1, lastAttemptAt=now
     assertThat(
@@ -53,7 +53,7 @@ class DeadLetterAutoReplayJobTest {
 
   @Test
   void isEligible_maxAttemptsReached_returnsFalse() {
-    DeadLetterQueue queue = new DeadLetterQueue();
+    DeadLetterQueue queue = new DeadLetterQueue(new InMemoryDeadLetterEntryStore());
     DeadLetterEntry entry = queue.add(UUID.randomUUID(), "w", "h", Map.of(), RetryState.empty());
     entry.incrementReplayAttempts();
     entry.incrementReplayAttempts();
@@ -66,7 +66,7 @@ class DeadLetterAutoReplayJobTest {
 
   @Test
   void isEligible_nonPendingStatus_returnsFalse() {
-    DeadLetterQueue queue = new DeadLetterQueue();
+    DeadLetterQueue queue = new DeadLetterQueue(new InMemoryDeadLetterEntryStore());
     DeadLetterEntry entry = queue.add(UUID.randomUUID(), "w", "h", Map.of(), RetryState.empty());
     queue.markReplayed(entry.deadLetterId());
     assertThat(DeadLetterAutoReplayJob.isEligible(entry, 3, List.of(Duration.ZERO))).isFalse();
@@ -74,7 +74,7 @@ class DeadLetterAutoReplayJobTest {
 
   @Test
   void runEligibleReplays_callsReplayOnEligibleEntries() {
-    DeadLetterQueue queue = new DeadLetterQueue();
+    DeadLetterQueue queue = new DeadLetterQueue(new InMemoryDeadLetterEntryStore());
     DeadLetterReplayService replayService = mock(DeadLetterReplayService.class);
     DeadLetterAutoReplayJob job =
         new DeadLetterAutoReplayJob(

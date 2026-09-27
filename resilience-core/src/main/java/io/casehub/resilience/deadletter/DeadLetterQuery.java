@@ -59,7 +59,7 @@ public final class DeadLetterQuery {
   }
 
   /** Builds a predicate representing all active filters. */
-  Predicate<DeadLetterEntry> toPredicate() {
+  public Predicate<DeadLetterEntry> toPredicate() {
     Predicate<DeadLetterEntry> pred = e -> true;
     if (status.isPresent()) {
       pred = pred.and(e -> e.status() == status.get());
