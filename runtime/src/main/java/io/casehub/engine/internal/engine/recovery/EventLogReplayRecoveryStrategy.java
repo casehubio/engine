@@ -48,6 +48,19 @@ public class EventLogReplayRecoveryStrategy implements CaseContextRecoveryStrate
   private static final Logger LOG = Logger.getLogger(EventLogReplayRecoveryStrategy.class);
   private static final ObjectMapper OBJECT_MAPPER = new ObjectMapper();
 
+  static final EnumSet<CaseHubEventType> REPLAYED_TYPES =
+      EnumSet.of(
+          CaseHubEventType.CASE_STARTED,
+          CaseHubEventType.WORKER_EXECUTION_COMPLETED,
+          CaseHubEventType.SUBCASE_COMPLETED,
+          CaseHubEventType.SIGNAL_RECEIVED,
+          CaseHubEventType.SCOPED_WORKER_OUTPUT,
+          CaseHubEventType.CONTEXT_SIGNAL_APPLIED,
+          CaseHubEventType.MILESTONE_ACTIVATED,
+          CaseHubEventType.MILESTONE_COMPLETED,
+          CaseHubEventType.MILESTONE_SLA_VIOLATED,
+          CaseHubEventType.GOAL_REACHED);
+
   private final CrossTenantEventLogRepository eventLogRepository;
 
   public EventLogReplayRecoveryStrategy(
@@ -68,20 +81,7 @@ public class EventLogReplayRecoveryStrategy implements CaseContextRecoveryStrate
 
   @SuppressWarnings("unchecked")
   private CaseContext rebuildStateContext(UUID caseId) {
-    List<EventLog> eventLogs =
-        eventLogRepository.findByCaseAndTypes(
-            caseId,
-            EnumSet.of(
-                CaseHubEventType.CASE_STARTED,
-                CaseHubEventType.WORKER_EXECUTION_COMPLETED,
-                CaseHubEventType.SUBCASE_COMPLETED,
-                CaseHubEventType.SIGNAL_RECEIVED,
-                CaseHubEventType.SCOPED_WORKER_OUTPUT,
-                CaseHubEventType.CONTEXT_SIGNAL_APPLIED,
-                CaseHubEventType.MILESTONE_ACTIVATED,
-                CaseHubEventType.MILESTONE_COMPLETED,
-                CaseHubEventType.MILESTONE_SLA_VIOLATED,
-                CaseHubEventType.GOAL_REACHED));
+    List<EventLog> eventLogs = eventLogRepository.findByCaseAndTypes(caseId, REPLAYED_TYPES);
 
     CaseContextImpl caseContext = new CaseContextImpl();
     EventLog caseStartedEvent =
