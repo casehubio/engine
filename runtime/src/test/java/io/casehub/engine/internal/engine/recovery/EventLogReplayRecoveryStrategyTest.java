@@ -15,6 +15,7 @@
  */
 package io.casehub.engine.internal.engine.recovery;
 
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
 
@@ -27,6 +28,7 @@ import io.casehub.engine.common.internal.model.CaseInstance;
 import io.casehub.engine.common.spi.CrossTenantEventLogRepository;
 import java.time.Instant;
 import java.util.Collection;
+import java.util.EnumSet;
 import java.util.List;
 import java.util.UUID;
 import org.junit.jupiter.api.BeforeEach;
@@ -213,6 +215,132 @@ class EventLogReplayRecoveryStrategyTest {
     List<String> goals = (List<String>) episodic.get("goals");
     org.junit.jupiter.api.Assertions.assertNotNull(goals);
     org.junit.jupiter.api.Assertions.assertTrue(goals.contains("data-collected"));
+  }
+
+  private static final EnumSet<CaseHubEventType> NON_MUTATING_TYPES =
+      EnumSet.of(
+          CaseHubEventType.CASE_COMPLETED,
+          CaseHubEventType.CASE_FAULTED,
+          CaseHubEventType.CASE_CANCELLED,
+          CaseHubEventType.CASE_STATUS_CHANGED,
+          CaseHubEventType.TASK_CREATED,
+          CaseHubEventType.TASK_COMPLETED,
+          CaseHubEventType.TASK_FAILED,
+          CaseHubEventType.TASK_CANCELLED,
+          CaseHubEventType.WORKER_SCHEDULED,
+          CaseHubEventType.WORKER_EXECUTION_STARTED,
+          CaseHubEventType.WORKER_EXECUTION_FAILED,
+          CaseHubEventType.WORKER_OUTCOME_DECLINED,
+          CaseHubEventType.WORKER_OUTCOME_FAILED,
+          CaseHubEventType.WORKER_OUTCOME_EXPIRED,
+          CaseHubEventType.WORK_SUBMITTED,
+          CaseHubEventType.WORK_COMPLETED,
+          CaseHubEventType.MILESTONE_REACHED,
+          CaseHubEventType.GOAL_DECOMPOSED,
+          CaseHubEventType.PLAN_ADAPTED,
+          CaseHubEventType.PLAN_DEEPENED,
+          CaseHubEventType.PLAN_CONCEDED,
+          CaseHubEventType.CONTINGENCY_ACTIVATED,
+          CaseHubEventType.GOAL_REVISED,
+          CaseHubEventType.GOAL_FORMED,
+          CaseHubEventType.GOAL_PROPOSED,
+          CaseHubEventType.GOAL_REMOVED,
+          CaseHubEventType.CONSTRAINTS_INFEASIBLE,
+          CaseHubEventType.SUBCASE_STARTED,
+          CaseHubEventType.WORKFLOW_STEP_DISPATCHED,
+          CaseHubEventType.WORKFLOW_STEP_COMPLETED,
+          CaseHubEventType.WORKFLOW_STEP_FAILED,
+          CaseHubEventType.ACTION_GATE_PENDING,
+          CaseHubEventType.ACTION_GATE_APPROVED,
+          CaseHubEventType.ACTION_GATE_REJECTED,
+          CaseHubEventType.ACTION_GATE_EXPIRED,
+          CaseHubEventType.ACTION_GATE_CANCELLED,
+          CaseHubEventType.ORCHESTRATION_STARTED,
+          CaseHubEventType.ORCHESTRATION_COMPLETED,
+          CaseHubEventType.AGENT_ROUTED,
+          CaseHubEventType.AGENT_DISPATCHED,
+          CaseHubEventType.AGENT_COMPLETED,
+          CaseHubEventType.AGENT_FAILED,
+          CaseHubEventType.ORCHESTRATION_ESCALATED,
+          CaseHubEventType.PATTERN_CHECKPOINT,
+          CaseHubEventType.RECOVERY_ESCALATED,
+          CaseHubEventType.RECOVERY_REPLAN,
+          CaseHubEventType.REACT_CYCLE,
+          CaseHubEventType.JUDGMENT_YIELDED,
+          CaseHubEventType.JUDGMENT_RESPONDED,
+          CaseHubEventType.JUDGMENT_VERIFIED,
+          CaseHubEventType.JUDGMENT_ESCALATED,
+          CaseHubEventType.OBSERVER_REGISTERED,
+          CaseHubEventType.OBSERVATION_DETECTED,
+          CaseHubEventType.PHEROMONE_DEPOSITED,
+          CaseHubEventType.PHEROMONE_EXPIRED,
+          CaseHubEventType.INTEREST_REGISTERED,
+          CaseHubEventType.INTEREST_DEREGISTERED,
+          CaseHubEventType.RULE_REGISTERED,
+          CaseHubEventType.RULE_FIRED,
+          CaseHubEventType.BUDGET_EXHAUSTED,
+          CaseHubEventType.CONVERGENCE_DETECTED,
+          CaseHubEventType.OUTPUT_CONVERGENCE_DETECTED,
+          CaseHubEventType.STIGMERGY_CASE_INITIALIZED,
+          CaseHubEventType.STIGMERGY_AGENT_JOINED,
+          CaseHubEventType.STIGMERGY_AGENT_ACTIVATED,
+          CaseHubEventType.STIGMERGY_AGENT_DEPARTED,
+          CaseHubEventType.SIGNAL_CONSENSUS_DETECTED,
+          CaseHubEventType.COORDINATION_STORM_DETECTED,
+          CaseHubEventType.INTEREST_CONVERGENCE_DETECTED,
+          CaseHubEventType.SWARM_ROLE_EMERGED,
+          CaseHubEventType.SWARM_ROLE_DISSOLVED,
+          CaseHubEventType.SWARM_ROLE_SHIFT,
+          CaseHubEventType.SWARM_TEAM_FORMED,
+          CaseHubEventType.SWARM_TEAM_DISSOLVED,
+          CaseHubEventType.SWARM_TEAM_SHIFT,
+          CaseHubEventType.SWARM_PROGRESS,
+          CaseHubEventType.SWARM_PROVISION_REQUESTED,
+          CaseHubEventType.SWARM_PROVISION_COMPLETED,
+          CaseHubEventType.SWARM_PROVISION_FAILED,
+          CaseHubEventType.SWARM_PROVISION_VETOED,
+          CaseHubEventType.SWARM_PROVISION_BUDGET_EXHAUSTED,
+          CaseHubEventType.SWARM_AGENT_TERMINATED,
+          CaseHubEventType.IMPROVEMENT_GOAL_FORMED,
+          CaseHubEventType.IMPROVEMENT_BUDGET_DENIED,
+          CaseHubEventType.IMPROVEMENT_OUTCOME,
+          CaseHubEventType.CIRCUIT_BREAKER_TRIPPED,
+          CaseHubEventType.CIRCUIT_BREAKER_RECOVERING,
+          CaseHubEventType.CIRCUIT_BREAKER_RESET,
+          CaseHubEventType.CAPABILITY_AREA_CHANGED,
+          CaseHubEventType.REGRESSION_DETECTED,
+          CaseHubEventType.ROLLBACK_STARTED,
+          CaseHubEventType.IMPROVEMENT_CONFLICT_DETECTED,
+          CaseHubEventType.COMPLIANCE_LEVEL_CHANGED,
+          CaseHubEventType.READINESS_EVALUATED,
+          CaseHubEventType.CATEGORY_PAUSED,
+          CaseHubEventType.CATEGORY_UNPAUSED,
+          CaseHubEventType.DENY_PATTERN_ADDED,
+          CaseHubEventType.DENY_PATTERN_REMOVED,
+          CaseHubEventType.TICK_EVALUATED,
+          CaseHubEventType.TICK_HEARTBEAT,
+          CaseHubEventType.GATE_PENDING,
+          CaseHubEventType.GATE_RESOLVED,
+          CaseHubEventType.WATCH_PATTERN_ADDED,
+          CaseHubEventType.WATCH_PATTERN_REMOVED,
+          CaseHubEventType.IMPROVEMENT_BLOCKED,
+          CaseHubEventType.IMPROVEMENT_UNBLOCKED);
+
+  @Test
+  void allEventTypes_eitherReplayedOrExplicitlyNonMutating() {
+    EnumSet<CaseHubEventType> accounted =
+        EnumSet.copyOf(EventLogReplayRecoveryStrategy.REPLAYED_TYPES);
+    accounted.addAll(NON_MUTATING_TYPES);
+
+    EnumSet<CaseHubEventType> unaccounted = EnumSet.complementOf(accounted);
+
+    assertThat(unaccounted)
+        .as(
+            "New CaseHubEventType values must be added to either "
+                + "EventLogReplayRecoveryStrategy.REPLAYED_TYPES (if context-mutating) "
+                + "or NON_MUTATING_TYPES in this test (if not). Unaccounted: %s",
+            unaccounted)
+        .isEmpty();
   }
 
   private EventLog eventLog(
