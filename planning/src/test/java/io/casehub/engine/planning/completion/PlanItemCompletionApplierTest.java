@@ -169,7 +169,7 @@ class PlanItemCompletionApplierTest {
   @Test
   void caseInstance_not_found_still_transitions_but_no_context_changed() {
     PlanItem item = mockPlanItem(TaskStatus.DELEGATED);
-    when(caseInstanceRepository.findByUuid(CASE_ID)).thenReturn(null);
+    when(caseInstanceRepository.findByUuid(CASE_ID)).thenReturn(java.util.Optional.empty());
 
     applier.apply(CASE_ID, PLAN_ITEM_ID, TaskStatus.COMPLETED, null, null);
 

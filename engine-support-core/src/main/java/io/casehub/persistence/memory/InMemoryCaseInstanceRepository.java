@@ -60,6 +60,9 @@ public class InMemoryCaseInstanceRepository
       if (instance.id == null) {
         instance.id = idSeq.incrementAndGet();
       }
+      if (recoveryStrategy != null && instance.getCaseContext() != null) {
+        recoveryStrategy.onContextChanged(instance, instance.getCaseContext());
+      }
       instance.tenancyId = tenancyId;
       store.put(instance.getUuid(), instance);
       return instance;

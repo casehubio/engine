@@ -53,7 +53,8 @@ class SignalAutoActivationTest {
   void signal_to_nonexistent_case_throws_IllegalArgumentException() {
     UUID caseId = UUID.randomUUID();
     when(caseInstanceCache.get(caseId)).thenReturn(null);
-    when(crossTenantCaseInstanceRepository.findByUuid(caseId)).thenReturn(null);
+    when(crossTenantCaseInstanceRepository.findByUuid(caseId))
+        .thenReturn(java.util.Optional.empty());
 
     assertThatThrownBy(() -> runtime.signal(caseId, testSignal, "payload"))
         .isInstanceOf(IllegalArgumentException.class)

@@ -385,7 +385,7 @@ class DefaultPlanAdaptationEvaluatorTest {
   @Test
   void skipsWhenCaseInstanceNotFound() {
     registerCompoundWithBinding("goal", "cap-a");
-    when(caseInstanceRepository.findByUuid(caseId, TENANT)).thenReturn(null);
+    when(caseInstanceRepository.findByUuid(caseId, TENANT)).thenReturn(java.util.Optional.empty());
 
     evaluator.evaluateAdaptation(caseId, TENANT, "cap-a", TaskStatus.COMPLETED);
 
