@@ -24,6 +24,12 @@
 
 ## Methods
 
+### `public java.lang.String getCondition(JsonNode element)`
+
+#### Parameters
+
+- `element` (`JsonNode`)
+
 ### `public ForEachDirective getForEach(JsonNode element)`
 
 #### Parameters
@@ -31,12 +37,6 @@
 - `element` (`JsonNode`)
 
 ### `public java.lang.String getId(JsonNode element)`
-
-#### Parameters
-
-- `element` (`JsonNode`)
-
-### `public java.lang.String getWhen(JsonNode element)`
 
 #### Parameters
 
