@@ -106,4 +106,9 @@ public final class DeadLetterEntry {
     replayAttempts++;
     lastReplayAttemptAt = Instant.now();
   }
+
+  public void setReplayState(int attempts, Instant lastAttemptAt) {
+    this.replayAttempts = attempts;
+    this.lastReplayAttemptAt = lastAttemptAt;
+  }
 }
