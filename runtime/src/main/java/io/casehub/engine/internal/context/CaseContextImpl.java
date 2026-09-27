@@ -23,6 +23,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import io.casehub.api.context.CaseContext;
+import io.casehub.api.context.CaseContextStore;
 import io.casehub.api.context.CaseContextStoreFactory;
 import io.casehub.api.context.ContextChangeEvent;
 import io.casehub.api.context.ContextLayer;
@@ -65,7 +66,7 @@ public class CaseContextImpl implements MutableCaseContext {
   // ── Constructors ────────────────────────────────────────────────────────────
 
   public CaseContextImpl() {
-    this(InMemoryCaseContextStoreFactory.INSTANCE, null);
+    this(InMemoryCaseContextStoreFactory.INSTANCE, null, false);
   }
 
   public CaseContextImpl(Map<String, Object> initial) {
@@ -79,9 +80,22 @@ public class CaseContextImpl implements MutableCaseContext {
   }
 
   public CaseContextImpl(CaseContextStoreFactory storeFactory, UUID caseId) {
+    this(storeFactory, caseId, false);
+  }
+
+  private CaseContextImpl(CaseContextStoreFactory storeFactory, UUID caseId, boolean load) {
     this.storeFactory = storeFactory;
     this.caseId = caseId;
-    initBuiltinLayers();
+    for (String layer :
+        java.util.List.of(ContextLayer.WORKING, ContextLayer.SEMANTIC, ContextLayer.EPISODIC)) {
+      CaseContextStore store =
+          load ? storeFactory.loadStore(layer, caseId) : storeFactory.createStore(layer, caseId);
+      layers.put(layer, new WritableLayerImpl(layer, store));
+    }
+  }
+
+  public static CaseContextImpl loadFromStore(CaseContextStoreFactory factory, UUID caseId) {
+    return new CaseContextImpl(factory, caseId, true);
   }
 
   public CaseContextImpl(Map<String, Object> initial, long ignoredVersion) {
@@ -100,21 +114,6 @@ public class CaseContextImpl implements MutableCaseContext {
                     MAPPER
                         .getTypeFactory()
                         .constructMapType(LinkedHashMap.class, String.class, Object.class)));
-  }
-
-  private void initBuiltinLayers() {
-    layers.put(
-        ContextLayer.WORKING,
-        new WritableLayerImpl(
-            ContextLayer.WORKING, storeFactory.createStore(ContextLayer.WORKING, caseId)));
-    layers.put(
-        ContextLayer.SEMANTIC,
-        new WritableLayerImpl(
-            ContextLayer.SEMANTIC, storeFactory.createStore(ContextLayer.SEMANTIC, caseId)));
-    layers.put(
-        ContextLayer.EPISODIC,
-        new WritableLayerImpl(
-            ContextLayer.EPISODIC, storeFactory.createStore(ContextLayer.EPISODIC, caseId)));
   }
 
   private WritableLayerImpl working() {
