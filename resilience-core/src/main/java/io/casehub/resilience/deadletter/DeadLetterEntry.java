@@ -41,7 +41,7 @@ public final class DeadLetterEntry {
   private volatile int replayAttempts = 0;
   private volatile Instant lastReplayAttemptAt = null;
 
-  DeadLetterEntry(
+  public DeadLetterEntry(
       String deadLetterId,
       UUID caseId,
       String workerId,
@@ -86,7 +86,7 @@ public final class DeadLetterEntry {
     return status;
   }
 
-  void setStatus(DeadLetterStatus status) {
+  public void setStatus(DeadLetterStatus status) {
     this.status = status;
   }
 
@@ -102,7 +102,7 @@ public final class DeadLetterEntry {
     return retryState;
   }
 
-  void incrementReplayAttempts() {
+  public void incrementReplayAttempts() {
     replayAttempts++;
     lastReplayAttemptAt = Instant.now();
   }
