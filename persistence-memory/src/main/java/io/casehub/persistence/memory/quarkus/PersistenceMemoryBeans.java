@@ -24,7 +24,9 @@ import io.casehub.persistence.memory.InMemoryEventLogRepository;
 import io.casehub.persistence.memory.InMemoryPlanItemStore;
 import io.casehub.persistence.memory.InMemorySubCaseGroupRepository;
 import io.quarkus.arc.DefaultBean;
+import jakarta.annotation.Priority;
 import jakarta.enterprise.context.ApplicationScoped;
+import jakarta.enterprise.inject.Alternative;
 import jakarta.enterprise.inject.Instance;
 import jakarta.enterprise.inject.Produces;
 
@@ -32,6 +34,8 @@ import jakarta.enterprise.inject.Produces;
 public class PersistenceMemoryBeans {
 
   @Produces
+  @Alternative
+  @Priority(100)
   @ApplicationScoped
   DefaultTestPrincipal defaultTestPrincipal() {
     return new DefaultTestPrincipal();
@@ -72,6 +76,8 @@ public class PersistenceMemoryBeans {
   }
 
   @Produces
+  @Alternative
+  @Priority(100)
   @ApplicationScoped
   InMemoryPlanItemStore inMemoryPlanItemStore() {
     return new InMemoryPlanItemStore();
