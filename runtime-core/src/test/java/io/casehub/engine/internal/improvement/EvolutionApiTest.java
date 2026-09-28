@@ -76,7 +76,8 @@ class EvolutionApiTest {
             researchCorpus,
             gatePolicyStore,
             artifactManifestStore,
-            new InMemoryDenyPatternStore());
+            new InMemoryDenyPatternStore(),
+            new ImprovementCategoryRegistry());
 
     caseId = UUID.randomUUID();
   }

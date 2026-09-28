@@ -16,12 +16,15 @@
 package io.casehub.engine.rest.service;
 
 import io.casehub.api.model.stigmergy.ArtifactManifest;
+import io.casehub.api.model.stigmergy.CategoryDescriptor;
 import io.casehub.api.model.stigmergy.ComplianceLevel;
 import io.casehub.api.model.stigmergy.ConductorInboxEntry;
 import io.casehub.api.model.stigmergy.GatePolicy;
 import io.casehub.api.model.stigmergy.ImprovementConfig;
 import io.casehub.api.model.stigmergy.ReadinessReport;
+import io.casehub.api.model.stigmergy.StageDescriptor;
 import io.casehub.api.model.stigmergy.TickTrace;
+import io.casehub.api.model.stigmergy.WatchPattern;
 import io.casehub.api.spi.improvement.EngineEvolutionApi;
 import io.casehub.api.view.DenyPatternView;
 import io.casehub.api.view.EvolutionStateSnapshot;
@@ -179,5 +182,25 @@ public class EvolutionMcpAdapter {
   @PlatformMutation("Set gate policy for evolution lifecycle gates")
   public void setGatePolicy(@PathParam UUID caseId, String tenancyId, GatePolicy policy) {
     delegate.setGatePolicy(caseId, tenancyId, policy);
+  }
+
+  @PlatformQuery("Get active watch patterns for a case")
+  public List<WatchPattern> getWatchPatterns(@PathParam UUID caseId, String tenancyId) {
+    return delegate.getWatchPatterns(caseId, tenancyId);
+  }
+
+  @PlatformQuery("Get gate policy for a case")
+  public GatePolicy getGatePolicy(@PathParam UUID caseId, String tenancyId) {
+    return delegate.getGatePolicy(caseId, tenancyId);
+  }
+
+  @PlatformQuery("Get domain-contributed stage descriptors")
+  public List<StageDescriptor> getStages(@PathParam UUID caseId) {
+    return delegate.getStages(caseId);
+  }
+
+  @PlatformQuery("Get improvement category descriptors")
+  public List<CategoryDescriptor> getCategories(@PathParam UUID caseId) {
+    return delegate.getCategories(caseId);
   }
 }
