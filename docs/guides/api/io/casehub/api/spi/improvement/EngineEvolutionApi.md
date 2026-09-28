@@ -42,6 +42,12 @@
 - `tenancyId` (`java.lang.String`)
 - `improvementCaseId` (`java.util.UUID`)
 
+### `public abstract java.util.List<io.casehub.api.model.stigmergy.CategoryDescriptor> getCategories(java.util.UUID caseId)`
+
+#### Parameters
+
+- `caseId` (`java.util.UUID`)
+
 ### `public abstract io.casehub.api.view.DenyPatternView getDenyPatterns(java.util.UUID caseId, java.lang.String tenancyId)`
 
 #### Parameters
@@ -56,6 +62,13 @@
 - `caseId` (`java.util.UUID`)
 - `tenancyId` (`java.lang.String`)
 - `config` (`io.casehub.api.model.stigmergy.ImprovementConfig`)
+
+### `public abstract io.casehub.api.model.stigmergy.GatePolicy getGatePolicy(java.util.UUID caseId, java.lang.String tenancyId)`
+
+#### Parameters
+
+- `caseId` (`java.util.UUID`)
+- `tenancyId` (`java.lang.String`)
 
 ### `public abstract java.util.List<io.casehub.api.model.stigmergy.ConductorInboxEntry> getInbox(java.util.UUID caseId, java.lang.String tenancyId)`
 
@@ -81,6 +94,12 @@
 - `areaId` (`java.lang.String`)
 - `limit` (`int`)
 
+### `public abstract java.util.List<io.casehub.api.model.stigmergy.StageDescriptor> getStages(java.util.UUID caseId)`
+
+#### Parameters
+
+- `caseId` (`java.util.UUID`)
+
 ### `public abstract java.util.List<io.casehub.api.view.EvolutionStateSnapshot.ImprovementStreamView> getStreamProgress(java.util.UUID caseId, java.lang.String tenancyId)`
 
 #### Parameters
@@ -105,6 +124,13 @@
 
 - `caseId` (`java.util.UUID`)
 - `limit` (`java.lang.Integer`)
+
+### `public abstract java.util.List<io.casehub.api.model.stigmergy.WatchPattern> getWatchPatterns(java.util.UUID caseId, java.lang.String tenancyId)`
+
+#### Parameters
+
+- `caseId` (`java.util.UUID`)
+- `tenancyId` (`java.lang.String`)
 
 ### `public abstract void pauseCategory(java.util.UUID caseId, java.lang.String tenancyId, java.lang.String category, int durationMinutes)`
 
