@@ -16,12 +16,15 @@
 package io.casehub.api.spi.improvement;
 
 import io.casehub.api.model.stigmergy.ArtifactManifest;
+import io.casehub.api.model.stigmergy.CategoryDescriptor;
 import io.casehub.api.model.stigmergy.ComplianceLevel;
 import io.casehub.api.model.stigmergy.ConductorInboxEntry;
 import io.casehub.api.model.stigmergy.GatePolicy;
 import io.casehub.api.model.stigmergy.ImprovementConfig;
 import io.casehub.api.model.stigmergy.ReadinessReport;
+import io.casehub.api.model.stigmergy.StageDescriptor;
 import io.casehub.api.model.stigmergy.TickTrace;
+import io.casehub.api.model.stigmergy.WatchPattern;
 import io.casehub.api.view.DenyPatternView;
 import io.casehub.api.view.EvolutionStateSnapshot;
 import io.casehub.api.view.EvolutionSummary;
@@ -89,6 +92,14 @@ public interface EngineEvolutionApi {
   ResearchCorpusView getResearchCorpus(String query, String areaId, int limit);
 
   void setGatePolicy(UUID caseId, String tenancyId, GatePolicy policy);
+
+  List<WatchPattern> getWatchPatterns(UUID caseId, String tenancyId);
+
+  GatePolicy getGatePolicy(UUID caseId, String tenancyId);
+
+  List<StageDescriptor> getStages(UUID caseId);
+
+  List<CategoryDescriptor> getCategories(UUID caseId);
 
   ArtifactManifest getArtifactTrail(UUID caseId, String tenancyId, UUID improvementCaseId);
 
