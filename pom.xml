@@ -124,6 +124,7 @@
         <module>casehub-engine-inbound</module>
         <module>actor-state</module>
         <module>engine-ai</module>
+        <module>yaml-cbr</module>
         <module>flow</module>
         <module>a2a</module>
     <module>mcp</module>
