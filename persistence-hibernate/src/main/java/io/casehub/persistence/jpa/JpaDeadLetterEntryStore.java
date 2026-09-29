@@ -136,30 +136,30 @@ public class JpaDeadLetterEntryStore implements DeadLetterEntryStore {
     return entity;
   }
 
-    private DeadLetterEntry fromEntity(DeadLetterEntryEntity entity) {
-        Map<String, Object> inputContext;
-        RetryState          retryState;
-        try {
-            inputContext =
-                    entity.inputContext != null ? MAPPER.readValue(entity.inputContext, MAP_TYPE) : Map.of();
-            retryState   =
-                    entity.retryState != null
-                    ? MAPPER.readValue(entity.retryState, RetryState.class)
-                    : RetryState.empty();
-        } catch (Exception e) {
-            throw new RuntimeException("Failed to deserialize DLQ entry", e);
-        }
-        DeadLetterEntry entry =
-                new DeadLetterEntry(
-                        entity.deadLetterId,
-                        entity.caseId,
-                        entity.workerId,
-                        entity.idempotencyHash,
-                        inputContext,
-                        retryState);
-        entry.setStatus(DeadLetterStatus.valueOf(entity.status));
-        entry.setReplayState(entity.replayAttempts, entity.lastReplayAttemptAt);
-        entry.setArrivedAt(entity.arrivedAt);
-        return entry;
+  private DeadLetterEntry fromEntity(DeadLetterEntryEntity entity) {
+    Map<String, Object> inputContext;
+    RetryState retryState;
+    try {
+      inputContext =
+          entity.inputContext != null ? MAPPER.readValue(entity.inputContext, MAP_TYPE) : Map.of();
+      retryState =
+          entity.retryState != null
+              ? MAPPER.readValue(entity.retryState, RetryState.class)
+              : RetryState.empty();
+    } catch (Exception e) {
+      throw new RuntimeException("Failed to deserialize DLQ entry", e);
     }
+    DeadLetterEntry entry =
+        new DeadLetterEntry(
+            entity.deadLetterId,
+            entity.caseId,
+            entity.workerId,
+            entity.idempotencyHash,
+            inputContext,
+            retryState);
+    entry.setStatus(DeadLetterStatus.valueOf(entity.status));
+    entry.setReplayState(entity.replayAttempts, entity.lastReplayAttemptAt);
+    entry.setArrivedAt(entity.arrivedAt);
+    return entry;
+  }
 }

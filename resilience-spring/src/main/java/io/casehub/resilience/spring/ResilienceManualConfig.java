@@ -16,17 +16,26 @@
 package io.casehub.resilience.spring;
 
 import io.casehub.resilience.deadletter.DeadLetterAutoReplayJob;
+import io.casehub.resilience.deadletter.DeadLetterEntryStore;
 import io.casehub.resilience.deadletter.DeadLetterQueue;
 import io.casehub.resilience.deadletter.DeadLetterReplayService;
+import io.casehub.resilience.deadletter.InMemoryDeadLetterEntryStore;
 import io.casehub.resilience.poison.PoisonPillDetector;
 import java.time.Duration;
 import java.util.List;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.autoconfigure.AutoConfiguration;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
 import org.springframework.context.annotation.Bean;
 
 @AutoConfiguration
 public class ResilienceManualConfig {
+
+  @Bean
+  @ConditionalOnMissingBean(DeadLetterEntryStore.class)
+  public InMemoryDeadLetterEntryStore deadLetterEntryStore() {
+    return new InMemoryDeadLetterEntryStore();
+  }
 
   @Bean
   public PoisonPillDetector poisonPillDetector(
