@@ -32,8 +32,8 @@ import org.springframework.context.annotation.Bean;
 public class ResilienceManualConfig {
 
   @Bean
-  @ConditionalOnMissingBean
-  public DeadLetterEntryStore deadLetterEntryStore() {
+  @ConditionalOnMissingBean(DeadLetterEntryStore.class)
+  public InMemoryDeadLetterEntryStore deadLetterEntryStore() {
     return new InMemoryDeadLetterEntryStore();
   }
 
