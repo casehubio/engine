@@ -35,7 +35,7 @@ public class PersistenceMemoryBeans {
 
   @Produces
   @Alternative
-  @Priority(100)
+  @Priority(200)
   @ApplicationScoped
   DefaultTestPrincipal defaultTestPrincipal() {
     return new DefaultTestPrincipal();
