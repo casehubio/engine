@@ -110,6 +110,14 @@ public class Binding {
       "Alternative capability names activated on primary node failure.")
   private List<String> contingency;
 
+  @com.fasterxml.jackson.annotation.JsonPropertyDescription(
+      "Name of the binding to execute as compensation during saga reversal.")
+  private String compensatedBy;
+
+  @com.fasterxml.jackson.annotation.JsonPropertyDescription(
+      "Explicit compensation ordering when topological sort is ambiguous.")
+  private Integer compensationOrder;
+
   private Binding(String name, BindingTarget target, Trigger on) {
     this.name = name;
     this.target = target;
@@ -287,6 +295,22 @@ public class Binding {
     return contingency;
   }
 
+  public String getCompensatedBy() {
+    return compensatedBy;
+  }
+
+  public void setCompensatedBy(String compensatedBy) {
+    this.compensatedBy = compensatedBy;
+  }
+
+  public Integer getCompensationOrder() {
+    return compensationOrder;
+  }
+
+  public void setCompensationOrder(Integer compensationOrder) {
+    this.compensationOrder = compensationOrder;
+  }
+
   public static Builder builder() {
     return new Builder();
   }
@@ -314,6 +338,8 @@ public class Binding {
     private SideEffectClassification sideEffectClassification;
     private ReplanHint replanHint;
     private List<String> contingency;
+    private String compensatedBy;
+    private Integer compensationOrder;
 
     private Builder() {}
 
@@ -491,6 +517,16 @@ public class Binding {
       return this;
     }
 
+    public Builder compensatedBy(String compensatedBy) {
+      this.compensatedBy = compensatedBy;
+      return this;
+    }
+
+    public Builder compensationOrder(Integer compensationOrder) {
+      this.compensationOrder = compensationOrder;
+      return this;
+    }
+
     public Binding build() {
       Objects.requireNonNull(name);
       Objects.requireNonNull(on);
@@ -552,6 +588,8 @@ public class Binding {
       b.setSideEffectClassification(this.sideEffectClassification);
       b.setReplanHint(this.replanHint);
       b.setContingency(this.contingency);
+      b.setCompensatedBy(this.compensatedBy);
+      b.setCompensationOrder(this.compensationOrder);
       return b;
     }
   }

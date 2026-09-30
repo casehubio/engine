@@ -95,6 +95,8 @@ types:
     extra:
       - { name: sideEffectClassification, type: String }
       - { name: recoveryOverride, type: YamlRecoveryOverride }
+      - { name: compensatedBy, type: String }
+      - { name: compensationOrder, type: Integer }
 
   # ── Worker ──
   Worker:
