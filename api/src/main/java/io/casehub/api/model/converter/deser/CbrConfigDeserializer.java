@@ -66,6 +66,7 @@ public class CbrConfigDeserializer extends StdDeserializer<CbrConfig> {
       builder.timing(
           CbrRetrievalTiming.valueOf(node.get("timing").asText().toUpperCase().replace("-", "_")));
     }
+    if (node.has("scope")) builder.scope(node.get("scope").asText());
     if (node.has("weights") && node.get("weights").isObject()) {
       node.get("weights")
           .fields()

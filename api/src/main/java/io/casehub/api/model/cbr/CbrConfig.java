@@ -37,7 +37,8 @@ public record CbrConfig(
     Integer temporalDecayHalfLifeDays,
     Integer minCostSamples,
     boolean crossType,
-    ExpressionEvaluator problemDescription) {
+    ExpressionEvaluator problemDescription,
+    String scope) {
 
   public enum CbrRetrievalTiming {
     PER_EVALUATION,
@@ -94,6 +95,9 @@ public record CbrConfig(
     if (timing == null) {
       timing = CbrRetrievalTiming.PER_EVALUATION;
     }
+    if (scope != null && scope.isBlank()) {
+      throw new IllegalArgumentException("scope must not be blank when provided");
+    }
   }
 
   public static Builder builder() {
@@ -115,6 +119,7 @@ public record CbrConfig(
     private Integer minCostSamples;
     private boolean crossType;
     private ExpressionEvaluator problemDescription;
+    private String scope;
 
     public Builder feature(final String name, final String jqExpression) {
       if (lambdaExtractor != null) {
@@ -197,6 +202,11 @@ public record CbrConfig(
       return this;
     }
 
+    public Builder scope(final String scope) {
+      this.scope = scope;
+      return this;
+    }
+
     public CbrConfig build() {
       final FeatureExtractor extractor;
       if (!jqFeatures.isEmpty()) {
@@ -219,7 +229,8 @@ public record CbrConfig(
           temporalDecayHalfLifeDays,
           minCostSamples,
           crossType,
-          problemDescription);
+          problemDescription,
+          scope);
     }
   }
 }

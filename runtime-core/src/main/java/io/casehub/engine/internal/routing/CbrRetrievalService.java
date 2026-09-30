@@ -364,13 +364,18 @@ public class CbrRetrievalService {
         return CbrRetrievalResult.empty();
       }
 
+      io.casehub.platform.api.path.Path queryScope =
+          config.scope() != null
+              ? io.casehub.platform.api.path.Path.of(config.scope().split("/"))
+              : io.casehub.platform.api.path.Path.root();
+
       CbrQuery baseQuery;
       if (config.crossType()) {
         baseQuery =
             CbrQuery.crossType(
                     instance.tenancyId,
                     new MemoryDomain(resolvedDomain),
-                    io.casehub.platform.api.path.Path.root(),
+                    queryScope,
                     features,
                     config.topK())
                 .withMinSimilarity(config.minSimilarity())
@@ -382,13 +387,18 @@ public class CbrRetrievalService {
             CbrQuery.of(
                     instance.tenancyId,
                     new MemoryDomain(resolvedDomain),
-                    io.casehub.platform.api.path.Path.root(),
+                    queryScope,
                     caseType,
                     features,
                     config.topK())
                 .withMinSimilarity(config.minSimilarity())
                 .withWeights(config.weights())
                 .withVectorWeight(config.vectorWeight());
+      }
+
+      if (queryScope.equals(io.casehub.platform.api.path.Path.root())) {
+        baseQuery =
+            baseQuery.withScopeDecay(new io.casehub.neocortex.memory.cbr.ScopeDecay.Step(1.0));
       }
 
       CbrQuery query =
