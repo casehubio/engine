@@ -42,13 +42,17 @@ public class DefaultCaseQueryService implements CaseQueryService {
 
   @Override
   public List<CaseSummary> listActive(String tenancyId, int page, int size) {
-    List<CaseInstance> instances = new ArrayList<>();
+    List<CaseInstance> all = new ArrayList<>();
     for (CaseStatus status : List.of(CaseStatus.STARTING, CaseStatus.RUNNING, CaseStatus.WAITING)) {
-      instances.addAll(
+      all.addAll(
           repository.query(
-              CaseInstanceQuery.builder().status(status).page(page).size(size).build(), tenancyId));
+              CaseInstanceQuery.builder().status(status).size(Integer.MAX_VALUE).build(),
+              tenancyId));
     }
-    return instances.stream()
+    int start = page * size;
+    List<CaseInstance> paged =
+        start >= all.size() ? List.of() : all.subList(start, Math.min(start + size, all.size()));
+    return paged.stream()
         .map(
             ci ->
                 new CaseSummary(
