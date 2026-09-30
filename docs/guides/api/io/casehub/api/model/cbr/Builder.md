@@ -24,6 +24,8 @@
 
 ### `problemDescription` (`ExpressionEvaluator`)
 
+### `scope` (`java.lang.String`)
+
 ### `temporalDecayHalfLifeDays` (`java.lang.Integer`)
 
 ### `timing` (`io.casehub.api.model.cbr.CbrConfig.CbrRetrievalTiming`)
@@ -102,6 +104,12 @@
 #### Parameters
 
 - `jqExpression` (`java.lang.String`)
+
+### `public io.casehub.api.model.cbr.CbrConfig.Builder scope(java.lang.String scope)`
+
+#### Parameters
+
+- `scope` (`java.lang.String`)
 
 ### `public io.casehub.api.model.cbr.CbrConfig.Builder temporalDecayHalfLifeDays(java.lang.Integer temporalDecayHalfLifeDays)`
 
