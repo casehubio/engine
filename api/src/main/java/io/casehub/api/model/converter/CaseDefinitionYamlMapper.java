@@ -391,7 +391,7 @@ public final class CaseDefinitionYamlMapper {
                           params.put(
                               p.getKey(),
                               io.casehub.yaml.core.module.YamlModuleParameter.builder()
-                                  .type(io.casehub.yaml.core.module.ParameterType.valueOf(type))
+                                  .type(io.casehub.yaml.plugin.api.ParameterType.valueOf(type))
                                   .required(required)
                                   .defaultValue(def)
                                   .build());
@@ -407,7 +407,7 @@ public final class CaseDefinitionYamlMapper {
                           outputs.put(
                               o.getKey(),
                               new io.casehub.yaml.core.module.YamlModuleOutput(
-                                  io.casehub.yaml.core.module.ParameterType.STRING,
+                                  io.casehub.yaml.plugin.api.ParameterType.STRING,
                                   o.getValue().asText()));
                         });
               }
