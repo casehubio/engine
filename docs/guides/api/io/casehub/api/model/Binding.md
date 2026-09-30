@@ -6,6 +6,10 @@
 
 ## Fields
 
+### `compensatedBy` (`java.lang.String`)
+
+### `compensationOrder` (`java.lang.Integer`)
+
 ### `conflictResolverStrategy` (`java.lang.String`)
 
 ### `consumes` (`java.lang.String`)
@@ -70,6 +74,10 @@
 
 ### `public io.casehub.api.model.ExecutionMode executionMode()`
 
+### `public java.lang.String getCompensatedBy()`
+
+### `public java.lang.Integer getCompensationOrder()`
+
 ### `public java.lang.String getConflictResolverStrategy()`
 
 Strategy name for resolving concurrent writes to the same CaseContext key. Values:
@@ -114,6 +122,18 @@ default. Overlaps within the same stage trigger a validation warning.
 ### `public io.casehub.api.model.LifecycleScope lifecycleScope()`
 
 ### `public io.casehub.api.model.Participation participation()`
+
+### `public void setCompensatedBy(java.lang.String compensatedBy)`
+
+#### Parameters
+
+- `compensatedBy` (`java.lang.String`)
+
+### `public void setCompensationOrder(java.lang.Integer compensationOrder)`
+
+#### Parameters
+
+- `compensationOrder` (`java.lang.Integer`)
 
 ### `public void setConflictResolverStrategy(java.lang.String conflictResolverStrategy)`
 
