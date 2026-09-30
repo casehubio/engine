@@ -835,6 +835,8 @@ public final class YamlCaseDefinitionConverter {
         builder.sideEffectClassification(
             SideEffectClassification.valueOf(yb.sideEffectClassification()));
       }
+      if (yb.compensatedBy() != null) builder.compensatedBy(yb.compensatedBy());
+      if (yb.compensationOrder() != null) builder.compensationOrder(yb.compensationOrder());
       if (yb.recoveryOverride() != null) {
         builder.recoveryOverride(convertRecoveryOverride(yb.recoveryOverride()));
       }
