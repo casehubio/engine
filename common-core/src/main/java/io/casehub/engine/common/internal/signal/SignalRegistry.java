@@ -45,6 +45,10 @@ public class SignalRegistry implements Resettable {
   jakarta.enterprise.inject.Instance<io.casehub.engine.common.internal.convergence.ActivityTracker>
       activityTrackerInstance;
 
+  @jakarta.inject.Inject
+  jakarta.enterprise.event.Event<io.casehub.engine.common.spi.event.PheromoneStateChangedEvent>
+      pheromoneEvent;
+
   public boolean deposit(
       UUID caseId, String name, double strength, Duration halfLife, String source, int maxPerCase) {
     return deposit(caseId, name, strength, halfLife, source, maxPerCase, Instant.now());
@@ -82,14 +86,14 @@ public class SignalRegistry implements Resettable {
               existing.reinforcementCount() + 1,
               false,
               Set.copyOf(mergedSources)));
-      recordSignalDeposit(caseId);
+      recordSignalDeposit(caseId, name, newStrength, existing.reinforcementCount() + 1, source);
       return true;
     }
 
     if (existing != null && existing.expired()) {
       caseSignals.put(
           name, new Signal(name, strength, now, now, halfLife, source, 1, false, Set.of(source)));
-      recordSignalDeposit(caseId);
+      recordSignalDeposit(caseId, name, strength, 1, source);
       return true;
     }
 
@@ -101,13 +105,24 @@ public class SignalRegistry implements Resettable {
 
     caseSignals.put(
         name, new Signal(name, strength, now, now, halfLife, source, 1, false, Set.of(source)));
-    recordSignalDeposit(caseId);
+    recordSignalDeposit(caseId, name, strength, 1, source);
     return true;
   }
 
-  private void recordSignalDeposit(UUID caseId) {
+  private void recordSignalDeposit(
+      UUID caseId, String name, double strength, int reinforcementCount, String source) {
     if (activityTrackerInstance != null && activityTrackerInstance.isResolvable()) {
       activityTrackerInstance.get().recordSignalDeposit(caseId);
+    }
+    if (pheromoneEvent != null) {
+      pheromoneEvent.fireAsync(
+          new io.casehub.engine.common.spi.event.PheromoneStateChangedEvent(
+              caseId,
+              name,
+              strength,
+              reinforcementCount,
+              source,
+              io.casehub.engine.common.spi.event.PheromoneStateChangedEvent.Type.DEPOSITED));
     }
   }
 
@@ -177,6 +192,16 @@ public class SignalRegistry implements Resettable {
             existing.reinforcementCount(),
             true,
             existing.sources()));
+    if (pheromoneEvent != null) {
+      pheromoneEvent.fireAsync(
+          new io.casehub.engine.common.spi.event.PheromoneStateChangedEvent(
+              caseId,
+              name,
+              existing.strength(),
+              existing.reinforcementCount(),
+              existing.lastSource(),
+              io.casehub.engine.common.spi.event.PheromoneStateChangedEvent.Type.EXPIRED));
+    }
   }
 
   public Map<String, Signal> getAllSignals(UUID caseId) {
