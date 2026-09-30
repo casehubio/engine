@@ -28,13 +28,26 @@ import java.util.concurrent.ConcurrentHashMap;
 @ApplicationScoped
 public class ImprovementCircuitBreaker implements Resettable {
 
+  private static final com.fasterxml.jackson.databind.ObjectMapper MAPPER =
+      new com.fasterxml.jackson.databind.ObjectMapper();
+
   private final ConcurrentHashMap<UUID, CircuitBreakerState> states = new ConcurrentHashMap<>();
   private final ConcurrentHashMap<UUID, Integer> halfOpenCount = new ConcurrentHashMap<>();
   private final Event<CircuitBreakerStateChangedEvent> stateChangedEvent;
+  private final io.casehub.engine.common.spi.EventLogRepository eventLogRepository;
 
   @Inject
-  public ImprovementCircuitBreaker(Event<CircuitBreakerStateChangedEvent> stateChangedEvent) {
+  public ImprovementCircuitBreaker(
+      Event<CircuitBreakerStateChangedEvent> stateChangedEvent,
+      jakarta.enterprise.inject.Instance<io.casehub.engine.common.spi.EventLogRepository>
+          eventLogRepo) {
     this.stateChangedEvent = stateChangedEvent;
+    this.eventLogRepository = eventLogRepo.isResolvable() ? eventLogRepo.get() : null;
+  }
+
+  ImprovementCircuitBreaker(Event<CircuitBreakerStateChangedEvent> stateChangedEvent) {
+    this.stateChangedEvent = stateChangedEvent;
+    this.eventLogRepository = null;
   }
 
   public CircuitBreakerState state(UUID caseId) {
@@ -78,6 +91,7 @@ public class ImprovementCircuitBreaker implements Resettable {
 
     if (newState != current) {
       stateChangedEvent.fireAsync(new CircuitBreakerStateChangedEvent(caseId, current, newState));
+      emitEventLog(caseId, tenancyId, current, newState);
     }
   }
 
@@ -85,13 +99,80 @@ public class ImprovementCircuitBreaker implements Resettable {
     halfOpenCount.computeIfPresent(caseId, (k, v) -> v + 1);
   }
 
-  public void manualReset(UUID caseId) {
+  public void manualReset(UUID caseId, String tenancyId) {
     var previous = states.put(caseId, CircuitBreakerState.CLOSED);
     halfOpenCount.remove(caseId);
     if (previous != null && previous != CircuitBreakerState.CLOSED) {
       stateChangedEvent.fireAsync(
           new CircuitBreakerStateChangedEvent(caseId, previous, CircuitBreakerState.CLOSED));
+      emitEventLog(caseId, tenancyId, previous, CircuitBreakerState.CLOSED);
     }
+  }
+
+  @Deprecated(forRemoval = true)
+  public void manualReset(UUID caseId) {
+    manualReset(caseId, null);
+  }
+
+  public void restoreFromEventLog(UUID caseId, String tenancyId) {
+    if (eventLogRepository == null) {
+      return;
+    }
+    var events =
+        eventLogRepository.findByCaseAndTypes(
+            caseId,
+            java.util.List.of(
+                io.casehub.api.model.event.CaseHubEventType.CIRCUIT_BREAKER_TRIPPED,
+                io.casehub.api.model.event.CaseHubEventType.CIRCUIT_BREAKER_RECOVERING,
+                io.casehub.api.model.event.CaseHubEventType.CIRCUIT_BREAKER_RESET),
+            tenancyId);
+    if (events.isEmpty()) {
+      return;
+    }
+
+    var last = events.get(events.size() - 1);
+    switch (last.getEventType()) {
+      case CIRCUIT_BREAKER_TRIPPED -> states.put(caseId, CircuitBreakerState.OPEN);
+      case CIRCUIT_BREAKER_RECOVERING -> {
+        states.put(caseId, CircuitBreakerState.HALF_OPEN);
+        int count = 0;
+        if (last.getMetadata() != null && last.getMetadata().has("halfOpenCount")) {
+          count = last.getMetadata().get("halfOpenCount").asInt();
+        }
+        halfOpenCount.put(caseId, count);
+      }
+      case CIRCUIT_BREAKER_RESET -> {
+        states.remove(caseId);
+        halfOpenCount.remove(caseId);
+      }
+      default -> {}
+    }
+  }
+
+  private void emitEventLog(
+      UUID caseId, String tenancyId, CircuitBreakerState from, CircuitBreakerState to) {
+    if (eventLogRepository == null || tenancyId == null) {
+      return;
+    }
+    var eventType =
+        switch (to) {
+          case OPEN -> io.casehub.api.model.event.CaseHubEventType.CIRCUIT_BREAKER_TRIPPED;
+          case HALF_OPEN -> io.casehub.api.model.event.CaseHubEventType.CIRCUIT_BREAKER_RECOVERING;
+          case CLOSED -> io.casehub.api.model.event.CaseHubEventType.CIRCUIT_BREAKER_RESET;
+        };
+    var log = new io.casehub.engine.common.internal.history.EventLog();
+    log.setCaseId(caseId);
+    log.setEventType(eventType);
+    log.setStreamType(io.casehub.api.model.event.EventStreamType.CASE);
+    log.setTimestamp(java.time.Instant.now());
+    var meta = MAPPER.createObjectNode();
+    meta.put("from", from.name());
+    meta.put("to", to.name());
+    if (to == CircuitBreakerState.HALF_OPEN) {
+      meta.put("halfOpenCount", halfOpenCount.getOrDefault(caseId, 0));
+    }
+    log.setMetadata(meta);
+    eventLogRepository.append(log, tenancyId);
   }
 
   @Override
