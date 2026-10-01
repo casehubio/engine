@@ -16,7 +16,7 @@
 package io.casehub.engine.yamlcbr;
 
 import io.casehub.api.spi.routing.ExperiencePlanStep;
-import io.casehub.yaml.step.StepCatalog;
+import io.casehub.yaml.plugin.api.PluginRegistry;
 import io.casehub.yaml.step.catalog.ResolvedStep;
 import java.util.Comparator;
 import java.util.List;
@@ -26,9 +26,9 @@ import org.jspecify.annotations.Nullable;
 
 public class CbrPlanToStepConverter {
 
-  private final StepCatalog catalog;
+  private final PluginRegistry catalog;
 
-  public CbrPlanToStepConverter(StepCatalog catalog) {
+  public CbrPlanToStepConverter(PluginRegistry catalog) {
     this.catalog = catalog;
   }
 

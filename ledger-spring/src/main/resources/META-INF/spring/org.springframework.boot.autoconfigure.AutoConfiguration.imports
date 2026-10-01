@@ -1,1 +1,2 @@
 io.casehub.ledger.spring.LedgerAutoConfiguration
+io.casehub.ledger.spring.LedgerManualConfig
