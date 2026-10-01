@@ -350,7 +350,8 @@ public class CbrRetrievalService {
         }
       }
 
-      Map<String, FeatureValue> features = extractFeatures(config, instance.getCaseContext());
+      FeatureExtractionResult extraction = extractFeatures(config, instance.getCaseContext());
+      Map<String, FeatureValue> features = extraction.features();
       if (features.isEmpty()) {
         return CbrRetrievalResult.empty();
       }
@@ -444,7 +445,7 @@ public class CbrRetrievalService {
 
       CbrRetrievalResult result = new CbrRetrievalResult(immutableExperiences, ensemble);
 
-      if (config.timing() == CbrRetrievalTiming.CASE_LIFETIME) {
+      if (config.timing() == CbrRetrievalTiming.CASE_LIFETIME && extraction.complete()) {
         cacheIfUnderBound(instance.getUuid(), result);
       }
 
@@ -608,16 +609,20 @@ public class CbrRetrievalService {
     return cache.size();
   }
 
-  private Map<String, FeatureValue> extractFeatures(CbrConfig config, CaseContext context) {
+  record FeatureExtractionResult(Map<String, FeatureValue> features, boolean complete) {}
+
+  private FeatureExtractionResult extractFeatures(CbrConfig config, CaseContext context) {
     return switch (config.featureExtractor()) {
       case JqFeatureExtractor jq -> extractJqFeatures(jq, context);
-      case LambdaFeatureExtractor lambda -> FeatureValue.toFeatureMap(lambda.extract(context));
+      case LambdaFeatureExtractor lambda ->
+          new FeatureExtractionResult(FeatureValue.toFeatureMap(lambda.extract(context)), true);
     };
   }
 
-  private Map<String, FeatureValue> extractJqFeatures(JqFeatureExtractor jq, CaseContext context) {
+  private FeatureExtractionResult extractJqFeatures(JqFeatureExtractor jq, CaseContext context) {
     JsonNode workingNode = context.layer(ContextLayer.WORKING).asJsonNode();
     Map<String, FeatureValue> features = new LinkedHashMap<>();
+    int expectedCount = jq.featureExpressions().size();
 
     for (Map.Entry<String, String> entry : jq.featureExpressions().entrySet()) {
       String featureName = entry.getKey();
@@ -647,7 +652,7 @@ public class CbrRetrievalService {
       features.put(featureName, FeatureValue.of(value));
     }
 
-    return features;
+    return new FeatureExtractionResult(features, features.size() == expectedCount);
   }
 
   private String resolveDomain(CbrConfig config, CaseDefinition definition) {
