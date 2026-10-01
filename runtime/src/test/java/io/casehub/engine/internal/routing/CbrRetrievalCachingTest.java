@@ -211,6 +211,76 @@ class CbrRetrievalCachingTest {
 
   // --- helpers ---
 
+  @Test
+  void caseLifetime_partialFeatures_notCached() {
+    CbrConfig config =
+        CbrConfig.builder()
+            .feature("posture", ".enemy.posture")
+            .feature("size", ".enemy.army_size")
+            .domain("test")
+            .timing(CbrRetrievalTiming.CASE_LIFETIME)
+            .build();
+    CaseDefinition def =
+        CaseDefinition.builder().namespace("ns").name("test-case").version("1.0.0").build();
+    def.setCbrConfig(config);
+
+    UUID caseUuid = UUID.randomUUID();
+
+    CaseInstance partialInstance = new CaseInstance();
+    partialInstance.setUuid(caseUuid);
+    partialInstance.tenancyId = "test-tenant";
+    partialInstance.setCaseContext(
+        new CaseContextImpl(Map.of("enemy", Map.of("posture", "aggressive"))));
+
+    cbrStore.setResult(List.of(scoredCase("problem1", "solution1")));
+
+    io.casehub.api.spi.routing.CbrRetrievalResult first = service.retrieve(def, partialInstance);
+    assertEquals(1, first.experiences().size());
+    assertEquals(1, cbrStore.callCount(), "first retrieval should hit the store");
+
+    CaseInstance completeInstance = new CaseInstance();
+    completeInstance.setUuid(caseUuid);
+    completeInstance.tenancyId = "test-tenant";
+    completeInstance.setCaseContext(
+        new CaseContextImpl(Map.of("enemy", Map.of("posture", "aggressive", "army_size", 50))));
+
+    io.casehub.api.spi.routing.CbrRetrievalResult second = service.retrieve(def, completeInstance);
+    assertEquals(
+        2,
+        cbrStore.callCount(),
+        "partial features should not be cached — store should be called again");
+  }
+
+  @Test
+  void caseLifetime_allFeaturesResolved_cached() {
+    CbrConfig config =
+        CbrConfig.builder()
+            .feature("posture", ".enemy.posture")
+            .feature("size", ".enemy.army_size")
+            .domain("test")
+            .timing(CbrRetrievalTiming.CASE_LIFETIME)
+            .build();
+    CaseDefinition def =
+        CaseDefinition.builder().namespace("ns").name("test-case").version("1.0.0").build();
+    def.setCbrConfig(config);
+
+    UUID caseUuid = UUID.randomUUID();
+
+    CaseInstance instance = new CaseInstance();
+    instance.setUuid(caseUuid);
+    instance.tenancyId = "test-tenant";
+    instance.setCaseContext(
+        new CaseContextImpl(Map.of("enemy", Map.of("posture", "aggressive", "army_size", 50))));
+
+    cbrStore.setResult(List.of(scoredCase("problem1", "solution1")));
+
+    service.retrieve(def, instance);
+    service.retrieve(def, instance);
+
+    assertEquals(
+        1, cbrStore.callCount(), "all features resolved — result should be cached on first call");
+  }
+
   private CaseDefinition buildDefinition(CbrRetrievalTiming timing) {
     CbrConfig config =
         CbrConfig.builder()
