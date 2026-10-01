@@ -17,14 +17,14 @@ package io.casehub.engine.yamlcbr;
 
 import io.casehub.api.spi.YamlStepExecutionEvent;
 import io.casehub.api.spi.YamlStepExecutionObserver;
-import io.casehub.yaml.step.StepExecutionEvent;
+import io.casehub.yaml.step.ActionExecutionEvent;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 import java.util.function.Consumer;
 import org.jboss.logging.Logger;
 
-public class YamlStepExecutionDispatcher implements Consumer<StepExecutionEvent> {
+public class YamlStepExecutionDispatcher implements Consumer<ActionExecutionEvent> {
 
   private static final Logger LOG = Logger.getLogger(YamlStepExecutionDispatcher.class);
 
@@ -54,7 +54,7 @@ public class YamlStepExecutionDispatcher implements Consumer<StepExecutionEvent>
   }
 
   @Override
-  public void accept(StepExecutionEvent platformEvent) {
+  public void accept(ActionExecutionEvent platformEvent) {
     if (observers.isEmpty()) {
       return;
     }

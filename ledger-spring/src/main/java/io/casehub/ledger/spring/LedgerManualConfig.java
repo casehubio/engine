@@ -20,4 +20,4 @@ import org.springframework.context.annotation.ComponentScan;
 
 @AutoConfiguration
 @ComponentScan(basePackageClasses = CaseLedgerEventCaptureSpringAdapter.class)
-public class LedgerAutoConfiguration {}
+public class LedgerManualConfig {}

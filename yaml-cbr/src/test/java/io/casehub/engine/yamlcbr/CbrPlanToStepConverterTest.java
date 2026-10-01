@@ -21,8 +21,8 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import io.casehub.api.spi.routing.ExperiencePlanStep;
 import io.casehub.api.spi.routing.RoutingOutcome;
-import io.casehub.yaml.step.CatalogEntry;
-import io.casehub.yaml.step.StepCatalog;
+import io.casehub.yaml.plugin.api.Definition;
+import io.casehub.yaml.plugin.api.PluginRegistry;
 import io.casehub.yaml.step.catalog.ResolvedStep;
 import java.util.HashSet;
 import java.util.List;
@@ -144,17 +144,22 @@ class CbrPlanToStepConverterTest {
 
   // --- Test double ---
 
-  static class StubCatalog implements StepCatalog {
+  static class StubCatalog implements PluginRegistry {
     private final Set<String> registered = new HashSet<>();
+
+    @Override
+    public void register(Definition definition) {
+      registered.add(definition.name());
+    }
 
     void register(String actionName) {
       registered.add(actionName);
     }
 
     @Override
-    public Optional<CatalogEntry> resolve(String actionName) {
+    public Optional<Definition> resolve(String actionName) {
       if (registered.contains(actionName)) {
-        return Optional.of(new CatalogEntry(actionName, null, null));
+        return Optional.of(Definition.of(actionName).execute((in, sr) -> null).build());
       }
       return Optional.empty();
     }
