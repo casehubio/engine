@@ -389,8 +389,7 @@ public class RuntimeManualConfig {
   public com.fasterxml.jackson.databind.ObjectMapper yamlObjectMapper(
       io.casehub.engine.common.internal.config.ConfigContext configContext) {
     com.fasterxml.jackson.databind.ObjectMapper mapper =
-        new com.fasterxml.jackson.databind.ObjectMapper(
-            new com.fasterxml.jackson.dataformat.yaml.YAMLFactory());
+        io.casehub.yaml.jackson.YamlMappers.create();
     com.fasterxml.jackson.databind.module.SimpleModule module =
         new com.fasterxml.jackson.databind.module.SimpleModule("ConfigSecretResolvingModule");
     module.addDeserializer(
