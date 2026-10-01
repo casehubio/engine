@@ -15,7 +15,7 @@
  */
 package io.casehub.ledger.model;
 
-import io.casehub.ledger.runtime.model.jpa.JpaLedgerEntry;
+import io.casehub.ledger.jpa.JpaLedgerEntry;
 import jakarta.persistence.Column;
 import jakarta.persistence.DiscriminatorValue;
 import jakarta.persistence.Entity;

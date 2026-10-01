@@ -34,8 +34,7 @@ import jakarta.enterprise.inject.Produces;
 public class PersistenceMemoryBeans {
 
   @Produces
-  @Alternative
-  @Priority(100)
+  @DefaultBean
   @ApplicationScoped
   DefaultTestPrincipal defaultTestPrincipal() {
     return new DefaultTestPrincipal();

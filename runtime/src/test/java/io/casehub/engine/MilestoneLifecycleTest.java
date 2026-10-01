@@ -150,7 +150,11 @@ class MilestoneLifecycleTest {
                 assertMilestoneStatus(
                     caseId, "approval", MilestoneLifecycleStatus.COMPLETED, SlaStatus.ON_TRACK));
 
-    // Simulate restart: clear cache
+    // Simulate restart: clear snapshot + cache (forces event-log replay)
+    CaseInstance cached = caseInstanceCache.get(caseId);
+    if (cached != null) {
+      cached.setContextSnapshot(null);
+    }
     caseInstanceCache.clear();
 
     // Reload from repository (triggers rebuildStateContext)
