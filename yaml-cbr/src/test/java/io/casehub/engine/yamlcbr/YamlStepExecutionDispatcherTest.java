@@ -21,7 +21,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import io.casehub.api.spi.YamlStepExecutionEvent;
 import io.casehub.api.spi.YamlStepExecutionObserver;
-import io.casehub.yaml.step.StepExecutionEvent;
+import io.casehub.yaml.step.ActionExecutionEvent;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -47,7 +47,7 @@ class YamlStepExecutionDispatcherTest {
             List.of(observer));
 
     var platformEvent =
-        new StepExecutionEvent(
+        new ActionExecutionEvent(
             "rest-call",
             150L,
             true,
@@ -93,7 +93,7 @@ class YamlStepExecutionDispatcherTest {
             List.of(received1::add, received2::add));
 
     dispatcher.accept(
-        new StepExecutionEvent(
+        new ActionExecutionEvent(
             "action", 10L, true, Map.of(), "process", "SUCCESS", null, null, null, null, null));
 
     assertEquals(1, received1.size());
@@ -115,7 +115,7 @@ class YamlStepExecutionDispatcherTest {
     assertDoesNotThrow(
         () ->
             dispatcher.accept(
-                new StepExecutionEvent(
+                new ActionExecutionEvent(
                     "action", 10L, true, Map.of(), "process", "SUCCESS", null, null, null, null,
                     null)));
 
@@ -131,7 +131,7 @@ class YamlStepExecutionDispatcherTest {
     assertDoesNotThrow(
         () ->
             dispatcher.accept(
-                new StepExecutionEvent(
+                new ActionExecutionEvent(
                     "action", 10L, true, Map.of(), "process", "SUCCESS", null, null, null, null,
                     null)));
   }
@@ -144,7 +144,7 @@ class YamlStepExecutionDispatcherTest {
             UUID.randomUUID(), "t", "ct", Map.of(), null, null, List.of(received::add));
 
     var platformEvent =
-        new StepExecutionEvent(
+        new ActionExecutionEvent(
             "action",
             10L,
             true,
