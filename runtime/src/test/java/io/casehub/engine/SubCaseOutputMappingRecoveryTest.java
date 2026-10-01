@@ -133,8 +133,8 @@ public class SubCaseOutputMappingRecoveryTest {
     // 5. Write SUBCASE_COMPLETED WITH payload (FIXED - now includes applied data)
     writeSubCaseCompletedEvent(parentId, childId, mappedData);
 
-    // 6. Clear cache (simulates JVM restart)
-    caseInstanceCache.clear();
+    // 6. Clear snapshot + cache (simulates crash before snapshot update)
+    clearSnapshotAndCache(parentId);
 
     // 7. Restore parent via recovery service
     CaseInstance restored = run(() -> recoveryService.loadOrRestoreCaseInstance(parentId));
@@ -172,8 +172,8 @@ public class SubCaseOutputMappingRecoveryTest {
         OBJECT_MAPPER.valueToTree(Map.of("processed", true, "result", "success")));
     run(() -> eventLogRepository.append(workerEvent, TenancyConstants.DEFAULT_TENANT_ID));
 
-    // Clear cache and restore
-    caseInstanceCache.clear();
+    // Clear snapshot + cache (simulates crash before snapshot update)
+    clearSnapshotAndCache(caseId);
     CaseInstance restored = run(() -> recoveryService.loadOrRestoreCaseInstance(caseId));
 
     // ✓ WORKS: worker output is preserved!
@@ -266,6 +266,13 @@ public class SubCaseOutputMappingRecoveryTest {
     run(() -> eventLogRepository.append(event, TenancyConstants.DEFAULT_TENANT_ID));
   }
 
+  private void clearSnapshotAndCache(UUID caseId) {
+    instanceRepository
+        .findByUuid(caseId, TenancyConstants.DEFAULT_TENANT_ID)
+        .ifPresent(i -> i.setContextSnapshot(null));
+    caseInstanceCache.clear();
+  }
+
   private CaseInstance newInstance(CaseStatus status) {
     CaseInstance instance = new CaseInstance();
     instance.setUuid(UUID.randomUUID());
@@ -319,8 +326,8 @@ public class SubCaseOutputMappingRecoveryTest {
 
     run(() -> eventLogRepository.append(workerEvent, TenancyConstants.DEFAULT_TENANT_ID));
 
-    // 3. Clear cache (simulates JVM restart)
-    caseInstanceCache.clear();
+    // 3. Clear snapshot + cache (simulates crash before snapshot update)
+    clearSnapshotAndCache(caseId);
 
     // 4. Restore case via recovery service
     CaseInstance restored = run(() -> recoveryService.loadOrRestoreCaseInstance(caseId));
@@ -371,8 +378,8 @@ public class SubCaseOutputMappingRecoveryTest {
 
     run(() -> eventLogRepository.append(workerEvent, TenancyConstants.DEFAULT_TENANT_ID));
 
-    // 3. Clear cache
-    caseInstanceCache.clear();
+    // 3. Clear snapshot + cache (simulates crash before snapshot update)
+    clearSnapshotAndCache(caseId);
 
     // 4. Restore
     CaseInstance restored = run(() -> recoveryService.loadOrRestoreCaseInstance(caseId));

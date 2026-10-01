@@ -15,7 +15,11 @@
  */
 package io.casehub.engine.yamlcbr;
 
-import static org.junit.jupiter.api.Assertions.*;
+import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertInstanceOf;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import io.casehub.api.model.CaseDefinition;
 import io.casehub.api.model.cbr.CbrConfig;
@@ -35,7 +39,12 @@ import io.casehub.neocortex.memory.cbr.CbrRetentionPolicy;
 import io.casehub.neocortex.memory.cbr.FeatureValue;
 import io.casehub.neocortex.memory.cbr.SupersessionStatus;
 import io.casehub.platform.api.path.Path;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Optional;
+import java.util.UUID;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 

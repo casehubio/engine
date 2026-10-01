@@ -211,6 +211,10 @@ public class SignalPersistenceAndDedupTest {
                       inputDataHash));
             });
 
+    CaseInstance cached = caseInstanceCache.get(caseId);
+    if (cached != null) {
+      cached.setContextSnapshot(null);
+    }
     caseInstanceCache.clear();
 
     CaseInstance restored = recoveryService.loadOrRestoreCaseInstance(caseId);

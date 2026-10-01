@@ -15,7 +15,7 @@
  */
 package io.casehub.engine.internal.context;
 
-import static org.junit.jupiter.api.Assertions.*;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import io.casehub.api.context.CaseContextStore;
 import io.casehub.api.context.CaseContextStoreFactory;
