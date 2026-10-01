@@ -17,7 +17,7 @@ package io.casehub.engine.runtime.marshaller;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.module.SimpleModule;
-import com.fasterxml.jackson.dataformat.yaml.YAMLFactory;
+import io.casehub.yaml.jackson.YamlMappers;
 import io.casehub.engine.common.internal.config.ConfigContext;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.enterprise.inject.Produces;
@@ -45,7 +45,7 @@ public class CaseHubObjectMapperProducer {
   @Singleton
   @io.casehub.api.marshaller.YamlMapper
   public ObjectMapper yamlObjectMapper() {
-    ObjectMapper mapper = new ObjectMapper(new YAMLFactory());
+    ObjectMapper mapper = YamlMappers.create();
 
     // Register custom deserializer for config/secret placeholder resolution
     SimpleModule module = new SimpleModule("ConfigSecretResolvingModule");

@@ -17,7 +17,7 @@ package io.casehub.codegen;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.dataformat.yaml.YAMLFactory;
+import io.casehub.yaml.jackson.YamlMappers;
 import io.casehub.codegen.record.MappingParser;
 import io.casehub.codegen.record.RecordEmitter;
 import io.casehub.codegen.record.RecordMapping;
@@ -45,7 +45,7 @@ public class CasehubRecordCodegen {
     File outputDir = new File(args[2]);
     String targetPackage = args[3];
 
-    ObjectMapper yaml = new ObjectMapper(new YAMLFactory());
+    ObjectMapper yaml = YamlMappers.create();
     JsonNode schemaRoot = yaml.readTree(schemaFile);
     JsonNode mappingRoot = yaml.readTree(mappingFile);
 

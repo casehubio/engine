@@ -16,7 +16,7 @@
 package io.casehub.engine.yamlcbr;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.dataformat.yaml.YAMLFactory;
+import io.casehub.yaml.jackson.YamlMappers;
 import io.casehub.engine.flow.CallableDispatchRegistry;
 import io.casehub.engine.flow.CallableDispatcher;
 import io.casehub.yaml.core.condition.ConditionEvaluator;
@@ -39,7 +39,7 @@ public class StepFileCallableDispatcher implements CallableDispatcher {
 
   static final String CALL_NAME = "casehub:step-file";
   private static final Logger LOG = Logger.getLogger(StepFileCallableDispatcher.class);
-  private static final ObjectMapper YAML_MAPPER = new ObjectMapper(new YAMLFactory());
+  private static final ObjectMapper YAML_MAPPER = YamlMappers.create();
 
   private final PluginRegistry pluginRegistry;
   private final CallableDispatchRegistry dispatchRegistry;

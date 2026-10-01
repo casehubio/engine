@@ -19,6 +19,10 @@
             <groupId>org.jsonschema2pojo</groupId>
             <artifactId>jsonschema2pojo-core</artifactId>
         </dependency>
+        <dependency>
+            <groupId>io.casehub</groupId>
+            <artifactId>casehub-platform-yaml-jackson</artifactId>
+        </dependency>
 
         <!-- Test -->
         <dependency>

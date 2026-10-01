@@ -17,7 +17,7 @@ package io.casehub.api.model.converter;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.dataformat.yaml.YAMLFactory;
+import io.casehub.yaml.jackson.YamlMappers;
 import io.casehub.api.context.CaseContext;
 import io.casehub.api.engine.ExpressionEngineRegistry;
 import io.casehub.api.model.CaseDefinition;
@@ -597,7 +597,7 @@ public final class CaseDefinitionYamlMapper {
   public static CaseDefinition load(final InputStream yamlStream) throws IOException {
     return load(
         yamlStream,
-        new ObjectMapper(new YAMLFactory()),
+        YamlMappers.create(),
         JQ_ONLY,
         EMPTY_PROVIDERS,
         io.casehub.api.model.ai.InlineChatModelProviderResolver.INSTANCE);
