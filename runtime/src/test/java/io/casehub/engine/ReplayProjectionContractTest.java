@@ -79,6 +79,10 @@ class ReplayProjectionContractTest {
     workerCompleted.setMetadata(metadata);
     eventLogRepository.append(workerCompleted, TenancyConstants.DEFAULT_TENANT_ID);
 
+    CaseInstance cached = caseInstanceCache.get(caseId);
+    if (cached != null) {
+      cached.setContextSnapshot(null);
+    }
     caseInstanceCache.clear();
 
     CaseInstance restored = recoveryService.loadOrRestoreCaseInstance(caseId);

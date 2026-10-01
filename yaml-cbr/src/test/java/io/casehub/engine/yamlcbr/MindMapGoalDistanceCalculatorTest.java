@@ -15,7 +15,7 @@
  */
 package io.casehub.engine.yamlcbr;
 
-import static org.junit.jupiter.api.Assertions.*;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import io.casehub.neocortex.cognitive.Confidence;
 import io.casehub.neocortex.mindmap.EdgeInput;
