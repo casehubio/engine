@@ -1,6 +1,6 @@
-# io.casehub.api.model.stigmergy.ReadinessReport.CheckResult
+# io.casehub.api.model.improvement.ReadinessReport.CheckResult
 
-**Package:** `io.casehub.api.model.stigmergy`
+**Package:** `io.casehub.api.model.improvement`
 
 **Kind:** `record`
 

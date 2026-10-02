@@ -8,12 +8,12 @@
 
 ### `public abstract java.lang.String domainId()`
 
-### `public abstract java.util.List<io.casehub.api.model.stigmergy.ImprovementRequest> propose(java.util.UUID caseId, java.lang.String tenancyId, io.casehub.api.model.stigmergy.ImprovementConfig config)`
+### `public abstract java.util.List<io.casehub.api.model.improvement.ImprovementRequest> propose(java.util.UUID caseId, java.lang.String tenancyId, io.casehub.api.model.improvement.ImprovementConfig config)`
 
 #### Parameters
 
 - `caseId` (`java.util.UUID`)
 - `tenancyId` (`java.lang.String`)
-- `config` (`io.casehub.api.model.stigmergy.ImprovementConfig`)
+- `config` (`io.casehub.api.model.improvement.ImprovementConfig`)
 
 ### `public abstract java.lang.String sourceId()`

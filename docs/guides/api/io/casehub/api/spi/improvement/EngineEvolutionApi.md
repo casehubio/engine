@@ -55,13 +55,13 @@
 - `caseId` (`java.util.UUID`)
 - `tenancyId` (`java.lang.String`)
 
-### `public abstract io.casehub.api.view.EvolutionStateSnapshot getEvolutionState(java.util.UUID caseId, java.lang.String tenancyId, io.casehub.api.model.stigmergy.ImprovementConfig config)`
+### `public abstract io.casehub.api.view.EvolutionStateSnapshot getEvolutionState(java.util.UUID caseId, java.lang.String tenancyId, io.casehub.api.model.improvement.ImprovementConfig config)`
 
 #### Parameters
 
 - `caseId` (`java.util.UUID`)
 - `tenancyId` (`java.lang.String`)
-- `config` (`io.casehub.api.model.stigmergy.ImprovementConfig`)
+- `config` (`io.casehub.api.model.improvement.ImprovementConfig`)
 
 ### `public abstract io.casehub.api.model.stigmergy.GatePolicy getGatePolicy(java.util.UUID caseId, java.lang.String tenancyId)`
 
@@ -77,14 +77,14 @@
 - `caseId` (`java.util.UUID`)
 - `tenancyId` (`java.lang.String`)
 
-### `public abstract io.casehub.api.model.stigmergy.ReadinessReport getReadinessReport(java.util.UUID caseId, java.lang.String tenancyId, io.casehub.api.model.stigmergy.ComplianceLevel targetLevel, io.casehub.api.model.stigmergy.ImprovementConfig config)`
+### `public abstract io.casehub.api.model.improvement.ReadinessReport getReadinessReport(java.util.UUID caseId, java.lang.String tenancyId, io.casehub.api.model.improvement.ComplianceLevel targetLevel, io.casehub.api.model.improvement.ImprovementConfig config)`
 
 #### Parameters
 
 - `caseId` (`java.util.UUID`)
 - `tenancyId` (`java.lang.String`)
-- `targetLevel` (`io.casehub.api.model.stigmergy.ComplianceLevel`)
-- `config` (`io.casehub.api.model.stigmergy.ImprovementConfig`)
+- `targetLevel` (`io.casehub.api.model.improvement.ComplianceLevel`)
+- `config` (`io.casehub.api.model.improvement.ImprovementConfig`)
 
 ### `public abstract io.casehub.api.view.ResearchCorpusView getResearchCorpus(java.lang.String query, java.lang.String areaId, int limit)`
 
@@ -182,14 +182,14 @@
 - `tenancyId` (`java.lang.String`)
 - `policy` (`io.casehub.api.model.stigmergy.GatePolicy`)
 
-### `public abstract io.casehub.api.model.stigmergy.ReadinessReport triggerReadinessValidation(java.util.UUID caseId, java.lang.String tenancyId, io.casehub.api.model.stigmergy.ComplianceLevel targetLevel, io.casehub.api.model.stigmergy.ImprovementConfig config)`
+### `public abstract io.casehub.api.model.improvement.ReadinessReport triggerReadinessValidation(java.util.UUID caseId, java.lang.String tenancyId, io.casehub.api.model.improvement.ComplianceLevel targetLevel, io.casehub.api.model.improvement.ImprovementConfig config)`
 
 #### Parameters
 
 - `caseId` (`java.util.UUID`)
 - `tenancyId` (`java.lang.String`)
-- `targetLevel` (`io.casehub.api.model.stigmergy.ComplianceLevel`)
-- `config` (`io.casehub.api.model.stigmergy.ImprovementConfig`)
+- `targetLevel` (`io.casehub.api.model.improvement.ComplianceLevel`)
+- `config` (`io.casehub.api.model.improvement.ImprovementConfig`)
 
 ### `public abstract void unblockImprovement(java.util.UUID caseId, java.lang.String tenancyId, java.util.UUID improvementId)`
 

@@ -6,19 +6,19 @@
 
 ## Fields
 
-### `hypotheses` (`java.util.List<io.casehub.api.model.stigmergy.ImprovementHypothesis>`)
+### `hypotheses` (`java.util.List<io.casehub.api.model.improvement.ImprovementHypothesis>`)
 
 ## Record Components
 
-### `hypotheses` (`java.util.List<io.casehub.api.model.stigmergy.ImprovementHypothesis>`)
+### `hypotheses` (`java.util.List<io.casehub.api.model.improvement.ImprovementHypothesis>`)
 
 ## Constructors
 
-### `public HypothesisCheckpoint(java.util.List<io.casehub.api.model.stigmergy.ImprovementHypothesis> hypotheses)`
+### `public HypothesisCheckpoint(java.util.List<io.casehub.api.model.improvement.ImprovementHypothesis> hypotheses)`
 
 #### Parameters
 
-- `hypotheses` (`java.util.List<io.casehub.api.model.stigmergy.ImprovementHypothesis>`)
+- `hypotheses` (`java.util.List<io.casehub.api.model.improvement.ImprovementHypothesis>`)
 
 ## Methods
 
@@ -30,6 +30,6 @@
 
 ### `public final int hashCode()`
 
-### `public java.util.List<io.casehub.api.model.stigmergy.ImprovementHypothesis> hypotheses()`
+### `public java.util.List<io.casehub.api.model.improvement.ImprovementHypothesis> hypotheses()`
 
 ### `public final java.lang.String toString()`

@@ -10,7 +10,7 @@
 
 ### `activeStreams` (`java.util.List<io.casehub.api.view.EvolutionStateSnapshot.ImprovementStreamView>`)
 
-### `areaComplianceLevels` (`java.util.Map<java.lang.String,io.casehub.api.model.stigmergy.ComplianceLevel>`)
+### `areaComplianceLevels` (`java.util.Map<java.lang.String,io.casehub.api.model.improvement.ComplianceLevel>`)
 
 ### `caseId` (`java.util.UUID`)
 
@@ -34,7 +34,7 @@
 
 ### `pendingInboxCount` (`int`)
 
-### `projectComplianceLevel` (`io.casehub.api.model.stigmergy.ComplianceLevel`)
+### `projectComplianceLevel` (`io.casehub.api.model.improvement.ComplianceLevel`)
 
 ### `recentTicks` (`java.util.List<io.casehub.api.model.stigmergy.TickTrace>`)
 
@@ -46,7 +46,7 @@
 
 ### `activeStreams` (`java.util.List<io.casehub.api.view.EvolutionStateSnapshot.ImprovementStreamView>`)
 
-### `areaComplianceLevels` (`java.util.Map<java.lang.String,io.casehub.api.model.stigmergy.ComplianceLevel>`)
+### `areaComplianceLevels` (`java.util.Map<java.lang.String,io.casehub.api.model.improvement.ComplianceLevel>`)
 
 ### `caseId` (`java.util.UUID`)
 
@@ -70,7 +70,7 @@
 
 ### `pendingInboxCount` (`int`)
 
-### `projectComplianceLevel` (`io.casehub.api.model.stigmergy.ComplianceLevel`)
+### `projectComplianceLevel` (`io.casehub.api.model.improvement.ComplianceLevel`)
 
 ### `recentTicks` (`java.util.List<io.casehub.api.model.stigmergy.TickTrace>`)
 
@@ -78,7 +78,7 @@
 
 ## Constructors
 
-### `public EvolutionStateSnapshot(java.util.UUID caseId, java.time.Instant timestamp, double healthScore, java.util.Map<java.lang.String,java.lang.Double> componentScores, double healthDelta, int healthWindowMinutes, io.casehub.api.model.stigmergy.CircuitBreakerState circuitBreakerState, java.util.Map<java.lang.String,io.casehub.api.view.EvolutionStateSnapshot.CategoryStateView> categoryStates, io.casehub.api.model.stigmergy.ComplianceLevel projectComplianceLevel, java.time.Instant complianceEvaluatedAt, java.util.Map<java.lang.String,io.casehub.api.model.stigmergy.ComplianceLevel> areaComplianceLevels, java.util.List<io.casehub.api.model.stigmergy.TickTrace> recentTicks, int activeImprovementCount, int dailyImprovementCount, java.util.List<io.casehub.api.view.EvolutionStateSnapshot.ImprovementStreamView> activeStreams, boolean evolutionEnabled, int pendingInboxCount)`
+### `public EvolutionStateSnapshot(java.util.UUID caseId, java.time.Instant timestamp, double healthScore, java.util.Map<java.lang.String,java.lang.Double> componentScores, double healthDelta, int healthWindowMinutes, io.casehub.api.model.stigmergy.CircuitBreakerState circuitBreakerState, java.util.Map<java.lang.String,io.casehub.api.view.EvolutionStateSnapshot.CategoryStateView> categoryStates, io.casehub.api.model.improvement.ComplianceLevel projectComplianceLevel, java.time.Instant complianceEvaluatedAt, java.util.Map<java.lang.String,io.casehub.api.model.improvement.ComplianceLevel> areaComplianceLevels, java.util.List<io.casehub.api.model.stigmergy.TickTrace> recentTicks, int activeImprovementCount, int dailyImprovementCount, java.util.List<io.casehub.api.view.EvolutionStateSnapshot.ImprovementStreamView> activeStreams, boolean evolutionEnabled, int pendingInboxCount)`
 
 #### Parameters
 
@@ -90,9 +90,9 @@
 - `healthWindowMinutes` (`int`)
 - `circuitBreakerState` (`io.casehub.api.model.stigmergy.CircuitBreakerState`)
 - `categoryStates` (`java.util.Map<java.lang.String,io.casehub.api.view.EvolutionStateSnapshot.CategoryStateView>`)
-- `projectComplianceLevel` (`io.casehub.api.model.stigmergy.ComplianceLevel`)
+- `projectComplianceLevel` (`io.casehub.api.model.improvement.ComplianceLevel`)
 - `complianceEvaluatedAt` (`java.time.Instant`)
-- `areaComplianceLevels` (`java.util.Map<java.lang.String,io.casehub.api.model.stigmergy.ComplianceLevel>`)
+- `areaComplianceLevels` (`java.util.Map<java.lang.String,io.casehub.api.model.improvement.ComplianceLevel>`)
 - `recentTicks` (`java.util.List<io.casehub.api.model.stigmergy.TickTrace>`)
 - `activeImprovementCount` (`int`)
 - `dailyImprovementCount` (`int`)
@@ -106,7 +106,7 @@
 
 ### `public java.util.List<io.casehub.api.view.EvolutionStateSnapshot.ImprovementStreamView> activeStreams()`
 
-### `public java.util.Map<java.lang.String,io.casehub.api.model.stigmergy.ComplianceLevel> areaComplianceLevels()`
+### `public java.util.Map<java.lang.String,io.casehub.api.model.improvement.ComplianceLevel> areaComplianceLevels()`
 
 ### `public java.util.UUID caseId()`
 
@@ -138,7 +138,7 @@
 
 ### `public int pendingInboxCount()`
 
-### `public io.casehub.api.model.stigmergy.ComplianceLevel projectComplianceLevel()`
+### `public io.casehub.api.model.improvement.ComplianceLevel projectComplianceLevel()`
 
 ### `public java.util.List<io.casehub.api.model.stigmergy.TickTrace> recentTicks()`
 

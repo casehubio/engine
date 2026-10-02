@@ -1,6 +1,6 @@
-# io.casehub.api.model.stigmergy.ImprovementOutcome
+# io.casehub.api.model.improvement.ImprovementOutcome
 
-**Package:** `io.casehub.api.model.stigmergy`
+**Package:** `io.casehub.api.model.improvement`
 
 **Kind:** `record`
 
@@ -24,7 +24,7 @@
 
 ### `prUrl` (`java.lang.String`)
 
-### `status` (`io.casehub.api.model.stigmergy.ImprovementOutcome.OutcomeStatus`)
+### `status` (`io.casehub.api.model.improvement.ImprovementOutcome.OutcomeStatus`)
 
 ### `target` (`java.lang.String`)
 
@@ -48,13 +48,13 @@
 
 ### `prUrl` (`java.lang.String`)
 
-### `status` (`io.casehub.api.model.stigmergy.ImprovementOutcome.OutcomeStatus`)
+### `status` (`io.casehub.api.model.improvement.ImprovementOutcome.OutcomeStatus`)
 
 ### `target` (`java.lang.String`)
 
 ## Constructors
 
-### `public ImprovementOutcome(java.util.UUID caseId, java.util.UUID improvementCaseId, java.lang.String category, java.lang.String target, io.casehub.api.model.stigmergy.ImprovementOutcome.OutcomeStatus status, java.lang.String prUrl, java.lang.Integer ciDelta, java.lang.Double coverageDelta, java.lang.Integer lintDelta, java.time.Instant completedAt, java.util.Map<java.lang.String,java.lang.String> metadata)`
+### `public ImprovementOutcome(java.util.UUID caseId, java.util.UUID improvementCaseId, java.lang.String category, java.lang.String target, io.casehub.api.model.improvement.ImprovementOutcome.OutcomeStatus status, java.lang.String prUrl, java.lang.Integer ciDelta, java.lang.Double coverageDelta, java.lang.Integer lintDelta, java.time.Instant completedAt, java.util.Map<java.lang.String,java.lang.String> metadata)`
 
 #### Parameters
 
@@ -62,7 +62,7 @@
 - `improvementCaseId` (`java.util.UUID`)
 - `category` (`java.lang.String`)
 - `target` (`java.lang.String`)
-- `status` (`io.casehub.api.model.stigmergy.ImprovementOutcome.OutcomeStatus`)
+- `status` (`io.casehub.api.model.improvement.ImprovementOutcome.OutcomeStatus`)
 - `prUrl` (`java.lang.String`)
 - `ciDelta` (`java.lang.Integer`)
 - `coverageDelta` (`java.lang.Double`)
@@ -98,7 +98,7 @@
 
 ### `public java.lang.String prUrl()`
 
-### `public io.casehub.api.model.stigmergy.ImprovementOutcome.OutcomeStatus status()`
+### `public io.casehub.api.model.improvement.ImprovementOutcome.OutcomeStatus status()`
 
 ### `public java.lang.String target()`
 

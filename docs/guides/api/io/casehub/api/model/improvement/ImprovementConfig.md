@@ -1,12 +1,12 @@
-# io.casehub.api.model.stigmergy.ImprovementConfig
+# io.casehub.api.model.improvement.ImprovementConfig
 
-**Package:** `io.casehub.api.model.stigmergy`
+**Package:** `io.casehub.api.model.improvement`
 
 **Kind:** `record`
 
 ## Fields
 
-### `budget` (`io.casehub.api.model.stigmergy.ImprovementBudget`)
+### `budget` (`io.casehub.api.model.improvement.ImprovementBudget`)
 
 ### `caseTemplateId` (`java.lang.String`)
 
@@ -24,17 +24,17 @@
 
 ### `gatePolicy` (`io.casehub.api.model.stigmergy.GatePolicy`)
 
-### `healthPolicy` (`io.casehub.api.model.stigmergy.HealthPolicy`)
+### `healthPolicy` (`io.casehub.api.model.improvement.HealthPolicy`)
 
 ### `researchMethodology` (`io.casehub.api.model.stigmergy.ResearchMethodology`)
 
-### `rollbackPolicy` (`io.casehub.api.model.stigmergy.RollbackPolicy`)
+### `rollbackPolicy` (`io.casehub.api.model.improvement.RollbackPolicy`)
 
 ### `signalNamespace` (`java.lang.String`)
 
 ## Record Components
 
-### `budget` (`io.casehub.api.model.stigmergy.ImprovementBudget`)
+### `budget` (`io.casehub.api.model.improvement.ImprovementBudget`)
 
 ### `caseTemplateId` (`java.lang.String`)
 
@@ -52,55 +52,55 @@
 
 ### `gatePolicy` (`io.casehub.api.model.stigmergy.GatePolicy`)
 
-### `healthPolicy` (`io.casehub.api.model.stigmergy.HealthPolicy`)
+### `healthPolicy` (`io.casehub.api.model.improvement.HealthPolicy`)
 
 ### `researchMethodology` (`io.casehub.api.model.stigmergy.ResearchMethodology`)
 
-### `rollbackPolicy` (`io.casehub.api.model.stigmergy.RollbackPolicy`)
+### `rollbackPolicy` (`io.casehub.api.model.improvement.RollbackPolicy`)
 
 ### `signalNamespace` (`java.lang.String`)
 
 ## Constructors
 
-### `public ImprovementConfig(java.lang.String signalNamespace, java.lang.Integer consensusMinSources, java.util.List<java.lang.String> enabledCategories, io.casehub.api.model.stigmergy.ImprovementBudget budget, java.lang.String caseTemplateId)`
+### `public ImprovementConfig(java.lang.String signalNamespace, java.lang.Integer consensusMinSources, java.util.List<java.lang.String> enabledCategories, io.casehub.api.model.improvement.ImprovementBudget budget, java.lang.String caseTemplateId)`
 
 #### Parameters
 
 - `signalNamespace` (`java.lang.String`)
 - `consensusMinSources` (`java.lang.Integer`)
 - `enabledCategories` (`java.util.List<java.lang.String>`)
-- `budget` (`io.casehub.api.model.stigmergy.ImprovementBudget`)
+- `budget` (`io.casehub.api.model.improvement.ImprovementBudget`)
 - `caseTemplateId` (`java.lang.String`)
 
-### `public ImprovementConfig(java.lang.String signalNamespace, java.lang.Integer consensusMinSources, java.util.List<java.lang.String> enabledCategories, io.casehub.api.model.stigmergy.ImprovementBudget budget, java.lang.String caseTemplateId, java.lang.Boolean evolutionEnabled, java.lang.Integer evolutionTickIntervalMinutes, io.casehub.api.model.stigmergy.RollbackPolicy rollbackPolicy, io.casehub.api.model.stigmergy.HealthPolicy healthPolicy, io.casehub.api.model.stigmergy.ResearchMethodology researchMethodology, java.lang.Integer conflictTrivialThreshold)`
+### `public ImprovementConfig(java.lang.String signalNamespace, java.lang.Integer consensusMinSources, java.util.List<java.lang.String> enabledCategories, io.casehub.api.model.improvement.ImprovementBudget budget, java.lang.String caseTemplateId, java.lang.Boolean evolutionEnabled, java.lang.Integer evolutionTickIntervalMinutes, io.casehub.api.model.improvement.RollbackPolicy rollbackPolicy, io.casehub.api.model.improvement.HealthPolicy healthPolicy, io.casehub.api.model.stigmergy.ResearchMethodology researchMethodology, java.lang.Integer conflictTrivialThreshold)`
 
 #### Parameters
 
 - `signalNamespace` (`java.lang.String`)
 - `consensusMinSources` (`java.lang.Integer`)
 - `enabledCategories` (`java.util.List<java.lang.String>`)
-- `budget` (`io.casehub.api.model.stigmergy.ImprovementBudget`)
+- `budget` (`io.casehub.api.model.improvement.ImprovementBudget`)
 - `caseTemplateId` (`java.lang.String`)
 - `evolutionEnabled` (`java.lang.Boolean`)
 - `evolutionTickIntervalMinutes` (`java.lang.Integer`)
-- `rollbackPolicy` (`io.casehub.api.model.stigmergy.RollbackPolicy`)
-- `healthPolicy` (`io.casehub.api.model.stigmergy.HealthPolicy`)
+- `rollbackPolicy` (`io.casehub.api.model.improvement.RollbackPolicy`)
+- `healthPolicy` (`io.casehub.api.model.improvement.HealthPolicy`)
 - `researchMethodology` (`io.casehub.api.model.stigmergy.ResearchMethodology`)
 - `conflictTrivialThreshold` (`java.lang.Integer`)
 
-### `public ImprovementConfig(java.lang.String signalNamespace, java.lang.Integer consensusMinSources, java.util.List<java.lang.String> enabledCategories, io.casehub.api.model.stigmergy.ImprovementBudget budget, java.lang.String caseTemplateId, java.lang.Boolean evolutionEnabled, java.lang.Integer evolutionTickIntervalMinutes, io.casehub.api.model.stigmergy.RollbackPolicy rollbackPolicy, io.casehub.api.model.stigmergy.HealthPolicy healthPolicy, io.casehub.api.model.stigmergy.ResearchMethodology researchMethodology, java.lang.Integer conflictTrivialThreshold, io.casehub.api.model.stigmergy.GatePolicy gatePolicy, io.casehub.api.model.stigmergy.EscalationPolicy escalationPolicy)`
+### `public ImprovementConfig(java.lang.String signalNamespace, java.lang.Integer consensusMinSources, java.util.List<java.lang.String> enabledCategories, io.casehub.api.model.improvement.ImprovementBudget budget, java.lang.String caseTemplateId, java.lang.Boolean evolutionEnabled, java.lang.Integer evolutionTickIntervalMinutes, io.casehub.api.model.improvement.RollbackPolicy rollbackPolicy, io.casehub.api.model.improvement.HealthPolicy healthPolicy, io.casehub.api.model.stigmergy.ResearchMethodology researchMethodology, java.lang.Integer conflictTrivialThreshold, io.casehub.api.model.stigmergy.GatePolicy gatePolicy, io.casehub.api.model.stigmergy.EscalationPolicy escalationPolicy)`
 
 #### Parameters
 
 - `signalNamespace` (`java.lang.String`)
 - `consensusMinSources` (`java.lang.Integer`)
 - `enabledCategories` (`java.util.List<java.lang.String>`)
-- `budget` (`io.casehub.api.model.stigmergy.ImprovementBudget`)
+- `budget` (`io.casehub.api.model.improvement.ImprovementBudget`)
 - `caseTemplateId` (`java.lang.String`)
 - `evolutionEnabled` (`java.lang.Boolean`)
 - `evolutionTickIntervalMinutes` (`java.lang.Integer`)
-- `rollbackPolicy` (`io.casehub.api.model.stigmergy.RollbackPolicy`)
-- `healthPolicy` (`io.casehub.api.model.stigmergy.HealthPolicy`)
+- `rollbackPolicy` (`io.casehub.api.model.improvement.RollbackPolicy`)
+- `healthPolicy` (`io.casehub.api.model.improvement.HealthPolicy`)
 - `researchMethodology` (`io.casehub.api.model.stigmergy.ResearchMethodology`)
 - `conflictTrivialThreshold` (`java.lang.Integer`)
 - `gatePolicy` (`io.casehub.api.model.stigmergy.GatePolicy`)
@@ -108,7 +108,7 @@
 
 ## Methods
 
-### `public io.casehub.api.model.stigmergy.ImprovementBudget budget()`
+### `public io.casehub.api.model.improvement.ImprovementBudget budget()`
 
 ### `public java.lang.String caseTemplateId()`
 
@@ -116,7 +116,7 @@
 
 ### `public java.lang.Integer consensusMinSources()`
 
-### `public io.casehub.api.model.stigmergy.ImprovementBudget effectiveBudget()`
+### `public io.casehub.api.model.improvement.ImprovementBudget effectiveBudget()`
 
 ### `public java.lang.String effectiveCaseTemplateId()`
 
@@ -132,11 +132,11 @@
 
 ### `public io.casehub.api.model.stigmergy.GatePolicy effectiveGatePolicy()`
 
-### `public io.casehub.api.model.stigmergy.HealthPolicy effectiveHealthPolicy()`
+### `public io.casehub.api.model.improvement.HealthPolicy effectiveHealthPolicy()`
 
 ### `public io.casehub.api.model.stigmergy.ResearchMethodology effectiveResearchMethodology()`
 
-### `public io.casehub.api.model.stigmergy.RollbackPolicy effectiveRollbackPolicy()`
+### `public io.casehub.api.model.improvement.RollbackPolicy effectiveRollbackPolicy()`
 
 ### `public java.lang.String effectiveSignalNamespace()`
 
@@ -158,11 +158,11 @@
 
 ### `public final int hashCode()`
 
-### `public io.casehub.api.model.stigmergy.HealthPolicy healthPolicy()`
+### `public io.casehub.api.model.improvement.HealthPolicy healthPolicy()`
 
 ### `public io.casehub.api.model.stigmergy.ResearchMethodology researchMethodology()`
 
-### `public io.casehub.api.model.stigmergy.RollbackPolicy rollbackPolicy()`
+### `public io.casehub.api.model.improvement.RollbackPolicy rollbackPolicy()`
 
 ### `public java.lang.String signalNamespace()`
 
