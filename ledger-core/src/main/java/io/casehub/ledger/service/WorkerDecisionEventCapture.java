@@ -36,7 +36,7 @@ import org.jboss.logging.Logger;
  * WorkflowExecutionCompletedHandler}. This observer receives the event on a managed executor
  * thread, making it safe to use blocking JPA and {@code @Transactional}.
  *
- * <p>Sequence number is computed across ALL {@link io.casehub.ledger.runtime.model.LedgerEntry}
+ * <p>Sequence number is computed across ALL {@link io.casehub.ledger.api.model.LedgerEntry}
  * subclasses for the same {@code subjectId} (case) using {@code findLatestBySubjectId()} — not
  * {@code findLatestByCaseId()} which is scoped to {@link io.casehub.ledger.model.CaseLedgerEntry}
  * only.

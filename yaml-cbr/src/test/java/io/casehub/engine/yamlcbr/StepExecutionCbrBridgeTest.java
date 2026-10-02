@@ -322,17 +322,17 @@ class StepExecutionCbrBridgeTest {
     public void registerSchema(CbrRecordSchema s) {}
 
     @Override
-    public Integer erase(EraseRequest r) {
+    public int erase(EraseRequest r) {
       return 0;
     }
 
     @Override
-    public Integer eraseEntity(String entityId, String tenantId) {
+    public int eraseEntity(String entityId, String tenantId) {
       return 0;
     }
 
     @Override
-    public Integer eraseByScope(Path scope, String tenantId) {
+    public int eraseByScope(Path scope, String tenantId) {
       return 0;
     }
 
@@ -344,13 +344,13 @@ class StepExecutionCbrBridgeTest {
 
     @Override
     public List<String> findCaseIds(
-        String tenantId, MemoryDomain domain, String caseType, Map<String, CbrFilter> filters) {
+        MemoryDomain domain, String caseType, Map<String, CbrFilter> filters, String tenantId) {
       return List.of();
     }
 
     @Override
     public boolean supersede(
-        String caseId, String tenantId, String supersedingCaseId, String reason) {
+        String caseId, String supersedingCaseId, String reason, String tenantId) {
       return false;
     }
 
@@ -365,31 +365,31 @@ class StepExecutionCbrBridgeTest {
     }
 
     @Override
-    public List<SupersessionStatus> findSupersededCases(String tenantId, MemoryDomain domain) {
+    public List<SupersessionStatus> findSupersededCases(MemoryDomain domain, String tenantId) {
       return List.of();
     }
 
     @Override
-    public void recordOutcome(String caseId, String tenantId, CbrOutcome outcome) {}
+    public void recordOutcome(String caseId, CbrOutcome outcome, String tenantId) {}
 
     @Override
     public int supersedeMatching(
-        String tenantId,
         MemoryDomain domain,
         String caseType,
         Map<String, CbrFilter> filters,
-        String reason) {
+        String reason,
+        String tenantId) {
       return 0;
     }
 
     @Override
-    public int supersedeAll(java.util.Collection<String> caseIds, String tenantId, String reason) {
+    public int supersedeAll(java.util.Collection<String> caseIds, String reason, String tenantId) {
       return 0;
     }
 
     @Override
     public int reinstateMatching(
-        String tenantId, MemoryDomain domain, String caseType, Map<String, CbrFilter> filters) {
+        MemoryDomain domain, String caseType, Map<String, CbrFilter> filters, String tenantId) {
       return 0;
     }
 
@@ -399,7 +399,7 @@ class StepExecutionCbrBridgeTest {
     }
 
     @Override
-    public Integer purge(CbrRetentionPolicy policy) {
+    public int purge(CbrRetentionPolicy policy) {
       return 0;
     }
   }
