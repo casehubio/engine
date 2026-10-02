@@ -57,6 +57,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.locks.ReentrantReadWriteLock;
+import java.util.function.Supplier;
 import org.jboss.logging.Logger;
 
 /**
@@ -78,6 +80,7 @@ public class DefaultCaseDefinitionRegistry implements CaseDefinitionRegistry {
   private static final ObjectMapper metadataMapper = createMetadataMapper();
 
   private final Map<CaseKey, RegistryEntry> registry = new ConcurrentHashMap<>();
+  private final ReentrantReadWriteLock registryLock = new ReentrantReadWriteLock();
   @Inject Instance<CaseHub> caseHubInstance;
   @Inject CaseMetaModelRepository caseMetaModelRepository;
   @Inject ExpressionEngineRegistry expressionEngineRegistry;
@@ -102,28 +105,42 @@ public class DefaultCaseDefinitionRegistry implements CaseDefinitionRegistry {
   }
 
   void registerKnownDefinitions() {
-    Map<CaseKey, String> seen = new java.util.LinkedHashMap<>();
-    for (CaseHub hub : caseHubInstance) {
-      CaseDefinition def = hub.getDefinition();
-      CaseKey key = CaseKey.of(def);
-      String beanName = hub.getClass().getName();
-      String existing = seen.get(key);
-      if (existing != null) {
-        throw new IllegalStateException(
-            String.format(
-                "Duplicate CaseDefinition key %s/%s/%s — registered by both [%s] and [%s]. "
-                    + "Each (namespace, name, version) tuple must be unique across all CaseHub beans.",
-                key.namespace(), key.name(), key.version(), existing, beanName));
+    registryLock.writeLock().lock();
+    try {
+      Map<CaseKey, String> seen = new java.util.LinkedHashMap<>();
+      for (CaseHub hub : caseHubInstance) {
+        CaseDefinition def = hub.getDefinition();
+        CaseKey key = CaseKey.of(def);
+        String beanName = hub.getClass().getName();
+        String existing = seen.get(key);
+        if (existing != null) {
+          throw new IllegalStateException(
+              String.format(
+                  "Duplicate CaseDefinition key %s/%s/%s — registered by both [%s] and [%s]. "
+                      + "Each (namespace, name, version) tuple must be unique across all CaseHub beans.",
+                  key.namespace(), key.name(), key.version(), existing, beanName));
+        }
+        seen.put(key, beanName);
       }
-      seen.put(key, beanName);
-    }
 
-    for (CaseHub hub : caseHubInstance) {
-      registerCaseDefinitionBlocking(hub.getDefinition());
+      for (CaseHub hub : caseHubInstance) {
+        registerCaseDefinitionLocked(hub.getDefinition());
+      }
+    } finally {
+      registryLock.writeLock().unlock();
     }
   }
 
   private CaseMetaModel registerCaseDefinitionBlocking(CaseDefinition model) {
+    registryLock.writeLock().lock();
+    try {
+      return registerCaseDefinitionLocked(model);
+    } finally {
+      registryLock.writeLock().unlock();
+    }
+  }
+
+  private CaseMetaModel registerCaseDefinitionLocked(CaseDefinition model) {
     validateExpressions(model);
 
     LOG.info(
@@ -179,10 +196,16 @@ public class DefaultCaseDefinitionRegistry implements CaseDefinitionRegistry {
 
   @Override
   public CaseDefinition getCaseDefinition(CaseMetaModel definition) {
-    if (registry.isEmpty()) {
-      LOG.warn("Registry empty on lookup — re-registering definitions (stale bean instance)");
-      registerKnownDefinitions();
+    if (!withRegistryReadLock(registry::isEmpty)) {
+      return withRegistryReadLock(() -> lookupDefinition(definition));
     }
+
+    LOG.warn("Registry empty on lookup — re-registering definitions (stale bean instance)");
+    registerKnownDefinitions();
+    return withRegistryReadLock(() -> lookupDefinition(definition));
+  }
+
+  private CaseDefinition lookupDefinition(CaseMetaModel definition) {
     CaseKey lookupKey = CaseKey.of(definition);
     RegistryEntry entry = registry.get(lookupKey);
     if (entry == null) {
@@ -199,64 +222,93 @@ public class DefaultCaseDefinitionRegistry implements CaseDefinitionRegistry {
 
   @Override
   public Optional<CaseMetaModel> findByIdentity(String namespace, String name, String version) {
-    RegistryEntry entry = registry.get(new CaseKey(namespace, name, version));
-    return Optional.ofNullable(entry).map(RegistryEntry::metaModel);
+    return withRegistryReadLock(
+        () -> {
+          RegistryEntry entry = registry.get(new CaseKey(namespace, name, version));
+          return Optional.ofNullable(entry).map(RegistryEntry::metaModel);
+        });
   }
 
   @Override
   public Optional<CaseDefinition> findByName(String name) {
-    List<RegistryEntry> matches =
-        registry.values().stream().filter(e -> name.equals(e.definition().getName())).toList();
-    if (matches.isEmpty()) {
-      return Optional.empty();
-    }
-    if (matches.size() > 1) {
-      throw new IllegalArgumentException(
-          "Ambiguous caseType '"
-              + name
-              + "' — matches "
-              + matches.size()
-              + " definitions across namespaces. Use qualified lookup to disambiguate.");
-    }
-    return Optional.of(matches.get(0).definition());
+    return withRegistryReadLock(
+        () -> {
+          List<RegistryEntry> matches =
+              registry.values().stream()
+                  .filter(e -> name.equals(e.definition().getName()))
+                  .toList();
+          if (matches.isEmpty()) {
+            return Optional.empty();
+          }
+          if (matches.size() > 1) {
+            throw new IllegalArgumentException(
+                "Ambiguous caseType '"
+                    + name
+                    + "' — matches "
+                    + matches.size()
+                    + " definitions across namespaces. Use qualified lookup to disambiguate.");
+          }
+          return Optional.of(matches.get(0).definition());
+        });
   }
 
   @Override
   public CaseMetaModel getCaseMetaModel(CaseDefinition caseDefinition) {
-    RegistryEntry entry = registry.get(CaseKey.of(caseDefinition));
-    if (entry == null) {
-      throw new RuntimeException(
-          "CaseMetaModel not found for caseDefinition: "
-              + caseDefinition.getNamespace()
-              + "."
-              + caseDefinition.getName()
-              + ":"
-              + caseDefinition.getVersion());
-    }
-    return entry.metaModel();
+    return withRegistryReadLock(
+        () -> {
+          RegistryEntry entry = registry.get(CaseKey.of(caseDefinition));
+          if (entry == null) {
+            throw new RuntimeException(
+                "CaseMetaModel not found for caseDefinition: "
+                    + caseDefinition.getNamespace()
+                    + "."
+                    + caseDefinition.getName()
+                    + ":"
+                    + caseDefinition.getVersion());
+          }
+          return entry.metaModel();
+        });
   }
 
   @Override
   public List<CaseDefinition> findByType(Path type) {
-    return registry.values().stream()
-        .map(RegistryEntry::definition)
-        .filter(
-            def -> def.getTypes().stream().anyMatch(t -> t.equals(type) || type.isAncestorOf(t)))
-        .toList();
+    return withRegistryReadLock(
+        () ->
+            registry.values().stream()
+                .map(RegistryEntry::definition)
+                .filter(
+                    def ->
+                        def.getTypes().stream()
+                            .anyMatch(t -> t.equals(type) || type.isAncestorOf(t)))
+                .toList());
   }
 
   @Override
   public List<CaseDefinition> findByLabel(Path label) {
-    return registry.values().stream()
-        .map(RegistryEntry::definition)
-        .filter(
-            def -> def.getLabels().stream().anyMatch(l -> l.equals(label) || label.isAncestorOf(l)))
-        .toList();
+    return withRegistryReadLock(
+        () ->
+            registry.values().stream()
+                .map(RegistryEntry::definition)
+                .filter(
+                    def ->
+                        def.getLabels().stream()
+                            .anyMatch(l -> l.equals(label) || label.isAncestorOf(l)))
+                .toList());
   }
 
   @Override
   public java.util.Collection<io.casehub.api.model.CaseDefinition> allDefinitions() {
-    return registry.values().stream().map(RegistryEntry::definition).toList();
+    return withRegistryReadLock(
+        () -> registry.values().stream().map(RegistryEntry::definition).toList());
+  }
+
+  private <T> T withRegistryReadLock(Supplier<T> reader) {
+    registryLock.readLock().lock();
+    try {
+      return reader.get();
+    } finally {
+      registryLock.readLock().unlock();
+    }
   }
 
   private void validateExpressions(CaseDefinition definition) {

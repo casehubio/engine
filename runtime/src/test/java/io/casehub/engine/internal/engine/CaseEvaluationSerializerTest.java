@@ -18,12 +18,13 @@ package io.casehub.engine.internal.engine;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import java.util.UUID;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
-import java.util.concurrent.atomic.AtomicReference;
 import org.junit.jupiter.api.Test;
 
 class CaseEvaluationSerializerTest {
@@ -83,12 +84,12 @@ class CaseEvaluationSerializerTest {
   }
 
   @Test
-  void coalescesMultiplePendingEvents() throws Exception {
+  void preservesAllPendingEventsInSubmissionOrder() throws Exception {
     UUID caseId = UUID.randomUUID();
     CountDownLatch firstStarted = new CountDownLatch(1);
     CountDownLatch firstCanProceed = new CountDownLatch(1);
     AtomicInteger totalEvaluations = new AtomicInteger();
-    AtomicReference<String> lastEvaluated = new AtomicReference<>();
+    java.util.List<String> evaluated = new java.util.concurrent.CopyOnWriteArrayList<>();
     CountDownLatch allDone = new CountDownLatch(1);
 
     try (ExecutorService executor = Executors.newVirtualThreadPerTaskExecutor()) {
@@ -108,22 +109,83 @@ class CaseEvaluationSerializerTest {
           caseId,
           () -> {
             totalEvaluations.incrementAndGet();
-            lastEvaluated.set("second");
+            evaluated.add("second");
           });
 
       serializer.submit(
           caseId,
           () -> {
             totalEvaluations.incrementAndGet();
-            lastEvaluated.set("third");
+            evaluated.add("third");
             allDone.countDown();
           });
 
       firstCanProceed.countDown();
       assertThat(allDone.await(2, TimeUnit.SECONDS)).isTrue();
 
-      assertThat(totalEvaluations.get()).isEqualTo(2);
-      assertThat(lastEvaluated.get()).isEqualTo("third");
+      assertThat(totalEvaluations.get()).isEqualTo(3);
+      assertThat(evaluated).containsExactly("second", "third");
+    }
+  }
+
+  @Test
+  void resetWaitsForActiveEvaluationBeforeAcceptingNewWork() throws Exception {
+    UUID caseId = UUID.randomUUID();
+    CountDownLatch firstStarted = new CountDownLatch(1);
+    CountDownLatch firstCanProceed = new CountDownLatch(1);
+    CountDownLatch resetStarted = new CountDownLatch(1);
+    CountDownLatch secondCompleted = new CountDownLatch(1);
+    AtomicInteger running = new AtomicInteger();
+    AtomicInteger maxConcurrent = new AtomicInteger();
+    AtomicBoolean resetCompleted = new AtomicBoolean();
+
+    try (ExecutorService executor = Executors.newVirtualThreadPerTaskExecutor()) {
+      executor.submit(
+          () ->
+              serializer.submit(
+                  caseId,
+                  () -> {
+                    int active = running.incrementAndGet();
+                    maxConcurrent.updateAndGet(current -> Math.max(current, active));
+                    firstStarted.countDown();
+                    awaitQuietly(firstCanProceed);
+                    running.decrementAndGet();
+                  }));
+
+      assertThat(firstStarted.await(2, TimeUnit.SECONDS)).isTrue();
+
+      CompletableFuture<Void> reset =
+          CompletableFuture.runAsync(
+              () -> {
+                resetStarted.countDown();
+                serializer.reset();
+                resetCompleted.set(true);
+              },
+              executor);
+      assertThat(resetStarted.await(2, TimeUnit.SECONDS)).isTrue();
+
+      Thread.sleep(100);
+      assertThat(resetCompleted).isFalse();
+
+      CompletableFuture<Void> second =
+          CompletableFuture.runAsync(
+              () ->
+                  serializer.submit(
+                      caseId,
+                      () -> {
+                        int active = running.incrementAndGet();
+                        maxConcurrent.updateAndGet(current -> Math.max(current, active));
+                        running.decrementAndGet();
+                        secondCompleted.countDown();
+                      }),
+              executor);
+
+      firstCanProceed.countDown();
+      reset.get(2, TimeUnit.SECONDS);
+      second.get(2, TimeUnit.SECONDS);
+
+      assertThat(secondCompleted.await(2, TimeUnit.SECONDS)).isTrue();
+      assertThat(maxConcurrent).hasValue(1);
     }
   }
 
