@@ -6,7 +6,7 @@
 
 ## Methods
 
-### `public abstract java.util.List<io.casehub.api.model.stigmergy.ImprovementHypothesis> form(io.casehub.api.model.stigmergy.ResearchAnalysis analysis, io.casehub.api.model.stigmergy.CapabilityAreaAssessment area)`
+### `public abstract java.util.List<io.casehub.api.model.improvement.ImprovementHypothesis> form(io.casehub.api.model.stigmergy.ResearchAnalysis analysis, io.casehub.api.model.stigmergy.CapabilityAreaAssessment area)`
 
 #### Parameters
 

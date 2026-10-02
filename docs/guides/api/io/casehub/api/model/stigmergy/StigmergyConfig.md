@@ -10,7 +10,7 @@
 
 ### `defaults` (`io.casehub.api.model.stigmergy.StigmergyDefaults`)
 
-### `improvement` (`io.casehub.api.model.stigmergy.ImprovementConfig`)
+### `improvement` (`io.casehub.api.model.improvement.ImprovementConfig`)
 
 ### `swarm` (`io.casehub.api.model.stigmergy.SwarmConfig`)
 
@@ -20,7 +20,7 @@
 
 ### `defaults` (`io.casehub.api.model.stigmergy.StigmergyDefaults`)
 
-### `improvement` (`io.casehub.api.model.stigmergy.ImprovementConfig`)
+### `improvement` (`io.casehub.api.model.improvement.ImprovementConfig`)
 
 ### `swarm` (`io.casehub.api.model.stigmergy.SwarmConfig`)
 
@@ -34,14 +34,14 @@
 - `coordination` (`io.casehub.api.model.stigmergy.CoordinationConfig`)
 - `swarm` (`io.casehub.api.model.stigmergy.SwarmConfig`)
 
-### `public StigmergyConfig(io.casehub.api.model.stigmergy.StigmergyDefaults defaults, io.casehub.api.model.stigmergy.CoordinationConfig coordination, io.casehub.api.model.stigmergy.SwarmConfig swarm, io.casehub.api.model.stigmergy.ImprovementConfig improvement)`
+### `public StigmergyConfig(io.casehub.api.model.stigmergy.StigmergyDefaults defaults, io.casehub.api.model.stigmergy.CoordinationConfig coordination, io.casehub.api.model.stigmergy.SwarmConfig swarm, io.casehub.api.model.improvement.ImprovementConfig improvement)`
 
 #### Parameters
 
 - `defaults` (`io.casehub.api.model.stigmergy.StigmergyDefaults`)
 - `coordination` (`io.casehub.api.model.stigmergy.CoordinationConfig`)
 - `swarm` (`io.casehub.api.model.stigmergy.SwarmConfig`)
-- `improvement` (`io.casehub.api.model.stigmergy.ImprovementConfig`)
+- `improvement` (`io.casehub.api.model.improvement.ImprovementConfig`)
 
 ## Methods
 
@@ -57,7 +57,7 @@
 
 ### `public final int hashCode()`
 
-### `public io.casehub.api.model.stigmergy.ImprovementConfig improvement()`
+### `public io.casehub.api.model.improvement.ImprovementConfig improvement()`
 
 ### `public io.casehub.api.model.stigmergy.SwarmConfig swarm()`
 

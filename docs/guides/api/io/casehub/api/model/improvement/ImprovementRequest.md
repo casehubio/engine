@@ -1,6 +1,6 @@
-# io.casehub.api.model.stigmergy.ImprovementRequest
+# io.casehub.api.model.improvement.ImprovementRequest
 
-**Package:** `io.casehub.api.model.stigmergy`
+**Package:** `io.casehub.api.model.improvement`
 
 **Kind:** `record`
 

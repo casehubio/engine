@@ -8,6 +8,8 @@
 
 ### `compensatedBy` (`java.lang.String`)
 
+### `compensation` (`boolean`)
+
 ### `compensationOrder` (`java.lang.Integer`)
 
 ### `conflictResolverStrategy` (`java.lang.String`)
@@ -119,6 +121,8 @@ default. Overlaps within the same stage trigger a validation warning.
 
 ### `public ExpressionEvaluator getWhen()`
 
+### `public boolean isCompensation()`
+
 ### `public io.casehub.api.model.LifecycleScope lifecycleScope()`
 
 ### `public io.casehub.api.model.Participation participation()`
@@ -128,6 +132,12 @@ default. Overlaps within the same stage trigger a validation warning.
 #### Parameters
 
 - `compensatedBy` (`java.lang.String`)
+
+### `public void setCompensation(boolean compensation)`
+
+#### Parameters
+
+- `compensation` (`boolean`)
 
 ### `public void setCompensationOrder(java.lang.Integer compensationOrder)`
 
@@ -244,3 +254,9 @@ default. Overlaps within the same stage trigger a validation warning.
 - `when` (`ExpressionEvaluator`)
 
 ### `public io.casehub.api.model.BindingTarget target()`
+
+### `public static java.util.List<java.lang.String> validateCompensationBindings(java.util.List<io.casehub.api.model.Binding> bindings)`
+
+#### Parameters
+
+- `bindings` (`java.util.List<io.casehub.api.model.Binding>`)

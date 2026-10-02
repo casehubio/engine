@@ -48,6 +48,16 @@
 
 ### `CIRCUIT_BREAKER_TRIPPED` (`io.casehub.api.model.event.CaseHubEventType`)
 
+### `COMPENSATION_COMPLETED` (`io.casehub.api.model.event.CaseHubEventType`)
+
+### `COMPENSATION_FAULTED` (`io.casehub.api.model.event.CaseHubEventType`)
+
+### `COMPENSATION_STARTED` (`io.casehub.api.model.event.CaseHubEventType`)
+
+### `COMPENSATION_STEP_COMPLETED` (`io.casehub.api.model.event.CaseHubEventType`)
+
+### `COMPENSATION_STEP_STARTED` (`io.casehub.api.model.event.CaseHubEventType`)
+
 ### `COMPLIANCE_LEVEL_CHANGED` (`io.casehub.api.model.event.CaseHubEventType`)
 
 ### `CONSTRAINTS_INFEASIBLE` (`io.casehub.api.model.event.CaseHubEventType`)

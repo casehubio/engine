@@ -1,6 +1,6 @@
-# io.casehub.api.model.stigmergy.ImprovementHypothesis
+# io.casehub.api.model.improvement.ImprovementHypothesis
 
-**Package:** `io.casehub.api.model.stigmergy`
+**Package:** `io.casehub.api.model.improvement`
 
 **Kind:** `record`
 
@@ -12,7 +12,7 @@
 
 ### `expectedImprovement` (`java.lang.String`)
 
-### `radarRecommendation` (`io.casehub.api.model.stigmergy.ImprovementHypothesis.RadarRecommendation`)
+### `radarRecommendation` (`io.casehub.api.model.improvement.ImprovementHypothesis.RadarRecommendation`)
 
 ### `risk` (`java.lang.String`)
 
@@ -28,7 +28,7 @@
 
 ### `expectedImprovement` (`java.lang.String`)
 
-### `radarRecommendation` (`io.casehub.api.model.stigmergy.ImprovementHypothesis.RadarRecommendation`)
+### `radarRecommendation` (`io.casehub.api.model.improvement.ImprovementHypothesis.RadarRecommendation`)
 
 ### `risk` (`java.lang.String`)
 
@@ -38,7 +38,7 @@
 
 ## Constructors
 
-### `public ImprovementHypothesis(java.lang.String technique, java.lang.String targetComponent, java.lang.String expectedImprovement, java.lang.String evidence, java.lang.String risk, java.lang.String capabilityArea, io.casehub.api.model.stigmergy.ImprovementHypothesis.RadarRecommendation radarRecommendation)`
+### `public ImprovementHypothesis(java.lang.String technique, java.lang.String targetComponent, java.lang.String expectedImprovement, java.lang.String evidence, java.lang.String risk, java.lang.String capabilityArea, io.casehub.api.model.improvement.ImprovementHypothesis.RadarRecommendation radarRecommendation)`
 
 #### Parameters
 
@@ -48,7 +48,7 @@
 - `evidence` (`java.lang.String`)
 - `risk` (`java.lang.String`)
 - `capabilityArea` (`java.lang.String`)
-- `radarRecommendation` (`io.casehub.api.model.stigmergy.ImprovementHypothesis.RadarRecommendation`)
+- `radarRecommendation` (`io.casehub.api.model.improvement.ImprovementHypothesis.RadarRecommendation`)
 
 ## Methods
 
@@ -66,7 +66,7 @@
 
 ### `public final int hashCode()`
 
-### `public io.casehub.api.model.stigmergy.ImprovementHypothesis.RadarRecommendation radarRecommendation()`
+### `public io.casehub.api.model.improvement.ImprovementHypothesis.RadarRecommendation radarRecommendation()`
 
 ### `public java.lang.String risk()`
 

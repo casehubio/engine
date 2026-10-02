@@ -1,6 +1,6 @@
-# io.casehub.api.model.stigmergy.HealthPolicy
+# io.casehub.api.model.improvement.HealthPolicy
 
-**Package:** `io.casehub.api.model.stigmergy`
+**Package:** `io.casehub.api.model.improvement`
 
 **Kind:** `record`
 

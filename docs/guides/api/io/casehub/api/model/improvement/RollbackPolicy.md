@@ -1,6 +1,6 @@
-# io.casehub.api.model.stigmergy.RollbackPolicy
+# io.casehub.api.model.improvement.RollbackPolicy
 
-**Package:** `io.casehub.api.model.stigmergy`
+**Package:** `io.casehub.api.model.improvement`
 
 **Kind:** `record`
 
