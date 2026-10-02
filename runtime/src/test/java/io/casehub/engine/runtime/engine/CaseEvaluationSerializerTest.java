@@ -19,13 +19,14 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import java.util.Set;
 import java.util.UUID;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
-import java.util.concurrent.atomic.AtomicReference;
 import org.junit.jupiter.api.Test;
 
 class CaseEvaluationSerializerTest {
@@ -87,12 +88,12 @@ class CaseEvaluationSerializerTest {
   }
 
   @Test
-  void coalescesMultiplePendingEvents() throws Exception {
+  void preservesAllPendingEventsInSubmissionOrder() throws Exception {
     UUID caseId = UUID.randomUUID();
     CountDownLatch firstStarted = new CountDownLatch(1);
     CountDownLatch firstCanProceed = new CountDownLatch(1);
     AtomicInteger totalEvaluations = new AtomicInteger();
-    AtomicReference<String> lastEvaluated = new AtomicReference<>();
+    java.util.List<String> evaluated = new java.util.concurrent.CopyOnWriteArrayList<>();
     CountDownLatch allDone = new CountDownLatch(1);
 
     try (ExecutorService executor = Executors.newVirtualThreadPerTaskExecutor()) {
@@ -113,7 +114,7 @@ class CaseEvaluationSerializerTest {
           caseId,
           () -> {
             totalEvaluations.incrementAndGet();
-            lastEvaluated.set("second");
+            evaluated.add("second");
           },
           null);
 
@@ -121,7 +122,7 @@ class CaseEvaluationSerializerTest {
           caseId,
           () -> {
             totalEvaluations.incrementAndGet();
-            lastEvaluated.set("third");
+            evaluated.add("third");
             allDone.countDown();
           },
           null);
@@ -129,8 +130,71 @@ class CaseEvaluationSerializerTest {
       firstCanProceed.countDown();
       assertThat(allDone.await(2, TimeUnit.SECONDS)).isTrue();
 
-      assertThat(totalEvaluations.get()).isEqualTo(2);
-      assertThat(lastEvaluated.get()).isEqualTo("third");
+      assertThat(totalEvaluations.get()).isEqualTo(3);
+      assertThat(evaluated).containsExactly("second", "third");
+    }
+  }
+
+  @Test
+  void resetWaitsForActiveEvaluationBeforeAcceptingNewWork() throws Exception {
+    UUID caseId = UUID.randomUUID();
+    CountDownLatch firstStarted = new CountDownLatch(1);
+    CountDownLatch firstCanProceed = new CountDownLatch(1);
+    CountDownLatch resetStarted = new CountDownLatch(1);
+    CountDownLatch secondCompleted = new CountDownLatch(1);
+    AtomicInteger running = new AtomicInteger();
+    AtomicInteger maxConcurrent = new AtomicInteger();
+    AtomicBoolean resetCompleted = new AtomicBoolean();
+
+    try (ExecutorService executor = Executors.newVirtualThreadPerTaskExecutor()) {
+      executor.submit(
+          () ->
+              serializer.submit(
+                  caseId,
+                  () -> {
+                    int active = running.incrementAndGet();
+                    maxConcurrent.updateAndGet(current -> Math.max(current, active));
+                    firstStarted.countDown();
+                    awaitQuietly(firstCanProceed);
+                    running.decrementAndGet();
+                  },
+                  null));
+
+      assertThat(firstStarted.await(2, TimeUnit.SECONDS)).isTrue();
+
+      CompletableFuture<Void> reset =
+          CompletableFuture.runAsync(
+              () -> {
+                resetStarted.countDown();
+                serializer.reset();
+                resetCompleted.set(true);
+              },
+              executor);
+      assertThat(resetStarted.await(2, TimeUnit.SECONDS)).isTrue();
+
+      Thread.sleep(100);
+      assertThat(resetCompleted).isFalse();
+
+      CompletableFuture<Void> second =
+          CompletableFuture.runAsync(
+              () ->
+                  serializer.submit(
+                      caseId,
+                      () -> {
+                        int active = running.incrementAndGet();
+                        maxConcurrent.updateAndGet(current -> Math.max(current, active));
+                        running.decrementAndGet();
+                        secondCompleted.countDown();
+                      },
+                      null),
+              executor);
+
+      firstCanProceed.countDown();
+      reset.get(2, TimeUnit.SECONDS);
+      second.get(2, TimeUnit.SECONDS);
+
+      assertThat(secondCompleted.await(2, TimeUnit.SECONDS)).isTrue();
+      assertThat(maxConcurrent).hasValue(1);
     }
   }
 
@@ -177,7 +241,7 @@ class CaseEvaluationSerializerTest {
   }
 
   @Test
-  void coalescedSubmissions_accumulateSignalIds() throws Exception {
+  void queuedSubmissions_accumulateSignalIds() throws Exception {
     UUID caseId = UUID.randomUUID();
     UUID signal1 = UUID.randomUUID();
     UUID signal2 = UUID.randomUUID();
@@ -203,7 +267,7 @@ class CaseEvaluationSerializerTest {
 
       assertThat(firstStarted.await(2, TimeUnit.SECONDS)).isTrue();
 
-      // These two will be coalesced — second overwrites first
+      // These two will be queued — both will execute after the first completes
       serializer.submit(caseId, () -> {}, signal2);
       serializer.submit(
           caseId,
@@ -246,14 +310,6 @@ class CaseEvaluationSerializerTest {
 
       // Start reset in background — should block until evaluation completes
       var resetFuture = executor.submit(() -> serializer.reset());
-
-      // Give reset a moment to set closed flag
-      Thread.sleep(50);
-
-      // Submissions during reset should be silently dropped
-      AtomicInteger droppedCount = new AtomicInteger();
-      serializer.submit(caseId, droppedCount::incrementAndGet, null);
-      assertThat(droppedCount.get()).isEqualTo(0);
 
       // Let the evaluation finish — reset should then complete
       evalCanProceed.countDown();

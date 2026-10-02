@@ -15,128 +15,150 @@
  */
 package io.casehub.engine.runtime.engine;
 
+import java.util.ArrayDeque;
+import java.util.Deque;
 import java.util.HashSet;
 import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.locks.Condition;
 import java.util.concurrent.locks.ReentrantLock;
 import org.jboss.logging.Logger;
 
 public class CaseEvaluationSerializer implements io.casehub.engine.common.spi.Resettable {
 
   private static final Logger LOG = Logger.getLogger(CaseEvaluationSerializer.class);
-  private static final long DRAIN_TIMEOUT_SECONDS = 5;
 
   private final QuiescenceTracker quiescenceTracker;
+
   private final ConcurrentHashMap<UUID, CaseGate> gates = new ConcurrentHashMap<>();
-  private volatile boolean closed;
-  private final AtomicInteger activeCount = new AtomicInteger();
-  private volatile CountDownLatch drainLatch;
+  private final ReentrantLock lifecycleLock = new ReentrantLock(true);
+  private final Condition evaluationsDrained = lifecycleLock.newCondition();
+  private int activeEvaluations;
+  private boolean resetting;
 
   public CaseEvaluationSerializer(QuiescenceTracker quiescenceTracker) {
     this.quiescenceTracker = quiescenceTracker;
   }
 
   public Set<UUID> submit(UUID caseId, Runnable evaluator, UUID signalId) {
-    if (closed) {
-      return Set.of();
-    }
-
-    CaseGate gate = gates.computeIfAbsent(caseId, CaseGate::new);
-    gate.lock.lock();
+    CaseGate gate;
+    boolean runNow = false;
+    lifecycleLock.lock();
     try {
+      while (resetting) {
+        evaluationsDrained.awaitUninterruptibly();
+      }
+      gate = gates.computeIfAbsent(caseId, CaseGate::new);
       if (gate.evaluating) {
-        gate.pendingEvaluator = evaluator;
+        gate.pendingEvaluators.addLast(evaluator);
         if (signalId != null) {
           gate.pendingSignalIds.add(signalId);
         }
         return Set.of();
       }
       gate.evaluating = true;
-      activeCount.incrementAndGet();
+      activeEvaluations++;
+      runNow = true;
     } finally {
-      gate.lock.unlock();
+      lifecycleLock.unlock();
     }
 
     Set<UUID> allSignalIds = signalId != null ? new HashSet<>(Set.of(signalId)) : new HashSet<>();
 
-    try {
-      evaluator.run();
-    } catch (Exception e) {
-      LOG.errorf(e, "Evaluation failed for caseId=%s", caseId);
-    } finally {
-      Set<UUID> drainedSignals = drainPending(caseId, gate);
-      allSignalIds.addAll(drainedSignals);
+    if (runNow) {
+      try {
+        runEvaluator(caseId, evaluator, false);
+      } finally {
+        Set<UUID> drainedSignals = drainPending(caseId, gate);
+        allSignalIds.addAll(drainedSignals);
+      }
     }
 
     return allSignalIds;
   }
 
   public void evict(UUID caseId) {
-    gates.remove(caseId);
+    lifecycleLock.lock();
+    try {
+      CaseGate gate = gates.get(caseId);
+      if (gate == null) {
+        return;
+      }
+      if (gate.evaluating) {
+        gate.evictWhenDrained = true;
+      } else {
+        gates.remove(caseId, gate);
+      }
+    } finally {
+      lifecycleLock.unlock();
+    }
   }
 
   @Override
   public void reset() {
-    closed = true;
-    if (activeCount.get() > 0) {
-      drainLatch = new CountDownLatch(1);
-      if (activeCount.get() > 0) {
-        try {
-          drainLatch.await(DRAIN_TIMEOUT_SECONDS, TimeUnit.SECONDS);
-        } catch (InterruptedException e) {
-          Thread.currentThread().interrupt();
-          LOG.warn("Reset interrupted while draining evaluations");
-        }
+    lifecycleLock.lock();
+    try {
+      resetting = true;
+      while (activeEvaluations > 0) {
+        evaluationsDrained.awaitUninterruptibly();
       }
+      gates.clear();
+      resetting = false;
+      evaluationsDrained.signalAll();
+    } finally {
+      lifecycleLock.unlock();
     }
-    gates.clear();
-    drainLatch = null;
-    closed = false;
   }
 
   private Set<UUID> drainPending(UUID caseId, CaseGate gate) {
     Set<UUID> accumulated = new HashSet<>();
     while (true) {
       Runnable next;
-      gate.lock.lock();
+      lifecycleLock.lock();
       try {
-        next = gate.pendingEvaluator;
-        gate.pendingEvaluator = null;
+        next = gate.pendingEvaluators.pollFirst();
         accumulated.addAll(gate.pendingSignalIds);
         gate.pendingSignalIds.clear();
         if (next == null) {
           gate.evaluating = false;
-          activeCount.decrementAndGet();
-          CountDownLatch latch = drainLatch;
-          if (latch != null && activeCount.get() == 0) {
-            latch.countDown();
+          if (gate.evictWhenDrained) {
+            gates.remove(caseId, gate);
           }
           if (quiescenceTracker != null) {
-            quiescenceTracker.onEvaluationDrained(caseId);
+            try {
+              quiescenceTracker.onEvaluationDrained(caseId);
+            } catch (Exception e) {
+              LOG.warnf(e, "Failed to report drained evaluation for caseId=%s", caseId);
+            }
+          }
+          activeEvaluations--;
+          if (activeEvaluations == 0) {
+            evaluationsDrained.signalAll();
           }
           return accumulated;
         }
       } finally {
-        gate.lock.unlock();
+        lifecycleLock.unlock();
       }
-      try {
-        next.run();
-      } catch (Exception e) {
-        LOG.errorf(e, "Coalesced evaluation failed for caseId=%s", caseId);
-      }
+      runEvaluator(caseId, next, true);
+    }
+  }
+
+  private void runEvaluator(UUID caseId, Runnable evaluator, boolean queued) {
+    try {
+      evaluator.run();
+    } catch (Exception e) {
+      LOG.errorf(e, "%s evaluation failed for caseId=%s", queued ? "Queued" : "Initial", caseId);
     }
   }
 
   private static final class CaseGate {
     final UUID caseId;
-    final ReentrantLock lock = new ReentrantLock();
-    boolean evaluating;
-    Runnable pendingEvaluator;
+    final Deque<Runnable> pendingEvaluators = new ArrayDeque<>();
     final Set<UUID> pendingSignalIds = new HashSet<>();
+    boolean evaluating;
+    boolean evictWhenDrained;
 
     CaseGate(UUID caseId) {
       this.caseId = caseId;
