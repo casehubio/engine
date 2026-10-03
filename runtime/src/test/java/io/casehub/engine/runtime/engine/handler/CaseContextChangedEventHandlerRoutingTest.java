@@ -155,13 +155,13 @@ class CaseContextChangedEventHandlerRoutingTest {
             org.mockito.Mockito.mock(
                 io.casehub.engine.runtime.convergence.ConvergenceDetector.class),
             org.mockito.Mockito.mock(io.casehub.engine.runtime.convergence.BudgetEnforcer.class),
-            org.mockito.Mockito.mock(jakarta.enterprise.inject.Instance.class),
-            org.mockito.Mockito.mock(jakarta.enterprise.inject.Instance.class),
-            org.mockito.Mockito.mock(jakarta.enterprise.inject.Instance.class),
-            org.mockito.Mockito.mock(jakarta.enterprise.inject.Instance.class),
-            org.mockito.Mockito.mock(jakarta.enterprise.inject.Instance.class),
-            org.mockito.Mockito.mock(jakarta.enterprise.inject.Instance.class),
-            org.mockito.Mockito.mock(jakarta.enterprise.inject.Instance.class));
+            java.util.Optional.empty(),
+            java.util.Optional.empty(),
+            java.util.Optional.empty(),
+            java.util.Optional.empty(),
+            java.util.Optional.empty(),
+            java.util.Optional.empty(),
+            java.util.Optional.empty());
 
     final Capability capability =
         Capability.builder()
