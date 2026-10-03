@@ -41,7 +41,9 @@ Each core layer ships as three modules — `-core` (framework-neutral, all logic
 |--------|--------|---------|
 | `casehub-engine-scheduler-quartz` | `scheduler-quartz` | Quartz worker execution (RAM store). `QuartzWorkerExecutionManager`, retry service, scheduled/conditional trigger jobs |
 | `casehub-engine-scheduler-dbscheduler` | `scheduler-dbscheduler` | db-scheduler alternative (`@WorkerBackend @Priority(10)` — wins when both present). H2 in-memory by default |
-| `casehub-engine-persistence-hibernate` | `persistence-hibernate` | JPA/Panache (PostgreSQL). 7 repos, 5 entities, RLS policy applicator, tenant-aware base |
+| `casehub-engine-persistence-jpa-common` | `persistence-jpa-common` | Shared JPA entities (7), Flyway migrations (V1.0–V1.11), `TenantContextManager` (framework-neutral RLS tenant context), `RlsPolicySetup` |
+| `casehub-engine-persistence-hibernate` | `persistence-hibernate` | Quarkus JPA/Panache persistence. 7 repos, 5 entities, RLS policy applicator, tenant-aware base |
+| `casehub-engine-persistence-spring-jpa` | `persistence-spring-jpa` | Spring Data JPA implementations of all 9 persistence SPIs. `PersistenceAutoConfiguration`, `@EntityScan`, `CommandLineRunner` for RLS |
 | `casehub-engine-persistence-memory` | `persistence-memory` | In-memory thread-safe persistence for `@QuarkusTest` without Docker |
 
 ### Optional Modules
@@ -61,21 +63,25 @@ Activated by adding to the consumer's classpath — same CDI/Spring discovery pa
 | `casehub-engine-inbound` | `casehub-engine-inbound` | Connector-to-signal bridge (`InboundSignalBridge`) |
 | `casehub-engine-work-cloudevent` | `work-cloudevent` | CloudEvent bridge for distributed HumanTask/ActionGate/Judgment dispatch |
 | `casehub-engine-actor-state` | `actor-state` | Unified actor workload view via `ActorStateContributor` SPI |
+| `casehub-engine-eidos-routing` | `eidos-routing` | Engine-aware agent selection bridge to casehub-eidos. `EngineAwareAgentSelector` |
+| `casehub-engine-yaml-cbr` | `yaml-cbr` | YAML-core ↔ CBR bridge: outcome recording, plan-to-playbook mapping, goal-modulated playbook selection |
+| `casehub-engine-work-adapter` | `work-adapter` | Engine ↔ casehub-work bridge: HumanTask scheduling, case compensation events, judgment bindings |
 
 ### Test Modules
 
 | Module | Folder | Purpose |
 |--------|--------|---------|
 | `casehub-engine-testing` | `testing` | `@Alternative @Priority(1)` wrappers for auto-selection in `@QuarkusTest`. `WorkResultSubmitter` test helper |
+| `casehub-engine-spring-integration-test` | `spring-integration-test` | Spring Boot composition gate — verifies all Spring modules compose into a valid `ApplicationContext` |
 
 ### Examples
 
 `examples/` contains paired `*-dsl` and `*-annotated` modules for each pattern: choreography, sequential, goap, cbr-ensemble, llm-decomposition, humantask, subcase, a2a, mcp. Plus scenario-specific annotated examples: incident-response, search-rescue, aircraft-maintenance, warehouse, wildfire-response. Not published (`deploy.skip=true`).
 
-### Relocated Modules
+### Cross-Repo Adapter Modules
 
-- `casehub-work-adapter` → `casehub-work-engine-adapter` in the casehub-work repo
-- `casehub-blocks-engine-adapter` → `casehub-blocks-engine-adapter` in the casehub-blocks repo
+- `casehub-engine-work-adapter` (`work-adapter`) — engine-side human task and compensation bridge; casehub-work also has `casehub-work-engine-adapter`
+- `casehub-blocks-engine-adapter` — lives in the casehub-blocks repo (not in engine)
 
 ---
 
