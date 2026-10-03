@@ -15,20 +15,11 @@
  */
 package io.casehub.engine.runtime.improvement;
 
-import jakarta.enterprise.event.Event;
-import jakarta.enterprise.event.NotificationOptions;
-import jakarta.enterprise.util.TypeLiteral;
-import java.lang.annotation.Annotation;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.CompletionStage;
+class TestEvent<T> implements java.util.function.Consumer<T> {
 
-class TestEvent<T> implements Event<T> {
+  private final java.util.List<T> fired = new java.util.ArrayList<>();
 
-  private final List<T> fired = new ArrayList<>();
-
-  List<T> fired() {
+  java.util.List<T> fired() {
     return fired;
   }
 
@@ -37,38 +28,7 @@ class TestEvent<T> implements Event<T> {
   }
 
   @Override
-  public void fire(T event) {
+  public void accept(T event) {
     fired.add(event);
-  }
-
-  @Override
-  @SuppressWarnings("unchecked")
-  public <U extends T> CompletionStage<U> fireAsync(U event) {
-    fired.add(event);
-    return CompletableFuture.completedFuture(event);
-  }
-
-  @Override
-  @SuppressWarnings("unchecked")
-  public <U extends T> CompletionStage<U> fireAsync(U event, NotificationOptions options) {
-    fired.add(event);
-    return CompletableFuture.completedFuture(event);
-  }
-
-  @Override
-  public Event<T> select(Annotation... qualifiers) {
-    throw new UnsupportedOperationException();
-  }
-
-  @Override
-  @SuppressWarnings("unchecked")
-  public <U extends T> Event<U> select(Class<U> subtype, Annotation... qualifiers) {
-    throw new UnsupportedOperationException();
-  }
-
-  @Override
-  @SuppressWarnings("unchecked")
-  public <U extends T> Event<U> select(TypeLiteral<U> subtype, Annotation... qualifiers) {
-    throw new UnsupportedOperationException();
   }
 }

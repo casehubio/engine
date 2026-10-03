@@ -133,13 +133,13 @@ class CaseContextChangedEnsembleTest {
             mock(io.casehub.engine.common.internal.convergence.ActivityTracker.class),
             mock(io.casehub.engine.runtime.convergence.ConvergenceDetector.class),
             mock(io.casehub.engine.runtime.convergence.BudgetEnforcer.class),
-            mock(jakarta.enterprise.inject.Instance.class),
-            mock(jakarta.enterprise.inject.Instance.class),
-            mock(jakarta.enterprise.inject.Instance.class),
-            mock(jakarta.enterprise.inject.Instance.class),
-            mock(jakarta.enterprise.inject.Instance.class),
-            mock(jakarta.enterprise.inject.Instance.class),
-            mock(jakarta.enterprise.inject.Instance.class));
+            Optional.empty(),
+            Optional.empty(),
+            Optional.empty(),
+            Optional.empty(),
+            Optional.empty(),
+            Optional.empty(),
+            Optional.empty());
 
     Capability capability =
         Capability.builder().name("analysis").inputSchema(".").outputSchema(".").build();
