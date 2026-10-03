@@ -19,7 +19,6 @@ import io.casehub.api.model.signal.PerceivedSignal;
 import io.casehub.api.model.signal.Signal;
 import io.casehub.api.model.signal.SignalDecay;
 import io.casehub.engine.common.spi.Resettable;
-import jakarta.enterprise.context.ApplicationScoped;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.ArrayList;
@@ -33,7 +32,6 @@ import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import org.jboss.logging.Logger;
 
-@ApplicationScoped
 public class SignalRegistry implements Resettable {
 
   private static final Logger LOG = Logger.getLogger(SignalRegistry.class);
@@ -41,13 +39,25 @@ public class SignalRegistry implements Resettable {
   private final ConcurrentHashMap<UUID, ConcurrentHashMap<String, Signal>> signals =
       new ConcurrentHashMap<>();
 
-  @jakarta.inject.Inject
-  jakarta.enterprise.inject.Instance<io.casehub.engine.common.internal.convergence.ActivityTracker>
-      activityTrackerInstance;
+  private final java.util.Optional<io.casehub.engine.common.internal.convergence.ActivityTracker>
+      activityTracker;
 
-  @jakarta.inject.Inject
-  jakarta.enterprise.event.Event<io.casehub.engine.common.spi.event.PheromoneStateChangedEvent>
-      pheromoneEvent;
+  private final java.util.function.Consumer<
+          io.casehub.engine.common.spi.event.PheromoneStateChangedEvent>
+      pheromoneEventConsumer;
+
+  public SignalRegistry() {
+    this(java.util.Optional.empty(), e -> {});
+  }
+
+  public SignalRegistry(
+      java.util.Optional<io.casehub.engine.common.internal.convergence.ActivityTracker>
+          activityTracker,
+      java.util.function.Consumer<io.casehub.engine.common.spi.event.PheromoneStateChangedEvent>
+          pheromoneEventConsumer) {
+    this.activityTracker = activityTracker;
+    this.pheromoneEventConsumer = pheromoneEventConsumer;
+  }
 
   public boolean deposit(
       UUID caseId, String name, double strength, Duration halfLife, String source, int maxPerCase) {
@@ -111,11 +121,9 @@ public class SignalRegistry implements Resettable {
 
   private void recordSignalDeposit(
       UUID caseId, String name, double strength, int reinforcementCount, String source) {
-    if (activityTrackerInstance != null && activityTrackerInstance.isResolvable()) {
-      activityTrackerInstance.get().recordSignalDeposit(caseId);
-    }
-    if (pheromoneEvent != null) {
-      pheromoneEvent.fireAsync(
+    activityTracker.ifPresent(tracker -> tracker.recordSignalDeposit(caseId));
+    if (pheromoneEventConsumer != null) {
+      pheromoneEventConsumer.accept(
           new io.casehub.engine.common.spi.event.PheromoneStateChangedEvent(
               caseId,
               name,
@@ -192,8 +200,8 @@ public class SignalRegistry implements Resettable {
             existing.reinforcementCount(),
             true,
             existing.sources()));
-    if (pheromoneEvent != null) {
-      pheromoneEvent.fireAsync(
+    if (pheromoneEventConsumer != null) {
+      pheromoneEventConsumer.accept(
           new io.casehub.engine.common.spi.event.PheromoneStateChangedEvent(
               caseId,
               name,

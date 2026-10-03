@@ -16,12 +16,10 @@
 package io.casehub.engine.common.internal.convergence;
 
 import io.casehub.engine.common.spi.Resettable;
-import jakarta.enterprise.context.ApplicationScoped;
 import java.time.Instant;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 
-@ApplicationScoped
 public class ActivityTracker implements Resettable {
 
   static final int DEFAULT_MAX_WINDOW_ENTRIES = 600;

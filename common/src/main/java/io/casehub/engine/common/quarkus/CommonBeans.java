@@ -30,18 +30,25 @@ import io.casehub.engine.common.internal.config.NoOpSecretManager;
 import io.casehub.engine.common.internal.config.SecretManager;
 import io.casehub.engine.common.internal.context.BridgeResolver;
 import io.casehub.engine.common.internal.context.DataRefRegistry;
+import io.casehub.engine.common.internal.convergence.ActivityTracker;
 import io.casehub.engine.common.internal.executor.WorkerExecutionConfig;
 import io.casehub.engine.common.internal.jq.JQEvaluator;
 import io.casehub.engine.common.internal.judgment.JudgmentNodeExecutor;
 import io.casehub.engine.common.internal.monitoring.ExpectedEffectResolver;
+import io.casehub.engine.common.internal.observation.ContextHistoryBuffer;
+import io.casehub.engine.common.internal.observation.ObservationRegistry;
+import io.casehub.engine.common.internal.observation.RuleRegistry;
+import io.casehub.engine.common.internal.signal.SignalRegistry;
 import io.casehub.engine.common.internal.store.InMemoryExecutionSnapshotStore;
 import io.casehub.engine.common.internal.store.InMemoryPlanVersionStore;
 import io.casehub.engine.common.internal.worker.scope.ScopedWorkerRegistry;
 import io.casehub.engine.common.spi.JudgmentScheduler;
+import io.casehub.engine.common.spi.event.PheromoneStateChangedEvent;
 import io.casehub.engine.common.spi.recovery.CompoundLockRegistry;
 import io.casehub.engine.plan.execution.NoOpCasePlanModelSnapshotProvider;
 import io.quarkus.arc.DefaultBean;
 import jakarta.enterprise.context.ApplicationScoped;
+import jakarta.enterprise.event.Event;
 import jakarta.enterprise.inject.Instance;
 import jakarta.enterprise.inject.Produces;
 import java.util.Optional;
@@ -186,5 +193,41 @@ public class CommonBeans {
   JudgmentNodeExecutor judgmentNodeExecutor(Instance<JudgmentScheduler> scheduler) {
     return new JudgmentNodeExecutor(
         scheduler.isResolvable() ? Optional.of(scheduler.get()) : Optional.empty());
+  }
+
+  @Produces
+  @ApplicationScoped
+  RuleRegistry ruleRegistry() {
+    return new RuleRegistry();
+  }
+
+  @Produces
+  @ApplicationScoped
+  ContextHistoryBuffer contextHistoryBuffer() {
+    return new ContextHistoryBuffer();
+  }
+
+  @Produces
+  @ApplicationScoped
+  ObservationRegistry observationRegistry() {
+    return new ObservationRegistry();
+  }
+
+  @Produces
+  @ApplicationScoped
+  ActivityTracker activityTracker() {
+    return new ActivityTracker();
+  }
+
+  @Produces
+  @ApplicationScoped
+  SignalRegistry signalRegistry(
+      Instance<ActivityTracker> activityTrackerInstance,
+      Event<PheromoneStateChangedEvent> pheromoneEvent) {
+    return new SignalRegistry(
+        activityTrackerInstance.isResolvable()
+            ? Optional.of(activityTrackerInstance.get())
+            : Optional.empty(),
+        pheromoneEvent::fireAsync);
   }
 }

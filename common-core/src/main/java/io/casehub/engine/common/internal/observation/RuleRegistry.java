@@ -18,7 +18,6 @@ package io.casehub.engine.common.internal.observation;
 import io.casehub.api.spi.observation.LocalRule;
 import io.casehub.api.spi.observation.RuleFiring;
 import io.casehub.engine.common.spi.Resettable;
-import jakarta.enterprise.context.ApplicationScoped;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.LinkedHashMap;
@@ -28,7 +27,6 @@ import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 
-@ApplicationScoped
 public class RuleRegistry implements Resettable {
 
   record RuleEntry(LocalRule rule, String agentId, String bindingName) {}

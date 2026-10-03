@@ -20,7 +20,6 @@ import io.casehub.api.spi.observation.InterestDeclaration;
 import io.casehub.api.spi.observation.InterestLandscape;
 import io.casehub.api.spi.observation.Observation;
 import io.casehub.engine.common.spi.Resettable;
-import jakarta.enterprise.context.ApplicationScoped;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.LinkedHashMap;
@@ -31,7 +30,6 @@ import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicInteger;
 
-@ApplicationScoped
 public class ObservationRegistry implements Resettable {
 
   record ObserverRegistration(
