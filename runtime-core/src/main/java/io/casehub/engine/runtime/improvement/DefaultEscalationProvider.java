@@ -22,14 +22,10 @@ import io.casehub.api.model.stigmergy.EscalationTrigger;
 import io.casehub.api.model.stigmergy.EscalationTrigger.EscalationLayer;
 import io.casehub.api.model.stigmergy.WatchPattern;
 import io.casehub.api.spi.improvement.EscalationProvider;
-import io.quarkus.arc.DefaultBean;
-import jakarta.enterprise.context.ApplicationScoped;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
 
-@DefaultBean
-@ApplicationScoped
 public class DefaultEscalationProvider implements EscalationProvider {
 
   @Override

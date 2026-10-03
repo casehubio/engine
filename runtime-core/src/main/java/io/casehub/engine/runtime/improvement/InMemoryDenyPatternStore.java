@@ -17,14 +17,10 @@ package io.casehub.engine.runtime.improvement;
 
 import io.casehub.engine.common.spi.DenyPatternStore;
 import io.casehub.engine.common.spi.Resettable;
-import io.quarkus.arc.DefaultBean;
-import jakarta.enterprise.context.ApplicationScoped;
 import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 
-@DefaultBean
-@ApplicationScoped
 public class InMemoryDenyPatternStore implements DenyPatternStore, Resettable {
 
   private final ConcurrentHashMap<UUID, Set<String>> patterns = new ConcurrentHashMap<>();

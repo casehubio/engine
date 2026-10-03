@@ -20,13 +20,9 @@ import io.casehub.api.model.improvement.ComplianceChecklist.CheckRequirement;
 import io.casehub.api.model.improvement.ComplianceChecklist.CheckRequirement.CheckType;
 import io.casehub.api.model.improvement.ComplianceLevel;
 import io.casehub.api.spi.improvement.ComplianceChecklistProvider;
-import io.quarkus.arc.DefaultBean;
-import jakarta.enterprise.context.ApplicationScoped;
 import java.util.ArrayList;
 import java.util.List;
 
-@DefaultBean
-@ApplicationScoped
 public class DefaultComplianceChecklistProvider implements ComplianceChecklistProvider {
 
   @Override

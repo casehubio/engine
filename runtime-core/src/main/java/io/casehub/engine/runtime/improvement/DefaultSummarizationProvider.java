@@ -23,9 +23,6 @@ import io.casehub.api.spi.improvement.SummarizationProvider;
 import io.casehub.api.view.EvolutionSummary;
 import io.casehub.engine.common.internal.history.EventLog;
 import io.casehub.engine.common.spi.EventLogRepository;
-import io.quarkus.arc.DefaultBean;
-import jakarta.enterprise.context.ApplicationScoped;
-import jakarta.inject.Inject;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.Comparator;
@@ -37,8 +34,6 @@ import java.util.Set;
 import java.util.UUID;
 import java.util.stream.Collectors;
 
-@DefaultBean
-@ApplicationScoped
 public class DefaultSummarizationProvider implements SummarizationProvider {
 
   private static final Set<CaseHubEventType> OUTCOME_TYPES =
@@ -64,7 +59,6 @@ public class DefaultSummarizationProvider implements SummarizationProvider {
   private final EventLogRepository eventLogRepository;
   private final ImprovementCategoryTracker categoryTracker;
 
-  @Inject
   public DefaultSummarizationProvider(
       EventLogRepository eventLogRepository, ImprovementCategoryTracker categoryTracker) {
     this.eventLogRepository = eventLogRepository;

@@ -18,15 +18,11 @@ package io.casehub.engine.runtime.improvement;
 import io.casehub.api.model.stigmergy.WatchPattern;
 import io.casehub.engine.common.spi.Resettable;
 import io.casehub.engine.common.spi.WatchPatternStore;
-import io.quarkus.arc.DefaultBean;
-import jakarta.enterprise.context.ApplicationScoped;
 import java.util.List;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CopyOnWriteArrayList;
 
-@DefaultBean
-@ApplicationScoped
 public class InMemoryWatchPatternStore implements WatchPatternStore, Resettable {
 
   private final ConcurrentHashMap<UUID, CopyOnWriteArrayList<WatchPattern>> patterns =

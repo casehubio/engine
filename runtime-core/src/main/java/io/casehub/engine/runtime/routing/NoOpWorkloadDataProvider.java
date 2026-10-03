@@ -17,11 +17,9 @@ package io.casehub.engine.runtime.routing;
 
 import io.casehub.api.spi.routing.WorkloadDataProvider;
 import io.casehub.api.spi.routing.WorkloadSnapshot;
-import io.quarkus.arc.Unremovable;
 import java.util.Map;
 import java.util.Set;
 
-@Unremovable
 public class NoOpWorkloadDataProvider implements WorkloadDataProvider {
 
   @Override

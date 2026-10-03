@@ -17,8 +17,7 @@ package io.casehub.engine.runtime.worker;
 
 import io.casehub.api.spi.GateOutcome;
 import io.casehub.api.spi.OversightGateService;
-import io.quarkus.runtime.StartupEvent;
-import jakarta.enterprise.event.Observes;
+import jakarta.annotation.PostConstruct;
 import java.util.UUID;
 import org.jboss.logging.Logger;
 
@@ -26,7 +25,8 @@ public class NoOpOversightGateService implements OversightGateService {
 
   private static final Logger LOG = Logger.getLogger(NoOpOversightGateService.class);
 
-  void onStart(@Observes StartupEvent event) {
+  @PostConstruct
+  void onStart() {
     LOG.warn(
         "OversightGateService: no implementation configured — all actions proceed autonomously.");
   }

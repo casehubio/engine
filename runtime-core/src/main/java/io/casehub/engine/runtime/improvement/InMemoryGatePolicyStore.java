@@ -18,13 +18,9 @@ package io.casehub.engine.runtime.improvement;
 import io.casehub.api.model.stigmergy.GatePolicy;
 import io.casehub.engine.common.spi.GatePolicyStore;
 import io.casehub.engine.common.spi.Resettable;
-import io.quarkus.arc.DefaultBean;
-import jakarta.enterprise.context.ApplicationScoped;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 
-@DefaultBean
-@ApplicationScoped
 public class InMemoryGatePolicyStore implements GatePolicyStore, Resettable {
 
   private final ConcurrentHashMap<UUID, GatePolicy> policies = new ConcurrentHashMap<>();
