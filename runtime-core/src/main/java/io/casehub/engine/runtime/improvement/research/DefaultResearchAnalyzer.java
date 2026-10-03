@@ -21,10 +21,8 @@ import io.casehub.api.model.stigmergy.ResearchFinding;
 import io.casehub.api.model.stigmergy.ResearchScope;
 import io.casehub.api.spi.improvement.ResearchAnalyzer;
 import io.casehub.api.spi.improvement.ResearchDepth;
-import jakarta.enterprise.context.ApplicationScoped;
 import java.util.List;
 
-@ApplicationScoped
 public class DefaultResearchAnalyzer implements ResearchAnalyzer {
 
   @Override

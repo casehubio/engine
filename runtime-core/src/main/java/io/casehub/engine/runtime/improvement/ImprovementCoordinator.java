@@ -17,16 +17,12 @@ package io.casehub.engine.runtime.improvement;
 
 import io.casehub.engine.common.spi.ImprovementBlockStore;
 import jakarta.annotation.Nullable;
-import jakarta.enterprise.context.ApplicationScoped;
-import jakarta.inject.Inject;
 import java.util.UUID;
 
-@ApplicationScoped
 public class ImprovementCoordinator {
 
   private final ImprovementBlockStore blockStore;
 
-  @Inject
   ImprovementCoordinator(ImprovementBlockStore blockStore) {
     this.blockStore = blockStore;
   }

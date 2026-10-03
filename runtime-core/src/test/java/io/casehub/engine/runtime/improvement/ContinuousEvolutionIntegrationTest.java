@@ -80,7 +80,7 @@ class ContinuousEvolutionIntegrationTest {
 
     areaRegistry = new CapabilityAreaRegistry();
     healthTracker = new HealthScoreTracker(areaRegistry);
-    circuitBreaker = new ImprovementCircuitBreaker(new NoOpEvent<>());
+    circuitBreaker = new ImprovementCircuitBreaker(e -> {});
     confidenceScorer = new ConfidenceScorer();
     var evaluatorReg = new RegressionEvaluatorRegistry();
     evaluatorReg.register(new HealthScoreDeltaRegressionEvaluator(confidenceScorer));
@@ -91,7 +91,7 @@ class ContinuousEvolutionIntegrationTest {
             categoryTracker,
             rollbackHistory,
             healthTracker,
-            new NoOpEvent<>());
+            e -> {});
 
     proposalCount = new AtomicInteger(0);
     GoalFormationService goalService =
@@ -109,7 +109,7 @@ class ContinuousEvolutionIntegrationTest {
             regressionDetector,
             goalService,
             traceBuffer,
-            new NoOpEvent<>());
+            e -> {});
     caseId = UUID.randomUUID();
   }
 

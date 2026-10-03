@@ -19,14 +19,11 @@ import io.casehub.api.model.event.CaseHubEventType;
 import io.casehub.api.model.stigmergy.CapabilityAreaAssessment;
 import io.casehub.engine.common.internal.history.EventLog;
 import io.casehub.engine.common.spi.EventLogRepository;
-import jakarta.enterprise.context.ApplicationScoped;
-import jakarta.inject.Inject;
 import java.time.Duration;
 import java.util.Collection;
 import java.util.List;
 import java.util.UUID;
 
-@ApplicationScoped
 public class PerformanceCapabilityArea extends AbstractCapabilityArea {
 
   static final Duration DEFAULT_SLA_THRESHOLD = Duration.ofSeconds(60);
@@ -36,7 +33,6 @@ public class PerformanceCapabilityArea extends AbstractCapabilityArea {
 
   private final EventLogRepository eventLog;
 
-  @Inject
   public PerformanceCapabilityArea(EventLogRepository eventLog) {
     this.eventLog = eventLog;
   }

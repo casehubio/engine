@@ -18,10 +18,8 @@ package io.casehub.engine.runtime.improvement;
 import io.casehub.api.model.stigmergy.HealthScoreSnapshot;
 import io.casehub.api.model.stigmergy.RegressionVerdict;
 import io.casehub.api.spi.improvement.RegressionEvaluator;
-import jakarta.enterprise.context.ApplicationScoped;
 import java.util.UUID;
 
-@ApplicationScoped
 public class HealthScoreDeltaRegressionEvaluator implements RegressionEvaluator {
 
   private final ConfidenceScorer scorer;

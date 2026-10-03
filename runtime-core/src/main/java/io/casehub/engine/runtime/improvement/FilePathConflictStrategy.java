@@ -17,12 +17,10 @@ package io.casehub.engine.runtime.improvement;
 
 import io.casehub.api.model.improvement.ImprovementRequest;
 import io.casehub.api.spi.improvement.ConflictStrategy;
-import jakarta.enterprise.context.ApplicationScoped;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 
-@ApplicationScoped
 public class FilePathConflictStrategy implements ConflictStrategy {
 
   @Override

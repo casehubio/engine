@@ -24,29 +24,25 @@ import io.casehub.api.model.improvement.ReadinessReport.CheckResult;
 import io.casehub.api.spi.improvement.CapabilityArea;
 import io.casehub.api.spi.improvement.ComplianceChecklistProvider;
 import io.casehub.engine.common.spi.event.ComplianceLevelChangedEvent;
-import jakarta.enterprise.context.ApplicationScoped;
-import jakarta.enterprise.event.Event;
-import jakarta.inject.Inject;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.function.Consumer;
 
-@ApplicationScoped
 public class ReadinessValidator {
 
   private final CapabilityAreaRegistry areaRegistry;
   private final ComplianceChecklistProvider checklistProvider;
-  private final Event<ComplianceLevelChangedEvent> complianceLevelChangedEvent;
+  private final Consumer<ComplianceLevelChangedEvent> complianceLevelChangedEvent;
   private final ConcurrentHashMap<UUID, ComplianceLevel> cachedLevels = new ConcurrentHashMap<>();
 
-  @Inject
   public ReadinessValidator(
       CapabilityAreaRegistry areaRegistry,
       ComplianceChecklistProvider checklistProvider,
-      Event<ComplianceLevelChangedEvent> complianceLevelChangedEvent) {
+      Consumer<ComplianceLevelChangedEvent> complianceLevelChangedEvent) {
     this.areaRegistry = areaRegistry;
     this.checklistProvider = checklistProvider;
     this.complianceLevelChangedEvent = complianceLevelChangedEvent;
@@ -65,7 +61,7 @@ public class ReadinessValidator {
 
     var previousLevel = cachedLevels.put(caseId, projectLevel);
     if (previousLevel != null && previousLevel != projectLevel) {
-      complianceLevelChangedEvent.fireAsync(
+      complianceLevelChangedEvent.accept(
           new ComplianceLevelChangedEvent(caseId, previousLevel, projectLevel));
     }
 

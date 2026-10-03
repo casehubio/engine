@@ -19,13 +19,11 @@ import io.casehub.api.model.convergence.ConvergenceThresholdConfig;
 import io.casehub.engine.common.internal.convergence.CaseActivityState;
 import io.casehub.engine.common.spi.Resettable;
 import jakarta.annotation.Nullable;
-import jakarta.enterprise.context.ApplicationScoped;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 
-@ApplicationScoped
 public class ConvergenceDetector implements Resettable {
 
   private final ConcurrentHashMap<UUID, ConvergenceState> states = new ConcurrentHashMap<>();

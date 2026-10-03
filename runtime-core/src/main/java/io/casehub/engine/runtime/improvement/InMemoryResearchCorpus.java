@@ -21,12 +21,10 @@ import io.casehub.api.model.stigmergy.ResearchCandidate;
 import io.casehub.api.model.stigmergy.ResearchFinding;
 import io.casehub.api.spi.improvement.ResearchCorpus;
 import io.casehub.engine.common.spi.Resettable;
-import jakarta.enterprise.context.ApplicationScoped;
 import java.util.List;
 import java.util.Optional;
 import java.util.concurrent.ConcurrentHashMap;
 
-@ApplicationScoped
 public class InMemoryResearchCorpus implements ResearchCorpus, Resettable {
 
   private final ConcurrentHashMap<String, ResearchFinding> findings = new ConcurrentHashMap<>();

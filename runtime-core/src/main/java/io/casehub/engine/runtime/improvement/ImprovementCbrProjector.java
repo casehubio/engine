@@ -16,10 +16,8 @@
 package io.casehub.engine.runtime.improvement;
 
 import io.casehub.api.model.improvement.ImprovementOutcome;
-import jakarta.enterprise.context.ApplicationScoped;
 import org.jboss.logging.Logger;
 
-@ApplicationScoped
 public class ImprovementCbrProjector {
 
   private static final Logger LOG = Logger.getLogger(ImprovementCbrProjector.class);

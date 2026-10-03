@@ -19,12 +19,10 @@ import io.casehub.api.model.improvement.ImprovementConfig;
 import io.casehub.api.model.improvement.ImprovementRequest;
 import io.casehub.api.spi.improvement.ImprovementProposalSource;
 import io.casehub.engine.common.internal.signal.SignalRegistry;
-import jakarta.enterprise.context.ApplicationScoped;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
 
-@ApplicationScoped
 public class SignalConsensusProposalSource implements ImprovementProposalSource {
 
   private final SignalRegistry signalRegistry;

@@ -17,19 +17,15 @@ package io.casehub.engine.runtime.improvement;
 
 import io.casehub.api.model.improvement.ImprovementOutcome;
 import io.casehub.engine.common.internal.signal.SignalRegistry;
-import jakarta.enterprise.context.ApplicationScoped;
-import jakarta.inject.Inject;
 import java.time.Duration;
 import java.util.UUID;
 
-@ApplicationScoped
 public class ImprovementSignalProjector {
 
   private static final Duration OUTCOME_SIGNAL_HALF_LIFE = Duration.ofHours(4);
 
   private final SignalRegistry signalRegistry;
 
-  @Inject
   public ImprovementSignalProjector(SignalRegistry signalRegistry) {
     this.signalRegistry = signalRegistry;
   }

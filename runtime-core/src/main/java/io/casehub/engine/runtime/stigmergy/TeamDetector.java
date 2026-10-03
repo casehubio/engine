@@ -23,8 +23,6 @@ import io.casehub.api.spi.observation.NeighborRelation;
 import io.casehub.engine.common.internal.observation.ObservationRegistry;
 import io.casehub.engine.common.internal.signal.SignalRegistry;
 import io.casehub.engine.common.spi.Resettable;
-import jakarta.enterprise.context.ApplicationScoped;
-import jakarta.inject.Inject;
 import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -41,7 +39,6 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
 
-@ApplicationScoped
 public class TeamDetector implements Resettable {
 
   private final ObservationRegistry observationRegistry;
@@ -51,7 +48,6 @@ public class TeamDetector implements Resettable {
 
   private final ConcurrentHashMap<UUID, CaseTeamState> cases = new ConcurrentHashMap<>();
 
-  @Inject
   public TeamDetector(
       ObservationRegistry observationRegistry,
       SignalRegistry signalRegistry,

@@ -19,12 +19,10 @@ import io.casehub.api.model.stigmergy.CapabilityAreaAssessment;
 import io.casehub.api.model.stigmergy.ResearchScope;
 import io.casehub.api.spi.improvement.ResearchDepth;
 import io.casehub.api.spi.improvement.ResearchScoper;
-import jakarta.enterprise.context.ApplicationScoped;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
-@ApplicationScoped
 public class DefaultResearchScoper implements ResearchScoper {
 
   @Override

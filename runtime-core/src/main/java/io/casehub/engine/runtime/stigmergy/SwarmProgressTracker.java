@@ -20,8 +20,6 @@ import io.casehub.api.model.stigmergy.StigmergyConfig;
 import io.casehub.api.model.stigmergy.SwarmProgress;
 import io.casehub.engine.common.internal.signal.SignalRegistry;
 import io.casehub.engine.common.spi.Resettable;
-import jakarta.enterprise.context.ApplicationScoped;
-import jakarta.inject.Inject;
 import java.time.Instant;
 import java.util.ArrayDeque;
 import java.util.Deque;
@@ -33,7 +31,6 @@ import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 
-@ApplicationScoped
 public class SwarmProgressTracker implements Resettable {
 
   private final SignalRegistry signalRegistry;
@@ -42,7 +39,6 @@ public class SwarmProgressTracker implements Resettable {
 
   private final ConcurrentHashMap<UUID, CaseProgressState> cases = new ConcurrentHashMap<>();
 
-  @Inject
   public SwarmProgressTracker(
       SignalRegistry signalRegistry, RoleTracker roleTracker, StigmergyCoordinator coordinator) {
     this.signalRegistry = signalRegistry;

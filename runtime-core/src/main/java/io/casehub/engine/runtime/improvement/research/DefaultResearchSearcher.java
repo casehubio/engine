@@ -19,10 +19,8 @@ import io.casehub.api.model.stigmergy.ResearchCandidate;
 import io.casehub.api.model.stigmergy.ResearchScope;
 import io.casehub.api.spi.improvement.ResearchDepth;
 import io.casehub.api.spi.improvement.ResearchSearcher;
-import jakarta.enterprise.context.ApplicationScoped;
 import java.util.List;
 
-@ApplicationScoped
 public class DefaultResearchSearcher implements ResearchSearcher {
 
   @Override

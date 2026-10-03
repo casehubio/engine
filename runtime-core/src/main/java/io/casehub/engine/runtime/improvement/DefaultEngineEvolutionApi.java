@@ -39,7 +39,6 @@ import io.casehub.engine.common.spi.ArtifactManifestStore;
 import io.casehub.engine.common.spi.DenyPatternStore;
 import io.casehub.engine.common.spi.GatePolicyStore;
 import jakarta.annotation.Nullable;
-import jakarta.enterprise.context.ApplicationScoped;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
@@ -47,7 +46,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 
-@ApplicationScoped
 public class DefaultEngineEvolutionApi implements EngineEvolutionApi {
 
   private final TickTraceBuffer tickTraceBuffer;

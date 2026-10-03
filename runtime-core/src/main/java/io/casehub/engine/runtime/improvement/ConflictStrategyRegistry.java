@@ -17,11 +17,9 @@ package io.casehub.engine.runtime.improvement;
 
 import io.casehub.api.spi.improvement.ConflictStrategy;
 import io.casehub.engine.common.spi.Resettable;
-import jakarta.enterprise.context.ApplicationScoped;
 import java.util.Optional;
 import java.util.concurrent.ConcurrentHashMap;
 
-@ApplicationScoped
 public class ConflictStrategyRegistry implements Resettable {
 
   private final ConcurrentHashMap<String, ConflictStrategy> strategies = new ConcurrentHashMap<>();

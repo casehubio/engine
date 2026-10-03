@@ -31,13 +31,11 @@ import io.casehub.api.spi.improvement.ResearchCorpus;
 import io.casehub.api.spi.improvement.ResearchDepth;
 import io.casehub.api.spi.improvement.ResearchScoper;
 import io.casehub.api.spi.improvement.ResearchSearcher;
-import jakarta.enterprise.context.ApplicationScoped;
 import java.time.Instant;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 
-@ApplicationScoped
 public class ResearchPipelineOrchestrator {
 
   private final ResearchScoper scoper;

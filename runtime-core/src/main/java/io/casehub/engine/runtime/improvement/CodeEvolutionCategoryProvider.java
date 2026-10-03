@@ -18,10 +18,8 @@ package io.casehub.engine.runtime.improvement;
 import io.casehub.api.model.stigmergy.CategoryDescriptor;
 import io.casehub.api.model.stigmergy.StageDescriptor;
 import io.casehub.api.spi.improvement.ImprovementCategoryProvider;
-import jakarta.enterprise.context.ApplicationScoped;
 import java.util.List;
 
-@ApplicationScoped
 public class CodeEvolutionCategoryProvider implements ImprovementCategoryProvider {
 
   @Override

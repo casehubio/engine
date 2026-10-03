@@ -18,13 +18,10 @@ package io.casehub.engine.runtime.improvement.area;
 import io.casehub.api.model.event.CaseHubEventType;
 import io.casehub.api.model.stigmergy.CapabilityAreaAssessment;
 import io.casehub.engine.common.spi.EventLogRepository;
-import jakarta.enterprise.context.ApplicationScoped;
-import jakarta.inject.Inject;
 import java.util.Collection;
 import java.util.List;
 import java.util.UUID;
 
-@ApplicationScoped
 public class AutonomyCapabilityArea extends AbstractCapabilityArea {
 
   private static final Collection<CaseHubEventType> AUTONOMY_TYPES =
@@ -38,7 +35,6 @@ public class AutonomyCapabilityArea extends AbstractCapabilityArea {
 
   private final EventLogRepository eventLog;
 
-  @Inject
   public AutonomyCapabilityArea(EventLogRepository eventLog) {
     this.eventLog = eventLog;
   }

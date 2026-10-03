@@ -19,8 +19,6 @@ import io.casehub.api.model.improvement.ImprovementBudget;
 import io.casehub.api.model.improvement.ImprovementRequest;
 import io.casehub.engine.common.spi.DenyPatternStore;
 import io.casehub.engine.common.spi.Resettable;
-import jakarta.enterprise.context.ApplicationScoped;
-import jakarta.inject.Inject;
 import java.time.Duration;
 import java.time.Instant;
 import java.time.LocalDate;
@@ -29,7 +27,6 @@ import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicInteger;
 
-@ApplicationScoped
 public class ImprovementBudgetEnforcer implements Resettable {
 
   private final ConcurrentHashMap<UUID, ImprovementRequest> activeImprovements =
@@ -37,7 +34,6 @@ public class ImprovementBudgetEnforcer implements Resettable {
   private final ConcurrentHashMap<LocalDate, AtomicInteger> dailyCounts = new ConcurrentHashMap<>();
   private volatile Instant lastCompletionTime = Instant.EPOCH;
 
-  @Inject
   ImprovementBudgetEnforcer(DenyPatternStore denyPatternStore) {}
 
   public sealed interface BudgetCheck permits BudgetCheck.Allowed, BudgetCheck.Denied {
