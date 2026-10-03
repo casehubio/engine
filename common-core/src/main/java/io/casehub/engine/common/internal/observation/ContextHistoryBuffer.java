@@ -18,7 +18,6 @@ package io.casehub.engine.common.internal.observation;
 import com.fasterxml.jackson.databind.JsonNode;
 import io.casehub.api.spi.observation.ContextSnapshot;
 import io.casehub.engine.common.spi.Resettable;
-import jakarta.enterprise.context.ApplicationScoped;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.ArrayList;
@@ -32,7 +31,6 @@ import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 
-@ApplicationScoped
 public class ContextHistoryBuffer implements Resettable {
 
   private final ConcurrentHashMap<UUID, JsonNode> lastSnapshots = new ConcurrentHashMap<>();
