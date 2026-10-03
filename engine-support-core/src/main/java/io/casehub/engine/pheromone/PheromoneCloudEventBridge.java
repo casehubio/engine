@@ -18,15 +18,10 @@ package io.casehub.engine.pheromone;
 import io.casehub.engine.common.spi.event.PheromoneStateChangedEvent;
 import io.cloudevents.CloudEvent;
 import io.cloudevents.core.builder.CloudEventBuilder;
-import jakarta.enterprise.context.ApplicationScoped;
-import jakarta.enterprise.event.Event;
-import jakarta.enterprise.event.ObservesAsync;
-import jakarta.inject.Inject;
 import java.net.URI;
 import java.time.OffsetDateTime;
 import java.util.UUID;
 
-@ApplicationScoped
 public class PheromoneCloudEventBridge {
 
   static final String CE_TYPE_DEPOSITED = "io.casehub.pheromone.deposited";
@@ -36,9 +31,13 @@ public class PheromoneCloudEventBridge {
   private static final com.fasterxml.jackson.databind.ObjectMapper MAPPER =
       new com.fasterxml.jackson.databind.ObjectMapper();
 
-  @Inject Event<CloudEvent> cloudEventEmitter;
+  private final java.util.function.Consumer<CloudEvent> cloudEventConsumer;
 
-  void onPheromoneStateChanged(@ObservesAsync PheromoneStateChangedEvent event) {
+  public PheromoneCloudEventBridge(java.util.function.Consumer<CloudEvent> cloudEventConsumer) {
+    this.cloudEventConsumer = cloudEventConsumer;
+  }
+
+  public void onPheromoneStateChanged(PheromoneStateChangedEvent event) {
     String ceType =
         event.type() == PheromoneStateChangedEvent.Type.DEPOSITED
             ? CE_TYPE_DEPOSITED
@@ -70,6 +69,6 @@ public class PheromoneCloudEventBridge {
             .withExtension("signalname", event.signalName())
             .build();
 
-    cloudEventEmitter.fireAsync(ce);
+    cloudEventConsumer.accept(ce);
   }
 }
