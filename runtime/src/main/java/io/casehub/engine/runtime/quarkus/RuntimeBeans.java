@@ -467,11 +467,21 @@ public class RuntimeBeans {
         ruleRegistry,
         activityTracker,
         convergenceDetector,
-        stigmergyCoordinator,
-        roleTracker,
-        teamDetector,
-        swarmProgressTracker,
-        swarmProvisioner);
+        stigmergyCoordinator.isResolvable()
+            ? java.util.Optional.of(stigmergyCoordinator.get())
+            : java.util.Optional.empty(),
+        roleTracker.isResolvable()
+            ? java.util.Optional.of(roleTracker.get())
+            : java.util.Optional.empty(),
+        teamDetector.isResolvable()
+            ? java.util.Optional.of(teamDetector.get())
+            : java.util.Optional.empty(),
+        swarmProgressTracker.isResolvable()
+            ? java.util.Optional.of(swarmProgressTracker.get())
+            : java.util.Optional.empty(),
+        swarmProvisioner.isResolvable()
+            ? java.util.Optional.of(swarmProvisioner.get())
+            : java.util.Optional.empty());
   }
 
   @Produces
@@ -965,13 +975,27 @@ public class RuntimeBeans {
         activityTracker,
         convergenceDetector,
         budgetEnforcer,
-        stigmergyCoordinator,
-        roleTracker,
-        teamDetector,
-        swarmProgressTracker,
-        swarmProvisioner,
-        improvementStrategy,
-        goalFormationService);
+        stigmergyCoordinator.isResolvable()
+            ? java.util.Optional.of(stigmergyCoordinator.get())
+            : java.util.Optional.empty(),
+        roleTracker.isResolvable()
+            ? java.util.Optional.of(roleTracker.get())
+            : java.util.Optional.empty(),
+        teamDetector.isResolvable()
+            ? java.util.Optional.of(teamDetector.get())
+            : java.util.Optional.empty(),
+        swarmProgressTracker.isResolvable()
+            ? java.util.Optional.of(swarmProgressTracker.get())
+            : java.util.Optional.empty(),
+        swarmProvisioner.isResolvable()
+            ? java.util.Optional.of(swarmProvisioner.get())
+            : java.util.Optional.empty(),
+        improvementStrategy.isResolvable()
+            ? java.util.Optional.of(improvementStrategy.get())
+            : java.util.Optional.empty(),
+        goalFormationService.isResolvable()
+            ? java.util.Optional.of(goalFormationService.get())
+            : java.util.Optional.empty());
   }
 
   @Produces
@@ -1334,6 +1358,6 @@ public class RuntimeBeans {
         regressionDetector,
         goalFormationService,
         traceBuffer,
-        tickEvaluatedEvent);
+        tickEvaluatedEvent::fireAsync);
   }
 }

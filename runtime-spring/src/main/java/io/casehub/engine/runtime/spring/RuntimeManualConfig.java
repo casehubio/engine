@@ -382,11 +382,11 @@ public class RuntimeManualConfig {
         ruleRegistry,
         activityTracker,
         convergenceDetector,
-        notResolvable(),
-        notResolvable(),
-        notResolvable(),
-        notResolvable(),
-        notResolvable());
+        java.util.Optional.empty(),
+        java.util.Optional.empty(),
+        java.util.Optional.empty(),
+        java.util.Optional.empty(),
+        java.util.Optional.empty());
   }
 
   @Bean
@@ -548,13 +548,13 @@ public class RuntimeManualConfig {
         activityTracker,
         convergenceDetector,
         budgetEnforcer,
-        notResolvable(),
-        notResolvable(),
-        notResolvable(),
-        notResolvable(),
-        notResolvable(),
-        notResolvable(),
-        notResolvable());
+        java.util.Optional.empty(),
+        java.util.Optional.empty(),
+        java.util.Optional.empty(),
+        java.util.Optional.empty(),
+        java.util.Optional.empty(),
+        java.util.Optional.empty(),
+        java.util.Optional.empty());
   }
 
   @Bean
@@ -703,68 +703,5 @@ public class RuntimeManualConfig {
       crossTenantCaseInstanceRepository(
           io.casehub.engine.common.spi.CrossTenantCaseInstanceRepository repo) {
     return repo;
-  }
-
-  @SuppressWarnings("unchecked")
-  private static <T> jakarta.enterprise.inject.Instance<T> notResolvable() {
-    return (jakarta.enterprise.inject.Instance<T>)
-        new jakarta.enterprise.inject.Instance<Object>() {
-          @Override
-          public Object get() {
-            throw new IllegalStateException("Not resolvable in Spring context");
-          }
-
-          @Override
-          public boolean isResolvable() {
-            return false;
-          }
-
-          @Override
-          public boolean isAmbiguous() {
-            return false;
-          }
-
-          @Override
-          public boolean isUnsatisfied() {
-            return true;
-          }
-
-          @Override
-          public void destroy(Object instance) {}
-
-          @Override
-          public Handle<Object> getHandle() {
-            throw new UnsupportedOperationException();
-          }
-
-          @Override
-          public Iterable<? extends Handle<Object>> handles() {
-            return java.util.List.of();
-          }
-
-          @Override
-          public jakarta.enterprise.inject.Instance<Object> select(
-              java.lang.annotation.Annotation... qualifiers) {
-            return this;
-          }
-
-          @Override
-          public <U extends Object> jakarta.enterprise.inject.Instance<U> select(
-              Class<U> subtype, java.lang.annotation.Annotation... qualifiers) {
-            return notResolvable();
-          }
-
-          @Override
-          public <U extends Object> jakarta.enterprise.inject.Instance<U> select(
-              jakarta.enterprise.util.TypeLiteral<U> subtype,
-              java.lang.annotation.Annotation... qualifiers) {
-            return notResolvable();
-          }
-
-          @Override
-          public java.util.Iterator<Object> iterator() {
-            return java.util.Collections.emptyIterator();
-          }
-        };
   }
 }

@@ -79,18 +79,15 @@ public class CaseStatusChangedHandler {
   private final io.casehub.engine.common.internal.observation.RuleRegistry ruleRegistry;
   private final io.casehub.engine.common.internal.convergence.ActivityTracker activityTracker;
   private final io.casehub.engine.runtime.convergence.ConvergenceDetector convergenceDetector;
-  private final jakarta.enterprise.inject.Instance<
-          io.casehub.engine.runtime.stigmergy.StigmergyCoordinator>
+  private final java.util.Optional<io.casehub.engine.runtime.stigmergy.StigmergyCoordinator>
       stigmergyCoordinator;
-  private final jakarta.enterprise.inject.Instance<io.casehub.engine.runtime.stigmergy.RoleTracker>
+  private final java.util.Optional<io.casehub.engine.runtime.stigmergy.RoleTracker>
       roleTrackerInstance;
-  private final jakarta.enterprise.inject.Instance<io.casehub.engine.runtime.stigmergy.TeamDetector>
+  private final java.util.Optional<io.casehub.engine.runtime.stigmergy.TeamDetector>
       teamDetectorInstance;
-  private final jakarta.enterprise.inject.Instance<
-          io.casehub.engine.runtime.stigmergy.SwarmProgressTracker>
+  private final java.util.Optional<io.casehub.engine.runtime.stigmergy.SwarmProgressTracker>
       swarmProgressTrackerInstance;
-  private final jakarta.enterprise.inject.Instance<
-          io.casehub.engine.runtime.stigmergy.SwarmProvisioner>
+  private final java.util.Optional<io.casehub.engine.runtime.stigmergy.SwarmProvisioner>
       swarmProvisionerInstance;
 
   public CaseStatusChangedHandler(
@@ -114,15 +111,13 @@ public class CaseStatusChangedHandler {
       io.casehub.engine.common.internal.observation.RuleRegistry ruleRegistry,
       io.casehub.engine.common.internal.convergence.ActivityTracker activityTracker,
       io.casehub.engine.runtime.convergence.ConvergenceDetector convergenceDetector,
-      jakarta.enterprise.inject.Instance<io.casehub.engine.runtime.stigmergy.StigmergyCoordinator>
+      java.util.Optional<io.casehub.engine.runtime.stigmergy.StigmergyCoordinator>
           stigmergyCoordinator,
-      jakarta.enterprise.inject.Instance<io.casehub.engine.runtime.stigmergy.RoleTracker>
-          roleTrackerInstance,
-      jakarta.enterprise.inject.Instance<io.casehub.engine.runtime.stigmergy.TeamDetector>
-          teamDetectorInstance,
-      jakarta.enterprise.inject.Instance<io.casehub.engine.runtime.stigmergy.SwarmProgressTracker>
+      java.util.Optional<io.casehub.engine.runtime.stigmergy.RoleTracker> roleTrackerInstance,
+      java.util.Optional<io.casehub.engine.runtime.stigmergy.TeamDetector> teamDetectorInstance,
+      java.util.Optional<io.casehub.engine.runtime.stigmergy.SwarmProgressTracker>
           swarmProgressTrackerInstance,
-      jakarta.enterprise.inject.Instance<io.casehub.engine.runtime.stigmergy.SwarmProvisioner>
+      java.util.Optional<io.casehub.engine.runtime.stigmergy.SwarmProvisioner>
           swarmProvisionerInstance) {
     this.eventDispatcher = eventDispatcher;
     this.caseInstanceRepository = caseInstanceRepository;
@@ -222,19 +217,19 @@ public class CaseStatusChangedHandler {
       ruleRegistry.evictByCase(caseInstance.getUuid());
       activityTracker.evictByCase(caseInstance.getUuid());
       convergenceDetector.evictByCase(caseInstance.getUuid());
-      if (stigmergyCoordinator.isResolvable()) {
+      if (stigmergyCoordinator.isPresent()) {
         stigmergyCoordinator.get().evictByCase(caseInstance.getUuid());
       }
-      if (roleTrackerInstance.isResolvable()) {
+      if (roleTrackerInstance.isPresent()) {
         roleTrackerInstance.get().evictByCase(caseInstance.getUuid());
       }
-      if (teamDetectorInstance.isResolvable()) {
+      if (teamDetectorInstance.isPresent()) {
         teamDetectorInstance.get().evictByCase(caseInstance.getUuid());
       }
-      if (swarmProgressTrackerInstance.isResolvable()) {
+      if (swarmProgressTrackerInstance.isPresent()) {
         swarmProgressTrackerInstance.get().evictByCase(caseInstance.getUuid());
       }
-      if (swarmProvisionerInstance.isResolvable()) {
+      if (swarmProvisionerInstance.isPresent()) {
         swarmProvisionerInstance.get().evictByCase(caseInstance.getUuid());
       }
       if (caseInstance.getCaseContext() instanceof MutableCaseContext mctx) {
