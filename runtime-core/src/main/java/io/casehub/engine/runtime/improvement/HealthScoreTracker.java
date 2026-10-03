@@ -20,7 +20,6 @@ import io.casehub.api.model.stigmergy.CapabilityAreaAssessment;
 import io.casehub.api.model.stigmergy.HealthScoreSnapshot;
 import io.casehub.api.spi.improvement.CapabilityArea;
 import io.casehub.engine.common.spi.Resettable;
-import jakarta.enterprise.context.ApplicationScoped;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.ArrayDeque;
@@ -30,7 +29,6 @@ import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 
-@ApplicationScoped
 public class HealthScoreTracker implements Resettable {
 
   private static final int MAX_HISTORY_SIZE = 1000;

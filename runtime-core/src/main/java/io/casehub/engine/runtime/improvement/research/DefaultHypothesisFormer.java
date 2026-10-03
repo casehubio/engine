@@ -19,10 +19,8 @@ import io.casehub.api.model.improvement.ImprovementHypothesis;
 import io.casehub.api.model.stigmergy.CapabilityAreaAssessment;
 import io.casehub.api.model.stigmergy.ResearchAnalysis;
 import io.casehub.api.spi.improvement.HypothesisFormer;
-import jakarta.enterprise.context.ApplicationScoped;
 import java.util.List;
 
-@ApplicationScoped
 public class DefaultHypothesisFormer implements HypothesisFormer {
 
   @Override

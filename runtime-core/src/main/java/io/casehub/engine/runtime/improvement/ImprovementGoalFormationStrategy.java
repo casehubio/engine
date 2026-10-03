@@ -23,8 +23,6 @@ import io.casehub.api.spi.routing.GoalFormationContext;
 import io.casehub.api.spi.routing.GoalFormationProposal;
 import io.casehub.api.spi.routing.GoalFormationStrategy;
 import io.casehub.eidos.api.GoalPriority;
-import jakarta.enterprise.context.ApplicationScoped;
-import jakarta.inject.Inject;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -33,7 +31,6 @@ import java.util.Set;
 import java.util.UUID;
 import java.util.stream.Collectors;
 
-@ApplicationScoped
 public class ImprovementGoalFormationStrategy implements GoalFormationStrategy {
 
   private final ImprovementBudgetEnforcer budgetEnforcer;
@@ -44,7 +41,6 @@ public class ImprovementGoalFormationStrategy implements GoalFormationStrategy {
   private final ConflictStrategyRegistry conflictStrategyRegistry;
   private final DenyPatternProviderRegistry denyPatternProviderRegistry;
 
-  @Inject
   public ImprovementGoalFormationStrategy(
       ImprovementBudgetEnforcer budgetEnforcer,
       ImprovementProposalSourceRegistry proposalSourceRegistry,

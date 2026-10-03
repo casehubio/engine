@@ -17,14 +17,12 @@ package io.casehub.engine.runtime.improvement;
 
 import io.casehub.api.model.stigmergy.TickTrace;
 import io.casehub.engine.common.spi.Resettable;
-import jakarta.enterprise.context.ApplicationScoped;
 import java.util.ArrayDeque;
 import java.util.Comparator;
 import java.util.List;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 
-@ApplicationScoped
 public class TickTraceBuffer implements Resettable {
 
   private static final int DEFAULT_CAPACITY = 100;

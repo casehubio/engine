@@ -17,12 +17,10 @@ package io.casehub.engine.runtime.improvement;
 
 import io.casehub.api.model.improvement.ImprovementRequest;
 import io.casehub.engine.common.spi.Resettable;
-import jakarta.enterprise.context.ApplicationScoped;
 import java.util.Optional;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 
-@ApplicationScoped
 public class ImprovementSignalContext implements Resettable {
 
   private final ConcurrentHashMap<UUID, ConcurrentHashMap<String, ImprovementRequest>> contexts =

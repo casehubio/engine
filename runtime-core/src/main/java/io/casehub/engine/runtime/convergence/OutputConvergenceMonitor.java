@@ -19,7 +19,6 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import io.casehub.api.model.convergence.OutputConvergenceConfig;
 import io.casehub.engine.common.spi.Resettable;
 import jakarta.annotation.Nullable;
-import jakarta.enterprise.context.ApplicationScoped;
 import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
 import java.util.ArrayList;
@@ -34,7 +33,6 @@ import java.util.TreeMap;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 
-@ApplicationScoped
 public class OutputConvergenceMonitor implements Resettable {
 
   private static final ObjectMapper MAPPER = new ObjectMapper();

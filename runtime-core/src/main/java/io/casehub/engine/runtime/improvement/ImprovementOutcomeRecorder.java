@@ -21,19 +21,15 @@ import io.casehub.api.model.event.CaseHubEventType;
 import io.casehub.api.model.improvement.ImprovementOutcome;
 import io.casehub.engine.common.internal.history.EventLog;
 import io.casehub.engine.common.spi.EventLogRepository;
-import jakarta.enterprise.context.ApplicationScoped;
-import jakarta.inject.Inject;
 import java.util.Objects;
 import java.util.UUID;
 
-@ApplicationScoped
 public class ImprovementOutcomeRecorder {
 
   private static final ObjectMapper MAPPER = new ObjectMapper();
 
   private final EventLogRepository eventLogRepository;
 
-  @Inject
   public ImprovementOutcomeRecorder(EventLogRepository eventLogRepository) {
     this.eventLogRepository = eventLogRepository;
   }

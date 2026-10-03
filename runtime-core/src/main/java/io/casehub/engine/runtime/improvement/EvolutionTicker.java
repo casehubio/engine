@@ -24,12 +24,11 @@ import io.casehub.api.model.stigmergy.TickTrace.TickTrigger;
 import io.casehub.api.spi.routing.GoalFormationService;
 import io.casehub.engine.common.spi.Resettable;
 import io.casehub.engine.common.spi.event.TickEvaluatedEvent;
-import jakarta.enterprise.event.Event;
-import jakarta.inject.Inject;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
+import java.util.function.Consumer;
 
 public class EvolutionTicker implements Resettable {
 
@@ -39,9 +38,8 @@ public class EvolutionTicker implements Resettable {
   private final RegressionDetector regressionDetector;
   private final GoalFormationService goalFormationService;
   private final TickTraceBuffer traceBuffer;
-  private final Event<TickEvaluatedEvent> tickEvaluatedEvent;
+  private final Consumer<TickEvaluatedEvent> tickEvaluatedEvent;
 
-  @Inject
   public EvolutionTicker(
       ImprovementGoalFormationStrategy goalFormation,
       ImprovementCircuitBreaker circuitBreaker,
@@ -49,7 +47,7 @@ public class EvolutionTicker implements Resettable {
       RegressionDetector regressionDetector,
       GoalFormationService goalFormationService,
       TickTraceBuffer traceBuffer,
-      Event<TickEvaluatedEvent> tickEvaluatedEvent) {
+      Consumer<TickEvaluatedEvent> tickEvaluatedEvent) {
     this.goalFormation = goalFormation;
     this.circuitBreaker = circuitBreaker;
     this.healthTracker = healthTracker;
@@ -118,7 +116,7 @@ public class EvolutionTicker implements Resettable {
         outcome instanceof TickTrace.TickOutcome.ProposalGenerated
             || gates.stream().anyMatch(g -> g.verdict() == GateVerdict.BLOCKED);
     if (notable) {
-      tickEvaluatedEvent.fireAsync(new TickEvaluatedEvent(caseId, trace));
+      tickEvaluatedEvent.accept(new TickEvaluatedEvent(caseId, trace));
     }
 
     return trace;

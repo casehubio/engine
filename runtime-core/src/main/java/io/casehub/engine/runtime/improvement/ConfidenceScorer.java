@@ -16,10 +16,8 @@
 package io.casehub.engine.runtime.improvement;
 
 import io.casehub.api.model.stigmergy.HealthScoreSnapshot;
-import jakarta.enterprise.context.ApplicationScoped;
 import java.util.UUID;
 
-@ApplicationScoped
 public class ConfidenceScorer {
 
   public double score(

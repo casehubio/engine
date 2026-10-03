@@ -19,13 +19,11 @@ import io.casehub.api.model.stigmergy.CategoryDescriptor;
 import io.casehub.api.model.stigmergy.StageDescriptor;
 import io.casehub.api.spi.improvement.ImprovementCategoryProvider;
 import io.casehub.engine.common.spi.Resettable;
-import jakarta.enterprise.context.ApplicationScoped;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Optional;
 import java.util.concurrent.ConcurrentHashMap;
 
-@ApplicationScoped
 public class ImprovementCategoryRegistry implements Resettable {
 
   private final ConcurrentHashMap<String, CategoryDescriptor> categories =

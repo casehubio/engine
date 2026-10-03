@@ -20,19 +20,15 @@ import io.casehub.api.model.stigmergy.ConductorInboxEntry;
 import io.casehub.api.model.stigmergy.WatchPattern;
 import io.casehub.engine.common.spi.ConductorInboxRepository;
 import io.casehub.engine.common.spi.WatchPatternStore;
-import jakarta.enterprise.context.ApplicationScoped;
-import jakarta.inject.Inject;
 import java.time.Instant;
 import java.util.List;
 import java.util.UUID;
 
-@ApplicationScoped
 public class ConductorInboxManager {
 
   private final ConductorInboxRepository inboxRepository;
   private final WatchPatternStore watchPatternStore;
 
-  @Inject
   ConductorInboxManager(
       ConductorInboxRepository inboxRepository, WatchPatternStore watchPatternStore) {
     this.inboxRepository = inboxRepository;

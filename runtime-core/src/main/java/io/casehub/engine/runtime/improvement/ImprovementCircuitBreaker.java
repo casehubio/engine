@@ -19,13 +19,11 @@ import io.casehub.api.model.improvement.HealthPolicy;
 import io.casehub.api.model.stigmergy.CircuitBreakerState;
 import io.casehub.engine.common.spi.Resettable;
 import io.casehub.engine.common.spi.event.CircuitBreakerStateChangedEvent;
-import jakarta.enterprise.context.ApplicationScoped;
-import jakarta.enterprise.event.Event;
-import jakarta.inject.Inject;
+import java.util.Optional;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.function.Consumer;
 
-@ApplicationScoped
 public class ImprovementCircuitBreaker implements Resettable {
 
   private static final com.fasterxml.jackson.databind.ObjectMapper MAPPER =
@@ -33,19 +31,17 @@ public class ImprovementCircuitBreaker implements Resettable {
 
   private final ConcurrentHashMap<UUID, CircuitBreakerState> states = new ConcurrentHashMap<>();
   private final ConcurrentHashMap<UUID, Integer> halfOpenCount = new ConcurrentHashMap<>();
-  private final Event<CircuitBreakerStateChangedEvent> stateChangedEvent;
+  private final Consumer<CircuitBreakerStateChangedEvent> stateChangedEvent;
   private final io.casehub.engine.common.spi.EventLogRepository eventLogRepository;
 
-  @Inject
   public ImprovementCircuitBreaker(
-      Event<CircuitBreakerStateChangedEvent> stateChangedEvent,
-      jakarta.enterprise.inject.Instance<io.casehub.engine.common.spi.EventLogRepository>
-          eventLogRepo) {
+      Consumer<CircuitBreakerStateChangedEvent> stateChangedEvent,
+      Optional<io.casehub.engine.common.spi.EventLogRepository> eventLogRepo) {
     this.stateChangedEvent = stateChangedEvent;
-    this.eventLogRepository = eventLogRepo.isResolvable() ? eventLogRepo.get() : null;
+    this.eventLogRepository = eventLogRepo.orElse(null);
   }
 
-  ImprovementCircuitBreaker(Event<CircuitBreakerStateChangedEvent> stateChangedEvent) {
+  ImprovementCircuitBreaker(Consumer<CircuitBreakerStateChangedEvent> stateChangedEvent) {
     this.stateChangedEvent = stateChangedEvent;
     this.eventLogRepository = null;
   }
@@ -90,7 +86,7 @@ public class ImprovementCircuitBreaker implements Resettable {
     }
 
     if (newState != current) {
-      stateChangedEvent.fireAsync(new CircuitBreakerStateChangedEvent(caseId, current, newState));
+      stateChangedEvent.accept(new CircuitBreakerStateChangedEvent(caseId, current, newState));
       emitEventLog(caseId, tenancyId, current, newState);
     }
   }
@@ -103,7 +99,7 @@ public class ImprovementCircuitBreaker implements Resettable {
     var previous = states.put(caseId, CircuitBreakerState.CLOSED);
     halfOpenCount.remove(caseId);
     if (previous != null && previous != CircuitBreakerState.CLOSED) {
-      stateChangedEvent.fireAsync(
+      stateChangedEvent.accept(
           new CircuitBreakerStateChangedEvent(caseId, previous, CircuitBreakerState.CLOSED));
       emitEventLog(caseId, tenancyId, previous, CircuitBreakerState.CLOSED);
     }

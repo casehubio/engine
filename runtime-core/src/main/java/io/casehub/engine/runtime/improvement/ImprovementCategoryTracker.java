@@ -18,13 +18,11 @@ package io.casehub.engine.runtime.improvement;
 import io.casehub.api.model.improvement.ImprovementOutcome;
 import io.casehub.engine.common.spi.Resettable;
 import jakarta.annotation.Nullable;
-import jakarta.enterprise.context.ApplicationScoped;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 
-@ApplicationScoped
 public class ImprovementCategoryTracker implements Resettable {
 
   private static final int SUPPRESSION_THRESHOLD = 3;

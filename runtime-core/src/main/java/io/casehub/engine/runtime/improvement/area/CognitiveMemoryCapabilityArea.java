@@ -16,10 +16,8 @@
 package io.casehub.engine.runtime.improvement.area;
 
 import io.casehub.api.model.stigmergy.CapabilityAreaAssessment;
-import jakarta.enterprise.context.ApplicationScoped;
 import java.util.UUID;
 
-@ApplicationScoped
 public class CognitiveMemoryCapabilityArea extends AbstractCapabilityArea {
 
   @Override

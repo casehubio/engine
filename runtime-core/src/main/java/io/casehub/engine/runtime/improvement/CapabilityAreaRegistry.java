@@ -17,12 +17,10 @@ package io.casehub.engine.runtime.improvement;
 
 import io.casehub.api.spi.improvement.CapabilityArea;
 import io.casehub.engine.common.spi.Resettable;
-import jakarta.enterprise.context.ApplicationScoped;
 import java.util.List;
 import java.util.Optional;
 import java.util.concurrent.ConcurrentHashMap;
 
-@ApplicationScoped
 public class CapabilityAreaRegistry implements Resettable {
 
   private final ConcurrentHashMap<String, CapabilityArea> areas = new ConcurrentHashMap<>();

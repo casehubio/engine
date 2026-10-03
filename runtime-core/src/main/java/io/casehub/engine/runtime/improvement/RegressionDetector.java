@@ -21,17 +21,14 @@ import io.casehub.api.model.stigmergy.HealthScoreSnapshot;
 import io.casehub.api.model.stigmergy.RegressionVerdict;
 import io.casehub.engine.common.spi.Resettable;
 import io.casehub.engine.common.spi.event.RegressionDetectedEvent;
-import jakarta.enterprise.context.ApplicationScoped;
-import jakarta.enterprise.event.Event;
-import jakarta.inject.Inject;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.List;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CopyOnWriteArrayList;
+import java.util.function.Consumer;
 
-@ApplicationScoped
 public class RegressionDetector implements Resettable {
 
   public record MonitoredImprovement(
@@ -51,16 +48,15 @@ public class RegressionDetector implements Resettable {
   private final ImprovementCategoryTracker categoryTracker;
   private final RollbackHistory rollbackHistory;
   private final HealthScoreTracker healthTracker;
-  private final Event<RegressionDetectedEvent> regressionDetectedEvent;
+  private final Consumer<RegressionDetectedEvent> regressionDetectedEvent;
 
-  @Inject
   public RegressionDetector(
       RegressionEvaluatorRegistry evaluatorRegistry,
       ImprovementCategoryRegistry categoryRegistry,
       ImprovementCategoryTracker categoryTracker,
       RollbackHistory rollbackHistory,
       HealthScoreTracker healthTracker,
-      Event<RegressionDetectedEvent> regressionDetectedEvent) {
+      Consumer<RegressionDetectedEvent> regressionDetectedEvent) {
     this.evaluatorRegistry = evaluatorRegistry;
     this.categoryRegistry = categoryRegistry;
     this.categoryTracker = categoryTracker;
@@ -136,7 +132,7 @@ public class RegressionDetector implements Resettable {
       }
     }
 
-    regressionDetectedEvent.fireAsync(
+    regressionDetectedEvent.accept(
         new RegressionDetectedEvent(
             caseId, monitor.improvementCaseId(), maxConfidence, monitor.category()));
 

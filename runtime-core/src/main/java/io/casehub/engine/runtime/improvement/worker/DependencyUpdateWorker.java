@@ -18,11 +18,9 @@ package io.casehub.engine.runtime.improvement.worker;
 import io.casehub.api.model.improvement.ImprovementRequest;
 import io.casehub.api.model.stigmergy.IntrospectionResult;
 import io.casehub.engine.runtime.improvement.CodeEvolutionMetadata;
-import jakarta.enterprise.context.ApplicationScoped;
 import java.util.List;
 import java.util.Map;
 
-@ApplicationScoped
 public class DependencyUpdateWorker {
 
   public String category() {

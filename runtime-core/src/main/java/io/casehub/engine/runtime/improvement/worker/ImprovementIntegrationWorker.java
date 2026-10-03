@@ -17,17 +17,13 @@ package io.casehub.engine.runtime.improvement.worker;
 
 import io.casehub.api.model.event.CaseHubEventType;
 import io.casehub.engine.common.spi.EventLogRepository;
-import jakarta.enterprise.context.ApplicationScoped;
-import jakarta.inject.Inject;
 import java.util.List;
 import java.util.UUID;
 
-@ApplicationScoped
 public class ImprovementIntegrationWorker {
 
   private final EventLogRepository eventLogRepository;
 
-  @Inject
   public ImprovementIntegrationWorker(EventLogRepository eventLogRepository) {
     this.eventLogRepository = eventLogRepository;
   }

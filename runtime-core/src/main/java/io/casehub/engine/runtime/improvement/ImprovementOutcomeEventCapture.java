@@ -15,11 +15,6 @@
  */
 package io.casehub.engine.runtime.improvement;
 
-import jakarta.enterprise.context.ApplicationScoped;
-import jakarta.enterprise.event.ObservesAsync;
-import jakarta.inject.Inject;
-
-@ApplicationScoped
 public class ImprovementOutcomeEventCapture {
 
   private final ImprovementOutcomeRecorder outcomeRecorder;
@@ -29,7 +24,6 @@ public class ImprovementOutcomeEventCapture {
   private final ImprovementCategoryTracker categoryTracker;
   private final RegressionDetector regressionDetector;
 
-  @Inject
   public ImprovementOutcomeEventCapture(
       ImprovementOutcomeRecorder outcomeRecorder,
       ImprovementSignalProjector signalProjector,
@@ -62,10 +56,10 @@ public class ImprovementOutcomeEventCapture {
             new ImprovementCategoryTracker(),
             new RollbackHistory(),
             new HealthScoreTracker(new CapabilityAreaRegistry()),
-            new NoOpEvent<>()));
+            e -> {}));
   }
 
-  public void onImprovementComplete(@ObservesAsync ImprovementCaseCompleted event) {
+  public void onImprovementComplete(ImprovementCaseCompleted event) {
     var outcome = event.outcome();
     outcomeRecorder.record(event.caseId(), event.tenancyId(), outcome);
     signalProjector.project(event.caseId(), outcome);

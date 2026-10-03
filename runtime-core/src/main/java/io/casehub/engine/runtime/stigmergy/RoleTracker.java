@@ -25,8 +25,6 @@ import io.casehub.engine.common.internal.observation.ObservationRegistry;
 import io.casehub.engine.common.internal.observation.RuleRegistry;
 import io.casehub.engine.common.internal.signal.SignalRegistry;
 import io.casehub.engine.common.spi.Resettable;
-import jakarta.enterprise.context.ApplicationScoped;
-import jakarta.inject.Inject;
 import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.Deque;
@@ -41,7 +39,6 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
 
-@ApplicationScoped
 public class RoleTracker implements Resettable {
 
   private final ObservationRegistry observationRegistry;
@@ -52,7 +49,6 @@ public class RoleTracker implements Resettable {
 
   private final ConcurrentHashMap<UUID, CaseRoleState> cases = new ConcurrentHashMap<>();
 
-  @Inject
   public RoleTracker(
       ObservationRegistry observationRegistry,
       SignalRegistry signalRegistry,

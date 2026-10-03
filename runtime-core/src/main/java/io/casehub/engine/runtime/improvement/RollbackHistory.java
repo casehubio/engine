@@ -16,7 +16,6 @@
 package io.casehub.engine.runtime.improvement;
 
 import io.casehub.engine.common.spi.Resettable;
-import jakarta.enterprise.context.ApplicationScoped;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.List;
@@ -24,7 +23,6 @@ import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CopyOnWriteArrayList;
 
-@ApplicationScoped
 public class RollbackHistory implements Resettable {
 
   public record RollbackRecord(

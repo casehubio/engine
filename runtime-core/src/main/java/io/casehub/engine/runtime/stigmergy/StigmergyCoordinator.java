@@ -24,8 +24,6 @@ import io.casehub.engine.common.internal.convergence.ActivityTracker;
 import io.casehub.engine.common.internal.observation.ObservationRegistry;
 import io.casehub.engine.common.internal.signal.SignalRegistry;
 import io.casehub.engine.common.spi.Resettable;
-import jakarta.enterprise.context.ApplicationScoped;
-import jakarta.inject.Inject;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.ArrayList;
@@ -37,7 +35,6 @@ import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 
-@ApplicationScoped
 public class StigmergyCoordinator implements Resettable {
 
   private static final Duration DEFAULT_RATE_WINDOW = Duration.ofSeconds(60);
@@ -48,7 +45,6 @@ public class StigmergyCoordinator implements Resettable {
 
   private final ConcurrentHashMap<UUID, CaseCoordinationState> cases = new ConcurrentHashMap<>();
 
-  @Inject
   public StigmergyCoordinator(
       SignalRegistry signalRegistry,
       ObservationRegistry observationRegistry,

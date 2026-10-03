@@ -19,12 +19,10 @@ import io.casehub.api.model.improvement.ImprovementConfig;
 import io.casehub.api.model.improvement.ImprovementRequest;
 import io.casehub.api.spi.improvement.DenyPatternProvider;
 import io.casehub.engine.common.spi.DenyPatternStore;
-import jakarta.enterprise.context.ApplicationScoped;
 import java.util.List;
 import java.util.Set;
 import java.util.UUID;
 
-@ApplicationScoped
 public class CodeEvolutionDenyPatternProvider implements DenyPatternProvider {
 
   private static final Set<String> STRUCTURAL_DENIED_PATTERNS =

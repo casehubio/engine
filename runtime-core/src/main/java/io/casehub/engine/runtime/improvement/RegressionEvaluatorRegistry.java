@@ -17,11 +17,9 @@ package io.casehub.engine.runtime.improvement;
 
 import io.casehub.api.spi.improvement.RegressionEvaluator;
 import io.casehub.engine.common.spi.Resettable;
-import jakarta.enterprise.context.ApplicationScoped;
 import java.util.List;
 import java.util.concurrent.CopyOnWriteArrayList;
 
-@ApplicationScoped
 public class RegressionEvaluatorRegistry implements Resettable {
 
   private final List<RegressionEvaluator> evaluators = new CopyOnWriteArrayList<>();

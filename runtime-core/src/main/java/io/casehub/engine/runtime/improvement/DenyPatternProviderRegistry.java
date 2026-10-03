@@ -17,11 +17,9 @@ package io.casehub.engine.runtime.improvement;
 
 import io.casehub.api.spi.improvement.DenyPatternProvider;
 import io.casehub.engine.common.spi.Resettable;
-import jakarta.enterprise.context.ApplicationScoped;
 import java.util.Optional;
 import java.util.concurrent.ConcurrentHashMap;
 
-@ApplicationScoped
 public class DenyPatternProviderRegistry implements Resettable {
 
   private final ConcurrentHashMap<String, DenyPatternProvider> providers =

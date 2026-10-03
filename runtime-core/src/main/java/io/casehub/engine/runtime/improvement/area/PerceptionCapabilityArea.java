@@ -18,13 +18,10 @@ package io.casehub.engine.runtime.improvement.area;
 import io.casehub.api.model.event.CaseHubEventType;
 import io.casehub.api.model.stigmergy.CapabilityAreaAssessment;
 import io.casehub.engine.common.spi.EventLogRepository;
-import jakarta.enterprise.context.ApplicationScoped;
-import jakarta.inject.Inject;
 import java.util.Collection;
 import java.util.List;
 import java.util.UUID;
 
-@ApplicationScoped
 public class PerceptionCapabilityArea extends AbstractCapabilityArea {
 
   private static final Collection<CaseHubEventType> PERCEPTION_TYPES =
@@ -37,7 +34,6 @@ public class PerceptionCapabilityArea extends AbstractCapabilityArea {
 
   private final EventLogRepository eventLog;
 
-  @Inject
   public PerceptionCapabilityArea(EventLogRepository eventLog) {
     this.eventLog = eventLog;
   }
