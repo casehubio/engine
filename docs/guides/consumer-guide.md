@@ -662,4 +662,4 @@ casehub.rls.enabled=false
 - Provide a terminal/session UI (that is claudony)
 - Implement worker provisioner SPIs — only defines the contracts
 - Agent identity/discovery/vocabulary (that is casehub-eidos)
-- Case queue management — see casehub-engine-queue (in development, not yet in reactor build)
+- Case queue management beyond label/view primitives — casehub-engine-queue provides the operational layer (included in reactor build)
