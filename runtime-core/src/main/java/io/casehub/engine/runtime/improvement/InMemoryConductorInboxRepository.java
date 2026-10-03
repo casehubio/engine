@@ -18,15 +18,11 @@ package io.casehub.engine.runtime.improvement;
 import io.casehub.api.model.stigmergy.ConductorInboxEntry;
 import io.casehub.engine.common.spi.ConductorInboxRepository;
 import io.casehub.engine.common.spi.Resettable;
-import io.quarkus.arc.DefaultBean;
 import jakarta.annotation.Nullable;
-import jakarta.enterprise.context.ApplicationScoped;
 import java.util.List;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 
-@DefaultBean
-@ApplicationScoped
 public class InMemoryConductorInboxRepository implements ConductorInboxRepository, Resettable {
 
   private final ConcurrentHashMap<UUID, ConcurrentHashMap<String, ConductorInboxEntry>> entries =

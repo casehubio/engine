@@ -17,14 +17,10 @@ package io.casehub.engine.runtime.improvement;
 
 import io.casehub.engine.common.spi.ImprovementBlockStore;
 import io.casehub.engine.common.spi.Resettable;
-import io.quarkus.arc.DefaultBean;
 import jakarta.annotation.Nullable;
-import jakarta.enterprise.context.ApplicationScoped;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 
-@DefaultBean
-@ApplicationScoped
 public class InMemoryImprovementBlockStore implements ImprovementBlockStore, Resettable {
 
   private final ConcurrentHashMap<UUID, ConcurrentHashMap<UUID, UUID>> blocks =

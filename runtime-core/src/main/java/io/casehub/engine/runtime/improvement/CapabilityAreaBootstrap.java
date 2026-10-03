@@ -16,22 +16,12 @@
 package io.casehub.engine.runtime.improvement;
 
 import io.casehub.api.spi.improvement.CapabilityArea;
-import io.quarkus.runtime.StartupEvent;
-import jakarta.enterprise.context.ApplicationScoped;
-import jakarta.enterprise.event.Observes;
-import jakarta.enterprise.inject.Any;
-import jakarta.enterprise.inject.Instance;
-import jakarta.inject.Inject;
 
-@ApplicationScoped
 public class CapabilityAreaBootstrap {
 
-  @Inject CapabilityAreaRegistry registry;
-
-  @Inject @Any Instance<CapabilityArea> areaInstances;
-
-  void onStartup(@Observes StartupEvent event) {
-    for (CapabilityArea area : areaInstances) {
+  public CapabilityAreaBootstrap(
+      CapabilityAreaRegistry registry, java.util.List<CapabilityArea> areas) {
+    for (CapabilityArea area : areas) {
       registry.register(area);
     }
   }

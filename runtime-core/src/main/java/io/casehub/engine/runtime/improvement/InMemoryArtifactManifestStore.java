@@ -19,15 +19,11 @@ import io.casehub.api.model.stigmergy.ArtifactEntry;
 import io.casehub.api.model.stigmergy.ArtifactManifest;
 import io.casehub.engine.common.spi.ArtifactManifestStore;
 import io.casehub.engine.common.spi.Resettable;
-import io.quarkus.arc.DefaultBean;
-import jakarta.enterprise.context.ApplicationScoped;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 
-@DefaultBean
-@ApplicationScoped
 public class InMemoryArtifactManifestStore implements ArtifactManifestStore, Resettable {
 
   private final ConcurrentHashMap<String, List<ArtifactEntry>> entries = new ConcurrentHashMap<>();

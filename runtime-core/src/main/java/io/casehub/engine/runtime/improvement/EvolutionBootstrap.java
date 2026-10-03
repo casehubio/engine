@@ -20,37 +20,20 @@ import io.casehub.api.spi.improvement.DenyPatternProvider;
 import io.casehub.api.spi.improvement.ImprovementCategoryProvider;
 import io.casehub.api.spi.improvement.ImprovementProposalSource;
 import io.casehub.api.spi.improvement.RegressionEvaluator;
-import io.quarkus.runtime.StartupEvent;
-import jakarta.enterprise.context.ApplicationScoped;
-import jakarta.enterprise.event.Observes;
-import jakarta.enterprise.inject.Any;
-import jakarta.enterprise.inject.Instance;
-import jakarta.inject.Inject;
 
-@ApplicationScoped
 public class EvolutionBootstrap {
 
-  @Inject ImprovementCategoryRegistry categoryRegistry;
-
-  @Inject ImprovementProposalSourceRegistry proposalSourceRegistry;
-
-  @Inject RegressionEvaluatorRegistry regressionEvaluatorRegistry;
-
-  @Inject ConflictStrategyRegistry conflictStrategyRegistry;
-
-  @Inject DenyPatternProviderRegistry denyPatternProviderRegistry;
-
-  @Inject @Any Instance<ImprovementCategoryProvider> categoryProviders;
-
-  @Inject @Any Instance<ImprovementProposalSource> proposalSources;
-
-  @Inject @Any Instance<RegressionEvaluator> regressionEvaluators;
-
-  @Inject @Any Instance<ConflictStrategy> conflictStrategies;
-
-  @Inject @Any Instance<DenyPatternProvider> denyPatternProviders;
-
-  void onStartup(@Observes StartupEvent event) {
+  public EvolutionBootstrap(
+      ImprovementCategoryRegistry categoryRegistry,
+      ImprovementProposalSourceRegistry proposalSourceRegistry,
+      RegressionEvaluatorRegistry regressionEvaluatorRegistry,
+      ConflictStrategyRegistry conflictStrategyRegistry,
+      DenyPatternProviderRegistry denyPatternProviderRegistry,
+      java.util.List<ImprovementCategoryProvider> categoryProviders,
+      java.util.List<ImprovementProposalSource> proposalSources,
+      java.util.List<RegressionEvaluator> regressionEvaluators,
+      java.util.List<ConflictStrategy> conflictStrategies,
+      java.util.List<DenyPatternProvider> denyPatternProviders) {
     for (var provider : categoryProviders) {
       categoryRegistry.registerProvider(provider);
     }

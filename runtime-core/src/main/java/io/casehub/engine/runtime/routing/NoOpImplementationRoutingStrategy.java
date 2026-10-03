@@ -19,7 +19,6 @@ import io.casehub.api.spi.routing.ImplementationCandidate;
 import io.casehub.api.spi.routing.ImplementationRoutingContext;
 import io.casehub.api.spi.routing.ImplementationRoutingStrategy;
 import io.casehub.api.spi.routing.ImplementationSelection;
-import io.quarkus.arc.Unremovable;
 import java.util.List;
 
 /**
@@ -27,7 +26,6 @@ import java.util.List;
  * without a consumer strategy on the classpath. Protocol PP-20260514-engine-spi-noops-defaultbean.
  * Refs casehubio/engine#476.
  */
-@Unremovable
 public class NoOpImplementationRoutingStrategy implements ImplementationRoutingStrategy {
 
   @Override
