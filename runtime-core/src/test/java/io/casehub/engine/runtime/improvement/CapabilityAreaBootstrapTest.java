@@ -33,12 +33,7 @@ class CapabilityAreaBootstrapTest {
     var area2 = testArea("area-2");
     var area3 = testArea("area-3");
 
-    var bootstrap = new CapabilityAreaBootstrap();
-    bootstrap.registry = registry;
-
-    for (CapabilityArea area : List.of(area1, area2, area3)) {
-      registry.register(area);
-    }
+    new CapabilityAreaBootstrap(registry, List.of(area1, area2, area3));
 
     assertThat(registry.active()).hasSize(3);
     assertThat(registry.get("area-1")).isPresent();

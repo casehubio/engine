@@ -340,6 +340,25 @@ public class RuntimeManualConfig {
   }
 
   @Bean
+  public io.casehub.engine.runtime.improvement.EvolutionTicker evolutionTicker(
+      io.casehub.engine.runtime.improvement.ImprovementGoalFormationStrategy goalFormation,
+      io.casehub.engine.runtime.improvement.ImprovementCircuitBreaker circuitBreaker,
+      io.casehub.engine.runtime.improvement.HealthScoreTracker healthTracker,
+      io.casehub.engine.runtime.improvement.RegressionDetector regressionDetector,
+      io.casehub.api.spi.routing.GoalFormationService goalFormationService,
+      io.casehub.engine.runtime.improvement.TickTraceBuffer traceBuffer,
+      ApplicationEventPublisher publisher) {
+    return new io.casehub.engine.runtime.improvement.EvolutionTicker(
+        goalFormation,
+        circuitBreaker,
+        healthTracker,
+        regressionDetector,
+        goalFormationService,
+        traceBuffer,
+        event -> publisher.publishEvent(event));
+  }
+
+  @Bean
   public CaseStatusChangedHandler caseStatusChangedHandler(
       EventDispatcher eventDispatcher,
       CaseInstanceRepository caseInstanceRepository,
