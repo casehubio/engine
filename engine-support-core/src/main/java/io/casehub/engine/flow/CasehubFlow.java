@@ -15,7 +15,6 @@
  */
 package io.casehub.engine.flow;
 
-import io.quarkus.arc.Arc;
 import io.serverlessworkflow.impl.WorkflowContextData;
 import java.util.Map;
 
@@ -45,10 +44,6 @@ public final class CasehubFlow {
    */
   public static Map<String, Object> dispatch(
       final WorkflowContextData ctx, final String capability) {
-    return Arc.container()
-        .instance(CasehubDispatch.class)
-        .get()
-        .dispatch(ctx.instanceData().id(), capability)
-        .join();
+    return CasehubFlowContext.dispatch().dispatch(ctx.instanceData().id(), capability).join();
   }
 }

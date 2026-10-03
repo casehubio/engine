@@ -21,6 +21,7 @@ import io.casehub.engine.common.spi.WorkOrchestrator;
 import io.casehub.engine.common.spi.cache.CaseInstanceCache;
 import io.casehub.engine.flow.CallableDispatchRegistry;
 import io.casehub.engine.flow.CasehubDispatch;
+import io.casehub.engine.flow.CasehubFlowContext;
 import io.casehub.engine.flow.CasehubJudgment;
 import io.casehub.engine.flow.FlowExecutionRegistry;
 import io.casehub.engine.flow.FlowWorkerFunctionHandler;
@@ -73,6 +74,7 @@ public class FlowBeans {
         new CasehubDispatch(
             registry, orchestrator, eventLogRepository, caseInstanceCache, dispatchRegistry);
     dispatch.register();
+    CasehubFlowContext.init(dispatch, dispatchRegistry);
     return dispatch;
   }
 
