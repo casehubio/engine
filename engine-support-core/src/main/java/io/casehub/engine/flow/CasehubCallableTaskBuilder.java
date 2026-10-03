@@ -15,7 +15,6 @@
  */
 package io.casehub.engine.flow;
 
-import io.quarkus.arc.Arc;
 import io.serverlessworkflow.api.types.CallFunction;
 import io.serverlessworkflow.api.types.TaskBase;
 import io.serverlessworkflow.impl.WorkflowDefinition;
@@ -51,9 +50,7 @@ public class CasehubCallableTaskBuilder implements CallableTaskBuilder<CallFunct
     return () ->
         (workflowContext, taskContext, input) -> {
           final String instanceId = workflowContext.instanceData().id();
-          return Arc.container()
-              .instance(CallableDispatchRegistry.class)
-              .get()
+          return CasehubFlowContext.callableRegistry()
               .get(callName)
               .dispatch(instanceId, args)
               .thenApply(
