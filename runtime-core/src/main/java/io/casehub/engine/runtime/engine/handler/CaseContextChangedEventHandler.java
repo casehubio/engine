@@ -137,23 +137,18 @@ public class CaseContextChangedEventHandler {
   private final io.casehub.engine.common.internal.convergence.ActivityTracker activityTracker;
   private final io.casehub.engine.runtime.convergence.ConvergenceDetector convergenceDetector;
   private final io.casehub.engine.runtime.convergence.BudgetEnforcer budgetEnforcer;
-  private final jakarta.enterprise.inject.Instance<
-          io.casehub.engine.runtime.stigmergy.StigmergyCoordinator>
+  private final java.util.Optional<io.casehub.engine.runtime.stigmergy.StigmergyCoordinator>
       stigmergyCoordinator;
-  private final jakarta.enterprise.inject.Instance<io.casehub.engine.runtime.stigmergy.RoleTracker>
+  private final java.util.Optional<io.casehub.engine.runtime.stigmergy.RoleTracker>
       roleTrackerInstance;
-  private final jakarta.enterprise.inject.Instance<io.casehub.engine.runtime.stigmergy.TeamDetector>
+  private final java.util.Optional<io.casehub.engine.runtime.stigmergy.TeamDetector>
       teamDetectorInstance;
-  private final jakarta.enterprise.inject.Instance<
-          io.casehub.engine.runtime.stigmergy.SwarmProgressTracker>
+  private final java.util.Optional<io.casehub.engine.runtime.stigmergy.SwarmProgressTracker>
       swarmProgressTrackerInstance;
-  private final jakarta.enterprise.inject.Instance<
-          io.casehub.engine.runtime.stigmergy.SwarmProvisioner>
+  private final java.util.Optional<io.casehub.engine.runtime.stigmergy.SwarmProvisioner>
       swarmProvisionerInstance;
-  private final jakarta.enterprise.inject.Instance<ImprovementGoalFormationStrategy>
-      improvementStrategyInstance;
-  private final jakarta.enterprise.inject.Instance<GoalFormationService>
-      goalFormationServiceInstance;
+  private final java.util.Optional<ImprovementGoalFormationStrategy> improvementStrategyInstance;
+  private final java.util.Optional<GoalFormationService> goalFormationServiceInstance;
 
   public CaseContextChangedEventHandler(
       EventDispatcher eventDispatcher,
@@ -189,19 +184,16 @@ public class CaseContextChangedEventHandler {
       io.casehub.engine.common.internal.convergence.ActivityTracker activityTracker,
       io.casehub.engine.runtime.convergence.ConvergenceDetector convergenceDetector,
       io.casehub.engine.runtime.convergence.BudgetEnforcer budgetEnforcer,
-      jakarta.enterprise.inject.Instance<io.casehub.engine.runtime.stigmergy.StigmergyCoordinator>
+      java.util.Optional<io.casehub.engine.runtime.stigmergy.StigmergyCoordinator>
           stigmergyCoordinator,
-      jakarta.enterprise.inject.Instance<io.casehub.engine.runtime.stigmergy.RoleTracker>
-          roleTrackerInstance,
-      jakarta.enterprise.inject.Instance<io.casehub.engine.runtime.stigmergy.TeamDetector>
-          teamDetectorInstance,
-      jakarta.enterprise.inject.Instance<io.casehub.engine.runtime.stigmergy.SwarmProgressTracker>
+      java.util.Optional<io.casehub.engine.runtime.stigmergy.RoleTracker> roleTrackerInstance,
+      java.util.Optional<io.casehub.engine.runtime.stigmergy.TeamDetector> teamDetectorInstance,
+      java.util.Optional<io.casehub.engine.runtime.stigmergy.SwarmProgressTracker>
           swarmProgressTrackerInstance,
-      jakarta.enterprise.inject.Instance<io.casehub.engine.runtime.stigmergy.SwarmProvisioner>
+      java.util.Optional<io.casehub.engine.runtime.stigmergy.SwarmProvisioner>
           swarmProvisionerInstance,
-      jakarta.enterprise.inject.Instance<ImprovementGoalFormationStrategy>
-          improvementStrategyInstance,
-      jakarta.enterprise.inject.Instance<GoalFormationService> goalFormationServiceInstance) {
+      java.util.Optional<ImprovementGoalFormationStrategy> improvementStrategyInstance,
+      java.util.Optional<GoalFormationService> goalFormationServiceInstance) {
     this.eventDispatcher = eventDispatcher;
     this.jqEvaluator = jqEvaluator;
     this.caseDefinitionRegistry = caseDefinitionRegistry;
@@ -1434,7 +1426,7 @@ public class CaseContextChangedEventHandler {
   }
 
   private void convergenceDetection(CaseInstance caseInstance, CaseDefinition caseDefinition) {
-    if (stigmergyCoordinator.isResolvable()) {
+    if (stigmergyCoordinator.isPresent()) {
       var coordinator = stigmergyCoordinator.get();
       if (coordinator.isStigmergyCase(caseInstance.getUuid())) {
         var patterns =
@@ -1445,7 +1437,7 @@ public class CaseContextChangedEventHandler {
               caseInstance.getUuid(), pattern.type());
         }
 
-        if (roleTrackerInstance.isResolvable()) {
+        if (roleTrackerInstance.isPresent()) {
           var rt = roleTrackerInstance.get();
           var td = teamDetectorInstance.get();
           var spt = swarmProgressTrackerInstance.get();
@@ -1465,7 +1457,7 @@ public class CaseContextChangedEventHandler {
             }
             spt.evaluate(caseInstance.getUuid(), stigConfig);
 
-            if (swarmProvisionerInstance.isResolvable()) {
+            if (swarmProvisionerInstance.isPresent()) {
               var provisioner = swarmProvisionerInstance.get();
               provisioner.incrementCycleCount(caseInstance.getUuid());
               var consensus = signalRegistry.consensusSignals(caseInstance.getUuid(), 2, 0.01);
@@ -1495,7 +1487,7 @@ public class CaseContextChangedEventHandler {
       }
     }
 
-    if (improvementStrategyInstance.isResolvable()) {
+    if (improvementStrategyInstance.isPresent()) {
       var stigConfig = caseDefinition.getStigmergyConfig();
       var improvementConfig = stigConfig != null ? stigConfig.improvement() : null;
       if (improvementConfig != null) {
@@ -1505,7 +1497,7 @@ public class CaseContextChangedEventHandler {
                 caseInstance.getUuid(), caseInstance.tenancyId, improvementConfig);
         if (proposal != null
             && !proposal.goals().isEmpty()
-            && goalFormationServiceInstance.isResolvable()) {
+            && goalFormationServiceInstance.isPresent()) {
           String agentId = "improvement-system";
           goalFormationServiceInstance.get().propose(agentId, caseInstance.tenancyId, proposal);
         }
