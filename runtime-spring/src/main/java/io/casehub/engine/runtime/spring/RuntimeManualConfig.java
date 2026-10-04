@@ -319,17 +319,27 @@ public class RuntimeManualConfig {
       ObjectProvider<io.casehub.engine.runtime.stigmergy.TeamDetector> teamDetector,
       ObjectProvider<io.casehub.engine.runtime.stigmergy.SwarmProgressTracker>
           swarmProgressTracker) {
-    var factory = new WorkerRuntimeFactory(
-        caseHubRuntime, definitionRegistry, caseInstanceCache, caseCompletionTracker,
-        channelRegistry, defaultChannelFactory, observationRegistry, signalRegistry,
-        planItemStore, ruleRegistry);
+    var factory =
+        new WorkerRuntimeFactory(
+            caseHubRuntime,
+            definitionRegistry,
+            caseInstanceCache,
+            caseCompletionTracker,
+            channelRegistry,
+            defaultChannelFactory,
+            observationRegistry,
+            signalRegistry,
+            planItemStore,
+            ruleRegistry);
     if (stigmergyCoordinator.getIfAvailable() != null) {
       factory.setStigmergyCoordinator(stigmergyCoordinator.getIfAvailable());
     }
     if (roleTracker.getIfAvailable() != null) {
       factory.setSwarmTrackers(
-          activityTracker, roleTracker.getIfAvailable(),
-          teamDetector.getIfAvailable(), swarmProgressTracker.getIfAvailable());
+          activityTracker,
+          roleTracker.getIfAvailable(),
+          teamDetector.getIfAvailable(),
+          swarmProgressTracker.getIfAvailable());
     }
     return factory;
   }
@@ -347,8 +357,14 @@ public class RuntimeManualConfig {
       DispatchBudget dispatchBudget,
       ObjectProvider<io.casehub.api.spi.stigmergy.SwarmProvisioningAdvisor> advisorProvider) {
     return new io.casehub.engine.runtime.stigmergy.SwarmProvisioner(
-        workerProvisioner, coordinator, signalRegistry, activityTracker,
-        roleTracker, teamDetector, progressTracker, dispatchBudget,
+        workerProvisioner,
+        coordinator,
+        signalRegistry,
+        activityTracker,
+        roleTracker,
+        teamDetector,
+        progressTracker,
+        dispatchBudget,
         advisorProvider.getIfAvailable());
   }
 

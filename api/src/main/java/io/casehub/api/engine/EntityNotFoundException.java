@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.casehub.engine.rest.exception;
+package io.casehub.api.engine;
 
 public class EntityNotFoundException extends RuntimeException {
 

@@ -15,6 +15,7 @@
  */
 package io.casehub.engine.rest.exception;
 
+import io.casehub.api.engine.EntityNotFoundException;
 import io.casehub.engine.rest.dto.ProblemDetail;
 import jakarta.ws.rs.core.Response;
 import jakarta.ws.rs.ext.ExceptionMapper;
