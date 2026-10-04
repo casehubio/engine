@@ -34,7 +34,6 @@ import io.casehub.work.api.WorkItemStatus;
 import io.casehub.work.api.spi.WorkItemStore;
 import io.casehub.work.engine.PlanItemRef;
 import io.casehub.work.memory.InMemoryWorkItemStore;
-import io.quarkus.runtime.StartupEvent;
 import io.quarkus.test.junit.QuarkusTest;
 import io.vertx.mutiny.core.eventbus.EventBus;
 import jakarta.inject.Inject;
@@ -114,7 +113,7 @@ class HumanTaskRecoveryServiceTest {
     AtomicBoolean contextChangedFired = new AtomicBoolean(false);
     eventBus.consumer(EventBusAddresses.CONTEXT_CHANGED, msg -> contextChangedFired.set(true));
 
-    recoveryService.onStart(new StartupEvent());
+    recoveryService.init();
 
     PlanItem item = registry.get(caseId).flatMap(plan -> plan.getPlanItem(planItemId)).orElse(null);
     assertThat(item).isNotNull();
@@ -126,7 +125,7 @@ class HumanTaskRecoveryServiceTest {
   @Test
   void onStart_transitionsPlanItemToRejectedWhenWorkItemIsRejected() {
     createWorkItem(callerRef, WorkItemStatus.REJECTED);
-    recoveryService.onStart(new StartupEvent());
+    recoveryService.init();
 
     PlanItem item = registry.get(caseId).flatMap(plan -> plan.getPlanItem(planItemId)).orElse(null);
     assertThat(item).isNotNull();
@@ -136,7 +135,7 @@ class HumanTaskRecoveryServiceTest {
   @Test
   void onStart_transitionsPlanItemToFaultedWhenWorkItemIsExpired() {
     createWorkItem(callerRef, WorkItemStatus.EXPIRED);
-    recoveryService.onStart(new StartupEvent());
+    recoveryService.init();
 
     PlanItem item = registry.get(caseId).flatMap(plan -> plan.getPlanItem(planItemId)).orElse(null);
     assertThat(item).isNotNull();
@@ -146,7 +145,7 @@ class HumanTaskRecoveryServiceTest {
   @Test
   void onStart_skipsWhenWorkItemIsStillInFlight() {
     createWorkItem(callerRef, WorkItemStatus.IN_PROGRESS);
-    recoveryService.onStart(new StartupEvent());
+    recoveryService.init();
 
     PlanItem item = registry.get(caseId).flatMap(plan -> plan.getPlanItem(planItemId)).orElse(null);
     assertThat(item).isNotNull();
@@ -155,7 +154,7 @@ class HumanTaskRecoveryServiceTest {
 
   @Test
   void onStart_skipsWhenNoMatchingWorkItemFound() {
-    recoveryService.onStart(new StartupEvent());
+    recoveryService.init();
 
     PlanItem item = registry.get(caseId).flatMap(plan -> plan.getPlanItem(planItemId)).orElse(null);
     assertThat(item).isNotNull();
@@ -166,8 +165,8 @@ class HumanTaskRecoveryServiceTest {
   void onStart_isIdempotent_whenPlanItemAlreadyTerminal() {
     createWorkItem(callerRef, WorkItemStatus.COMPLETED);
 
-    recoveryService.onStart(new StartupEvent());
-    recoveryService.onStart(new StartupEvent());
+    recoveryService.init();
+    recoveryService.init();
 
     PlanItem item = registry.get(caseId).flatMap(plan -> plan.getPlanItem(planItemId)).orElse(null);
     assertThat(item).isNotNull();
