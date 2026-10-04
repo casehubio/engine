@@ -31,34 +31,26 @@ import io.casehub.eidos.api.CapabilityHealth.ProbeContext;
 import io.casehub.eidos.api.EscalationKind;
 import io.casehub.eidos.api.SelectionContext;
 import io.casehub.ledger.api.spi.TrustScoreSource;
-import jakarta.annotation.Priority;
-import jakarta.enterprise.context.ApplicationScoped;
-import jakarta.enterprise.inject.Alternative;
-import jakarta.enterprise.inject.Instance;
-import jakarta.inject.Inject;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.OptionalDouble;
 import java.util.stream.Collectors;
 
-@Alternative
-@Priority(1)
-@ApplicationScoped
 public class EngineAwareAgentSelector implements AgentSelector {
 
   private final CapabilityHealth capabilityHealth;
-  private final Instance<AgentRoutingStrategy> routingStrategies;
-  private final Instance<TrustScoreSource> trustSourceInstance;
+  private final AgentRoutingStrategy routingStrategy;
+  private final Optional<TrustScoreSource> trustSource;
 
-  @Inject
   public EngineAwareAgentSelector(
       CapabilityHealth capabilityHealth,
-      Instance<AgentRoutingStrategy> routingStrategies,
-      Instance<TrustScoreSource> trustSourceInstance) {
+      AgentRoutingStrategy routingStrategy,
+      Optional<TrustScoreSource> trustSource) {
     this.capabilityHealth = capabilityHealth;
-    this.routingStrategies = routingStrategies;
-    this.trustSourceInstance = trustSourceInstance;
+    this.routingStrategy = routingStrategy;
+    this.trustSource = trustSource;
   }
 
   @Override
@@ -73,10 +65,9 @@ public class EngineAwareAgentSelector implements AgentSelector {
           "all %d candidates unhealthy".formatted(candidates.size()));
     }
 
-    var strategy = routingStrategies.get();
     var routingContext = toRoutingContext(context);
     var result =
-        strategy.select(
+        routingStrategy.select(
             routingContext, converted.stream().map(CandidateMapping::candidate).toList());
 
     return toAgentSelection(result, converted, context);
@@ -171,10 +162,10 @@ public class EngineAwareAgentSelector implements AgentSelector {
   }
 
   private double lookupTrustScore(String agentId, String capabilityName) {
-    if (!trustSourceInstance.isResolvable()) {
+    if (trustSource.isEmpty()) {
       return 0.0;
     }
-    var source = trustSourceInstance.get();
+    var source = trustSource.get();
     var capScore =
         capabilityName != null
             ? source.capabilityScore(agentId, capabilityName)
