@@ -28,8 +28,6 @@ import io.casehub.yaml.step.catalog.ResolvedStep;
 import io.casehub.yaml.step.catalog.StepWalker;
 import io.casehub.yaml.step.eval.StructuralStepEvaluator;
 import jakarta.annotation.PostConstruct;
-import jakarta.enterprise.context.ApplicationScoped;
-import jakarta.inject.Inject;
 import java.io.InputStream;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -37,15 +35,20 @@ import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 import org.jboss.logging.Logger;
 
-@ApplicationScoped
 public class StepFileCallableDispatcher implements CallableDispatcher {
 
   static final String CALL_NAME = "casehub:step-file";
   private static final Logger LOG = Logger.getLogger(StepFileCallableDispatcher.class);
   private static final ObjectMapper YAML_MAPPER = new ObjectMapper(new YAMLFactory());
 
-  @Inject PluginRegistry pluginRegistry;
-  @Inject CallableDispatchRegistry dispatchRegistry;
+  private final PluginRegistry pluginRegistry;
+  private final CallableDispatchRegistry dispatchRegistry;
+
+  public StepFileCallableDispatcher(
+      PluginRegistry pluginRegistry, CallableDispatchRegistry dispatchRegistry) {
+    this.pluginRegistry = pluginRegistry;
+    this.dispatchRegistry = dispatchRegistry;
+  }
 
   @PostConstruct
   void register() {

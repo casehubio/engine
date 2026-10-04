@@ -40,8 +40,8 @@ import io.casehub.eidos.api.MatchDegree;
 import io.casehub.eidos.api.ResolvedCapability;
 import io.casehub.eidos.api.SelectionContext;
 import io.casehub.ledger.api.spi.TrustScoreSource;
-import jakarta.enterprise.inject.Instance;
 import java.util.List;
+import java.util.Optional;
 import java.util.OptionalDouble;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -50,23 +50,15 @@ class EngineAwareAgentSelectorTest {
 
   private CapabilityHealth healthMock;
   private AgentRoutingStrategy strategyMock;
-  private Instance<AgentRoutingStrategy> strategyInstance;
   private TrustScoreSource trustSourceMock;
-  private Instance<TrustScoreSource> trustSourceInstance;
   private EngineAwareAgentSelector selector;
 
-  @SuppressWarnings("unchecked")
   @BeforeEach
   void setUp() {
     healthMock = mock(CapabilityHealth.class);
     strategyMock = mock(AgentRoutingStrategy.class);
-    strategyInstance = mock(Instance.class);
-    when(strategyInstance.get()).thenReturn(strategyMock);
     trustSourceMock = mock(TrustScoreSource.class);
-    trustSourceInstance = mock(Instance.class);
-    when(trustSourceInstance.isResolvable()).thenReturn(true);
-    when(trustSourceInstance.get()).thenReturn(trustSourceMock);
-    selector = new EngineAwareAgentSelector(healthMock, strategyInstance, trustSourceInstance);
+    selector = new EngineAwareAgentSelector(healthMock, strategyMock, Optional.of(trustSourceMock));
   }
 
   @Test
@@ -204,6 +196,20 @@ class EngineAwareAgentSelectorTest {
 
     var selected = (AgentSelection.Selected) result;
     assertEquals(0.75, selected.trustScore());
+  }
+
+  @Test
+  void noTrustSourceReturnsZero() {
+    var noTrustSelector = new EngineAwareAgentSelector(healthMock, strategyMock, Optional.empty());
+    var match = matchWith("agent-1", "code-review", new MatchDegree.Exact());
+    when(healthMock.probe(any(), any(), any())).thenReturn(new CapabilityStatus.Ready());
+    when(strategyMock.select(any(), anyList()))
+        .thenReturn(RoutingResult.assigned("agent-1", "selected"));
+
+    var result = noTrustSelector.select(List.of(match), SelectionContext.of("t1", "code-review"));
+
+    var selected = (AgentSelection.Selected) result;
+    assertEquals(0.0, selected.trustScore());
   }
 
   private AgentMatch matchWith(String agentId, String capName, MatchDegree degree) {

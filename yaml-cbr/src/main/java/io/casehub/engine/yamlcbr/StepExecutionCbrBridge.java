@@ -26,14 +26,11 @@ import io.casehub.neocortex.memory.cbr.CbrPlanStep;
 import io.casehub.neocortex.memory.cbr.CbrRecordStore;
 import io.casehub.neocortex.memory.cbr.FeatureValue;
 import io.casehub.platform.api.path.Path;
-import jakarta.enterprise.context.ApplicationScoped;
-import jakarta.inject.Inject;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import org.jboss.logging.Logger;
 
-@ApplicationScoped
 public class StepExecutionCbrBridge implements YamlStepExecutionObserver {
 
   private static final Logger LOG = Logger.getLogger(StepExecutionCbrBridge.class);
@@ -42,7 +39,6 @@ public class StepExecutionCbrBridge implements YamlStepExecutionObserver {
   private final CaseDefinitionRegistry registry;
   private final List<PlaybookContextExtractor> extractors;
 
-  @Inject
   public StepExecutionCbrBridge(
       CbrRecordStore cbrStore,
       CaseDefinitionRegistry registry,
