@@ -20,42 +20,42 @@ import io.casehub.work.api.spi.ClaimSlaPolicy;
 import io.casehub.work.api.spi.InstanceAssignmentStrategy;
 import io.casehub.work.api.spi.SlaBreachPolicy;
 import io.casehub.work.api.spi.WorkerSelectionStrategy;
-import io.quarkus.runtime.StartupEvent;
-import jakarta.enterprise.context.ApplicationScoped;
-import jakarta.enterprise.event.Observes;
-import jakarta.enterprise.inject.Any;
-import jakarta.enterprise.inject.Instance;
-import jakarta.inject.Inject;
 
-/**
- * Registers casehub-work strategy beans with {@link EngineStrategyResolver}.
- *
- * <p>Quarkus ARC's {@code Instance<NamedStrategy>} does not resolve beans whose NamedStrategy
- * relationship is transitive (e.g. ContinuationPolicy → ClaimSlaPolicy → NamedStrategy).
- * Per-SPI-type {@code Instance<T>} injection finds them. This bean bridges the gap by registering
- * work strategies after the resolver is constructed.
- */
-@ApplicationScoped
+import java.util.List;
+
 public class WorkStrategyContributor {
 
-  @Inject EngineStrategyResolver resolver;
-  @Inject @Any Instance<WorkerSelectionStrategy> workerStrategies;
-  @Inject @Any Instance<ClaimSlaPolicy> claimPolicies;
-  @Inject @Any Instance<SlaBreachPolicy> breachPolicies;
-  @Inject @Any Instance<InstanceAssignmentStrategy> assignmentStrategies;
+    private final EngineStrategyResolver           resolver;
+    private final List<WorkerSelectionStrategy>    workerStrategies;
+    private final List<ClaimSlaPolicy>             claimPolicies;
+    private final List<SlaBreachPolicy>            breachPolicies;
+    private final List<InstanceAssignmentStrategy> assignmentStrategies;
 
-  void onStart(@Observes StartupEvent ev) {
-    workerStrategies.forEach(s -> safeRegister(s));
-    claimPolicies.forEach(s -> safeRegister(s));
-    breachPolicies.forEach(s -> safeRegister(s));
-    assignmentStrategies.forEach(s -> safeRegister(s));
-  }
-
-  private void safeRegister(io.casehub.platform.api.routing.NamedStrategy strategy) {
-    try {
-      resolver.registerEntry(strategy, false);
-    } catch (IllegalStateException e) {
-      // already registered — ignore
+    public WorkStrategyContributor(
+            EngineStrategyResolver resolver,
+            List<WorkerSelectionStrategy> workerStrategies,
+            List<ClaimSlaPolicy> claimPolicies,
+            List<SlaBreachPolicy> breachPolicies,
+            List<InstanceAssignmentStrategy> assignmentStrategies) {
+        this.resolver             = resolver;
+        this.workerStrategies     = workerStrategies;
+        this.claimPolicies        = claimPolicies;
+        this.breachPolicies       = breachPolicies;
+        this.assignmentStrategies = assignmentStrategies;
     }
-  }
+
+    public void init() {
+        workerStrategies.forEach(this::safeRegister);
+        claimPolicies.forEach(this::safeRegister);
+        breachPolicies.forEach(this::safeRegister);
+        assignmentStrategies.forEach(this::safeRegister);
+    }
+
+    private void safeRegister(io.casehub.platform.api.routing.NamedStrategy strategy) {
+        try {
+            resolver.registerEntry(strategy, false);
+        } catch (IllegalStateException e) {
+            // already registered — ignore
+        }
+    }
 }

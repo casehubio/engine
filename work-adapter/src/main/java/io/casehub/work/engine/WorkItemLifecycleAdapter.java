@@ -18,7 +18,6 @@ package io.casehub.work.engine;
 import io.casehub.api.context.ContextLayer;
 import io.casehub.api.model.TaskStatus;
 import io.casehub.engine.common.internal.event.CaseContextChangedEvent;
-import io.casehub.engine.common.internal.event.EventBusAddresses;
 import io.casehub.engine.common.internal.model.CaseInstance;
 import io.casehub.engine.common.spi.CrossTenantCaseInstanceRepository;
 import io.casehub.engine.planning.plan.CasePlanModel;
@@ -29,175 +28,165 @@ import io.casehub.work.api.WorkItemEvent;
 import io.casehub.work.api.WorkItemGroupLifecycleEvent;
 import io.casehub.work.api.WorkItemRef;
 import io.casehub.work.api.WorkItemStatus;
-import io.vertx.mutiny.core.eventbus.EventBus;
-import jakarta.enterprise.context.ApplicationScoped;
-import jakarta.enterprise.event.ObservesAsync;
-import jakarta.inject.Inject;
 import org.jboss.logging.Logger;
 
-/**
- * Translates terminal quarkus-work {@link WorkItemEvent}s and M-of-N {@link
- * WorkItemGroupLifecycleEvent}s into CaseHub PlanItem transitions and fires {@code CONTEXT_CHANGED}
- * to trigger engine re-evaluation.
- *
- * <p>Choreography path: the engine's binding evaluator picks up the next step automatically once
- * the PlanItem status changes and the context-changed signal arrives. Refs casehubio/work#136.
- *
- * <p>Only processes events whose {@code callerRef} matches the CaseHub format {@code
- * case:{caseId}/pi:{planItemId}} — other WorkItems are ignored.
- *
- * <p>ESCALATED is terminal — all SLA breach policy branches have been exhausted. The applier
- * transitions the PlanItem to FAULTED and writes a {@code workItemEscalated} signal to the case
- * context. SLA breach policies that re-route the WorkItem to new groups ({@code EscalateTo}) do not
- * set ESCALATED — the WorkItem stays PENDING with updated candidate groups. Refs #341.
- */
-@ApplicationScoped
+import java.util.function.Consumer;
+
 public class WorkItemLifecycleAdapter {
 
-  private static final Logger LOG = Logger.getLogger(WorkItemLifecycleAdapter.class);
-  @Inject BlackboardRegistry registry;
+    private static final Logger LOG = Logger.getLogger(WorkItemLifecycleAdapter.class);
 
-  @Inject CrossTenantCaseInstanceRepository caseInstanceRepository;
+    private final BlackboardRegistry                registry;
+    private final CrossTenantCaseInstanceRepository caseInstanceRepository;
+    private final Consumer<CaseContextChangedEvent> contextChangedPublisher;
+    private final PlanItemCompletionApplier         applier;
+    private final ActionGateCompletionApplier       gateApplier;
 
-  @Inject EventBus eventBus;
-
-  @Inject PlanItemCompletionApplier applier;
-
-  @Inject ActionGateCompletionApplier gateApplier;
-
-  public void onWorkItemLifecycle(@ObservesAsync WorkItemEvent wie) {
-
-    final WorkItemStatus status = wie.status();
-
-    if (status == WorkItemStatus.SUSPENDED) {
-      handleSuspension(wie);
-      return;
+    public WorkItemLifecycleAdapter(
+            BlackboardRegistry registry,
+            CrossTenantCaseInstanceRepository caseInstanceRepository,
+            Consumer<CaseContextChangedEvent> contextChangedPublisher,
+            PlanItemCompletionApplier applier,
+            ActionGateCompletionApplier gateApplier) {
+        this.registry                = registry;
+        this.caseInstanceRepository  = caseInstanceRepository;
+        this.contextChangedPublisher = contextChangedPublisher;
+        this.applier                 = applier;
+        this.gateApplier             = gateApplier;
     }
 
-    if (!status.isTerminal()) {
-      handlePossibleResume(wie);
-      return;
-    }
+    public void onWorkItemLifecycle(WorkItemEvent wie) {
 
-    final CallerRef ref = CallerRef.parse(wie.callerRef());
-    if (ref == null) return;
+        final WorkItemStatus status = wie.status();
 
-    if (ref instanceof GateRef gateRef) {
-      routeGate(gateRef, status, wie.ref(), wie.tenancyId(), wie.ledgerEntryId());
-      return;
-    }
-
-    if (!(ref instanceof PlanItemRef piRef)) return;
-
-    if (registry.get(piRef.caseId()).isEmpty()) {
-      LOG.debugf(
-          "No CasePlanModel for caseId=%s — case may have completed or not use blackboard",
-          piRef.caseId());
-      return;
-    }
-
-    applier.apply(piRef.caseId(), piRef.planItemId(), status, wie.ref(), wie.ledgerEntryId());
-  }
-
-  public void onWorkItemGroupLifecycle(@ObservesAsync WorkItemGroupLifecycleEvent event) {
-    GroupStatus status = event.groupStatus();
-    if (!status.isTerminal()) return;
-
-    CallerRef ref = CallerRef.parse(event.callerRef());
-    if (!(ref instanceof PlanItemRef piRef)) return;
-
-    CasePlanModel plan = registry.get(piRef.caseId()).orElse(null);
-    if (plan == null) {
-      LOG.debugf("No CasePlanModel for caseId=%s — group outcome ignored", piRef.caseId());
-      return;
-    }
-
-    PlanItem item = plan.getPlanItem(piRef.planItemId()).orElse(null);
-    if (item == null) {
-      LOG.warnf(
-          "PlanItem %s not found in case %s for group outcome", piRef.planItemId(), piRef.caseId());
-      return;
-    }
-
-    if (!applyGroupStatus(item, status)) return;
-
-    java.util.Optional<CaseInstance> instanceOpt =
-        caseInstanceRepository.findByUuid(piRef.caseId());
-    if (instanceOpt.isEmpty()) {
-      LOG.warnf(
-          "CaseInstance not found for caseId=%s — cannot fire CONTEXT_CHANGED", piRef.caseId());
-      return;
-    }
-    CaseInstance instance = instanceOpt.get();
-
-    eventBus.publish(
-        EventBusAddresses.CONTEXT_CHANGED,
-        new CaseContextChangedEvent(
-            instance, instance.getCaseContext().snapshot(), ContextLayer.WORKING));
-  }
-
-  private boolean applyGroupStatus(PlanItem item, GroupStatus status) {
-    try {
-      switch (status) {
-        case COMPLETED -> item.markCompleted();
-        case REJECTED -> item.markRejected();
-        default -> {
-          return false;
+        if (status == WorkItemStatus.SUSPENDED) {
+            handleSuspension(wie);
+            return;
         }
-      }
-      return true;
-    } catch (IllegalStateException e) {
-      LOG.warnf(
-          "Cannot transition PlanItem %s (current=%s) for GroupStatus %s: %s",
-          item.getPlanItemId(), item.getStatus(), status, e.getMessage());
-      return false;
+
+        if (!status.isTerminal()) {
+            handlePossibleResume(wie);
+            return;
+        }
+
+        final CallerRef ref = CallerRef.parse(wie.callerRef());
+        if (ref == null) {return;}
+
+        if (ref instanceof GateRef gateRef) {
+            routeGate(gateRef, status, wie.ref(), wie.tenancyId(), wie.ledgerEntryId());
+            return;
+        }
+
+        if (!(ref instanceof PlanItemRef piRef)) {return;}
+
+        if (registry.get(piRef.caseId()).isEmpty()) {
+            LOG.debugf(
+                    "No CasePlanModel for caseId=%s — case may have completed or not use blackboard",
+                    piRef.caseId());
+            return;
+        }
+
+        applier.apply(piRef.caseId(), piRef.planItemId(), status, wie.ref(), wie.ledgerEntryId());
     }
-  }
 
-  private void handleSuspension(final WorkItemEvent event) {
-    final CallerRef ref = CallerRef.parse(event.callerRef());
-    if (!(ref instanceof PlanItemRef piRef)) return;
+    public void onWorkItemGroupLifecycle(WorkItemGroupLifecycleEvent event) {
+        GroupStatus status = event.groupStatus();
+        if (!status.isTerminal()) {return;}
 
-    final CasePlanModel plan = registry.get(piRef.caseId()).orElse(null);
-    if (plan == null) return;
+        CallerRef ref = CallerRef.parse(event.callerRef());
+        if (!(ref instanceof PlanItemRef piRef)) {return;}
 
-    plan.getPlanItem(piRef.planItemId())
-        .ifPresent(
-            item -> {
-              try {
-                item.markSuspended();
-                LOG.infof("PlanItem %s suspended: caseId=%s", piRef.planItemId(), piRef.caseId());
-              } catch (IllegalStateException e) {
-                LOG.debugf(
-                    "Cannot suspend PlanItem %s (status=%s): %s",
-                    piRef.planItemId(), item.getStatus(), e.getMessage());
-              }
-            });
-  }
+        CasePlanModel plan = registry.get(piRef.caseId()).orElse(null);
+        if (plan == null) {
+            LOG.debugf("No CasePlanModel for caseId=%s — group outcome ignored", piRef.caseId());
+            return;
+        }
 
-  private void handlePossibleResume(final WorkItemEvent event) {
-    final CallerRef ref = CallerRef.parse(event.callerRef());
-    if (!(ref instanceof PlanItemRef piRef)) return;
+        PlanItem item = plan.getPlanItem(piRef.planItemId()).orElse(null);
+        if (item == null) {
+            LOG.warnf(
+                    "PlanItem %s not found in case %s for group outcome", piRef.planItemId(), piRef.caseId());
+            return;
+        }
 
-    final CasePlanModel plan = registry.get(piRef.caseId()).orElse(null);
-    if (plan == null) return;
+        if (!applyGroupStatus(item, status)) {return;}
 
-    plan.getPlanItem(piRef.planItemId())
-        .ifPresent(
-            item -> {
-              if (item.getStatus() == TaskStatus.SUSPENDED) {
-                item.markResumed();
-                LOG.infof("PlanItem %s resumed: caseId=%s", piRef.planItemId(), piRef.caseId());
-              }
-            });
-  }
+        java.util.Optional<CaseInstance> instanceOpt =
+                caseInstanceRepository.findByUuid(piRef.caseId());
+        if (instanceOpt.isEmpty()) {
+            LOG.warnf(
+                    "CaseInstance not found for caseId=%s — cannot fire CONTEXT_CHANGED", piRef.caseId());
+            return;
+        }
+        CaseInstance instance = instanceOpt.get();
 
-  private void routeGate(
-      final GateRef gateRef,
-      final WorkItemStatus status,
-      final WorkItemRef ref,
-      final String tenancyId,
-      final java.util.UUID workLedgerEntryId) {
-    gateApplier.apply(gateRef, status, ref, tenancyId, workLedgerEntryId);
-  }
+        contextChangedPublisher.accept(
+                new CaseContextChangedEvent(
+                        instance, instance.getCaseContext().snapshot(), ContextLayer.WORKING));
+    }
+
+    private boolean applyGroupStatus(PlanItem item, GroupStatus status) {
+        try {
+            switch (status) {
+                case COMPLETED -> item.markCompleted();
+                case REJECTED -> item.markRejected();
+                default -> {
+                    return false;
+                }
+            }
+            return true;
+        } catch (IllegalStateException e) {
+            LOG.warnf(
+                    "Cannot transition PlanItem %s (current=%s) for GroupStatus %s: %s",
+                    item.getPlanItemId(), item.getStatus(), status, e.getMessage());
+            return false;
+        }
+    }
+
+    private void handleSuspension(final WorkItemEvent event) {
+        final CallerRef ref = CallerRef.parse(event.callerRef());
+        if (!(ref instanceof PlanItemRef piRef)) {return;}
+
+        final CasePlanModel plan = registry.get(piRef.caseId()).orElse(null);
+        if (plan == null) {return;}
+
+        plan.getPlanItem(piRef.planItemId())
+            .ifPresent(
+                    item -> {
+                        try {
+                            item.markSuspended();
+                            LOG.infof("PlanItem %s suspended: caseId=%s", piRef.planItemId(), piRef.caseId());
+                        } catch (IllegalStateException e) {
+                            LOG.debugf(
+                                    "Cannot suspend PlanItem %s (status=%s): %s",
+                                    piRef.planItemId(), item.getStatus(), e.getMessage());
+                        }
+                    });
+    }
+
+    private void handlePossibleResume(final WorkItemEvent event) {
+        final CallerRef ref = CallerRef.parse(event.callerRef());
+        if (!(ref instanceof PlanItemRef piRef)) {return;}
+
+        final CasePlanModel plan = registry.get(piRef.caseId()).orElse(null);
+        if (plan == null) {return;}
+
+        plan.getPlanItem(piRef.planItemId())
+            .ifPresent(
+                    item -> {
+                        if (item.getStatus() == TaskStatus.SUSPENDED) {
+                            item.markResumed();
+                            LOG.infof("PlanItem %s resumed: caseId=%s", piRef.planItemId(), piRef.caseId());
+                        }
+                    });
+    }
+
+    private void routeGate(
+            final GateRef gateRef,
+            final WorkItemStatus status,
+            final WorkItemRef ref,
+            final String tenancyId,
+            final java.util.UUID workLedgerEntryId) {
+        gateApplier.apply(gateRef, status, ref, tenancyId, workLedgerEntryId);
+    }
 }
