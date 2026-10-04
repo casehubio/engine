@@ -17,10 +17,10 @@ package io.casehub.engine.rest.service;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import io.casehub.api.engine.EntityNotFoundException;
 import io.casehub.engine.common.spi.recovery.ExecutionSnapshotStore;
 import io.casehub.engine.plan.execution.CasePlanModelSnapshotProvider;
 import io.casehub.engine.rest.ExecutionStateBroadcaster;
-import io.casehub.engine.rest.exception.EntityNotFoundException;
 import io.casehub.platform.api.acl.AclAction;
 import io.casehub.platform.api.identity.CurrentPrincipal;
 import io.smallrye.mutiny.Multi;

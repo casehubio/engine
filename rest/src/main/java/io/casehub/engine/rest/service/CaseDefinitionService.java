@@ -16,6 +16,7 @@
 package io.casehub.engine.rest.service;
 
 import io.casehub.api.acl.EngineResourceTypes;
+import io.casehub.api.engine.EntityNotFoundException;
 import io.casehub.api.model.CaseDefinition;
 import io.casehub.api.view.CaseDefinitionPage;
 import io.casehub.api.view.CaseDefinitionView;
@@ -23,7 +24,6 @@ import io.casehub.engine.common.internal.model.CaseMetaModel;
 import io.casehub.engine.common.spi.CaseDefinitionRegistry;
 import io.casehub.engine.common.spi.CaseMetaModelRepository;
 import io.casehub.engine.common.spi.query.CaseDefinitionQuery;
-import io.casehub.engine.rest.exception.EntityNotFoundException;
 import io.casehub.platform.api.acl.AccessControlProvider;
 import io.casehub.platform.api.acl.AclAction;
 import io.casehub.platform.api.acl.ResourceId;
