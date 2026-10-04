@@ -32,169 +32,180 @@ import io.casehub.work.api.Outcome;
 import io.casehub.work.api.WorkItemCreateRequest;
 import io.casehub.work.api.spi.WorkItemCreator;
 import jakarta.transaction.Transactional;
-import org.jboss.logging.Logger;
-
 import java.time.Instant;
 import java.util.List;
 import java.util.Set;
+import org.jboss.logging.Logger;
 
 @SuppressWarnings("removal")
 public class JudgmentWorkItemScheduler implements JudgmentScheduler {
 
-    private static final Logger       LOG    = Logger.getLogger(JudgmentWorkItemScheduler.class);
-    private static final ObjectMapper MAPPER = new ObjectMapper();
+  private static final Logger LOG = Logger.getLogger(JudgmentWorkItemScheduler.class);
+  private static final ObjectMapper MAPPER = new ObjectMapper();
 
-    private final BlackboardRegistry registry;
-    private final WorkItemCreator    workItemCreator;
-    private final PlanItemStore      planItemStore;
+  private final BlackboardRegistry registry;
+  private final WorkItemCreator workItemCreator;
+  private final PlanItemStore planItemStore;
 
-    public JudgmentWorkItemScheduler(
-            BlackboardRegistry registry,
-            WorkItemCreator workItemCreator,
-            PlanItemStore planItemStore) {
-        this.registry        = registry;
-        this.workItemCreator = workItemCreator;
-        this.planItemStore   = planItemStore;
+  public JudgmentWorkItemScheduler(
+      BlackboardRegistry registry, WorkItemCreator workItemCreator, PlanItemStore planItemStore) {
+    this.registry = registry;
+    this.workItemCreator = workItemCreator;
+    this.planItemStore = planItemStore;
+  }
+
+  @Override
+  @Transactional
+  public void schedule(JudgmentScheduleRequest request) {
+    CasePlanModel plan = registry.get(request.caseId()).orElse(null);
+    if (plan == null) {
+      LOG.warnf("No CasePlanModel for caseId=%s — judgment not dispatched", request.caseId());
+      return;
     }
 
-    @Override
-    @Transactional
-    public void schedule(JudgmentScheduleRequest request) {
-        CasePlanModel plan = registry.get(request.caseId()).orElse(null);
-        if (plan == null) {
-            LOG.warnf("No CasePlanModel for caseId=%s — judgment not dispatched", request.caseId());
-            return;
-        }
-
-        PlanItem item = plan.getPlanItemByBindingName(request.bindingName()).orElse(null);
-        if (item == null) {
-            LOG.warnf(
-                    "PlanItem for binding '%s' not found in case %s",
-                    request.bindingName(), request.caseId());
-            return;
-        }
-
-        if (item.getStatus() != TaskStatus.DISPATCHING) {
-            LOG.warnf(
-                    "PlanItem for binding '%s' case %s is not DISPATCHING (status=%s) — skipping",
-                    request.bindingName(), request.caseId(), item.getStatus());
-            return;
-        }
-
-        String         callerRef = PlanItemRef.encode(request.caseId(), item.getPlanItemId());
-        JudgmentTarget target    = request.target();
-
-        String payload = null;
-        if (request.inputData() != null && !request.inputData().isEmpty()) {
-            try {
-                payload = MAPPER.writeValueAsString(request.inputData());
-            } catch (Exception e) {
-                LOG.warnf(
-                        e,
-                        "Failed to serialize inputData for judgment binding '%s' caseId=%s",
-                        request.bindingName(),
-                        request.caseId());
-            }
-        }
-
-        WorkItemCreateRequest.Builder builder =
-                WorkItemCreateRequest.builder()
-                                     .title(request.resolvedTitle() != null ? request.resolvedTitle() : target.title())
-                                     .createdBy("casehub-engine")
-                                     .callerRef(callerRef)
-                                     .scope(request.resolvedScope() != null ? request.resolvedScope() : target.scope())
-                                     .payload(payload)
-                                     .candidateGroups(toCsv(request.resolvedCandidateGroups()))
-                                     .candidateUsers(toCsv(request.resolvedCandidateUsers()))
-                                     .expiresAt(earliestOf(request.expiresAtDeadline(), request.caseBudgetDeadline()))
-                                     .payloadTypeName(request.payloadTypeName())
-                                     .resolutionTypeName(request.resolutionTypeName())
-                                     .candidateScores(serializeScores(request.candidateScores()))
-                                     .routingExperiences(serializeExperiences(request.experiences()))
-                                     .tenancyId(request.tenancyId())
-                                     .originRef(resolveOriginRef(request, item, plan));
-
-        if (target.outcomes() != null && !target.outcomes().isEmpty()) {
-            builder.permittedOutcomes(toOutcomeList(target.outcomes()));
-        }
-
-        try {
-            workItemCreator.create(builder.build());
-        } catch (Exception e) {
-            LOG.warnf(
-                    "Failed to create WorkItem for judgment binding '%s' case %s — reverting to PENDING: %s",
-                    request.bindingName(), request.caseId(), e.getMessage());
-            item.revertDispatching();
-            return;
-        }
-
-        planItemStore.save(
-                PlanItemSaveRequest.primitive(
-                        request.caseId(),
-                        item.getPlanItemId(),
-                        item.getBindingName(),
-                        TaskStatus.DELEGATED,
-                        item.getCreatedAt(),
-                        TargetType.JUDGMENT,
-                        extractOutputMappingExpression(target),
-                        request.tenancyId(),
-                        null,
-                        null,
-                        null),
-                request.tenancyId());
-        item.markDelegated();
-        LOG.infof("WorkItem created (judgment) for binding callerRef=%s", callerRef);
+    PlanItem item = plan.getPlanItemByBindingName(request.bindingName()).orElse(null);
+    if (item == null) {
+      LOG.warnf(
+          "PlanItem for binding '%s' not found in case %s",
+          request.bindingName(), request.caseId());
+      return;
     }
 
-    @Override
-    public void schedule(JudgmentRequest request) {
-        JudgmentScheduler.super.schedule(request);
+    if (item.getStatus() != TaskStatus.DISPATCHING) {
+      LOG.warnf(
+          "PlanItem for binding '%s' case %s is not DISPATCHING (status=%s) — skipping",
+          request.bindingName(), request.caseId(), item.getStatus());
+      return;
     }
 
-    private String resolveOriginRef(
-            JudgmentScheduleRequest request, PlanItem item, CasePlanModel plan) {
-        return null;
+    String callerRef = PlanItemRef.encode(request.caseId(), item.getPlanItemId());
+    JudgmentTarget target = request.target();
+
+    String payload = null;
+    if (request.inputData() != null && !request.inputData().isEmpty()) {
+      try {
+        payload = MAPPER.writeValueAsString(request.inputData());
+      } catch (Exception e) {
+        LOG.warnf(
+            e,
+            "Failed to serialize inputData for judgment binding '%s' caseId=%s",
+            request.bindingName(),
+            request.caseId());
+      }
     }
 
-    private static String extractOutputMappingExpression(JudgmentTarget target) {
-        if (target == null || target.outputMapping() == null) {return null;}
-        if (target.outputMapping() instanceof JQExpressionEvaluator jq) {return jq.expression();}
-        return null;
+    WorkItemCreateRequest.Builder builder =
+        WorkItemCreateRequest.builder()
+            .title(request.resolvedTitle() != null ? request.resolvedTitle() : target.title())
+            .createdBy("casehub-engine")
+            .callerRef(callerRef)
+            .scope(request.resolvedScope() != null ? request.resolvedScope() : target.scope())
+            .payload(payload)
+            .candidateGroups(toCsv(request.resolvedCandidateGroups()))
+            .candidateUsers(toCsv(request.resolvedCandidateUsers()))
+            .expiresAt(earliestOf(request.expiresAtDeadline(), request.caseBudgetDeadline()))
+            .payloadTypeName(request.payloadTypeName())
+            .resolutionTypeName(request.resolutionTypeName())
+            .candidateScores(serializeScores(request.candidateScores()))
+            .routingExperiences(serializeExperiences(request.experiences()))
+            .tenancyId(request.tenancyId())
+            .originRef(resolveOriginRef(request, item, plan));
+
+    if (target.outcomes() != null && !target.outcomes().isEmpty()) {
+      builder.permittedOutcomes(toOutcomeList(target.outcomes()));
     }
 
-    private static Instant earliestOf(Instant a, Instant b) {
-        if (a == null) {return b;}
-        if (b == null) {return a;}
-        return a.isBefore(b) ? a : b;
+    try {
+      workItemCreator.create(builder.build());
+    } catch (Exception e) {
+      LOG.warnf(
+          "Failed to create WorkItem for judgment binding '%s' case %s — reverting to PENDING: %s",
+          request.bindingName(), request.caseId(), e.getMessage());
+      item.revertDispatching();
+      return;
     }
 
-    private static String toCsv(Set<String> values) {
-        if (values == null || values.isEmpty()) {return null;}
-        return String.join(",", values);
-    }
+    planItemStore.save(
+        PlanItemSaveRequest.primitive(
+            request.caseId(),
+            item.getPlanItemId(),
+            item.getBindingName(),
+            TaskStatus.DELEGATED,
+            item.getCreatedAt(),
+            TargetType.JUDGMENT,
+            extractOutputMappingExpression(target),
+            request.tenancyId(),
+            null,
+            null,
+            null),
+        request.tenancyId());
+    item.markDelegated();
+    LOG.infof("WorkItem created (judgment) for binding callerRef=%s", callerRef);
+  }
 
-    private static List<Outcome> toOutcomeList(Set<String> outcomeNames) {
-        return outcomeNames.stream().map(n -> new Outcome(n, null, null)).toList();
-    }
+  @Override
+  public void schedule(JudgmentRequest request) {
+    JudgmentScheduler.super.schedule(request);
+  }
 
-    private String serializeScores(java.util.Map<String, Double> scores) {
-        if (scores == null || scores.isEmpty()) {return null;}
-        try {
-            return MAPPER.writeValueAsString(scores);
-        } catch (Exception e) {
-            LOG.warnf(e, "Failed to serialize candidateScores");
-            return null;
-        }
-    }
+  private String resolveOriginRef(
+      JudgmentScheduleRequest request, PlanItem item, CasePlanModel plan) {
+    return null;
+  }
 
-    private String serializeExperiences(
-            java.util.List<io.casehub.api.spi.routing.RetrievedExperience> experiences) {
-        if (experiences == null || experiences.isEmpty()) {return null;}
-        try {
-            return MAPPER.writeValueAsString(experiences);
-        } catch (Exception e) {
-            LOG.warnf(e, "Failed to serialize routingExperiences");
-            return null;
-        }
+  private static String extractOutputMappingExpression(JudgmentTarget target) {
+    if (target == null || target.outputMapping() == null) {
+      return null;
     }
+    if (target.outputMapping() instanceof JQExpressionEvaluator jq) {
+      return jq.expression();
+    }
+    return null;
+  }
+
+  private static Instant earliestOf(Instant a, Instant b) {
+    if (a == null) {
+      return b;
+    }
+    if (b == null) {
+      return a;
+    }
+    return a.isBefore(b) ? a : b;
+  }
+
+  private static String toCsv(Set<String> values) {
+    if (values == null || values.isEmpty()) {
+      return null;
+    }
+    return String.join(",", values);
+  }
+
+  private static List<Outcome> toOutcomeList(Set<String> outcomeNames) {
+    return outcomeNames.stream().map(n -> new Outcome(n, null, null)).toList();
+  }
+
+  private String serializeScores(java.util.Map<String, Double> scores) {
+    if (scores == null || scores.isEmpty()) {
+      return null;
+    }
+    try {
+      return MAPPER.writeValueAsString(scores);
+    } catch (Exception e) {
+      LOG.warnf(e, "Failed to serialize candidateScores");
+      return null;
+    }
+  }
+
+  private String serializeExperiences(
+      java.util.List<io.casehub.api.spi.routing.RetrievedExperience> experiences) {
+    if (experiences == null || experiences.isEmpty()) {
+      return null;
+    }
+    try {
+      return MAPPER.writeValueAsString(experiences);
+    } catch (Exception e) {
+      LOG.warnf(e, "Failed to serialize routingExperiences");
+      return null;
+    }
+  }
 }
