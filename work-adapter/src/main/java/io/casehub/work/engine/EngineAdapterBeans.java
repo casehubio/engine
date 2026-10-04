@@ -55,192 +55,182 @@ import jakarta.enterprise.inject.Instance;
 import jakarta.enterprise.inject.Produces;
 import jakarta.inject.Inject;
 import jakarta.transaction.Transactional;
-
 import java.util.Optional;
 
 @ApplicationScoped
 public class EngineAdapterBeans {
 
-    @Inject EventBus eventBus;
-    @Inject ActionGateCancelledHandler actionGateCancelledHandlerRef;
+  @Inject EventBus eventBus;
+  @Inject ActionGateCancelledHandler actionGateCancelledHandlerRef;
 
-    // --- Producers: already-cleaned POJOs from prior session ---
+  // --- Producers: already-cleaned POJOs from prior session ---
 
-    @Produces
-    public ActionGateWorkItemHandler actionGateWorkItemHandler(
-            final WorkItemCreator workItemCreator) {
-        return new ActionGateWorkItemHandler(workItemCreator);
-    }
+  @Produces
+  public ActionGateWorkItemHandler actionGateWorkItemHandler(
+      final WorkItemCreator workItemCreator) {
+    return new ActionGateWorkItemHandler(workItemCreator);
+  }
 
-    @Produces
-    public WorkActorStateContributor workActorStateContributor(final WorkItemStore workItemStore) {
-        return new WorkActorStateContributor(workItemStore);
-    }
+  @Produces
+  public WorkActorStateContributor workActorStateContributor(final WorkItemStore workItemStore) {
+    return new WorkActorStateContributor(workItemStore);
+  }
 
-    @Produces
-    @ApplicationScoped
-    public HumanTaskScheduleHandler humanTaskScheduleHandler(
-            BlackboardRegistry registry,
-            WorkItemCreator workItemCreator,
-            PlanItemStore planItemStore) {
-        return new HumanTaskScheduleHandler(registry, workItemCreator, planItemStore);
-    }
+  @Produces
+  @ApplicationScoped
+  public HumanTaskScheduleHandler humanTaskScheduleHandler(
+      BlackboardRegistry registry, WorkItemCreator workItemCreator, PlanItemStore planItemStore) {
+    return new HumanTaskScheduleHandler(registry, workItemCreator, planItemStore);
+  }
 
-    @Produces
-    @ApplicationScoped
-    public JudgmentWorkItemScheduler judgmentWorkItemScheduler(
-            BlackboardRegistry registry,
-            WorkItemCreator workItemCreator,
-            PlanItemStore planItemStore) {
-        return new JudgmentWorkItemScheduler(registry, workItemCreator, planItemStore);
-    }
+  @Produces
+  @ApplicationScoped
+  public JudgmentWorkItemScheduler judgmentWorkItemScheduler(
+      BlackboardRegistry registry, WorkItemCreator workItemCreator, PlanItemStore planItemStore) {
+    return new JudgmentWorkItemScheduler(registry, workItemCreator, planItemStore);
+  }
 
-    // --- Producers: newly-cleaned POJOs ---
+  // --- Producers: newly-cleaned POJOs ---
 
-    @Produces
-    @ApplicationScoped
-    public CaseCompensationNotifier caseCompensationNotifier(
-            Instance<DataSourceRegistry> dataSourceRegistryInstance) {
-        return new CaseCompensationNotifier(
-                dataSourceRegistryInstance.isResolvable()
-                ? Optional.of(dataSourceRegistryInstance.get())
-                : Optional.empty());
-    }
+  @Produces
+  @ApplicationScoped
+  public CaseCompensationNotifier caseCompensationNotifier(
+      Instance<DataSourceRegistry> dataSourceRegistryInstance) {
+    return new CaseCompensationNotifier(
+        dataSourceRegistryInstance.isResolvable()
+            ? Optional.of(dataSourceRegistryInstance.get())
+            : Optional.empty());
+  }
 
-    @Produces
-    @ApplicationScoped
-    public CompensationSubscriptionBootstrap compensationSubscriptionBootstrap(
-            Instance<SubscriptionStore> subscriptionStoreInstance,
-            Instance<EventTypeRegistry> eventTypeRegistryInstance) {
-        return new CompensationSubscriptionBootstrap(
-                subscriptionStoreInstance.isResolvable()
-                ? Optional.of(subscriptionStoreInstance.get())
-                : Optional.empty(),
-                eventTypeRegistryInstance.isResolvable()
-                ? Optional.of(eventTypeRegistryInstance.get())
-                : Optional.empty());
-    }
+  @Produces
+  @ApplicationScoped
+  public CompensationSubscriptionBootstrap compensationSubscriptionBootstrap(
+      Instance<SubscriptionStore> subscriptionStoreInstance,
+      Instance<EventTypeRegistry> eventTypeRegistryInstance) {
+    return new CompensationSubscriptionBootstrap(
+        subscriptionStoreInstance.isResolvable()
+            ? Optional.of(subscriptionStoreInstance.get())
+            : Optional.empty(),
+        eventTypeRegistryInstance.isResolvable()
+            ? Optional.of(eventTypeRegistryInstance.get())
+            : Optional.empty());
+  }
 
-    @Produces
-    @ApplicationScoped
-    public ActionGateCancelledHandler actionGateCancelledHandler(
-            WorkItemCreator workItemCreator,
-            WorkItemLifecycle workItemLifecycle) {
-        return new ActionGateCancelledHandler(workItemCreator, workItemLifecycle);
-    }
+  @Produces
+  @ApplicationScoped
+  public ActionGateCancelledHandler actionGateCancelledHandler(
+      WorkItemCreator workItemCreator, WorkItemLifecycle workItemLifecycle) {
+    return new ActionGateCancelledHandler(workItemCreator, workItemLifecycle);
+  }
 
-    @Produces
-    @ApplicationScoped
-    public ActionGateCompletionApplier actionGateCompletionApplier() {
-        return new ActionGateCompletionApplier(
-                e -> eventBus.publish(EventBusAddresses.ACTION_GATE_APPROVED, e),
-                e -> eventBus.publish(EventBusAddresses.ACTION_GATE_REJECTED, e),
-                e -> eventBus.publish(EventBusAddresses.ACTION_GATE_EXPIRED, e));
-    }
+  @Produces
+  @ApplicationScoped
+  public ActionGateCompletionApplier actionGateCompletionApplier() {
+    return new ActionGateCompletionApplier(
+        e -> eventBus.publish(EventBusAddresses.ACTION_GATE_APPROVED, e),
+        e -> eventBus.publish(EventBusAddresses.ACTION_GATE_REJECTED, e),
+        e -> eventBus.publish(EventBusAddresses.ACTION_GATE_EXPIRED, e));
+  }
 
-    @Produces
-    @ApplicationScoped
-    public WorkStrategyContributor workStrategyContributor(
-            EngineStrategyResolver resolver,
-            @Any Instance<WorkerSelectionStrategy> workerStrategies,
-            @Any Instance<ClaimSlaPolicy> claimPolicies,
-            @Any Instance<SlaBreachPolicy> breachPolicies,
-            @Any Instance<InstanceAssignmentStrategy> assignmentStrategies) {
-        return new WorkStrategyContributor(
-                resolver,
-                workerStrategies.stream().toList(),
-                claimPolicies.stream().toList(),
-                breachPolicies.stream().toList(),
-                assignmentStrategies.stream().toList());
-    }
+  @Produces
+  @ApplicationScoped
+  public WorkStrategyContributor workStrategyContributor(
+      EngineStrategyResolver resolver,
+      @Any Instance<WorkerSelectionStrategy> workerStrategies,
+      @Any Instance<ClaimSlaPolicy> claimPolicies,
+      @Any Instance<SlaBreachPolicy> breachPolicies,
+      @Any Instance<InstanceAssignmentStrategy> assignmentStrategies) {
+    return new WorkStrategyContributor(
+        resolver,
+        workerStrategies.stream().toList(),
+        claimPolicies.stream().toList(),
+        breachPolicies.stream().toList(),
+        assignmentStrategies.stream().toList());
+  }
 
-    @Produces
-    @ApplicationScoped
-    public PlanItemCompletionApplier planItemCompletionApplier(
-            BlackboardRegistry registry,
-            CaseDefinitionRegistry caseDefinitionRegistry,
-            CrossTenantCaseInstanceRepository caseInstanceRepository,
-            JQEvaluator jqEvaluator,
-            BridgeResolver bridgeResolver,
-            Event<PlanItemStateChangedEvent> planItemStateChangedEvents,
-            Event<PlanItemObsoleteEvent> planItemObsoleteEvents) {
-        return new PlanItemCompletionApplier(
-                registry,
-                caseDefinitionRegistry,
-                caseInstanceRepository,
-                e -> eventBus.publish(EventBusAddresses.CONTEXT_CHANGED, e),
-                jqEvaluator,
-                bridgeResolver,
-                planItemStateChangedEvents::fireAsync,
-                planItemObsoleteEvents::fireAsync);
-    }
+  @Produces
+  @ApplicationScoped
+  public PlanItemCompletionApplier planItemCompletionApplier(
+      BlackboardRegistry registry,
+      CaseDefinitionRegistry caseDefinitionRegistry,
+      CrossTenantCaseInstanceRepository caseInstanceRepository,
+      JQEvaluator jqEvaluator,
+      BridgeResolver bridgeResolver,
+      Event<PlanItemStateChangedEvent> planItemStateChangedEvents,
+      Event<PlanItemObsoleteEvent> planItemObsoleteEvents) {
+    return new PlanItemCompletionApplier(
+        registry,
+        caseDefinitionRegistry,
+        caseInstanceRepository,
+        e -> eventBus.publish(EventBusAddresses.CONTEXT_CHANGED, e),
+        jqEvaluator,
+        bridgeResolver,
+        planItemStateChangedEvents::fireAsync,
+        planItemObsoleteEvents::fireAsync);
+  }
 
-    @Produces
-    @ApplicationScoped
-    public WorkItemLifecycleAdapter workItemLifecycleAdapter(
-            BlackboardRegistry registry,
-            CrossTenantCaseInstanceRepository caseInstanceRepository,
-            PlanItemCompletionApplier applier,
-            ActionGateCompletionApplier gateApplier) {
-        return new WorkItemLifecycleAdapter(
-                registry,
-                caseInstanceRepository,
-                e -> eventBus.publish(EventBusAddresses.CONTEXT_CHANGED, e),
-                applier,
-                gateApplier);
-    }
+  @Produces
+  @ApplicationScoped
+  public WorkItemLifecycleAdapter workItemLifecycleAdapter(
+      BlackboardRegistry registry,
+      CrossTenantCaseInstanceRepository caseInstanceRepository,
+      PlanItemCompletionApplier applier,
+      ActionGateCompletionApplier gateApplier) {
+    return new WorkItemLifecycleAdapter(
+        registry,
+        caseInstanceRepository,
+        e -> eventBus.publish(EventBusAddresses.CONTEXT_CHANGED, e),
+        applier,
+        gateApplier);
+  }
 
-    @Produces
-    @ApplicationScoped
-    public HumanTaskRecoveryService humanTaskRecoveryService(
-            CrossTenantPlanItemStore planItemStore,
-            WorkItemCreator workItemCreator,
-            PlanItemCompletionApplier applier) {
-        return new HumanTaskRecoveryService(planItemStore, workItemCreator, applier);
-    }
+  @Produces
+  @ApplicationScoped
+  public HumanTaskRecoveryService humanTaskRecoveryService(
+      CrossTenantPlanItemStore planItemStore,
+      WorkItemCreator workItemCreator,
+      PlanItemCompletionApplier applier) {
+    return new HumanTaskRecoveryService(planItemStore, workItemCreator, applier);
+  }
 
-    // --- CDI observers bridging to POJOs ---
+  // --- CDI observers bridging to POJOs ---
 
-    @Transactional
-    void onWorkItemLifecycle(
-            @ObservesAsync WorkItemEvent event,
-            WorkItemLifecycleAdapter adapter) {
-        adapter.onWorkItemLifecycle(event);
-    }
+  @Transactional
+  void onWorkItemLifecycle(@ObservesAsync WorkItemEvent event, WorkItemLifecycleAdapter adapter) {
+    adapter.onWorkItemLifecycle(event);
+  }
 
-    void onWorkItemGroupLifecycle(
-            @ObservesAsync WorkItemGroupLifecycleEvent event,
-            WorkItemLifecycleAdapter adapter) {
-        adapter.onWorkItemGroupLifecycle(event);
-    }
+  void onWorkItemGroupLifecycle(
+      @ObservesAsync WorkItemGroupLifecycleEvent event, WorkItemLifecycleAdapter adapter) {
+    adapter.onWorkItemGroupLifecycle(event);
+  }
 
-    void onCaseLifecycle(
-            @ObservesAsync CaseLifecycleEvent event,
-            CaseCompensationNotifier notifier) {
-        notifier.onCaseLifecycle(event);
-    }
+  void onCaseLifecycle(@ObservesAsync CaseLifecycleEvent event, CaseCompensationNotifier notifier) {
+    notifier.onCaseLifecycle(event);
+  }
 
-    // --- EventBus consumer bridging to POJO ---
+  // --- EventBus consumer bridging to POJO ---
 
-    @ConsumeEvent(value = EventBusAddresses.ACTION_GATE_CANCELLED)
-    @RunOnVirtualThread
-    @Transactional
-    void onActionGateCancelled(ActionGateCancelledEvent event) {
-        actionGateCancelledHandlerRef.onActionGateCancelled(event);
-    }
+  @ConsumeEvent(value = EventBusAddresses.ACTION_GATE_CANCELLED)
+  @RunOnVirtualThread
+  @Transactional
+  void onActionGateCancelled(ActionGateCancelledEvent event) {
+    actionGateCancelledHandlerRef.onActionGateCancelled(event);
+  }
 
-    // --- Startup initialization ---
+  // --- Startup initialization ---
 
-    void onStartup(@Observes StartupEvent ev,
-                   CompensationSubscriptionBootstrap compensationBootstrap,
-                   WorkStrategyContributor strategyContributor) {
-        compensationBootstrap.init();
-        strategyContributor.init();
-    }
+  void onStartup(
+      @Observes StartupEvent ev,
+      CompensationSubscriptionBootstrap compensationBootstrap,
+      WorkStrategyContributor strategyContributor) {
+    compensationBootstrap.init();
+    strategyContributor.init();
+  }
 
-    @Transactional
-    void onStartupRecovery(@Observes @Priority(25) StartupEvent ev,
-                           HumanTaskRecoveryService recoveryService) {
-        recoveryService.init();
-    }
+  @Transactional
+  void onStartupRecovery(
+      @Observes @Priority(25) StartupEvent ev, HumanTaskRecoveryService recoveryService) {
+    recoveryService.init();
+  }
 }

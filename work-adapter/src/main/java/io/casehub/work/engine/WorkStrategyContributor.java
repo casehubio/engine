@@ -20,42 +20,41 @@ import io.casehub.work.api.spi.ClaimSlaPolicy;
 import io.casehub.work.api.spi.InstanceAssignmentStrategy;
 import io.casehub.work.api.spi.SlaBreachPolicy;
 import io.casehub.work.api.spi.WorkerSelectionStrategy;
-
 import java.util.List;
 
 public class WorkStrategyContributor {
 
-    private final EngineStrategyResolver           resolver;
-    private final List<WorkerSelectionStrategy>    workerStrategies;
-    private final List<ClaimSlaPolicy>             claimPolicies;
-    private final List<SlaBreachPolicy>            breachPolicies;
-    private final List<InstanceAssignmentStrategy> assignmentStrategies;
+  private final EngineStrategyResolver resolver;
+  private final List<WorkerSelectionStrategy> workerStrategies;
+  private final List<ClaimSlaPolicy> claimPolicies;
+  private final List<SlaBreachPolicy> breachPolicies;
+  private final List<InstanceAssignmentStrategy> assignmentStrategies;
 
-    public WorkStrategyContributor(
-            EngineStrategyResolver resolver,
-            List<WorkerSelectionStrategy> workerStrategies,
-            List<ClaimSlaPolicy> claimPolicies,
-            List<SlaBreachPolicy> breachPolicies,
-            List<InstanceAssignmentStrategy> assignmentStrategies) {
-        this.resolver             = resolver;
-        this.workerStrategies     = workerStrategies;
-        this.claimPolicies        = claimPolicies;
-        this.breachPolicies       = breachPolicies;
-        this.assignmentStrategies = assignmentStrategies;
-    }
+  public WorkStrategyContributor(
+      EngineStrategyResolver resolver,
+      List<WorkerSelectionStrategy> workerStrategies,
+      List<ClaimSlaPolicy> claimPolicies,
+      List<SlaBreachPolicy> breachPolicies,
+      List<InstanceAssignmentStrategy> assignmentStrategies) {
+    this.resolver = resolver;
+    this.workerStrategies = workerStrategies;
+    this.claimPolicies = claimPolicies;
+    this.breachPolicies = breachPolicies;
+    this.assignmentStrategies = assignmentStrategies;
+  }
 
-    public void init() {
-        workerStrategies.forEach(this::safeRegister);
-        claimPolicies.forEach(this::safeRegister);
-        breachPolicies.forEach(this::safeRegister);
-        assignmentStrategies.forEach(this::safeRegister);
-    }
+  public void init() {
+    workerStrategies.forEach(this::safeRegister);
+    claimPolicies.forEach(this::safeRegister);
+    breachPolicies.forEach(this::safeRegister);
+    assignmentStrategies.forEach(this::safeRegister);
+  }
 
-    private void safeRegister(io.casehub.platform.api.routing.NamedStrategy strategy) {
-        try {
-            resolver.registerEntry(strategy, false);
-        } catch (IllegalStateException e) {
-            // already registered — ignore
-        }
+  private void safeRegister(io.casehub.platform.api.routing.NamedStrategy strategy) {
+    try {
+      resolver.registerEntry(strategy, false);
+    } catch (IllegalStateException e) {
+      // already registered — ignore
     }
+  }
 }
