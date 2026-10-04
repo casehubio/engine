@@ -15,24 +15,35 @@
  */
 package io.casehub.engine.rest.service;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import io.casehub.api.acl.EngineResourceTypes;
 import io.casehub.api.context.CaseContext;
 import io.casehub.api.engine.CaseHubRuntime;
 import io.casehub.api.engine.ExpressionEngineRegistry;
 import io.casehub.api.model.CaseCompletion;
 import io.casehub.api.model.CaseDefinition;
+import io.casehub.api.model.CaseStatus;
 import io.casehub.api.model.Goal;
 import io.casehub.api.model.GoalBasedCompletion;
 import io.casehub.api.model.GoalExpression;
 import io.casehub.api.model.PredicateBasedCompletion;
 import io.casehub.api.model.evaluator.JQExpressionEvaluator;
+import io.casehub.api.view.CaseContextPathView;
+import io.casehub.api.view.CaseContextView;
+import io.casehub.api.view.CaseInstanceView;
+import io.casehub.api.view.CasePage;
 import io.casehub.api.view.CompletionSummaryView;
 import io.casehub.api.view.GoalEvaluationView;
 import io.casehub.api.view.GoalStatusView;
+import io.casehub.api.view.PlanItemView;
+import io.casehub.api.view.StartCaseRequest;
 import io.casehub.engine.common.internal.model.CaseInstance;
 import io.casehub.engine.common.internal.model.CaseMetaModel;
+import io.casehub.engine.common.internal.model.PlanItemRecord;
 import io.casehub.engine.common.spi.CaseDefinitionRegistry;
 import io.casehub.engine.common.spi.CaseInstanceRepository;
+import io.casehub.engine.common.spi.PlanItemStore;
+import io.casehub.engine.common.spi.query.CaseInstanceQuery;
 import io.casehub.engine.rest.exception.EntityNotFoundException;
 import io.casehub.platform.api.acl.AccessControlProvider;
 import io.casehub.platform.api.acl.AccessDeniedException;
@@ -59,6 +70,8 @@ public class CaseService {
   @Inject CaseHubRuntime runtime;
   @Inject CaseInstanceRepository instanceRepository;
   @Inject ExpressionEngineRegistry expressionEngineRegistry;
+  @Inject PlanItemStore planItemStore;
+  @Inject ObjectMapper objectMapper;
 
   public CaseInstance startCase(
       String namespace,
@@ -113,6 +126,92 @@ public class CaseService {
       throw new AccessDeniedException(actorId, resourceId, action);
     }
     return instance;
+  }
+
+  public CasePage listCases(
+      CaseStatus status,
+      String namespace,
+      String name,
+      String tenancyId,
+      Integer offset,
+      Integer limit) {
+    int page = offset != null ? offset : 0;
+    int size = limit != null ? limit : 20;
+    var query =
+        CaseInstanceQuery.builder()
+            .status(status)
+            .namespace(namespace)
+            .name(name)
+            .page(page)
+            .size(size)
+            .build();
+    String resolvedTenancyId = tenancyId != null ? tenancyId : currentPrincipal.tenancyId();
+    String actorId = currentPrincipal.actorId();
+    var items =
+        instanceRepository.query(query, resolvedTenancyId).stream()
+            .filter(
+                ci ->
+                    accessControlProvider.canAccess(
+                        actorId,
+                        new ResourceId(EngineResourceTypes.CASE, ci.getUuid().toString()),
+                        AclAction.READ))
+            .map(this::mapInstance)
+            .toList();
+    long total = items.size();
+    return new CasePage(items, total, total > (long) page * size + size);
+  }
+
+  public CaseInstanceView startCaseAndMap(StartCaseRequest request, String tenancyId) {
+    String resolvedTenancyId = tenancyId != null ? tenancyId : currentPrincipal.tenancyId();
+    var instance =
+        startCase(
+            request.namespace(),
+            request.name(),
+            request.version(),
+            request.context(),
+            resolvedTenancyId);
+    return mapInstance(instance);
+  }
+
+  public CaseContextView getCaseContext(UUID caseId, String tenancyId) {
+    requireCaseAccess(caseId, AclAction.READ);
+    Object context = runtime.query(caseId, ".");
+    return new CaseContextView(objectMapper.valueToTree(context));
+  }
+
+  public CaseContextPathView getCaseContextPath(UUID caseId, String path, String tenancyId) {
+    requireCaseAccess(caseId, AclAction.READ);
+    Object value = runtime.query(caseId, path);
+    return new CaseContextPathView(path, objectMapper.valueToTree(value));
+  }
+
+  public List<PlanItemView> getPlanItems(UUID caseId, String tenancyId) {
+    requireCaseAccess(caseId, AclAction.READ);
+    String resolvedTenancyId = tenancyId != null ? tenancyId : currentPrincipal.tenancyId();
+    return planItemStore.findByCaseId(caseId, resolvedTenancyId).stream()
+        .map(this::mapPlanItem)
+        .toList();
+  }
+
+  public CaseInstanceView mapInstance(CaseInstance instance) {
+    CaseMetaModel meta = instance.getCaseMetaModel();
+    return new CaseInstanceView(
+        instance.getUuid(),
+        instance.getState(),
+        meta.getNamespace(),
+        meta.getName(),
+        meta.getVersion(),
+        instance.getCreatedAt(),
+        instance.getActorId());
+  }
+
+  public PlanItemView mapPlanItem(PlanItemRecord record) {
+    return new PlanItemView(
+        UUID.fromString(record.planItemId()),
+        record.bindingName(),
+        record.status(),
+        record.targetType().name().toLowerCase().replace('_', '-'),
+        record.parentCompoundId() != null ? UUID.fromString(record.parentCompoundId()) : null);
   }
 
   public GoalEvaluationView evaluateGoals(UUID caseId, String tenancyId) {
