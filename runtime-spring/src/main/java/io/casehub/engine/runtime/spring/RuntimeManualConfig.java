@@ -15,51 +15,26 @@
  */
 package io.casehub.engine.runtime.spring;
 
-import io.casehub.api.engine.CaseHubRuntime;
 import io.casehub.api.engine.ExpressionEngineRegistry;
 import io.casehub.api.engine.LoopControl;
-import io.casehub.api.model.ai.ChatModelProvider;
 import io.casehub.api.model.cbr.CbrCaseTypeRegistration;
-import io.casehub.api.spi.ActionRiskClassifier;
 import io.casehub.api.spi.CaseChannelProvider;
-import io.casehub.api.spi.CaseOutcomeObserver;
-import io.casehub.api.spi.DataChannelFactory;
 import io.casehub.api.spi.DispatchBudget;
-import io.casehub.api.spi.FailureClassifier;
-import io.casehub.api.spi.StepOutcomeObserver;
 import io.casehub.api.spi.WorkerContextProvider;
-import io.casehub.api.spi.WorkerFunctionProvider;
 import io.casehub.api.spi.WorkerProvisioner;
-import io.casehub.api.spi.WorkerStatusListener;
 import io.casehub.api.spi.event.EventDispatcher;
 import io.casehub.api.spi.routing.GoalRemovalService;
-import io.casehub.api.spi.routing.RoutingOutcomeRecorder;
 import io.casehub.eidos.api.AgentRegistry;
-import io.casehub.eidos.api.BehavioralSignalStore;
 import io.casehub.eidos.api.CapabilityHealth;
-import io.casehub.eidos.api.DispositionEvolution;
-import io.casehub.eidos.api.DispositionHealth;
-import io.casehub.eidos.api.DispositionSignalStore;
 import io.casehub.eidos.api.GoalEvolution;
 import io.casehub.eidos.api.GoalSignalStore;
-import io.casehub.eidos.api.VocabularyRegistry;
-import io.casehub.engine.common.internal.channel.DataChannelRegistry;
 import io.casehub.engine.common.internal.context.BridgeResolver;
-import io.casehub.engine.common.internal.executor.WorkerExecutionConfig;
 import io.casehub.engine.common.internal.jq.JQEvaluator;
 import io.casehub.engine.common.internal.worker.scope.ScopedWorkerRegistry;
-import io.casehub.engine.common.spi.ActionGateScheduler;
 import io.casehub.engine.common.spi.CaseDefinitionRegistry;
-import io.casehub.engine.common.spi.CaseInstanceRepository;
-import io.casehub.engine.common.spi.CrossTenantEventLogRepository;
 import io.casehub.engine.common.spi.EventLogRepository;
-import io.casehub.engine.common.spi.JudgmentScheduler;
 import io.casehub.engine.common.spi.PlanItemStore;
-import io.casehub.engine.common.spi.Resettable;
 import io.casehub.engine.common.spi.cache.CaseInstanceCache;
-import io.casehub.engine.common.spi.recovery.CompoundLockRegistry;
-import io.casehub.engine.common.spi.recovery.RecoveryCoordinator;
-import io.casehub.engine.common.spi.recovery.WorkerExecutionRecoveryService;
 import io.casehub.engine.common.spi.scheduler.WorkerExecutionManager;
 import io.casehub.engine.common.spi.scheduler.WorkerExecutionRoutingStrategy;
 import io.casehub.engine.runtime.acl.WorkerGrantOrchestrator;
@@ -67,54 +42,33 @@ import io.casehub.engine.runtime.engine.CaseCompletionTracker;
 import io.casehub.engine.runtime.engine.CaseEvaluationSerializer;
 import io.casehub.engine.runtime.engine.QuiescenceTracker;
 import io.casehub.engine.runtime.engine.SignalSettlementTracker;
-import io.casehub.engine.runtime.engine.handler.ActionGateExpiredHandler;
-import io.casehub.engine.runtime.engine.handler.ActionGateRejectedHandler;
 import io.casehub.engine.runtime.engine.handler.CaseContextChangedEventHandler;
-import io.casehub.engine.runtime.engine.handler.CaseStatusChangedHandler;
-import io.casehub.engine.runtime.engine.handler.ContextOutputApplier;
-import io.casehub.engine.runtime.engine.handler.ExpectationValidator;
-import io.casehub.engine.runtime.engine.handler.GoalReachedEventHandler;
-import io.casehub.engine.runtime.engine.handler.MilestoneActivatedEventHandler;
-import io.casehub.engine.runtime.engine.handler.MilestoneCompletedEventHandler;
 import io.casehub.engine.runtime.engine.handler.WorkerScheduleEventHandler;
-import io.casehub.engine.runtime.engine.handler.WorkflowExecutionCompletedHandler;
 import io.casehub.engine.runtime.executor.WorkerRuntimeFactory;
 import io.casehub.engine.runtime.memory.AgentExperienceRecorder;
 import io.casehub.engine.runtime.memory.AgentMemoryRetriever;
-import io.casehub.engine.runtime.recovery.CaseRecoveryStateRegistry;
 import io.casehub.engine.runtime.routing.AgentCandidateFactory;
-import io.casehub.engine.runtime.routing.AgentGoalCompletionMarker;
-import io.casehub.engine.runtime.routing.BehavioralComplianceRecorder;
 import io.casehub.engine.runtime.routing.CbrRetrievalService;
 import io.casehub.engine.runtime.routing.GoalAbandonmentEvaluator;
 import io.casehub.engine.runtime.routing.GoalFormationEvaluator;
-import io.casehub.engine.runtime.routing.GoalOutcomeRecorder;
 import io.casehub.engine.runtime.routing.GoalRevisionEvaluator;
-import io.casehub.engine.runtime.routing.GoalSignalProvider;
-import io.casehub.engine.runtime.routing.LlmGoalFormationStrategy;
-import io.casehub.engine.runtime.routing.LlmGoalRevisionStrategy;
-import io.casehub.engine.runtime.routing.PersonalitySignalProvider;
-import io.casehub.engine.runtime.routing.PersonalitySignalRecorder;
 import io.casehub.engine.runtime.routing.SelectionContextStore;
-import io.casehub.engine.runtime.scheduler.SchedulerService;
-import io.casehub.engine.runtime.work.CaseResumptionService;
 import io.casehub.engine.runtime.worker.CompositeWorkerExecutionManager;
-import io.casehub.engine.runtime.worker.DefaultWorkerFunctionProviderRegistry;
-import io.casehub.engine.runtime.worker.FailureCritiqueService;
 import io.casehub.ledger.api.spi.LedgerTraceIdProvider;
 import io.casehub.neocortex.memory.CaseMemoryStore;
 import io.casehub.neocortex.memory.cbr.CbrPlanAdapter;
 import io.casehub.neocortex.memory.cbr.CbrPlanEnsembleAnalyzer;
 import io.casehub.neocortex.memory.cbr.CbrRecordStore;
 import io.casehub.platform.api.routing.StrategyResolver;
-import io.micrometer.core.instrument.MeterRegistry;
 import java.time.Duration;
 import java.util.List;
 import java.util.Optional;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.autoconfigure.AutoConfiguration;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnBean;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.context.annotation.Bean;
 
@@ -132,128 +86,10 @@ public class RuntimeManualConfig {
   }
 
   @Bean
-  public GoalReachedEventHandler goalReachedEventHandler(
-      CaseDefinitionRegistry caseDefinitionRegistry,
-      EventDispatcher eventDispatcher,
-      EventLogRepository eventLogRepository,
-      ApplicationEventPublisher publisher,
-      LedgerTraceIdProvider traceIdProvider) {
-    return new GoalReachedEventHandler(
-        caseDefinitionRegistry,
-        eventDispatcher,
-        eventLogRepository,
-        event -> publisher.publishEvent(event),
-        traceIdProvider);
-  }
-
-  @Bean
-  public MilestoneCompletedEventHandler milestoneCompletedEventHandler(
-      EventLogRepository eventLogRepository,
-      EventDispatcher eventDispatcher,
-      io.casehub.engine.common.spi.scheduler.JobScheduler scheduler,
-      ApplicationEventPublisher publisher,
-      LedgerTraceIdProvider traceIdProvider) {
-    return new MilestoneCompletedEventHandler(
-        eventLogRepository,
-        eventDispatcher,
-        scheduler,
-        event -> publisher.publishEvent(event),
-        traceIdProvider);
-  }
-
-  @Bean
-  public MilestoneActivatedEventHandler milestoneActivatedEventHandler(
-      EventLogRepository eventLogRepository,
-      EventDispatcher eventDispatcher,
-      io.casehub.engine.common.spi.scheduler.JobScheduler scheduler,
-      ApplicationEventPublisher publisher,
-      LedgerTraceIdProvider traceIdProvider) {
-    return new MilestoneActivatedEventHandler(
-        eventLogRepository,
-        eventDispatcher,
-        scheduler,
-        event -> publisher.publishEvent(event),
-        traceIdProvider);
-  }
-
-  @Bean
-  public ActionGateRejectedHandler actionGateRejectedHandler(
-      CaseInstanceCache caseInstanceCache,
-      EventLogRepository eventLogRepository,
-      EventDispatcher eventDispatcher,
-      WorkerStatusListener workerStatusListener,
-      RecoveryCoordinator recoveryCoordinator,
-      CaseInstanceRepository caseInstanceRepository,
-      Optional<RoutingOutcomeRecorder> outcomeRecorder) {
-    return new ActionGateRejectedHandler(
-        caseInstanceCache,
-        eventLogRepository,
-        eventDispatcher,
-        workerStatusListener,
-        recoveryCoordinator,
-        caseInstanceRepository,
-        outcomeRecorder);
-  }
-
-  @Bean
-  public ActionGateExpiredHandler actionGateExpiredHandler(
-      CaseInstanceCache caseInstanceCache,
-      EventLogRepository eventLogRepository,
-      EventDispatcher eventDispatcher,
-      WorkerStatusListener workerStatusListener,
-      CaseInstanceRepository caseInstanceRepository,
-      Optional<RoutingOutcomeRecorder> outcomeRecorder) {
-    return new ActionGateExpiredHandler(
-        caseInstanceCache,
-        eventLogRepository,
-        eventDispatcher,
-        workerStatusListener,
-        caseInstanceRepository,
-        outcomeRecorder);
-  }
-
-  @Bean
-  public AgentMemoryRetriever agentMemoryRetriever(Optional<CaseMemoryStore> caseMemoryStore) {
-    return new AgentMemoryRetriever(caseMemoryStore);
-  }
-
-  @Bean
-  public GoalOutcomeRecorder goalOutcomeRecorder(
-      Optional<GoalSignalStore> goalSignalStore, CaseDefinitionRegistry caseDefinitionRegistry) {
-    return new GoalOutcomeRecorder(goalSignalStore, caseDefinitionRegistry);
-  }
-
-  @Bean
-  public FailureCritiqueService failureCritiqueService(
-      Optional<ChatModelProvider> chatModelProvider) {
-    return new FailureCritiqueService(chatModelProvider);
-  }
-
-  @Bean
-  public PersonalitySignalRecorder personalitySignalRecorder(
-      Optional<DispositionSignalStore> signalStore,
-      CaseDefinitionRegistry caseDefinitionRegistry,
-      Optional<DispositionHealth> dispositionHealth,
-      Optional<DispositionEvolution> dispositionEvolution) {
-    return new PersonalitySignalRecorder(
-        signalStore, caseDefinitionRegistry, dispositionHealth, dispositionEvolution);
-  }
-
-  @Bean
-  public BehavioralComplianceRecorder behavioralComplianceRecorder(
-      Optional<BehavioralSignalStore> signalStore,
-      CaseDefinitionRegistry caseDefinitionRegistry,
-      Optional<PlanItemStore> planItemStore,
-      VocabularyRegistry vocabularyRegistry) {
-    return new BehavioralComplianceRecorder(
-        signalStore, caseDefinitionRegistry, planItemStore, vocabularyRegistry);
-  }
-
-  @Bean
   public GoalRevisionEvaluator goalRevisionEvaluator(
-      Optional<GoalSignalStore> goalSignalStore,
-      Optional<GoalEvolution> goalEvolution,
-      Optional<AgentRegistry> agentRegistry,
+      ObjectProvider<GoalSignalStore> goalSignalStore,
+      ObjectProvider<GoalEvolution> goalEvolution,
+      ObjectProvider<AgentRegistry> agentRegistry,
       GoalRemovalService goalRemovalService,
       CaseDefinitionRegistry caseDefinitionRegistry,
       StrategyResolver strategyResolver,
@@ -263,9 +99,9 @@ public class RuntimeManualConfig {
       @Value("${casehub.goal-revision.min-outcomes:3}") int minOutcomes,
       @Value("${casehub.goal-revision.importance-threshold:0.3}") double importanceThreshold) {
     return new GoalRevisionEvaluator(
-        goalSignalStore,
-        goalEvolution,
-        agentRegistry,
+        Optional.ofNullable(goalSignalStore.getIfAvailable()),
+        Optional.ofNullable(goalEvolution.getIfAvailable()),
+        Optional.ofNullable(agentRegistry.getIfAvailable()),
         goalRemovalService,
         caseDefinitionRegistry,
         strategyResolver,
@@ -278,9 +114,9 @@ public class RuntimeManualConfig {
 
   @Bean
   public GoalFormationEvaluator goalFormationEvaluator(
-      Optional<AgentRegistry> agentRegistry,
-      Optional<io.casehub.api.spi.routing.GoalFormationService> goalFormationService,
-      Optional<CaseMemoryStore> caseMemoryStore,
+      ObjectProvider<AgentRegistry> agentRegistry,
+      ObjectProvider<io.casehub.api.spi.routing.GoalFormationService> goalFormationService,
+      ObjectProvider<CaseMemoryStore> caseMemoryStore,
       CaseDefinitionRegistry caseDefinitionRegistry,
       StrategyResolver strategyResolver,
       EventLogRepository eventLogRepository,
@@ -291,9 +127,9 @@ public class RuntimeManualConfig {
       @Value("${casehub.engine.goal.formation.cooldown-minutes:60}") long cooldownMinutes,
       @Value("${casehub.engine.goal.formation.max-memories:20}") int maxMemories) {
     return new GoalFormationEvaluator(
-        agentRegistry,
-        goalFormationService,
-        caseMemoryStore,
+        Optional.ofNullable(agentRegistry.getIfAvailable()),
+        Optional.ofNullable(goalFormationService.getIfAvailable()),
+        Optional.ofNullable(caseMemoryStore.getIfAvailable()),
         caseDefinitionRegistry,
         strategyResolver,
         eventLogRepository,
@@ -307,21 +143,21 @@ public class RuntimeManualConfig {
 
   @Bean
   public AgentExperienceRecorder agentExperienceRecorder(
-      Optional<io.casehub.neocortex.memory.experience.ExperienceRecorder> experienceRecorder,
-      Optional<io.casehub.neocortex.memory.reflection.ReflectionOrchestrator>
+      ObjectProvider<io.casehub.neocortex.memory.experience.ExperienceRecorder> experienceRecorder,
+      ObjectProvider<io.casehub.neocortex.memory.reflection.ReflectionOrchestrator>
           reflectionOrchestrator,
       CaseDefinitionRegistry caseDefinitionRegistry,
       GoalFormationEvaluator goalFormationEvaluator,
-      Optional<CaseMemoryStore> caseMemoryStore,
-      Optional<MeterRegistry> meterRegistry,
+      ObjectProvider<CaseMemoryStore> caseMemoryStore,
+      ObjectProvider<io.micrometer.core.instrument.MeterRegistry> meterRegistry,
       @Value("${casehub.reasoning.enabled:true}") boolean reasoningEnabled) {
     return new AgentExperienceRecorder(
-        experienceRecorder,
-        reflectionOrchestrator,
+        Optional.ofNullable(experienceRecorder.getIfAvailable()),
+        Optional.ofNullable(reflectionOrchestrator.getIfAvailable()),
         caseDefinitionRegistry,
         goalFormationEvaluator,
-        caseMemoryStore,
-        meterRegistry,
+        Optional.ofNullable(caseMemoryStore.getIfAvailable()),
+        Optional.ofNullable(meterRegistry.getIfAvailable()),
         reasoningEnabled);
   }
 
@@ -332,80 +168,9 @@ public class RuntimeManualConfig {
       CbrPlanAdapter planAdapter,
       CbrPlanEnsembleAnalyzer ensembleAnalyzer,
       List<CbrCaseTypeRegistration> registrations,
-      @org.springframework.beans.factory.annotation.Value(
-              "${casehub.engine.cbr.ensemble-timeout-ms:5000}")
-          long ensembleTimeoutMs) {
+      @Value("${casehub.engine.cbr.ensemble-timeout-ms:5000}") long ensembleTimeoutMs) {
     return new CbrRetrievalService(
         jqEvaluator, cbrStore, planAdapter, ensembleAnalyzer, registrations, ensembleTimeoutMs);
-  }
-
-  @Bean
-  public io.casehub.engine.runtime.improvement.EvolutionTicker evolutionTicker(
-      io.casehub.engine.runtime.improvement.ImprovementGoalFormationStrategy goalFormation,
-      io.casehub.engine.runtime.improvement.ImprovementCircuitBreaker circuitBreaker,
-      io.casehub.engine.runtime.improvement.HealthScoreTracker healthTracker,
-      io.casehub.engine.runtime.improvement.RegressionDetector regressionDetector,
-      io.casehub.api.spi.routing.GoalFormationService goalFormationService,
-      io.casehub.engine.runtime.improvement.TickTraceBuffer traceBuffer,
-      ApplicationEventPublisher publisher) {
-    return new io.casehub.engine.runtime.improvement.EvolutionTicker(
-        goalFormation,
-        circuitBreaker,
-        healthTracker,
-        regressionDetector,
-        goalFormationService,
-        traceBuffer,
-        event -> publisher.publishEvent(event));
-  }
-
-  @Bean
-  public CaseStatusChangedHandler caseStatusChangedHandler(
-      EventDispatcher eventDispatcher,
-      CaseInstanceRepository caseInstanceRepository,
-      SchedulerService schedulerService,
-      ApplicationEventPublisher publisher,
-      CaseChannelProvider caseChannelProvider,
-      LedgerTraceIdProvider traceIdProvider,
-      List<CaseOutcomeObserver> outcomeObservers,
-      CaseCompletionTracker caseCompletionTracker,
-      ScopedWorkerRegistry scopedWorkerRegistry,
-      ContextOutputApplier contextOutputApplier,
-      WorkerGrantOrchestrator workerGrantOrchestrator,
-      DataChannelRegistry dataChannelRegistry,
-      CaseRecoveryStateRegistry recoveryStateRegistry,
-      CompoundLockRegistry compoundLockRegistry,
-      io.casehub.engine.common.internal.observation.ObservationRegistry observationRegistry,
-      io.casehub.engine.common.internal.observation.ContextHistoryBuffer contextHistoryBuffer,
-      io.casehub.engine.common.internal.signal.SignalRegistry signalRegistry,
-      io.casehub.engine.common.internal.observation.RuleRegistry ruleRegistry,
-      io.casehub.engine.common.internal.convergence.ActivityTracker activityTracker,
-      io.casehub.engine.runtime.convergence.ConvergenceDetector convergenceDetector) {
-    return new CaseStatusChangedHandler(
-        eventDispatcher,
-        caseInstanceRepository,
-        schedulerService,
-        event -> publisher.publishEvent(event),
-        caseChannelProvider,
-        traceIdProvider,
-        outcomeObservers,
-        caseCompletionTracker,
-        scopedWorkerRegistry,
-        contextOutputApplier,
-        workerGrantOrchestrator,
-        dataChannelRegistry,
-        recoveryStateRegistry,
-        compoundLockRegistry,
-        observationRegistry,
-        contextHistoryBuffer,
-        signalRegistry,
-        ruleRegistry,
-        activityTracker,
-        convergenceDetector,
-        java.util.Optional.empty(),
-        java.util.Optional.empty(),
-        java.util.Optional.empty(),
-        java.util.Optional.empty(),
-        java.util.Optional.empty());
   }
 
   @Bean
@@ -438,68 +203,6 @@ public class RuntimeManualConfig {
   }
 
   @Bean
-  public WorkflowExecutionCompletedHandler workflowExecutionCompletedHandler(
-      EventDispatcher eventDispatcher,
-      ApplicationEventPublisher publisher,
-      EventLogRepository eventLogRepository,
-      CaseDefinitionRegistry caseDefinitionRegistry,
-      CaseResumptionService caseResumptionService,
-      WorkerStatusListener workerStatusListener,
-      LedgerTraceIdProvider traceIdProvider,
-      ActionRiskClassifier actionRiskClassifier,
-      CaseInstanceRepository caseInstanceRepository,
-      SignalSettlementTracker settlementTracker,
-      QuiescenceTracker quiescenceTracker,
-      PersonalitySignalRecorder personalitySignalRecorder,
-      GoalOutcomeRecorder goalOutcomeRecorder,
-      BehavioralComplianceRecorder behavioralComplianceRecorder,
-      AgentGoalCompletionMarker agentGoalCompletionMarker,
-      AgentExperienceRecorder agentExperienceRecorder,
-      GoalRevisionEvaluator goalRevisionEvaluator,
-      WorkerGrantOrchestrator workerGrantOrchestrator,
-      ContextOutputApplier contextOutputApplier,
-      StrategyResolver strategyResolver,
-      RecoveryCoordinator recoveryCoordinator,
-      FailureClassifier failureClassifier,
-      ExpectationValidator expectationValidator,
-      FailureCritiqueService failureCritiqueService,
-      SelectionContextStore selectionContextStore,
-      Optional<RoutingOutcomeRecorder> outcomeRecorder,
-      Optional<ActionGateScheduler> actionGateScheduler,
-      List<StepOutcomeObserver> stepOutcomeObservers) {
-    return new WorkflowExecutionCompletedHandler(
-        eventDispatcher,
-        event -> publisher.publishEvent(event),
-        event -> publisher.publishEvent(event),
-        eventLogRepository,
-        caseDefinitionRegistry,
-        caseResumptionService,
-        workerStatusListener,
-        traceIdProvider,
-        actionRiskClassifier,
-        caseInstanceRepository,
-        settlementTracker,
-        quiescenceTracker,
-        personalitySignalRecorder,
-        goalOutcomeRecorder,
-        behavioralComplianceRecorder,
-        agentGoalCompletionMarker,
-        agentExperienceRecorder,
-        goalRevisionEvaluator,
-        workerGrantOrchestrator,
-        contextOutputApplier,
-        strategyResolver,
-        recoveryCoordinator,
-        failureClassifier,
-        expectationValidator,
-        failureCritiqueService,
-        selectionContextStore,
-        outcomeRecorder,
-        actionGateScheduler,
-        stepOutcomeObservers);
-  }
-
-  @Bean
   public CaseContextChangedEventHandler caseContextChangedEventHandler(
       EventDispatcher eventDispatcher,
       JQEvaluator jqEvaluator,
@@ -525,14 +228,22 @@ public class RuntimeManualConfig {
       SelectionContextStore selectionContextStore,
       DispatchBudget dispatchBudget,
       PlanItemStore planItemStore,
-      Optional<JudgmentScheduler> judgmentScheduler,
+      ObjectProvider<io.casehub.engine.common.spi.JudgmentScheduler> judgmentScheduler,
       io.casehub.engine.common.internal.observation.ObservationRegistry observationRegistry,
       io.casehub.engine.common.internal.observation.ContextHistoryBuffer contextHistoryBuffer,
       io.casehub.engine.common.internal.signal.SignalRegistry signalRegistry,
       io.casehub.engine.common.internal.observation.RuleRegistry ruleRegistry,
       io.casehub.engine.common.internal.convergence.ActivityTracker activityTracker,
       io.casehub.engine.runtime.convergence.ConvergenceDetector convergenceDetector,
-      io.casehub.engine.runtime.convergence.BudgetEnforcer budgetEnforcer) {
+      io.casehub.engine.runtime.convergence.BudgetEnforcer budgetEnforcer,
+      ObjectProvider<io.casehub.engine.runtime.stigmergy.StigmergyCoordinator> stigmergyCoordinator,
+      ObjectProvider<io.casehub.engine.runtime.stigmergy.RoleTracker> roleTracker,
+      ObjectProvider<io.casehub.engine.runtime.stigmergy.TeamDetector> teamDetector,
+      ObjectProvider<io.casehub.engine.runtime.stigmergy.SwarmProgressTracker> swarmProgressTracker,
+      ObjectProvider<io.casehub.engine.runtime.stigmergy.SwarmProvisioner> swarmProvisioner,
+      ObjectProvider<io.casehub.engine.runtime.improvement.ImprovementGoalFormationStrategy>
+          improvementStrategy,
+      ObjectProvider<io.casehub.api.spi.routing.GoalFormationService> goalFormationService) {
     return new CaseContextChangedEventHandler(
         eventDispatcher,
         jqEvaluator,
@@ -559,7 +270,7 @@ public class RuntimeManualConfig {
         dispatchBudget,
         planItemStore,
         event -> publisher.publishEvent(event),
-        judgmentScheduler,
+        Optional.ofNullable(judgmentScheduler.getIfAvailable()),
         observationRegistry,
         contextHistoryBuffer,
         signalRegistry,
@@ -567,25 +278,21 @@ public class RuntimeManualConfig {
         activityTracker,
         convergenceDetector,
         budgetEnforcer,
-        java.util.Optional.empty(),
-        java.util.Optional.empty(),
-        java.util.Optional.empty(),
-        java.util.Optional.empty(),
-        java.util.Optional.empty(),
-        java.util.Optional.empty(),
-        java.util.Optional.empty());
+        Optional.ofNullable(stigmergyCoordinator.getIfAvailable()),
+        Optional.ofNullable(roleTracker.getIfAvailable()),
+        Optional.ofNullable(teamDetector.getIfAvailable()),
+        Optional.ofNullable(swarmProgressTracker.getIfAvailable()),
+        Optional.ofNullable(swarmProvisioner.getIfAvailable()),
+        Optional.ofNullable(improvementStrategy.getIfAvailable()),
+        Optional.ofNullable(goalFormationService.getIfAvailable()));
   }
 
   @Bean
-  public io.casehub.engine.runtime.engine.EngineResetService engineResetService(
-      List<Resettable> resettables) {
-    return new io.casehub.engine.runtime.engine.EngineResetService(resettables);
-  }
-
-  @Bean
-  public DefaultWorkerFunctionProviderRegistry defaultWorkerFunctionProviderRegistry(
-      List<WorkerFunctionProvider> providers) {
-    return new DefaultWorkerFunctionProviderRegistry(providers);
+  public GoalAbandonmentEvaluator goalAbandonmentEvaluator(
+      ObjectProvider<GoalSignalStore> signalStore,
+      @Value("${casehub.engine.goal.abandonment-threshold:5}") int threshold) {
+    return new GoalAbandonmentEvaluator(
+        Optional.ofNullable(signalStore.getIfAvailable()), threshold);
   }
 
   @Bean
@@ -595,88 +302,54 @@ public class RuntimeManualConfig {
   }
 
   @Bean
-  public GoalAbandonmentEvaluator goalAbandonmentEvaluator(
-      Optional<GoalSignalStore> signalStore,
-      @Value("${casehub.engine.goal.abandonment-threshold:5}") int threshold) {
-    return new GoalAbandonmentEvaluator(signalStore, threshold);
-  }
-
-  @Bean
-  public PersonalitySignalProvider personalitySignalProvider(
-      Optional<DispositionHealth> dispositionHealth) {
-    return new PersonalitySignalProvider(dispositionHealth);
-  }
-
-  @Bean
-  public GoalSignalProvider goalSignalProvider(Optional<GoalAbandonmentEvaluator> evaluator) {
-    return new GoalSignalProvider(evaluator);
-  }
-
-  @Bean
-  public LlmGoalFormationStrategy llmGoalFormationStrategy(
-      Optional<ChatModelProvider> chatModelProvider) {
-    return new LlmGoalFormationStrategy(chatModelProvider);
-  }
-
-  @Bean
-  public LlmGoalRevisionStrategy llmGoalRevisionStrategy(
-      Optional<ChatModelProvider> chatModelProvider) {
-    return new LlmGoalRevisionStrategy(chatModelProvider);
-  }
-
-  @Bean
-  public io.casehub.engine.common.internal.executor.WorkerExecutionOrchestrator
-      workerExecutionOrchestrator(
-          io.casehub.engine.common.internal.executor.WorkerExecutor workerExecutor,
-          CaseDefinitionRegistry caseDefinitionRegistry,
-          WorkerContextProvider workerContextProvider,
-          EventDispatcher eventDispatcher,
-          WorkerExecutionRecoveryService recoveryService,
-          CrossTenantEventLogRepository crossTenantEventLogRepository,
-          EventLogRepository eventLogRepository,
-          WorkerExecutionConfig executionConfig,
-          BridgeResolver bridgeResolver,
-          WorkerStatusListener workerStatusListener,
-          ApplicationEventPublisher publisher,
-          LedgerTraceIdProvider traceIdProvider) {
-    return new io.casehub.engine.common.internal.executor.WorkerExecutionOrchestrator(
-        workerExecutor,
-        caseDefinitionRegistry,
-        workerContextProvider,
-        eventDispatcher,
-        recoveryService,
-        crossTenantEventLogRepository,
-        eventLogRepository,
-        executionConfig,
-        bridgeResolver,
-        workerStatusListener,
-        e -> publisher.publishEvent(e),
-        traceIdProvider);
-  }
-
-  @Bean
   public WorkerRuntimeFactory workerRuntimeFactory(
-      CaseHubRuntime caseHubRuntime,
+      io.casehub.api.engine.CaseHubRuntime caseHubRuntime,
       CaseDefinitionRegistry definitionRegistry,
       CaseInstanceCache caseInstanceCache,
       CaseCompletionTracker caseCompletionTracker,
-      DataChannelRegistry channelRegistry,
-      DataChannelFactory defaultChannelFactory,
+      io.casehub.engine.common.internal.channel.DataChannelRegistry channelRegistry,
+      io.casehub.api.spi.DataChannelFactory defaultChannelFactory,
       io.casehub.engine.common.internal.observation.ObservationRegistry observationRegistry,
       io.casehub.engine.common.internal.signal.SignalRegistry signalRegistry,
-      io.casehub.engine.common.spi.PlanItemStore planItemStore,
-      io.casehub.engine.common.internal.observation.RuleRegistry ruleRegistry) {
-    return new WorkerRuntimeFactory(
-        caseHubRuntime,
-        definitionRegistry,
-        caseInstanceCache,
-        caseCompletionTracker,
-        channelRegistry,
-        defaultChannelFactory,
-        observationRegistry,
-        signalRegistry,
-        planItemStore,
-        ruleRegistry);
+      PlanItemStore planItemStore,
+      io.casehub.engine.common.internal.observation.RuleRegistry ruleRegistry,
+      io.casehub.engine.common.internal.convergence.ActivityTracker activityTracker,
+      ObjectProvider<io.casehub.engine.runtime.stigmergy.StigmergyCoordinator> stigmergyCoordinator,
+      ObjectProvider<io.casehub.engine.runtime.stigmergy.RoleTracker> roleTracker,
+      ObjectProvider<io.casehub.engine.runtime.stigmergy.TeamDetector> teamDetector,
+      ObjectProvider<io.casehub.engine.runtime.stigmergy.SwarmProgressTracker>
+          swarmProgressTracker) {
+    var factory = new WorkerRuntimeFactory(
+        caseHubRuntime, definitionRegistry, caseInstanceCache, caseCompletionTracker,
+        channelRegistry, defaultChannelFactory, observationRegistry, signalRegistry,
+        planItemStore, ruleRegistry);
+    if (stigmergyCoordinator.getIfAvailable() != null) {
+      factory.setStigmergyCoordinator(stigmergyCoordinator.getIfAvailable());
+    }
+    if (roleTracker.getIfAvailable() != null) {
+      factory.setSwarmTrackers(
+          activityTracker, roleTracker.getIfAvailable(),
+          teamDetector.getIfAvailable(), swarmProgressTracker.getIfAvailable());
+    }
+    return factory;
+  }
+
+  @Bean
+  @ConditionalOnBean(io.casehub.engine.runtime.stigmergy.StigmergyCoordinator.class)
+  public io.casehub.engine.runtime.stigmergy.SwarmProvisioner swarmProvisioner(
+      WorkerProvisioner workerProvisioner,
+      io.casehub.engine.runtime.stigmergy.StigmergyCoordinator coordinator,
+      io.casehub.engine.common.internal.signal.SignalRegistry signalRegistry,
+      io.casehub.engine.common.internal.convergence.ActivityTracker activityTracker,
+      io.casehub.engine.runtime.stigmergy.RoleTracker roleTracker,
+      io.casehub.engine.runtime.stigmergy.TeamDetector teamDetector,
+      io.casehub.engine.runtime.stigmergy.SwarmProgressTracker progressTracker,
+      DispatchBudget dispatchBudget,
+      ObjectProvider<io.casehub.api.spi.stigmergy.SwarmProvisioningAdvisor> advisorProvider) {
+    return new io.casehub.engine.runtime.stigmergy.SwarmProvisioner(
+        workerProvisioner, coordinator, signalRegistry, activityTracker,
+        roleTracker, teamDetector, progressTracker, dispatchBudget,
+        advisorProvider.getIfAvailable());
   }
 
   @Bean

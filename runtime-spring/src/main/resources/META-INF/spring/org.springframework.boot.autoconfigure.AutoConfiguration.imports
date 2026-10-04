@@ -1,1 +1,2 @@
-io.casehub.engine.internal.spring.RuntimeManualConfig
+io.casehub.engine.runtime.spring.RuntimeManualConfig
+io.casehub.engine.runtime.spring.RuntimeAutoConfiguration
