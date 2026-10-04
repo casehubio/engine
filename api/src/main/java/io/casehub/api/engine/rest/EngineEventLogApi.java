@@ -13,28 +13,30 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.casehub.engine.rest.service;
+package io.casehub.api.engine.rest;
 
-import io.casehub.api.engine.rest.EngineEventLogApi;
 import io.casehub.api.view.EventLogPage;
-import jakarta.enterprise.context.ApplicationScoped;
-import jakarta.inject.Inject;
+import io.casehub.platform.api.mcp.McpDomain;
+import io.casehub.platform.api.mcp.PaginatedResponse;
+import io.casehub.platform.api.mcp.PathParam;
+import io.casehub.platform.api.mcp.PlatformQuery;
+import io.casehub.platform.api.mcp.QueryParam;
 import java.util.List;
 import java.util.UUID;
 
-@ApplicationScoped
-public class DefaultEngineEventLogApi implements EngineEventLogApi {
+@McpDomain(
+    value = "engine/events",
+    app = "engine",
+    summary = "Case event log — audit trail of all case actions")
+public interface EngineEventLogApi {
 
-  @Inject EventLogService eventLogService;
-
-  @Override
-  public EventLogPage getEventLog(
-      UUID caseId,
+  @PlatformQuery("Get paginated and filtered event log for a case")
+  @PaginatedResponse
+  EventLogPage getEventLog(
+      @PathParam UUID caseId,
       String tenancyId,
       Integer offset,
       Integer limit,
-      List<String> eventTypes,
-      List<String> streamTypes) {
-    return eventLogService.getEventLog(caseId, tenancyId, offset, limit, eventTypes, streamTypes);
-  }
+      @QueryParam("eventTypes") List<String> eventTypes,
+      @QueryParam("streamTypes") List<String> streamTypes);
 }
