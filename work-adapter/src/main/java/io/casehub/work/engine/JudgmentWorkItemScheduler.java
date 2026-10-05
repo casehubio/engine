@@ -54,9 +54,8 @@ public class JudgmentWorkItemScheduler implements JudgmentScheduler {
   @Transactional
   public void schedule(JudgmentScheduleRequest request) {
     CasePlanModel plan = registry.get(request.caseId()).orElse(null);
-    PlanItem item = plan != null
-        ? plan.getPlanItemByBindingName(request.bindingName()).orElse(null)
-        : null;
+    PlanItem item =
+        plan != null ? plan.getPlanItemByBindingName(request.bindingName()).orElse(null) : null;
 
     String planItemId;
     if (item != null) {

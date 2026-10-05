@@ -91,7 +91,8 @@ public class CloudEventJudgmentScheduler implements JudgmentScheduler {
                 request.resolvedCandidateUsers(),
                 request.payloadTypeName(),
                 request.experiences(),
-                request.candidateScores())));
+                request.candidateScores(),
+                request.planItemId())));
   }
 
   @Override
