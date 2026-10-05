@@ -399,7 +399,8 @@ public class CaseContextChangedEventHandler {
           effectiveSignalId,
           experiences,
           traceId,
-          activationSnapshot);
+          activationSnapshot,
+          planCtx);
     } else {
       @SuppressWarnings("unchecked")
       java.util.concurrent.CompletableFuture<Void>[] futures =
@@ -422,7 +423,8 @@ public class CaseContextChangedEventHandler {
                                 effectiveSignalId,
                                 experiences,
                                 traceId,
-                                activationSnapshot),
+                                activationSnapshot,
+                                planCtx),
                         virtualThreads);
                   })
               .toArray(java.util.concurrent.CompletableFuture[]::new);
@@ -497,7 +499,8 @@ public class CaseContextChangedEventHandler {
       final UUID signalId,
       final List<RetrievedExperience> experiences,
       final String traceId,
-      JsonNode activationSnapshot) {
+      JsonNode activationSnapshot,
+      final PlanExecutionContext planCtx) {
     if (binding.getContextWrite() != null && !binding.getContextWrite().isEmpty()) {
       binding
           .getContextWrite()
@@ -520,7 +523,7 @@ public class CaseContextChangedEventHandler {
       case SubCaseTarget st ->
           publishSubCaseSchedule(caseInstance, st.subCase(), binding.getName());
       case io.casehub.api.model.JudgmentTarget jt ->
-          publishJudgmentSchedule(caseInstance, caseDefinition, binding, jt, experiences);
+          publishJudgmentSchedule(caseInstance, caseDefinition, binding, jt, experiences, planCtx);
       case io.casehub.api.model.SignalTarget st ->
           eventDispatcher.dispatch(
               new io.casehub.engine.common.internal.event.ContextSignalEvent(
@@ -851,7 +854,8 @@ public class CaseContextChangedEventHandler {
       final CaseDefinition caseDefinition,
       final Binding binding,
       final io.casehub.api.model.JudgmentTarget target,
-      final List<RetrievedExperience> experiences) {
+      final List<RetrievedExperience> experiences,
+      final PlanExecutionContext planCtx) {
     if (!judgmentScheduler.isPresent()) {
       LOG.warnf(
           "No JudgmentScheduler on classpath — skipping judgment binding '%s' caseId=%s",
@@ -1000,7 +1004,8 @@ public class CaseContextChangedEventHandler {
                 resolvedUsers,
                 payloadTypeName,
                 experiences,
-                candidateScores));
+                candidateScores,
+                planCtx.dispatchMetadata().get(binding.getName())));
 
     LOG.infof(
         "Judgment yield dispatched: caseId=%s binding=%s",

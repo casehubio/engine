@@ -54,27 +54,34 @@ public class JudgmentWorkItemScheduler implements JudgmentScheduler {
   @Transactional
   public void schedule(JudgmentScheduleRequest request) {
     CasePlanModel plan = registry.get(request.caseId()).orElse(null);
-    if (plan == null) {
-      LOG.warnf("No CasePlanModel for caseId=%s — judgment not dispatched", request.caseId());
-      return;
+    PlanItem item = plan != null
+        ? plan.getPlanItemByBindingName(request.bindingName()).orElse(null)
+        : null;
+
+    String planItemId;
+    if (item != null) {
+      if (item.getStatus() != TaskStatus.DISPATCHING) {
+        LOG.warnf(
+            "PlanItem for binding '%s' case %s is not DISPATCHING (status=%s) — skipping",
+            request.bindingName(), request.caseId(), item.getStatus());
+        return;
+      }
+      planItemId = item.getPlanItemId();
+    } else if (request.planItemId() != null) {
+      planItemId = request.planItemId();
+      LOG.infof(
+          "CasePlanModel evicted for caseId=%s — using planItemId from request for binding '%s'",
+          request.caseId(), request.bindingName());
+    } else {
+      throw new IllegalStateException(
+          "Cannot schedule judgment for binding '"
+              + request.bindingName()
+              + "' caseId="
+              + request.caseId()
+              + " — CasePlanModel evicted and no planItemId in request");
     }
 
-    PlanItem item = plan.getPlanItemByBindingName(request.bindingName()).orElse(null);
-    if (item == null) {
-      LOG.warnf(
-          "PlanItem for binding '%s' not found in case %s",
-          request.bindingName(), request.caseId());
-      return;
-    }
-
-    if (item.getStatus() != TaskStatus.DISPATCHING) {
-      LOG.warnf(
-          "PlanItem for binding '%s' case %s is not DISPATCHING (status=%s) — skipping",
-          request.bindingName(), request.caseId(), item.getStatus());
-      return;
-    }
-
-    String callerRef = PlanItemRef.encode(request.caseId(), item.getPlanItemId());
+    String callerRef = PlanItemRef.encode(request.caseId(), planItemId);
     JudgmentTarget target = request.target();
 
     String payload = null;
@@ -117,17 +124,20 @@ public class JudgmentWorkItemScheduler implements JudgmentScheduler {
       LOG.warnf(
           "Failed to create WorkItem for judgment binding '%s' case %s — reverting to PENDING: %s",
           request.bindingName(), request.caseId(), e.getMessage());
-      item.revertDispatching();
+      if (item != null) {
+        item.revertDispatching();
+      }
       return;
     }
 
+    Instant createdAt = item != null ? item.getCreatedAt() : Instant.now();
     planItemStore.save(
         PlanItemSaveRequest.primitive(
             request.caseId(),
-            item.getPlanItemId(),
-            item.getBindingName(),
+            planItemId,
+            request.bindingName(),
             TaskStatus.DELEGATED,
-            item.getCreatedAt(),
+            createdAt,
             TargetType.JUDGMENT,
             extractOutputMappingExpression(target),
             request.tenancyId(),
@@ -135,7 +145,9 @@ public class JudgmentWorkItemScheduler implements JudgmentScheduler {
             null,
             null),
         request.tenancyId());
-    item.markDelegated();
+    if (item != null) {
+      item.markDelegated();
+    }
     LOG.infof("WorkItem created (judgment) for binding callerRef=%s", callerRef);
   }
 

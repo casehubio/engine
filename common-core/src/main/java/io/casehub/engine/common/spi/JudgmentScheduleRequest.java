@@ -17,57 +17,57 @@ package io.casehub.engine.common.spi;
 
 import io.casehub.api.model.JudgmentTarget;
 import io.casehub.api.spi.routing.RetrievedExperience;
+import org.jspecify.annotations.Nullable;
+
 import java.time.Instant;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
-import org.jspecify.annotations.Nullable;
 
-/**
- * @deprecated Use {@link JudgmentRequest} with {@link JudgmentPayload.BindingPayload} instead.
- */
 @Deprecated(forRemoval = true)
 public record JudgmentScheduleRequest(
-    UUID caseId,
-    String tenancyId,
-    String bindingName,
-    JudgmentTarget target,
-    Map<String, Object> inputData,
-    @Nullable String resolutionTypeName,
-    @Nullable Instant expiresAtDeadline,
-    @Nullable Instant caseBudgetDeadline,
-    @Nullable String resolvedTitle,
-    @Nullable String resolvedScope,
-    @Nullable Set<String> resolvedCandidateGroups,
-    @Nullable Set<String> resolvedCandidateUsers,
-    @Nullable String payloadTypeName,
-    List<RetrievedExperience> experiences,
-    Map<String, Double> candidateScores) {
+        UUID caseId,
+        String tenancyId,
+        String bindingName,
+        JudgmentTarget target,
+        Map<String, Object> inputData,
+        @Nullable String resolutionTypeName,
+        @Nullable Instant expiresAtDeadline,
+        @Nullable Instant caseBudgetDeadline,
+        @Nullable String resolvedTitle,
+        @Nullable String resolvedScope,
+        @Nullable Set<String> resolvedCandidateGroups,
+        @Nullable Set<String> resolvedCandidateUsers,
+        @Nullable String payloadTypeName,
+        List<RetrievedExperience> experiences,
+        Map<String, Double> candidateScores,
+        @Nullable String planItemId) {
 
-  public JudgmentScheduleRequest(
-      UUID caseId,
-      String tenancyId,
-      String bindingName,
-      JudgmentTarget target,
-      Map<String, Object> inputData,
-      @Nullable String resolutionTypeName,
-      @Nullable Instant expiresAtDeadline) {
-    this(
-        caseId,
-        tenancyId,
-        bindingName,
-        target,
-        inputData,
-        resolutionTypeName,
-        expiresAtDeadline,
-        null,
-        null,
-        null,
-        null,
-        null,
-        null,
-        List.of(),
-        Map.of());
-  }
+    public JudgmentScheduleRequest(
+            UUID caseId,
+            String tenancyId,
+            String bindingName,
+            JudgmentTarget target,
+            Map<String, Object> inputData,
+            @Nullable String resolutionTypeName,
+            @Nullable Instant expiresAtDeadline) {
+        this(
+                caseId,
+                tenancyId,
+                bindingName,
+                target,
+                inputData,
+                resolutionTypeName,
+                expiresAtDeadline,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                List.of(),
+                Map.of(),
+                null);
+    }
 }
