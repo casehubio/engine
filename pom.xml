@@ -132,6 +132,7 @@
         <module>react</module>
         <module>work-cloudevent</module>
         <module>queue</module>
+        <module>rest-core</module>
         <module>rest</module>
         <module>graphql</module>
         <module>examples/typed-context</module>
@@ -262,6 +263,11 @@
             <dependency>
                 <groupId>io.casehub</groupId>
                 <artifactId>casehub-platform-acl-worker</artifactId>
+                <version>${version.io.casehub}</version>
+            </dependency>
+            <dependency>
+                <groupId>io.casehub</groupId>
+                <artifactId>casehub-platform-acl-worker-spring</artifactId>
                 <version>${version.io.casehub}</version>
             </dependency>
             <dependency>
