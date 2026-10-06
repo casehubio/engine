@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.casehub.engine.rest.dto;
+package io.casehub.engine.plan.execution;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
@@ -22,10 +22,6 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import io.casehub.api.model.CaseDefinition;
 import io.casehub.engine.plan.JoinType;
-import io.casehub.engine.plan.execution.AgendaItemSnapshot;
-import io.casehub.engine.plan.execution.CasePlanModelSnapshot;
-import io.casehub.engine.plan.execution.DagResultSnapshot;
-import io.casehub.engine.plan.execution.NodeStateSnapshot;
 import io.casehub.engine.plan.snapshot.DagNodeSnapshot;
 import io.casehub.engine.plan.snapshot.DagPlanSnapshot;
 import java.time.Duration;
@@ -196,7 +192,7 @@ class ExecutionStateSnapshotTest {
     assertTrue(snapshot.activeAgents().isEmpty());
   }
 
-  // --- target type (#913) ---
+  // --- target type ---
 
   @Test
   void activeAgent_usesTargetTypeFromAgenda() {
@@ -221,7 +217,7 @@ class ExecutionStateSnapshotTest {
     assertEquals("WORKER", snapshot.activeAgents().get(0).type());
   }
 
-  // --- TIMEOUT detection (#914) ---
+  // --- TIMEOUT detection ---
 
   @Test
   void mapTaskStatus_faultedWithTimeoutReasonToTimeout() {
@@ -263,7 +259,7 @@ class ExecutionStateSnapshotTest {
     assertEquals("DECLINED", ExecutionStateSnapshot.mapTaskStatusToResult("REJECTED", null));
   }
 
-  // --- per-agent duration (#915) ---
+  // --- per-agent duration ---
 
   @Test
   void completedAgent_includesDurationFromDagResult() {
@@ -293,7 +289,7 @@ class ExecutionStateSnapshotTest {
     assertNull(snapshot.completedAgents().get(0).duration());
   }
 
-  // --- strategy fields (#916) ---
+  // --- strategy fields ---
 
   @Test
   void model_populatesStrategiesFromCaseDefinition() {
