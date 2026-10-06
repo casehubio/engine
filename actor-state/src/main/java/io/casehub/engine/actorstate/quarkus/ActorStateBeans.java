@@ -70,7 +70,10 @@ public class ActorStateBeans {
   @Produces
   @ApplicationScoped
   QhorusActorStateContributor qhorusActorStateContributor(
-      CommitmentStore commitmentStore, ChannelStore channelStore) {
-    return new QhorusActorStateContributor(commitmentStore, channelStore);
+      Instance<CommitmentStore> commitmentStore, Instance<ChannelStore> channelStore) {
+    if (!commitmentStore.isResolvable() || !channelStore.isResolvable()) {
+      return new QhorusActorStateContributor(null, null);
+    }
+    return new QhorusActorStateContributor(commitmentStore.get(), channelStore.get());
   }
 }

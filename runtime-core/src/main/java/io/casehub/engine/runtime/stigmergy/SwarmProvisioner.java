@@ -48,6 +48,7 @@ import java.util.concurrent.locks.ReentrantLock;
 
 public class SwarmProvisioner implements Resettable {
 
+  private final boolean active;
   private final WorkerProvisioner workerProvisioner;
   private final StigmergyCoordinator coordinator;
   private final SignalRegistry signalRegistry;
@@ -70,6 +71,7 @@ public class SwarmProvisioner implements Resettable {
       SwarmProgressTracker progressTracker,
       DispatchBudget dispatchBudget,
       SwarmProvisioningAdvisor advisor) {
+    this.active = true;
     this.workerProvisioner = workerProvisioner;
     this.coordinator = coordinator;
     this.signalRegistry = signalRegistry;
@@ -81,8 +83,24 @@ public class SwarmProvisioner implements Resettable {
     this.advisor = advisor;
   }
 
+  public SwarmProvisioner() {
+    this.active = false;
+    this.workerProvisioner = null;
+    this.coordinator = null;
+    this.signalRegistry = null;
+    this.activityTracker = null;
+    this.roleTracker = null;
+    this.teamDetector = null;
+    this.progressTracker = null;
+    this.dispatchBudget = null;
+    this.advisor = null;
+  }
+
   public List<SwarmEvent> evaluateAndProvision(
       UUID caseId, SwarmConfig swarmConfig, StigmergyConfig stigConfig) {
+    if (!active) {
+      return List.of();
+    }
     var state = cases.computeIfAbsent(caseId, k -> new CaseProvisionState());
 
     if (!state.provisionLock.tryLock()) {
@@ -243,6 +261,7 @@ public class SwarmProvisioner implements Resettable {
   }
 
   public List<SwarmEvent> evaluateDeprovisioning(UUID caseId, SwarmConfig config) {
+    if (!active) return List.of();
     var state = cases.get(caseId);
     if (state == null) return List.of();
 
@@ -350,6 +369,16 @@ public class SwarmProvisioner implements Resettable {
 
   SwarmBootstrapContext buildBootstrapContext(
       UUID caseId, SwarmConfig config, ProvisioningRequest request) {
+    if (!active) {
+      return new SwarmBootstrapContext(
+          Map.of(),
+          Set.of(),
+          List.of(),
+          List.of(),
+          SwarmProgress.EMPTY,
+          request,
+          IntegrationPolicy.BALANCED);
+    }
     var policy =
         config.integrationPolicy() != null
             ? config.integrationPolicy()

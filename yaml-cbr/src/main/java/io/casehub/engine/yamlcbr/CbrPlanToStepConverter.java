@@ -54,6 +54,6 @@ public class CbrPlanToStepConverter {
         .map(
             entry ->
                 new ResolvedStep.PluginStep(
-                    step.capabilityName(), entry, step.parameters(), Map.of()));
+                    step.capabilityName(), entry.name(), step.parameters(), Map.of()));
   }
 }
