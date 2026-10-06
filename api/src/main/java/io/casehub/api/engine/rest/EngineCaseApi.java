@@ -29,6 +29,7 @@ import io.casehub.platform.api.mcp.PaginatedResponse;
 import io.casehub.platform.api.mcp.PathParam;
 import io.casehub.platform.api.mcp.PlatformMutation;
 import io.casehub.platform.api.mcp.PlatformQuery;
+import io.casehub.platform.api.mcp.PlatformStream;
 import io.casehub.platform.api.mcp.RestStatus;
 import java.util.List;
 import java.util.UUID;
@@ -69,6 +70,6 @@ public interface EngineCaseApi {
   @PlatformQuery("Evaluate goals against live case context")
   GoalEvaluationView getGoals(@PathParam UUID caseId, String tenancyId);
 
-  // SSE streaming — excluded from annotation processing (Flow.Publisher not yet supported)
+  @PlatformStream("Live case event stream")
   Flow.Publisher<CaseStreamEventView> caseStream(@PathParam UUID caseId);
 }

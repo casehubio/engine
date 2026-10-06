@@ -69,10 +69,11 @@ import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.autoconfigure.AutoConfiguration;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnBean;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.context.annotation.Bean;
 
-@AutoConfiguration
+@AutoConfiguration(afterName = "io.casehub.persistence.spring.PersistenceAutoConfiguration")
 public class RuntimeManualConfig {
 
   @Bean
@@ -369,7 +370,7 @@ public class RuntimeManualConfig {
   }
 
   @Bean
-  @org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean
+  @ConditionalOnMissingBean
   public io.casehub.api.spi.ContextDiffStrategy contextDiffStrategy(
       @Value("${casehub.engine.diff-strategy:none}") String strategy) {
     return switch (strategy) {
@@ -400,12 +401,14 @@ public class RuntimeManualConfig {
   }
 
   @Bean
+  @ConditionalOnMissingBean
   public io.casehub.engine.common.spi.CrossTenantEventLogRepository crossTenantEventLogRepository(
       io.casehub.engine.common.spi.CrossTenantEventLogRepository repo) {
     return repo;
   }
 
   @Bean
+  @ConditionalOnMissingBean
   public io.casehub.engine.common.spi.CrossTenantCaseInstanceRepository
       crossTenantCaseInstanceRepository(
           io.casehub.engine.common.spi.CrossTenantCaseInstanceRepository repo) {
