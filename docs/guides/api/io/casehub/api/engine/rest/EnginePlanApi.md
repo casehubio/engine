@@ -6,7 +6,7 @@
 
 ## Methods
 
-### `public abstract Multi<JsonNode> executionStateStream(java.util.UUID caseId)`
+### `public abstract java.util.concurrent.Flow.Publisher<JsonNode> executionStateStream(java.util.UUID caseId)`
 
 #### Parameters
 
