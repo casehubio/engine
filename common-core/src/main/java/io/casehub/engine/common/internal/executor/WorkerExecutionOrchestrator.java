@@ -179,7 +179,9 @@ public class WorkerExecutionOrchestrator {
     }
 
     String workerId = eventLog.getWorkerId();
-    String capabilityName = eventLog.getMetadata().get("capabilityName").asText();
+    JsonNode capNode =
+        eventLog.getMetadata() != null ? eventLog.getMetadata().get("capabilityName") : null;
+    String capabilityName = capNode != null ? capNode.asText() : null;
     String bindingName =
         eventLog.getMetadata().has("bindingName")
             ? eventLog.getMetadata().get("bindingName").asText()
@@ -208,15 +210,19 @@ public class WorkerExecutionOrchestrator {
       return;
     }
 
+    String effectiveCapability =
+        capabilityName != null
+            ? capabilityName
+            : worker.capabilities().isEmpty() ? workerId : worker.capabilities().iterator().next();
     Capability capability =
         definition.getCapabilities().stream()
-            .filter(c -> c.name().equals(capabilityName))
+            .filter(c -> c.name().equals(effectiveCapability))
             .findFirst()
             .orElse(null);
     if (capability == null) {
       retryHandler.handleFailure(
           effectiveTaskData,
-          new RuntimeException("Capability not found: " + capabilityName),
+          new RuntimeException("Capability not found: " + effectiveCapability),
           "Capability not found");
       return;
     }
