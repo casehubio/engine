@@ -17,10 +17,9 @@ package io.casehub.api.model.converter;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.dataformat.yaml.YAMLFactory;
 import io.casehub.api.model.CaseDefinition;
 import io.casehub.yaml.core.resolver.VariableSource;
+import io.casehub.yaml.jackson.YamlMappers;
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
@@ -33,7 +32,7 @@ class CaseDefinitionYamlMapperVariableTest {
       throws IOException {
     return CaseDefinitionYamlMapper.load(
         new ByteArrayInputStream(yaml.getBytes(StandardCharsets.UTF_8)),
-        new ObjectMapper(new YAMLFactory()),
+        YamlMappers.create(),
         null,
         null,
         sources,
