@@ -17,11 +17,9 @@ package io.casehub.engine.rest.service;
 
 import io.casehub.api.engine.rest.EngineCaseApi;
 import io.casehub.api.model.CaseStatus;
-import io.casehub.api.view.CaseContextChangeEventView;
 import io.casehub.api.view.CaseContextPathView;
 import io.casehub.api.view.CaseContextView;
 import io.casehub.api.view.CaseInstanceView;
-import io.casehub.api.view.CaseLifecycleEventView;
 import io.casehub.api.view.CasePage;
 import io.casehub.api.view.CaseStreamEventView;
 import io.casehub.api.view.GoalEvaluationView;
@@ -29,11 +27,11 @@ import io.casehub.api.view.PlanItemView;
 import io.casehub.api.view.StartCaseRequest;
 import io.casehub.engine.rest.CaseStreamBroadcaster;
 import io.casehub.platform.api.acl.AclAction;
-import io.smallrye.mutiny.Multi;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
 import java.util.List;
 import java.util.UUID;
+import java.util.concurrent.Flow;
 
 @ApplicationScoped
 public class DefaultEngineCaseApi implements EngineCaseApi {
@@ -84,17 +82,7 @@ public class DefaultEngineCaseApi implements EngineCaseApi {
   }
 
   @Override
-  public Multi<CaseStreamEventView> caseStream(UUID caseId) {
+  public Flow.Publisher<CaseStreamEventView> caseStream(UUID caseId) {
     return caseStreamBroadcaster.stream(caseId);
-  }
-
-  @Override
-  public Multi<CaseLifecycleEventView> caseLifecycle(UUID caseId) {
-    return Multi.createFrom().empty();
-  }
-
-  @Override
-  public Multi<CaseContextChangeEventView> caseContextChange(UUID caseId) {
-    return Multi.createFrom().empty();
   }
 }

@@ -17,10 +17,10 @@ package io.casehub.engine.rest.service;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import io.casehub.api.engine.rest.EnginePlanApi;
-import io.smallrye.mutiny.Multi;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
 import java.util.UUID;
+import java.util.concurrent.Flow;
 
 @ApplicationScoped
 public class DefaultEnginePlanApi implements EnginePlanApi {
@@ -58,7 +58,7 @@ public class DefaultEnginePlanApi implements EnginePlanApi {
   }
 
   @Override
-  public Multi<JsonNode> executionStateStream(UUID caseId) {
+  public Flow.Publisher<JsonNode> executionStateStream(UUID caseId) {
     return planService.executionStateStream(caseId);
   }
 }
