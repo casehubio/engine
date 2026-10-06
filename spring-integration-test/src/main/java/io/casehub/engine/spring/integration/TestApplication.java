@@ -23,7 +23,9 @@ import org.springframework.boot.persistence.autoconfigure.EntityScan;
     excludeName = {
       "org.springframework.ai.mcp.server.common.autoconfigure.McpServerAutoConfiguration",
       "io.casehub.ledger.spring.LedgerAutoConfiguration",
-      "io.casehub.ledger.spring.LedgerManualConfig"
+      "io.casehub.ledger.spring.LedgerManualConfig",
+      "io.casehub.engine.resilience.spring.ResilienceAutoConfiguration",
+      "io.casehub.engine.runtime.spring.RuntimeAutoConfiguration"
     })
 @EntityScan(basePackages = {"io.casehub.persistence.jpa", "io.casehub.platform"})
 public class TestApplication {
