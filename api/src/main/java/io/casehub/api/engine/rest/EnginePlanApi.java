@@ -19,6 +19,7 @@ import com.fasterxml.jackson.databind.JsonNode;
 import io.casehub.platform.api.mcp.McpDomain;
 import io.casehub.platform.api.mcp.PathParam;
 import io.casehub.platform.api.mcp.PlatformQuery;
+import io.casehub.platform.api.mcp.PlatformStream;
 import java.util.UUID;
 import java.util.concurrent.Flow;
 
@@ -43,6 +44,6 @@ public interface EnginePlanApi {
   @PlatformQuery("Get composed execution state snapshot")
   JsonNode getExecutionState(@PathParam UUID caseId, String tenancyId);
 
-  // SSE streaming — excluded from annotation processing (Flow.Publisher not yet supported)
+  @PlatformStream("Live execution state updates")
   Flow.Publisher<JsonNode> executionStateStream(@PathParam UUID caseId);
 }

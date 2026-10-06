@@ -41,6 +41,7 @@ import java.time.Duration;
 import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.TimeUnit;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 @QuarkusTest
@@ -50,6 +51,11 @@ class HybridOrchestrationIntegrationTest {
   @Inject CaseInstanceCache cache;
   @Inject SignalAwaitBean signalAwaitBean;
   @Inject SpawnParentBean spawnParentBean;
+
+  @BeforeEach
+  void setUp() {
+    cache.clear();
+  }
 
   // signalAndAwait test
   @Test
