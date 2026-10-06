@@ -13,12 +13,9 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.casehub.engine.rest.dto;
+package io.casehub.engine.plan.execution;
 
 import io.casehub.api.model.CaseDefinition;
-import io.casehub.engine.plan.execution.CasePlanModelSnapshot;
-import io.casehub.engine.plan.execution.DagResultSnapshot;
-import io.casehub.engine.plan.execution.NodeStateSnapshot;
 import io.casehub.engine.plan.snapshot.DagNodeSnapshot;
 import io.casehub.engine.plan.snapshot.DagPlanSnapshot;
 import java.time.Instant;

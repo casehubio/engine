@@ -13,8 +13,10 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.casehub.engine.rest;
+package io.casehub.engine.runtime.spring.broadcast;
 
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import io.casehub.api.model.CaseDefinition;
 import io.casehub.engine.common.spi.CaseDefinitionRegistry;
 import io.casehub.engine.common.spi.CaseInstanceRepository;
@@ -23,42 +25,56 @@ import io.casehub.engine.common.spi.event.PlanItemStateChangedEvent;
 import io.casehub.engine.common.spi.recovery.ExecutionSnapshotStore;
 import io.casehub.engine.plan.execution.CasePlanModelSnapshotProvider;
 import io.casehub.engine.plan.execution.ExecutionStateSnapshot;
-import io.smallrye.mutiny.Multi;
-import io.smallrye.mutiny.operators.multi.processors.BroadcastProcessor;
-import io.smallrye.mutiny.subscription.BackPressureFailure;
-import jakarta.enterprise.context.ApplicationScoped;
-import jakarta.enterprise.event.ObservesAsync;
-import jakarta.inject.Inject;
 import java.util.UUID;
-import org.jboss.logging.Logger;
+import java.util.concurrent.CopyOnWriteArrayList;
+import java.util.concurrent.Flow;
+import java.util.concurrent.SubmissionPublisher;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.context.event.EventListener;
+import org.springframework.stereotype.Component;
 
-@ApplicationScoped
-public class ExecutionStateBroadcaster {
+@Component
+public class ExecutionStateSpringBroadcaster {
 
-  private static final Logger LOG = Logger.getLogger(ExecutionStateBroadcaster.class);
+  private static final Logger LOG = LoggerFactory.getLogger(ExecutionStateSpringBroadcaster.class);
 
-  private record CaseSnapshotEvent(UUID caseId, ExecutionStateSnapshot snapshot) {}
+  private record ActiveStream(UUID caseId, SubmissionPublisher<JsonNode> publisher) {}
 
-  private final BroadcastProcessor<CaseSnapshotEvent> processor = BroadcastProcessor.create();
+  private final CopyOnWriteArrayList<ActiveStream> streams = new CopyOnWriteArrayList<>();
+  private final CasePlanModelSnapshotProvider planModelProvider;
+  private final ExecutionSnapshotStore snapshotStore;
+  private final CaseDefinitionRegistry definitionRegistry;
+  private final CaseInstanceRepository caseInstanceRepository;
+  private final ObjectMapper objectMapper;
 
-  @Inject CasePlanModelSnapshotProvider planModelProvider;
-  @Inject ExecutionSnapshotStore snapshotStore;
-  @Inject CaseDefinitionRegistry definitionRegistry;
-  @Inject CaseInstanceRepository caseInstanceRepository;
+  public ExecutionStateSpringBroadcaster(
+      CasePlanModelSnapshotProvider planModelProvider,
+      ExecutionSnapshotStore snapshotStore,
+      CaseDefinitionRegistry definitionRegistry,
+      CaseInstanceRepository caseInstanceRepository,
+      ObjectMapper objectMapper) {
+    this.planModelProvider = planModelProvider;
+    this.snapshotStore = snapshotStore;
+    this.definitionRegistry = definitionRegistry;
+    this.caseInstanceRepository = caseInstanceRepository;
+    this.objectMapper = objectMapper;
+  }
 
-  void onPlanItemChanged(@ObservesAsync PlanItemStateChangedEvent event) {
+  @EventListener
+  public void onPlanItemChanged(PlanItemStateChangedEvent event) {
     compose(event.caseId(), event.tenancyId());
   }
 
-  void onContextUpdated(@ObservesAsync CaseContextUpdatedEvent event) {
+  @EventListener
+  public void onContextUpdated(CaseContextUpdatedEvent event) {
     compose(event.caseId(), event.tenancyId());
   }
 
-  public Multi<ExecutionStateSnapshot> stream(UUID caseId) {
-    return processor
-        .toHotStream()
-        .filter(e -> caseId.equals(e.caseId()))
-        .map(CaseSnapshotEvent::snapshot);
+  public Flow.Publisher<JsonNode> stream(UUID caseId) {
+    var publisher = new SubmissionPublisher<JsonNode>();
+    streams.add(new ActiveStream(caseId, publisher));
+    return publisher;
   }
 
   public ExecutionStateSnapshot composeInitial(UUID caseId, String tenancyId) {
@@ -80,10 +96,23 @@ public class ExecutionStateBroadcaster {
       CaseDefinition definition = resolveDefinition(caseId, tenancyId);
       var snapshot =
           ExecutionStateSnapshot.compose(caseId, planModel, dagPlan, dagResult, definition);
-      processor.onNext(new CaseSnapshotEvent(caseId, snapshot));
-    } catch (BackPressureFailure ignored) {
+      JsonNode json = objectMapper.valueToTree(snapshot);
+      dispatch(caseId, json);
     } catch (Exception e) {
-      LOG.debugf("Failed to compose execution state for case %s: %s", caseId, e.getMessage());
+      LOG.debug("Failed to compose execution state for case {}: {}", caseId, e.getMessage());
+    }
+  }
+
+  private void dispatch(UUID caseId, JsonNode json) {
+    streams.removeIf(s -> s.publisher().getNumberOfSubscribers() == 0 && s.publisher().isClosed());
+    for (var active : streams) {
+      if (caseId.equals(active.caseId())) {
+        if (active.publisher().getNumberOfSubscribers() == 0) {
+          streams.remove(active);
+        } else {
+          active.publisher().offer(json, (subscriber, dropped) -> false);
+        }
+      }
     }
   }
 
