@@ -25,20 +25,28 @@ import io.casehub.engine.common.spi.EventLogRepository;
 import io.casehub.engine.common.spi.query.EventLogQuery;
 import io.casehub.platform.api.acl.AclAction;
 import io.casehub.platform.api.identity.CurrentPrincipal;
-import jakarta.enterprise.context.ApplicationScoped;
-import jakarta.inject.Inject;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 
-@ApplicationScoped
 public class EventLogService {
 
-  @Inject CaseService caseService;
-  @Inject EventLogRepository eventLogRepository;
-  @Inject CurrentPrincipal currentPrincipal;
-  @Inject ObjectMapper objectMapper;
+  private final CaseService caseService;
+  private final EventLogRepository eventLogRepository;
+  private final CurrentPrincipal currentPrincipal;
+  private final ObjectMapper objectMapper;
+
+  public EventLogService(
+      CaseService caseService,
+      EventLogRepository eventLogRepository,
+      CurrentPrincipal currentPrincipal,
+      ObjectMapper objectMapper) {
+    this.caseService = caseService;
+    this.eventLogRepository = eventLogRepository;
+    this.currentPrincipal = currentPrincipal;
+    this.objectMapper = objectMapper;
+  }
 
   public EventLogPage getEventLog(
       UUID caseId,

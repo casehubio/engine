@@ -20,23 +20,31 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import io.casehub.api.engine.EntityNotFoundException;
 import io.casehub.engine.common.spi.recovery.ExecutionSnapshotStore;
 import io.casehub.engine.plan.execution.CasePlanModelSnapshotProvider;
-import io.casehub.engine.rest.ExecutionStateBroadcaster;
+import io.casehub.engine.plan.execution.ExecutionStateSnapshot;
 import io.casehub.platform.api.acl.AclAction;
 import io.casehub.platform.api.identity.CurrentPrincipal;
-import io.smallrye.mutiny.Multi;
-import jakarta.enterprise.context.ApplicationScoped;
-import jakarta.inject.Inject;
 import java.util.UUID;
 
-@ApplicationScoped
 public class PlanService {
 
-  @Inject CaseService caseService;
-  @Inject CasePlanModelSnapshotProvider planModelProvider;
-  @Inject ExecutionSnapshotStore snapshotStore;
-  @Inject ExecutionStateBroadcaster executionStateBroadcaster;
-  @Inject CurrentPrincipal currentPrincipal;
-  @Inject ObjectMapper objectMapper;
+  private final CaseService caseService;
+  private final CasePlanModelSnapshotProvider planModelProvider;
+  private final ExecutionSnapshotStore snapshotStore;
+  private final CurrentPrincipal currentPrincipal;
+  private final ObjectMapper objectMapper;
+
+  public PlanService(
+      CaseService caseService,
+      CasePlanModelSnapshotProvider planModelProvider,
+      ExecutionSnapshotStore snapshotStore,
+      CurrentPrincipal currentPrincipal,
+      ObjectMapper objectMapper) {
+    this.caseService = caseService;
+    this.planModelProvider = planModelProvider;
+    this.snapshotStore = snapshotStore;
+    this.currentPrincipal = currentPrincipal;
+    this.objectMapper = objectMapper;
+  }
 
   public JsonNode getPlanModel(UUID caseId, String tenancyId) {
     caseService.requireCaseAccess(caseId, AclAction.READ);
@@ -91,11 +99,10 @@ public class PlanService {
   public JsonNode getExecutionState(UUID caseId, String tenancyId) {
     caseService.requireCaseAccess(caseId, AclAction.READ);
     String resolvedTenancyId = tenancyId != null ? tenancyId : currentPrincipal.tenancyId();
-    Object state = executionStateBroadcaster.composeInitial(caseId, resolvedTenancyId);
-    return objectMapper.valueToTree(state);
-  }
-
-  public Multi<JsonNode> executionStateStream(UUID caseId) {
-    return executionStateBroadcaster.stream(caseId).map(e -> objectMapper.valueToTree(e));
+    var planModel = planModelProvider.getSnapshot(caseId, resolvedTenancyId).orElse(null);
+    var dagPlan = snapshotStore.getDagPlan(caseId, resolvedTenancyId).orElse(null);
+    var dagResult = snapshotStore.getDagResult(caseId, resolvedTenancyId).orElse(null);
+    var snapshot = ExecutionStateSnapshot.compose(caseId, planModel, dagPlan, dagResult);
+    return objectMapper.valueToTree(snapshot);
   }
 }

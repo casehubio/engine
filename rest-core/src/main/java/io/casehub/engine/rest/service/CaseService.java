@@ -50,28 +50,46 @@ import io.casehub.platform.api.acl.AccessDeniedException;
 import io.casehub.platform.api.acl.AclAction;
 import io.casehub.platform.api.acl.ResourceId;
 import io.casehub.platform.api.identity.CurrentPrincipal;
-import jakarta.enterprise.context.ApplicationScoped;
-import jakarta.inject.Inject;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
-import org.jboss.logging.Logger;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
-@ApplicationScoped
 public class CaseService {
 
-  private static final Logger LOG = Logger.getLogger(CaseService.class);
-  @Inject AccessControlProvider accessControlProvider;
-  @Inject CurrentPrincipal currentPrincipal;
-  @Inject CaseDefinitionRegistry definitionRegistry;
-  @Inject CaseHubRuntime runtime;
-  @Inject CaseInstanceRepository instanceRepository;
-  @Inject ExpressionEngineRegistry expressionEngineRegistry;
-  @Inject PlanItemStore planItemStore;
-  @Inject ObjectMapper objectMapper;
+  private static final Logger LOG = LoggerFactory.getLogger(CaseService.class);
+
+  private final AccessControlProvider accessControlProvider;
+  private final CurrentPrincipal currentPrincipal;
+  private final CaseDefinitionRegistry definitionRegistry;
+  private final CaseHubRuntime runtime;
+  private final CaseInstanceRepository instanceRepository;
+  private final ExpressionEngineRegistry expressionEngineRegistry;
+  private final PlanItemStore planItemStore;
+  private final ObjectMapper objectMapper;
+
+  public CaseService(
+      AccessControlProvider accessControlProvider,
+      CurrentPrincipal currentPrincipal,
+      CaseDefinitionRegistry definitionRegistry,
+      CaseHubRuntime runtime,
+      CaseInstanceRepository instanceRepository,
+      ExpressionEngineRegistry expressionEngineRegistry,
+      PlanItemStore planItemStore,
+      ObjectMapper objectMapper) {
+    this.accessControlProvider = accessControlProvider;
+    this.currentPrincipal = currentPrincipal;
+    this.definitionRegistry = definitionRegistry;
+    this.runtime = runtime;
+    this.instanceRepository = instanceRepository;
+    this.expressionEngineRegistry = expressionEngineRegistry;
+    this.planItemStore = planItemStore;
+    this.objectMapper = objectMapper;
+  }
 
   public CaseInstance startCase(
       String namespace,
@@ -122,7 +140,7 @@ public class CaseService {
     String actorId = currentPrincipal.actorId();
     ResourceId resourceId = new ResourceId(EngineResourceTypes.CASE, caseId.toString());
     if (!accessControlProvider.canAccess(actorId, resourceId, action)) {
-      LOG.warnf("ACL denied: actor=%s resource=%s action=%s", actorId, resourceId, action);
+      LOG.warn("ACL denied: actor={} resource={} action={}", actorId, resourceId, action);
       throw new AccessDeniedException(actorId, resourceId, action);
     }
     return instance;

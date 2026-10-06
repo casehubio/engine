@@ -16,7 +16,9 @@
 package io.casehub.engine.rest.service;
 
 import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import io.casehub.api.engine.rest.EnginePlanApi;
+import io.casehub.engine.rest.ExecutionStateBroadcaster;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
 import java.util.UUID;
@@ -26,6 +28,8 @@ import java.util.concurrent.Flow;
 public class DefaultEnginePlanApi implements EnginePlanApi {
 
   @Inject PlanService planService;
+  @Inject ExecutionStateBroadcaster executionStateBroadcaster;
+  @Inject ObjectMapper objectMapper;
 
   @Override
   public JsonNode getPlanModel(UUID caseId, String tenancyId) {
@@ -59,6 +63,6 @@ public class DefaultEnginePlanApi implements EnginePlanApi {
 
   @Override
   public Flow.Publisher<JsonNode> executionStateStream(UUID caseId) {
-    return planService.executionStateStream(caseId);
+    return executionStateBroadcaster.stream(caseId).map(e -> objectMapper.valueToTree(e));
   }
 }

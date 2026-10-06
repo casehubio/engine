@@ -29,18 +29,26 @@ import io.casehub.platform.api.acl.AclAction;
 import io.casehub.platform.api.acl.ResourceId;
 import io.casehub.platform.api.identity.CurrentPrincipal;
 import io.casehub.worker.api.Capability;
-import jakarta.enterprise.context.ApplicationScoped;
-import jakarta.inject.Inject;
 import java.util.List;
 import java.util.Objects;
 
-@ApplicationScoped
 public class CaseDefinitionService {
 
-  @Inject CaseMetaModelRepository metaModelRepository;
-  @Inject CaseDefinitionRegistry definitionRegistry;
-  @Inject CurrentPrincipal currentPrincipal;
-  @Inject AccessControlProvider accessControlProvider;
+  private final CaseMetaModelRepository metaModelRepository;
+  private final CaseDefinitionRegistry definitionRegistry;
+  private final CurrentPrincipal currentPrincipal;
+  private final AccessControlProvider accessControlProvider;
+
+  public CaseDefinitionService(
+      CaseMetaModelRepository metaModelRepository,
+      CaseDefinitionRegistry definitionRegistry,
+      CurrentPrincipal currentPrincipal,
+      AccessControlProvider accessControlProvider) {
+    this.metaModelRepository = metaModelRepository;
+    this.definitionRegistry = definitionRegistry;
+    this.currentPrincipal = currentPrincipal;
+    this.accessControlProvider = accessControlProvider;
+  }
 
   public CaseDefinitionPage listDefinitions(String tenancyId, Integer offset, Integer limit) {
     String resolvedTenancyId = tenancyId != null ? tenancyId : currentPrincipal.tenancyId();
