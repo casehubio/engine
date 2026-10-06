@@ -20,7 +20,6 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.dataformat.yaml.YAMLFactory;
 import io.casehub.api.context.CaseContext;
 import io.casehub.api.context.JacksonPojoBridge;
 import io.casehub.api.engine.ExpressionEngineRegistry;
@@ -47,6 +46,7 @@ import io.casehub.platform.api.governance.BackoffStrategy;
 import io.casehub.platform.api.governance.ExecutionPolicy;
 import io.casehub.worker.api.Capability;
 import io.casehub.worker.api.Worker;
+import io.casehub.yaml.jackson.YamlMappers;
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.io.InputStream;
@@ -1734,7 +1734,7 @@ class CaseDefinitionYamlMapperTest {
         """;
 
     final RecordingRegistry registry = new RecordingRegistry();
-    final ObjectMapper mapper = new ObjectMapper(new YAMLFactory());
+    final ObjectMapper mapper = YamlMappers.create();
 
     CaseDefinitionYamlMapper.load(
         new ByteArrayInputStream(yaml.getBytes(StandardCharsets.UTF_8)),
@@ -1768,7 +1768,7 @@ class CaseDefinitionYamlMapperTest {
         """;
 
     final RecordingRegistry registry = new RecordingRegistry();
-    final ObjectMapper mapper = new ObjectMapper(new YAMLFactory());
+    final ObjectMapper mapper = YamlMappers.create();
 
     CaseDefinitionYamlMapper.load(
         new ByteArrayInputStream(yaml.getBytes(StandardCharsets.UTF_8)),
@@ -1800,7 +1800,7 @@ class CaseDefinitionYamlMapperTest {
         """;
 
     final RecordingRegistry registry = new RecordingRegistry();
-    final ObjectMapper mapper = new ObjectMapper(new YAMLFactory());
+    final ObjectMapper mapper = YamlMappers.create();
 
     CaseDefinitionYamlMapper.load(
         new ByteArrayInputStream(yaml.getBytes(StandardCharsets.UTF_8)),
@@ -1875,7 +1875,7 @@ class CaseDefinitionYamlMapperTest {
             () ->
                 CaseDefinitionYamlMapper.load(
                     new ByteArrayInputStream(yaml.getBytes(StandardCharsets.UTF_8)),
-                    new ObjectMapper(new YAMLFactory()),
+                    YamlMappers.create(),
                     strictRegistry,
                     r -> null,
                     io.casehub.api.model.ai.InlineChatModelProviderResolver.INSTANCE))
@@ -1910,7 +1910,7 @@ class CaseDefinitionYamlMapperTest {
                             """;
 
     final RecordingRegistry registry = new RecordingRegistry();
-    final ObjectMapper mapper = new ObjectMapper(new YAMLFactory());
+    final ObjectMapper mapper = YamlMappers.create();
 
     CaseDefinition def =
         CaseDefinitionYamlMapper.load(
@@ -1936,7 +1936,7 @@ class CaseDefinitionYamlMapperTest {
                               bindings: []
                             """;
 
-    final ObjectMapper mapper = new ObjectMapper(new YAMLFactory());
+    final ObjectMapper mapper = YamlMappers.create();
 
     assertThatThrownBy(
             () ->
@@ -1969,7 +1969,7 @@ class CaseDefinitionYamlMapperTest {
                             """;
 
     final RecordingRegistry registry = new RecordingRegistry();
-    final ObjectMapper mapper = new ObjectMapper(new YAMLFactory());
+    final ObjectMapper mapper = YamlMappers.create();
 
     CaseDefinition def =
         CaseDefinitionYamlMapper.load(
@@ -2002,7 +2002,7 @@ class CaseDefinitionYamlMapperTest {
                             """;
 
     final RecordingRegistry registry = new RecordingRegistry();
-    final ObjectMapper mapper = new ObjectMapper(new YAMLFactory());
+    final ObjectMapper mapper = YamlMappers.create();
 
     CaseDefinitionYamlMapper.load(
         new ByteArrayInputStream(yaml.getBytes(StandardCharsets.UTF_8)),
@@ -2035,7 +2035,7 @@ class CaseDefinitionYamlMapperTest {
                             """;
 
     final RecordingRegistry registry = new RecordingRegistry();
-    final ObjectMapper mapper = new ObjectMapper(new YAMLFactory());
+    final ObjectMapper mapper = YamlMappers.create();
 
     CaseDefinitionYamlMapper.load(
         new ByteArrayInputStream(yaml.getBytes(StandardCharsets.UTF_8)),
@@ -2068,7 +2068,7 @@ class CaseDefinitionYamlMapperTest {
                             """;
 
     final RecordingRegistry registry = new RecordingRegistry();
-    final ObjectMapper mapper = new ObjectMapper(new YAMLFactory());
+    final ObjectMapper mapper = YamlMappers.create();
 
     CaseDefinitionYamlMapper.load(
         new ByteArrayInputStream(yaml.getBytes(StandardCharsets.UTF_8)),
@@ -2100,7 +2100,7 @@ class CaseDefinitionYamlMapperTest {
                             """;
 
     final RecordingRegistry registry = new RecordingRegistry();
-    final ObjectMapper mapper = new ObjectMapper(new YAMLFactory());
+    final ObjectMapper mapper = YamlMappers.create();
 
     CaseDefinitionYamlMapper.load(
         new ByteArrayInputStream(yaml.getBytes(StandardCharsets.UTF_8)),

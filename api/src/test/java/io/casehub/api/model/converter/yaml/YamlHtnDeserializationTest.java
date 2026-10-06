@@ -19,10 +19,10 @@ import static com.fasterxml.jackson.databind.DeserializationFeature.FAIL_ON_UNKN
 import static org.assertj.core.api.Assertions.assertThat;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.dataformat.yaml.YAMLFactory;
 import io.casehub.api.model.converter.CaseDefinitionModule;
 import io.casehub.api.model.evaluator.JQExpressionEvaluator;
 import io.casehub.platform.api.expression.ExpressionEvaluator;
+import io.casehub.yaml.jackson.YamlMappers;
 import org.junit.jupiter.api.Test;
 
 class YamlHtnDeserializationTest {
@@ -66,7 +66,7 @@ class YamlHtnDeserializationTest {
       };
 
   private final ObjectMapper mapper =
-      new ObjectMapper(new YAMLFactory())
+      YamlMappers.create()
           .registerModule(new CaseDefinitionModule(JQ_ONLY))
           .disable(FAIL_ON_UNKNOWN_PROPERTIES);
 
