@@ -16,11 +16,9 @@
 package io.casehub.api.engine.rest;
 
 import io.casehub.api.model.CaseStatus;
-import io.casehub.api.view.CaseContextChangeEventView;
 import io.casehub.api.view.CaseContextPathView;
 import io.casehub.api.view.CaseContextView;
 import io.casehub.api.view.CaseInstanceView;
-import io.casehub.api.view.CaseLifecycleEventView;
 import io.casehub.api.view.CasePage;
 import io.casehub.api.view.CaseStreamEventView;
 import io.casehub.api.view.GoalEvaluationView;
@@ -33,9 +31,9 @@ import io.casehub.platform.api.mcp.PlatformMutation;
 import io.casehub.platform.api.mcp.PlatformQuery;
 import io.casehub.platform.api.mcp.PlatformStream;
 import io.casehub.platform.api.mcp.RestStatus;
-import io.smallrye.mutiny.Multi;
 import java.util.List;
 import java.util.UUID;
+import java.util.concurrent.Flow;
 
 @McpDomain(
     value = "engine/cases",
@@ -73,11 +71,5 @@ public interface EngineCaseApi {
   GoalEvaluationView getGoals(@PathParam UUID caseId, String tenancyId);
 
   @PlatformStream("Live case event stream")
-  Multi<CaseStreamEventView> caseStream(@PathParam UUID caseId);
-
-  @PlatformStream("Live case lifecycle events")
-  Multi<CaseLifecycleEventView> caseLifecycle(@PathParam UUID caseId);
-
-  @PlatformStream("Live case context change events")
-  Multi<CaseContextChangeEventView> caseContextChange(@PathParam UUID caseId);
+  Flow.Publisher<CaseStreamEventView> caseStream(@PathParam UUID caseId);
 }

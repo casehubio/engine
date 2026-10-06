@@ -20,8 +20,8 @@ import io.casehub.platform.api.mcp.McpDomain;
 import io.casehub.platform.api.mcp.PathParam;
 import io.casehub.platform.api.mcp.PlatformQuery;
 import io.casehub.platform.api.mcp.PlatformStream;
-import io.smallrye.mutiny.Multi;
 import java.util.UUID;
+import java.util.concurrent.Flow;
 
 @McpDomain(value = "engine/plan", app = "engine", summary = "Plan — get, live operations")
 public interface EnginePlanApi {
@@ -45,5 +45,5 @@ public interface EnginePlanApi {
   JsonNode getExecutionState(@PathParam UUID caseId, String tenancyId);
 
   @PlatformStream("Live execution state updates")
-  Multi<JsonNode> executionStateStream(@PathParam UUID caseId);
+  Flow.Publisher<JsonNode> executionStateStream(@PathParam UUID caseId);
 }
