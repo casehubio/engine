@@ -22,7 +22,7 @@ import io.casehub.engine.common.spi.event.CaseContextUpdatedEvent;
 import io.casehub.engine.common.spi.event.PlanItemStateChangedEvent;
 import io.casehub.engine.common.spi.recovery.ExecutionSnapshotStore;
 import io.casehub.engine.plan.execution.CasePlanModelSnapshotProvider;
-import io.casehub.engine.rest.dto.ExecutionStateSnapshot;
+import io.casehub.engine.plan.execution.ExecutionStateSnapshot;
 import io.smallrye.mutiny.Multi;
 import io.smallrye.mutiny.operators.multi.processors.BroadcastProcessor;
 import io.smallrye.mutiny.subscription.BackPressureFailure;

@@ -21,7 +21,7 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 import io.casehub.api.model.TaskStatus;
 import io.casehub.engine.common.spi.event.CaseContextUpdatedEvent;
 import io.casehub.engine.common.spi.event.PlanItemStateChangedEvent;
-import io.casehub.engine.rest.dto.ExecutionStateSnapshot;
+import io.casehub.engine.plan.execution.ExecutionStateSnapshot;
 import io.quarkus.test.junit.QuarkusTest;
 import jakarta.inject.Inject;
 import java.util.List;
