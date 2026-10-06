@@ -324,7 +324,12 @@ class EventLogReplayRecoveryStrategyTest {
           CaseHubEventType.WATCH_PATTERN_ADDED,
           CaseHubEventType.WATCH_PATTERN_REMOVED,
           CaseHubEventType.IMPROVEMENT_BLOCKED,
-          CaseHubEventType.IMPROVEMENT_UNBLOCKED);
+          CaseHubEventType.IMPROVEMENT_UNBLOCKED,
+          CaseHubEventType.COMPENSATION_STARTED,
+          CaseHubEventType.COMPENSATION_COMPLETED,
+          CaseHubEventType.COMPENSATION_FAULTED,
+          CaseHubEventType.COMPENSATION_STEP_STARTED,
+          CaseHubEventType.COMPENSATION_STEP_COMPLETED);
 
   @Test
   void allEventTypes_eitherReplayedOrExplicitlyNonMutating() {
