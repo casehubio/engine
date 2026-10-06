@@ -25,7 +25,7 @@ import io.casehub.yaml.core.resolver.VariableSource;
 import io.casehub.yaml.plugin.api.PluginRegistry;
 import io.casehub.yaml.plugin.api.Result;
 import io.casehub.yaml.step.catalog.ResolvedStep;
-import io.casehub.yaml.step.catalog.StepWalker;
+import io.casehub.yaml.step.catalog.Walker;
 import io.casehub.yaml.step.eval.StructuralStepEvaluator;
 import jakarta.annotation.PostConstruct;
 import java.io.InputStream;
@@ -80,7 +80,7 @@ public class StepFileCallableDispatcher implements CallableDispatcher {
         return Map.of();
       }
 
-      List<ResolvedStep> resolved = StepWalker.resolve(steps, pluginRegistry);
+      List<ResolvedStep> resolved = Walker.resolve(steps, pluginRegistry);
       VariableSource inputSource =
           key -> args.containsKey(key) ? String.valueOf(args.get(key)) : null;
       VariableResolver resolver =
