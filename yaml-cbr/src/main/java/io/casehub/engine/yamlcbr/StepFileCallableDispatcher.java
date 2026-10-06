@@ -95,7 +95,10 @@ public class StepFileCallableDispatcher implements CallableDispatcher {
                 resolver,
                 (s, r) -> {
                   if (s instanceof ResolvedStep.PluginStep ps) {
-                    return ps.definition().action().execute(ps.params(), null);
+                    return pluginRegistry
+                        .resolve(ps.actionName())
+                        .map(def -> def.action().execute(ps.params(), null))
+                        .orElse(Result.of(Map.of()));
                   }
                   return Result.of(Map.of());
                 });

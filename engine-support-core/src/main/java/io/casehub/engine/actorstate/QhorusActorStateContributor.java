@@ -44,10 +44,11 @@ public class QhorusActorStateContributor implements ActorStateContributor {
 
   @Override
   public void contribute(final String actorId, final ActorStateAccumulator acc) {
-    // Atomic: collect all data before calling accumulator.
+    if (commitmentStore == null || channelStore == null) {
+      return;
+    }
     final var open = commitmentStore.findOpenByObligor(actorId);
     final Set<UUID> channelIds = open.stream().map(c -> c.channelId()).collect(Collectors.toSet());
-    // Batch channel lookup — one IN(?) query via findByIds instead of N queries.
     final Map<UUID, String> channelNames =
         channelStore.findByIds(channelIds).stream()
             .collect(Collectors.toMap(ch -> ch.id(), ch -> ch.name()));

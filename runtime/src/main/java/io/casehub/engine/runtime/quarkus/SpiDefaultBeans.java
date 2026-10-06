@@ -268,4 +268,13 @@ public class SpiDefaultBeans {
   JudgmentEscalator defaultJudgmentEscalator() {
     return new DefaultJudgmentEscalator();
   }
+
+  // --- Evolution SPIs ---
+
+  @Produces
+  @DefaultBean
+  @ApplicationScoped
+  io.casehub.api.spi.improvement.EngineEvolutionApi noOpEngineEvolutionApi() {
+    return new io.casehub.engine.runtime.worker.NoOpEngineEvolutionApi();
+  }
 }

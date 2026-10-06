@@ -32,6 +32,7 @@ import java.util.function.Consumer;
 
 public class EvolutionTicker implements Resettable {
 
+  private final boolean active;
   private final ImprovementGoalFormationStrategy goalFormation;
   private final ImprovementCircuitBreaker circuitBreaker;
   private final HealthScoreTracker healthTracker;
@@ -48,6 +49,7 @@ public class EvolutionTicker implements Resettable {
       GoalFormationService goalFormationService,
       TickTraceBuffer traceBuffer,
       Consumer<TickEvaluatedEvent> tickEvaluatedEvent) {
+    this.active = true;
     this.goalFormation = goalFormation;
     this.circuitBreaker = circuitBreaker;
     this.healthTracker = healthTracker;
@@ -57,12 +59,31 @@ public class EvolutionTicker implements Resettable {
     this.tickEvaluatedEvent = tickEvaluatedEvent;
   }
 
+  public EvolutionTicker() {
+    this.active = false;
+    this.goalFormation = null;
+    this.circuitBreaker = null;
+    this.healthTracker = null;
+    this.regressionDetector = null;
+    this.goalFormationService = null;
+    this.traceBuffer = null;
+    this.tickEvaluatedEvent = null;
+  }
+
   public TickTrace tick(UUID caseId, String tenancyId, ImprovementConfig config) {
     return tick(caseId, tenancyId, config, TickTrigger.EVENT_DRIVEN);
   }
 
   public TickTrace tick(
       UUID caseId, String tenancyId, ImprovementConfig config, TickTrigger trigger) {
+    if (!active) {
+      return new TickTrace(
+          caseId,
+          Instant.now(),
+          trigger,
+          List.of(),
+          new TickTrace.TickOutcome.NoProposal("evolution subsystem not available"));
+    }
     var gates = new ArrayList<GateResult>();
 
     if (!config.effectiveEvolutionEnabled()) {

@@ -1004,6 +1004,18 @@ public class RuntimeBeans {
     return new io.casehub.engine.runtime.convergence.BudgetEnforcer();
   }
 
+  @Produces
+  @ApplicationScoped
+  io.casehub.engine.runtime.convergence.ConvergenceDetector convergenceDetector() {
+    return new io.casehub.engine.runtime.convergence.ConvergenceDetector();
+  }
+
+  @Produces
+  @ApplicationScoped
+  io.casehub.engine.runtime.improvement.TickTraceBuffer tickTraceBuffer() {
+    return new io.casehub.engine.runtime.improvement.TickTraceBuffer();
+  }
+
   // --- Task 6: Simple services ---
 
   @Produces
@@ -1320,22 +1332,25 @@ public class RuntimeBeans {
   @ApplicationScoped
   io.casehub.engine.runtime.stigmergy.SwarmProvisioner swarmProvisioner(
       io.casehub.api.spi.WorkerProvisioner workerProvisioner,
-      io.casehub.engine.runtime.stigmergy.StigmergyCoordinator coordinator,
+      Instance<io.casehub.engine.runtime.stigmergy.StigmergyCoordinator> coordinator,
       io.casehub.engine.common.internal.signal.SignalRegistry signalRegistry,
       io.casehub.engine.common.internal.convergence.ActivityTracker activityTracker,
-      io.casehub.engine.runtime.stigmergy.RoleTracker roleTracker,
-      io.casehub.engine.runtime.stigmergy.TeamDetector teamDetector,
-      io.casehub.engine.runtime.stigmergy.SwarmProgressTracker progressTracker,
+      Instance<io.casehub.engine.runtime.stigmergy.RoleTracker> roleTracker,
+      Instance<io.casehub.engine.runtime.stigmergy.TeamDetector> teamDetector,
+      Instance<io.casehub.engine.runtime.stigmergy.SwarmProgressTracker> progressTracker,
       io.casehub.api.spi.DispatchBudget dispatchBudget,
       Instance<io.casehub.api.spi.stigmergy.SwarmProvisioningAdvisor> advisorInstance) {
+    if (!coordinator.isResolvable()) {
+      return new io.casehub.engine.runtime.stigmergy.SwarmProvisioner();
+    }
     return new io.casehub.engine.runtime.stigmergy.SwarmProvisioner(
         workerProvisioner,
-        coordinator,
+        coordinator.get(),
         signalRegistry,
         activityTracker,
-        roleTracker,
-        teamDetector,
-        progressTracker,
+        roleTracker.get(),
+        teamDetector.get(),
+        progressTracker.get(),
         dispatchBudget,
         advisorInstance.isResolvable() ? advisorInstance.get() : null);
   }
@@ -1343,19 +1358,23 @@ public class RuntimeBeans {
   @Produces
   @ApplicationScoped
   io.casehub.engine.runtime.improvement.EvolutionTicker evolutionTicker(
-      io.casehub.engine.runtime.improvement.ImprovementGoalFormationStrategy goalFormation,
-      io.casehub.engine.runtime.improvement.ImprovementCircuitBreaker circuitBreaker,
-      io.casehub.engine.runtime.improvement.HealthScoreTracker healthTracker,
-      io.casehub.engine.runtime.improvement.RegressionDetector regressionDetector,
+      Instance<io.casehub.engine.runtime.improvement.ImprovementGoalFormationStrategy>
+          goalFormation,
+      Instance<io.casehub.engine.runtime.improvement.ImprovementCircuitBreaker> circuitBreaker,
+      Instance<io.casehub.engine.runtime.improvement.HealthScoreTracker> healthTracker,
+      Instance<io.casehub.engine.runtime.improvement.RegressionDetector> regressionDetector,
       io.casehub.api.spi.routing.GoalFormationService goalFormationService,
       io.casehub.engine.runtime.improvement.TickTraceBuffer traceBuffer,
       jakarta.enterprise.event.Event<io.casehub.engine.common.spi.event.TickEvaluatedEvent>
           tickEvaluatedEvent) {
+    if (!goalFormation.isResolvable()) {
+      return new io.casehub.engine.runtime.improvement.EvolutionTicker();
+    }
     return new io.casehub.engine.runtime.improvement.EvolutionTicker(
-        goalFormation,
-        circuitBreaker,
-        healthTracker,
-        regressionDetector,
+        goalFormation.get(),
+        circuitBreaker.get(),
+        healthTracker.get(),
+        regressionDetector.get(),
         goalFormationService,
         traceBuffer,
         tickEvaluatedEvent::fireAsync);
