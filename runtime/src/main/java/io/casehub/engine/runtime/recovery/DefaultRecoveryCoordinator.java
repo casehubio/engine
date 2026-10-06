@@ -139,17 +139,22 @@ public class DefaultRecoveryCoordinator implements RecoveryCoordinator {
     BindingRecoveryState bindingState = caseState.getOrCreate(context.bindingName());
     bindingState.setCurrentLevel(level);
     bindingState.incrementRetryCount();
-    bindingState.excludeAgent(context.workerName());
 
     return switch (level) {
       case TRANSIENT -> {
         LOG.infof(
-            "Recovery: TRANSIENT classification for case=%s binding=%s — no escalation",
-            context.caseId(), context.bindingName());
+            "Recovery: TRANSIENT classification for case=%s binding=%s — no escalation, agent '%s' remains eligible",
+            context.caseId(), context.bindingName(), context.workerName());
         yield false;
       }
-      case REASONING -> escalateToLevel2(context, instance, definition, maxLevel, caseState);
-      case FUNDAMENTAL -> escalateToLevel3(context, instance, definition, maxLevel, caseState);
+      case REASONING -> {
+        bindingState.excludeAgent(context.workerName());
+        yield escalateToLevel2(context, instance, definition, maxLevel, caseState);
+      }
+      case FUNDAMENTAL -> {
+        bindingState.excludeAgent(context.workerName());
+        yield escalateToLevel3(context, instance, definition, maxLevel, caseState);
+      }
     };
   }
 
