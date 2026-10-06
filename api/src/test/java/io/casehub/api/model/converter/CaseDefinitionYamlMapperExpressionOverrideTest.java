@@ -20,7 +20,6 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.dataformat.yaml.YAMLFactory;
 import io.casehub.api.context.CaseContext;
 import io.casehub.api.engine.ExpressionEngineRegistry;
 import io.casehub.api.model.Binding;
@@ -31,6 +30,7 @@ import io.casehub.api.model.Milestone;
 import io.casehub.api.model.PredicateBasedCompletion;
 import io.casehub.api.model.evaluator.JQExpressionEvaluator;
 import io.casehub.platform.api.expression.ExpressionEvaluator;
+import io.casehub.yaml.jackson.YamlMappers;
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.io.InputStream;
@@ -42,7 +42,7 @@ import org.junit.jupiter.api.Test;
 
 class CaseDefinitionYamlMapperExpressionOverrideTest {
 
-  private static final ObjectMapper YAML = new ObjectMapper(new YAMLFactory());
+  private static final ObjectMapper YAML = YamlMappers.create();
   private static final ObjectMapper JSON = new ObjectMapper();
   private static final Set<String> SUPPORTED = Set.of("jq", "mvel");
 

@@ -20,15 +20,15 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.dataformat.yaml.YAMLFactory;
 import io.casehub.api.model.CaseDefinition;
 import io.casehub.worker.api.WorkerFunction;
+import io.casehub.yaml.jackson.YamlMappers;
 import java.io.ByteArrayInputStream;
 import org.junit.jupiter.api.Test;
 
 class CaseDefinitionYamlMapperJsonNodeTest {
 
-  private static final ObjectMapper YAML_MAPPER = new ObjectMapper(new YAMLFactory());
+  private static final ObjectMapper YAML_MAPPER = YamlMappers.create();
 
   @Test
   void loadFromJsonNodeProducesSameResultAsInputStream() throws Exception {

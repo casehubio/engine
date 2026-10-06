@@ -20,11 +20,11 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.dataformat.yaml.YAMLFactory;
 import com.networknt.schema.JsonSchema;
 import com.networknt.schema.JsonSchemaFactory;
 import com.networknt.schema.SpecVersion;
 import com.networknt.schema.ValidationMessage;
+import io.casehub.yaml.jackson.YamlMappers;
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.file.Files;
@@ -41,7 +41,7 @@ import org.junit.jupiter.params.provider.MethodSource;
 class SchemaValidationTest {
 
   private static final ObjectMapper YAML_MAPPER =
-      new ObjectMapper(new YAMLFactory())
+      YamlMappers.create()
           .configure(
               com.fasterxml.jackson.databind.DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES,
               false);

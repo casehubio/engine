@@ -21,8 +21,8 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.dataformat.yaml.YAMLFactory;
 import io.casehub.api.spi.DiscoveredWorker;
+import io.casehub.yaml.jackson.YamlMappers;
 import io.modelcontextprotocol.client.McpSyncClient;
 import io.modelcontextprotocol.spec.McpSchema.ListToolsResult;
 import io.modelcontextprotocol.spec.McpSchema.Tool;
@@ -32,7 +32,7 @@ import org.junit.jupiter.api.Test;
 
 class McpWorkerFunctionProviderTest {
 
-  private final ObjectMapper yaml = new ObjectMapper(new YAMLFactory());
+  private final ObjectMapper yaml = YamlMappers.create();
   private McpSyncClient mockClient;
 
   private McpWorkerFunctionProvider createProvider(List<Tool> tools) {

@@ -19,14 +19,14 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.dataformat.yaml.YAMLFactory;
 import io.casehub.api.model.CaseDefinition;
+import io.casehub.yaml.jackson.YamlMappers;
 import java.io.InputStream;
 import org.junit.jupiter.api.Test;
 
 class SchemaDriftTest {
 
-  private static final ObjectMapper YAML = new ObjectMapper(new YAMLFactory());
+  private static final ObjectMapper YAML = YamlMappers.create();
   private static final ObjectMapper JSON = new ObjectMapper();
 
   @Test

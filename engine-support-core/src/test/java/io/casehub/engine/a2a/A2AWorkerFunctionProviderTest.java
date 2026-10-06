@@ -18,14 +18,14 @@ package io.casehub.engine.a2a;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.dataformat.yaml.YAMLFactory;
 import io.casehub.engine.common.internal.auth.AuthConfig;
+import io.casehub.yaml.jackson.YamlMappers;
 import org.junit.jupiter.api.Test;
 
 class A2AWorkerFunctionProviderTest {
 
   private final A2AWorkerFunctionProvider provider = createProvider();
-  private final ObjectMapper yaml = new ObjectMapper(new YAMLFactory());
+  private final ObjectMapper yaml = YamlMappers.create();
 
   private static A2AWorkerFunctionProvider createProvider() {
     return new A2AWorkerFunctionProvider(new A2AEndpointRegistry());

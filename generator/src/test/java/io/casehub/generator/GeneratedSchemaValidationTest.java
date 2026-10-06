@@ -19,12 +19,12 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.dataformat.yaml.YAMLFactory;
 import com.networknt.schema.JsonSchema;
 import com.networknt.schema.JsonSchemaFactory;
 import com.networknt.schema.SpecVersion;
 import com.networknt.schema.ValidationMessage;
 import io.casehub.api.model.CaseDefinition;
+import io.casehub.yaml.jackson.YamlMappers;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -36,7 +36,7 @@ import org.junit.jupiter.params.provider.MethodSource;
 
 class GeneratedSchemaValidationTest {
 
-  private static final ObjectMapper YAML = new ObjectMapper(new YAMLFactory());
+  private static final ObjectMapper YAML = YamlMappers.create();
   private static final ObjectMapper JSON = new ObjectMapper();
   private static JsonSchema generatedSchema;
 

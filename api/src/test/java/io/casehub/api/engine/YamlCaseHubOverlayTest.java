@@ -17,15 +17,14 @@ package io.casehub.api.engine;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.dataformat.yaml.YAMLFactory;
 import io.casehub.api.model.CaseDefinition;
+import io.casehub.yaml.jackson.YamlMappers;
 import org.junit.jupiter.api.Test;
 
 class YamlCaseHubOverlayTest {
 
   private static void wireForTest(YamlCaseHub hub) {
-    hub.objectMapper = new ObjectMapper(new YAMLFactory());
+    hub.objectMapper = YamlMappers.create();
     hub.expressionEngineRegistry = new JqOnlyExpressionEngineRegistry();
     hub.workerFunctionProviderRegistry = rawWorkerNode -> null;
   }

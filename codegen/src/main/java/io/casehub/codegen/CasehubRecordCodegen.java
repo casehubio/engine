@@ -17,13 +17,13 @@ package io.casehub.codegen;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import io.casehub.yaml.jackson.YamlMappers;
 import io.casehub.codegen.record.MappingParser;
 import io.casehub.codegen.record.RecordEmitter;
 import io.casehub.codegen.record.RecordMapping;
 import io.casehub.codegen.record.SchemaParser;
 import io.casehub.codegen.record.SchemaType;
 import io.casehub.codegen.record.TypeMapping;
+import io.casehub.yaml.jackson.YamlMappers;
 import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
