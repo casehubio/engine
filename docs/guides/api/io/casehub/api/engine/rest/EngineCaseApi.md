@@ -6,19 +6,7 @@
 
 ## Methods
 
-### `public abstract Multi<io.casehub.api.view.CaseContextChangeEventView> caseContextChange(java.util.UUID caseId)`
-
-#### Parameters
-
-- `caseId` (`java.util.UUID`)
-
-### `public abstract Multi<io.casehub.api.view.CaseLifecycleEventView> caseLifecycle(java.util.UUID caseId)`
-
-#### Parameters
-
-- `caseId` (`java.util.UUID`)
-
-### `public abstract Multi<io.casehub.api.view.CaseStreamEventView> caseStream(java.util.UUID caseId)`
+### `public abstract java.util.concurrent.Flow.Publisher<io.casehub.api.view.CaseStreamEventView> caseStream(java.util.UUID caseId)`
 
 #### Parameters
 
