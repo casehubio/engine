@@ -118,6 +118,8 @@ public class Binding {
       "Explicit compensation ordering when topological sort is ambiguous.")
   private Integer compensationOrder;
 
+  @com.fasterxml.jackson.annotation.JsonPropertyDescription(
+      "Marks this binding as a compensating binding — excluded from forward execution planning.")
   private boolean compensation;
 
   private Binding(String name, BindingTarget target, Trigger on) {
