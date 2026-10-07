@@ -19,6 +19,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import io.casehub.api.model.JudgmentTarget;
 import io.casehub.api.model.TaskStatus;
 import io.casehub.api.model.evaluator.JQExpressionEvaluator;
+import io.casehub.engine.common.internal.model.PlanItemRecord;
 import io.casehub.engine.common.internal.model.PlanItemSaveRequest;
 import io.casehub.engine.common.internal.model.TargetType;
 import io.casehub.engine.common.spi.JudgmentRequest;
@@ -58,27 +59,47 @@ public class JudgmentWorkItemScheduler implements JudgmentScheduler {
   @Transactional
   public void schedule(JudgmentScheduleRequest request) {
     CasePlanModel plan = registry.get(request.caseId()).orElse(null);
-    if (plan == null) {
-      LOG.warnf("No CasePlanModel for caseId=%s — judgment not dispatched", request.caseId());
-      return;
+    PlanItem item = null;
+    PlanItemRecord fallbackRecord = null;
+
+    if (plan != null) {
+      item = plan.getPlanItemByBindingName(request.bindingName()).orElse(null);
     }
 
-    PlanItem item = plan.getPlanItemByBindingName(request.bindingName()).orElse(null);
     if (item == null) {
-      LOG.warnf(
-          "PlanItem for binding '%s' not found in case %s",
-          request.bindingName(), request.caseId());
-      return;
+      List<PlanItemRecord> records =
+          planItemStore.findByCaseId(request.caseId(), request.tenancyId());
+      fallbackRecord =
+          records.stream()
+              .filter(r -> request.bindingName().equals(r.bindingName()))
+              .findFirst()
+              .orElse(null);
+      if (fallbackRecord == null) {
+        LOG.warnf(
+            "PlanItem for binding '%s' not found in registry or store for caseId=%s",
+            request.bindingName(), request.caseId());
+        return;
+      }
+      if (fallbackRecord.status() != TaskStatus.DISPATCHING) {
+        LOG.warnf(
+            "PlanItem for binding '%s' case %s is not DISPATCHING (status=%s) — skipping",
+            request.bindingName(), request.caseId(), fallbackRecord.status());
+        return;
+      }
+    } else {
+      if (item.getStatus() != TaskStatus.DISPATCHING) {
+        LOG.warnf(
+            "PlanItem for binding '%s' case %s is not DISPATCHING (status=%s) — skipping",
+            request.bindingName(), request.caseId(), item.getStatus());
+        return;
+      }
     }
 
-    if (item.getStatus() != TaskStatus.DISPATCHING) {
-      LOG.warnf(
-          "PlanItem for binding '%s' case %s is not DISPATCHING (status=%s) — skipping",
-          request.bindingName(), request.caseId(), item.getStatus());
-      return;
-    }
+    String planItemId = item != null ? item.getPlanItemId() : fallbackRecord.planItemId();
+    Instant createdAt = item != null ? item.getCreatedAt() : fallbackRecord.createdAt();
+    String bindingName = item != null ? item.getBindingName() : fallbackRecord.bindingName();
 
-    String callerRef = PlanItemRef.encode(request.caseId(), item.getPlanItemId());
+    String callerRef = PlanItemRef.encode(request.caseId(), planItemId);
     JudgmentTarget target = request.target();
 
     String payload = null;
@@ -109,7 +130,7 @@ public class JudgmentWorkItemScheduler implements JudgmentScheduler {
             .candidateScores(serializeScores(request.candidateScores()))
             .routingExperiences(serializeExperiences(request.experiences()))
             .tenancyId(request.tenancyId())
-            .originRef(resolveOriginRef(request, item, plan));
+            .originRef(item != null ? resolveOriginRef(request, item, plan) : null);
 
     if (target.outcomes() != null && !target.outcomes().isEmpty()) {
       builder.permittedOutcomes(toOutcomeList(target.outcomes()));
@@ -121,17 +142,21 @@ public class JudgmentWorkItemScheduler implements JudgmentScheduler {
       LOG.warnf(
           "Failed to create WorkItem for judgment binding '%s' case %s — reverting to PENDING: %s",
           request.bindingName(), request.caseId(), e.getMessage());
-      item.revertDispatching();
+      if (item != null) {
+        item.revertDispatching();
+      } else {
+        planItemStore.updateStatus(planItemId, TaskStatus.PENDING, request.tenancyId());
+      }
       return;
     }
 
     planItemStore.save(
         PlanItemSaveRequest.primitive(
             request.caseId(),
-            item.getPlanItemId(),
-            item.getBindingName(),
+            planItemId,
+            bindingName,
             TaskStatus.DELEGATED,
-            item.getCreatedAt(),
+            createdAt,
             TargetType.JUDGMENT,
             extractOutputMappingExpression(target),
             request.tenancyId(),
@@ -139,7 +164,9 @@ public class JudgmentWorkItemScheduler implements JudgmentScheduler {
             null,
             null),
         request.tenancyId());
-    item.markDelegated();
+    if (item != null) {
+      item.markDelegated();
+    }
     LOG.infof("WorkItem created (judgment) for binding callerRef=%s", callerRef);
   }
 
