@@ -849,6 +849,7 @@ final class SchemaPostProcessor {
     addDefault(defs, "Binding", "lifecycleScope", "BINDING");
     addDefault(defs, "Binding", "conflictResolverStrategy", "LAST_WRITER_WINS");
     addDefault(defs, "Binding", "replanAfter", "conditional");
+    addDefaultBoolean(defs, "Binding", "compensation", false);
     addDefault(defs, "Goal", "kind", "success");
     addDefault(defs, "Milestone", "slaStartFrom", "MILESTONE_ACTIVATED");
 
@@ -877,6 +878,18 @@ final class SchemaPostProcessor {
   }
 
   private static void addDefaultInt(ObjectNode defs, String typeName, String field, int value) {
+    ObjectNode type = (ObjectNode) defs.get(typeName);
+    if (type == null) {
+      return;
+    }
+    ObjectNode prop = (ObjectNode) type.path("properties").path(field);
+    if (!prop.isMissingNode() && !prop.has("default")) {
+      prop.put("default", value);
+    }
+  }
+
+  private static void addDefaultBoolean(
+      ObjectNode defs, String typeName, String field, boolean value) {
     ObjectNode type = (ObjectNode) defs.get(typeName);
     if (type == null) {
       return;
