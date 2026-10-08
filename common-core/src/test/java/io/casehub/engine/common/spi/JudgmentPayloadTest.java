@@ -45,7 +45,8 @@ class JudgmentPayloadTest {
             Set.of("user-1"),
             "PayloadType",
             List.of(),
-            Map.of("user-1", 0.9));
+            Map.of("user-1", 0.9),
+            null);
 
     assertEquals(target, bp.target());
     assertEquals("MyResolution", bp.resolutionTypeName());
