@@ -17,7 +17,7 @@ concurrency:
 jobs:
   build:
     runs-on: ubuntu-latest
-    timeout-minutes: 45
+    timeout-minutes: 60
     permissions:
       contents: read
       packages: write
@@ -39,6 +39,7 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           QUARKUS_LANGCHAIN4J_OLLAMA_DEVSERVICES_ENABLED: false
+          TESTCONTAINERS_RYUK_DISABLED: true
 
       - name: Upload Surefire reports
         uses: actions/upload-artifact@v4

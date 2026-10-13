@@ -88,10 +88,11 @@ class QuiescenceIntegrationTest {
   }
 
   @Test
-  void awaitQuiescence_throwsOnTimeout() {
+  void awaitQuiescence_throwsOnTimeout() throws InterruptedException {
     UUID caseId = slowWorkerBean.startCase(Map.of());
 
     runtime.signal(caseId, Map.of("trigger", "go"));
+    SlowWorkerBean.STARTED.await(5, TimeUnit.SECONDS);
 
     assertThatThrownBy(() -> runtime.awaitQuiescence(caseId, Duration.ofMillis(200)))
         .isInstanceOf(SettlementTimeoutException.class);
@@ -151,6 +152,7 @@ class QuiescenceIntegrationTest {
   @ApplicationScoped
   public static class SlowWorkerBean extends CaseHub {
     static final CountDownLatch LATCH = new CountDownLatch(1);
+    static final CountDownLatch STARTED = new CountDownLatch(1);
 
     @Override
     public CaseDefinition getDefinition() {
@@ -170,6 +172,7 @@ class QuiescenceIntegrationTest {
                       Map.class,
                       Map.class,
                       (input, scope) -> {
+                        STARTED.countDown();
                         try {
                           LATCH.await(5, TimeUnit.SECONDS);
                         } catch (InterruptedException e) {
