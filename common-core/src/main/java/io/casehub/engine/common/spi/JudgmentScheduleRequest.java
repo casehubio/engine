@@ -24,9 +24,6 @@ import java.util.Set;
 import java.util.UUID;
 import org.jspecify.annotations.Nullable;
 
-/**
- * @deprecated Use {@link JudgmentRequest} with {@link JudgmentPayload.BindingPayload} instead.
- */
 @Deprecated(forRemoval = true)
 public record JudgmentScheduleRequest(
     UUID caseId,
@@ -43,7 +40,8 @@ public record JudgmentScheduleRequest(
     @Nullable Set<String> resolvedCandidateUsers,
     @Nullable String payloadTypeName,
     List<RetrievedExperience> experiences,
-    Map<String, Double> candidateScores) {
+    Map<String, Double> candidateScores,
+    @Nullable String planItemId) {
 
   public JudgmentScheduleRequest(
       UUID caseId,
@@ -68,6 +66,7 @@ public record JudgmentScheduleRequest(
         null,
         null,
         List.of(),
-        Map.of());
+        Map.of(),
+        null);
   }
 }
