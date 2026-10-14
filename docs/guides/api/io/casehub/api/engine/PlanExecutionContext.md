@@ -18,6 +18,8 @@ fire and whether to evaluate at all for the given case state.
 
 ### `definition` (`io.casehub.api.model.CaseDefinition`)
 
+### `dispatchMetadata` (`java.util.Map<java.lang.String,java.lang.String>`)
+
 ### `experiences` (`java.util.List<io.casehub.api.spi.routing.RetrievedExperience>`)
 
 ### `origin` (`io.casehub.api.model.event.ExecutionOrigin`)
@@ -43,6 +45,8 @@ the case status
 ### `definition` (`io.casehub.api.model.CaseDefinition`)
 
 the case type definition
+
+### `dispatchMetadata` (`java.util.Map<java.lang.String,java.lang.String>`)
 
 ### `experiences` (`java.util.List<io.casehub.api.spi.routing.RetrievedExperience>`)
 
@@ -78,6 +82,20 @@ the tenant that owns this case
 - `origin` (`io.casehub.api.model.event.ExecutionOrigin`)
 - `retryState` (`io.casehub.api.model.RetryState`)
 
+### `public PlanExecutionContext(java.util.UUID caseId, io.casehub.api.model.CaseDefinition definition, io.casehub.api.context.CaseContext caseContext, io.casehub.api.model.CaseStatus caseStatus, java.lang.String tenancyId, java.util.List<io.casehub.api.spi.routing.RetrievedExperience> experiences, io.casehub.api.model.event.ExecutionOrigin origin, io.casehub.api.model.RetryState retryState, java.util.Map<java.lang.String,java.lang.String> dispatchMetadata)`
+
+#### Parameters
+
+- `caseId` (`java.util.UUID`)
+- `definition` (`io.casehub.api.model.CaseDefinition`)
+- `caseContext` (`io.casehub.api.context.CaseContext`)
+- `caseStatus` (`io.casehub.api.model.CaseStatus`)
+- `tenancyId` (`java.lang.String`)
+- `experiences` (`java.util.List<io.casehub.api.spi.routing.RetrievedExperience>`)
+- `origin` (`io.casehub.api.model.event.ExecutionOrigin`)
+- `retryState` (`io.casehub.api.model.RetryState`)
+- `dispatchMetadata` (`java.util.Map<java.lang.String,java.lang.String>`)
+
 ## Methods
 
 ### `public io.casehub.api.context.CaseContext caseContext()`
@@ -87,6 +105,8 @@ the tenant that owns this case
 ### `public io.casehub.api.model.CaseStatus caseStatus()`
 
 ### `public io.casehub.api.model.CaseDefinition definition()`
+
+### `public java.util.Map<java.lang.String,java.lang.String> dispatchMetadata()`
 
 ### `public final boolean equals(java.lang.Object o)`
 
