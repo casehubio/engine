@@ -17,7 +17,6 @@ package io.casehub.engine.persistence.memory.quarkus;
 
 import io.casehub.engine.common.spi.EventLogRepository;
 import io.casehub.engine.common.spi.recovery.CaseContextRecoveryStrategy;
-import io.casehub.engine.persistence.memory.DefaultTestPrincipal;
 import io.casehub.engine.persistence.memory.InMemoryCaseInstanceRepository;
 import io.casehub.engine.persistence.memory.InMemoryCaseMetaModelRepository;
 import io.casehub.engine.persistence.memory.InMemoryEventLogRepository;
@@ -32,14 +31,6 @@ import jakarta.enterprise.inject.Produces;
 
 @ApplicationScoped
 public class PersistenceMemoryBeans {
-
-  @Produces
-  @Alternative
-  @Priority(200)
-  @ApplicationScoped
-  DefaultTestPrincipal defaultTestPrincipal() {
-    return new DefaultTestPrincipal();
-  }
 
   @Produces
   @DefaultBean
