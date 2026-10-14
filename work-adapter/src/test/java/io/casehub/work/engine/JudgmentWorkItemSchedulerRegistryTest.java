@@ -16,12 +16,12 @@
 package io.casehub.work.engine;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import io.casehub.api.model.JudgmentTarget;
 import io.casehub.api.model.TaskStatus;
 import io.casehub.engine.common.internal.model.PlanItemRecord;
 import io.casehub.engine.common.internal.model.PlanItemSaveRequest;
+import io.casehub.engine.common.internal.model.TargetType;
 import io.casehub.engine.common.spi.JudgmentScheduleRequest;
 import io.casehub.engine.common.spi.PlanItemStore;
 import io.casehub.engine.planning.plan.PlanItem;
@@ -29,6 +29,7 @@ import io.casehub.engine.planning.registry.BlackboardRegistry;
 import io.casehub.work.api.WorkItemCreateRequest;
 import io.casehub.work.api.WorkItemRef;
 import io.casehub.work.api.spi.WorkItemCreator;
+import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -49,15 +50,15 @@ class JudgmentWorkItemSchedulerRegistryTest {
     planItemStore = new RecordingPlanItemStore();
     registry = new BlackboardRegistry(planItemStore);
     workItemCreator = new RecordingWorkItemCreator();
-    scheduler = new JudgmentWorkItemScheduler();
-    scheduler.registry = registry;
-    scheduler.workItemCreator = workItemCreator;
-    scheduler.planItemStore = planItemStore;
+    scheduler = new JudgmentWorkItemScheduler(registry, workItemCreator, planItemStore);
   }
 
   @Test
   void schedule_shouldNotSilentlyDrop_whenCasePlanModelEvictedBeforeDispatch() {
     UUID caseId = UUID.randomUUID();
+    String planItemId = UUID.randomUUID().toString();
+    Instant createdAt = Instant.now();
+
     PlanItem planItem =
         PlanItem.create(
             "human-approval",
@@ -67,9 +68,21 @@ class JudgmentWorkItemSchedulerRegistryTest {
     assertThat(planItem.tryMarkDispatching()).isTrue();
 
     registry.getOrCreate(caseId, "test-tenant").addPlanItem(planItem);
-    String planItemId = planItem.getPlanItemId();
-
     registry.evict(caseId);
+
+    planItemStore.stubRecords.add(
+        PlanItemRecord.primitive(
+            caseId,
+            planItemId,
+            "human-approval",
+            TaskStatus.DISPATCHING,
+            createdAt,
+            TargetType.JUDGMENT,
+            null,
+            "test-tenant",
+            null,
+            null,
+            null));
 
     JudgmentScheduleRequest request =
         new JudgmentScheduleRequest(
@@ -79,16 +92,7 @@ class JudgmentWorkItemSchedulerRegistryTest {
             JudgmentTarget.builder().title("Approve PR").prompt("review").build(),
             Map.of(),
             null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            List.of(),
-            Map.of(),
-            planItemId);
+            null);
 
     scheduler.schedule(request);
 
@@ -104,7 +108,7 @@ class JudgmentWorkItemSchedulerRegistryTest {
   }
 
   @Test
-  void schedule_throwsWhenEvictedAndNoPlanItemId() {
+  void schedule_silentlyDrops_whenEvictedAndNoStoreRecord() {
     UUID caseId = UUID.randomUUID();
 
     JudgmentScheduleRequest request =
@@ -117,10 +121,9 @@ class JudgmentWorkItemSchedulerRegistryTest {
             null,
             null);
 
-    assertThatThrownBy(() -> scheduler.schedule(request))
-        .isInstanceOf(IllegalStateException.class)
-        .hasMessageContaining("CasePlanModel evicted")
-        .hasMessageContaining("no planItemId");
+    scheduler.schedule(request);
+
+    assertThat(workItemCreator.created).isEmpty();
   }
 
   @Test
@@ -188,6 +191,7 @@ class JudgmentWorkItemSchedulerRegistryTest {
 
   static class RecordingPlanItemStore implements PlanItemStore {
     final List<PlanItemSaveRequest> saved = new ArrayList<>();
+    final List<PlanItemRecord> stubRecords = new ArrayList<>();
 
     @Override
     public void save(PlanItemSaveRequest request, String tenancyId) {
@@ -199,7 +203,7 @@ class JudgmentWorkItemSchedulerRegistryTest {
 
     @Override
     public List<PlanItemRecord> findByCaseId(UUID caseId, String tenancyId) {
-      return List.of();
+      return stubRecords.stream().filter(r -> r.caseId().equals(caseId)).toList();
     }
 
     @Override
