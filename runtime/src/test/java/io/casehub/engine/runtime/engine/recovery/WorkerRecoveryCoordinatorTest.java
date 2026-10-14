@@ -19,9 +19,12 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import io.casehub.engine.common.internal.model.CaseInstance;
 import io.casehub.engine.common.spi.recovery.WorkerExecutionRecoveryService;
+import io.casehub.platform.api.acl.WorkerCredentialStore;
+import jakarta.enterprise.inject.Instance;
 import java.time.Duration;
 import java.util.UUID;
 import org.junit.jupiter.api.Test;
+import org.mockito.Mockito;
 
 class WorkerRecoveryCoordinatorTest {
 
@@ -29,9 +32,7 @@ class WorkerRecoveryCoordinatorTest {
   void initialStatus_isPending() {
     var coordinator =
         new WorkerRecoveryCoordinator(
-            serviceWith(() -> {}),
-            new io.casehub.platform.acl.inmem.InMemoryWorkerCredentialStore(),
-            Duration.ofSeconds(60));
+            serviceWith(() -> {}), emptyCredentialStore(), Duration.ofSeconds(60));
     assertThat(coordinator.getRecoveryStatus()).isEqualTo(RecoveryStatus.PENDING);
   }
 
@@ -39,9 +40,7 @@ class WorkerRecoveryCoordinatorTest {
   void successfulRecovery_transitionsToCompleted() {
     var coordinator =
         new WorkerRecoveryCoordinator(
-            serviceWith(() -> {}),
-            new io.casehub.platform.acl.inmem.InMemoryWorkerCredentialStore(),
-            Duration.ofSeconds(60));
+            serviceWith(() -> {}), emptyCredentialStore(), Duration.ofSeconds(60));
 
     coordinator.triggerRecovery();
 
@@ -60,7 +59,7 @@ class WorkerRecoveryCoordinatorTest {
                 () -> {
                   throw new RuntimeException("DB down");
                 }),
-            new io.casehub.platform.acl.inmem.InMemoryWorkerCredentialStore(),
+            emptyCredentialStore(),
             Duration.ofSeconds(60));
 
     coordinator.triggerRecovery();
@@ -84,7 +83,7 @@ class WorkerRecoveryCoordinatorTest {
                     Thread.currentThread().interrupt();
                   }
                 }),
-            new io.casehub.platform.acl.inmem.InMemoryWorkerCredentialStore(),
+            emptyCredentialStore(),
             Duration.ofMillis(100));
 
     coordinator.triggerRecovery();
@@ -94,6 +93,13 @@ class WorkerRecoveryCoordinatorTest {
         .pollInterval(Duration.ofMillis(50))
         .untilAsserted(
             () -> assertThat(coordinator.getRecoveryStatus()).isEqualTo(RecoveryStatus.FAILED));
+  }
+
+  @SuppressWarnings("unchecked")
+  private static Instance<WorkerCredentialStore> emptyCredentialStore() {
+    Instance<WorkerCredentialStore> instance = Mockito.mock(Instance.class);
+    Mockito.when(instance.isResolvable()).thenReturn(false);
+    return instance;
   }
 
   private WorkerExecutionRecoveryService serviceWith(Runnable recoveryAction) {

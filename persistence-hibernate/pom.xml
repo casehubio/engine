@@ -71,13 +71,15 @@
             <type>test-jar</type>
             <scope>test</scope>
         </dependency>
-        <!-- Provides DefaultTestPrincipal (@DefaultBean CurrentPrincipal) for test CDI augmentation.
-             This module is a library JAR — no standalone Quarkus build goal — so CDI validation
-             only runs during generate-code-tests, which includes test-scope deps. -->
         <dependency>
             <groupId>io.casehub</groupId>
             <artifactId>casehub-engine-persistence-memory</artifactId>
             <version>${project.version}</version>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>io.casehub</groupId>
+            <artifactId>casehub-platform</artifactId>
             <scope>test</scope>
         </dependency>
         <dependency>
