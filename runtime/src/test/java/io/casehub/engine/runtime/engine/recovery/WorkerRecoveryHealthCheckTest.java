@@ -17,8 +17,11 @@ package io.casehub.engine.runtime.engine.recovery;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import io.casehub.platform.api.acl.WorkerCredentialStore;
+import jakarta.enterprise.inject.Instance;
 import org.eclipse.microprofile.health.HealthCheckResponse;
 import org.junit.jupiter.api.Test;
+import org.mockito.Mockito;
 
 class WorkerRecoveryHealthCheckTest {
 
@@ -51,9 +54,11 @@ class WorkerRecoveryHealthCheckTest {
     assertThat(response.getData().get()).containsEntry("status", "failed");
   }
 
+  @SuppressWarnings("unchecked")
   private WorkerRecoveryCoordinator coordinatorWithStatus(RecoveryStatus status) {
-    return new WorkerRecoveryCoordinator(
-        null, new io.casehub.platform.acl.inmem.InMemoryWorkerCredentialStore(), null) {
+    Instance<WorkerCredentialStore> empty = Mockito.mock(Instance.class);
+    Mockito.when(empty.isResolvable()).thenReturn(false);
+    return new WorkerRecoveryCoordinator(null, empty, null) {
       @Override
       public RecoveryStatus getRecoveryStatus() {
         return status;

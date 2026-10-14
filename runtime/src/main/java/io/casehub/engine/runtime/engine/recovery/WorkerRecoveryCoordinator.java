@@ -21,6 +21,7 @@ import io.quarkus.runtime.StartupEvent;
 import jakarta.annotation.Priority;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.enterprise.event.Observes;
+import jakarta.enterprise.inject.Instance;
 import jakarta.inject.Inject;
 import java.time.Duration;
 import org.eclipse.microprofile.config.inject.ConfigProperty;
@@ -32,18 +33,21 @@ public class WorkerRecoveryCoordinator {
   private static final Logger LOG = Logger.getLogger(WorkerRecoveryCoordinator.class);
 
   private final WorkerExecutionRecoveryService recoveryService;
-  private final WorkerCredentialStore credentialStore;
+  private final java.util.Optional<WorkerCredentialStore> credentialStore;
   private final Duration recoveryTimeout;
   private volatile RecoveryStatus status = RecoveryStatus.PENDING;
 
   @Inject
   public WorkerRecoveryCoordinator(
       WorkerExecutionRecoveryService recoveryService,
-      WorkerCredentialStore credentialStore,
+      Instance<WorkerCredentialStore> credentialStore,
       @ConfigProperty(name = "casehub.engine.recovery.timeout", defaultValue = "60s")
           Duration recoveryTimeout) {
     this.recoveryService = recoveryService;
-    this.credentialStore = credentialStore;
+    this.credentialStore =
+        credentialStore.isResolvable()
+            ? java.util.Optional.of(credentialStore.get())
+            : java.util.Optional.empty();
     this.recoveryTimeout = recoveryTimeout;
   }
 
