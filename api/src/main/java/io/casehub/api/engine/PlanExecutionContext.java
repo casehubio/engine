@@ -49,4 +49,27 @@ public record PlanExecutionContext(
     String tenancyId,
     List<RetrievedExperience> experiences,
     ExecutionOrigin origin,
-    RetryState retryState) {}
+    RetryState retryState,
+    java.util.Map<String, String> dispatchMetadata) {
+
+  public PlanExecutionContext(
+      UUID caseId,
+      CaseDefinition definition,
+      CaseContext caseContext,
+      CaseStatus caseStatus,
+      String tenancyId,
+      List<RetrievedExperience> experiences,
+      ExecutionOrigin origin,
+      RetryState retryState) {
+    this(
+        caseId,
+        definition,
+        caseContext,
+        caseStatus,
+        tenancyId,
+        experiences,
+        origin,
+        retryState,
+        new java.util.concurrent.ConcurrentHashMap<>());
+  }
+}

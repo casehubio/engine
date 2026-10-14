@@ -269,6 +269,7 @@ public class PlanningStrategyLoopControl implements LoopControl {
         }
       } else {
         if (pi.tryMarkDispatching()) {
+          ctx.dispatchMetadata().put(binding.getName(), pi.id());
           dispatched.add(binding);
         }
       }

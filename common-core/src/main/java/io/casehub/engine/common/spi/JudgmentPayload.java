@@ -45,7 +45,8 @@ public sealed interface JudgmentPayload {
       @Nullable Set<String> resolvedCandidateUsers,
       @Nullable String payloadTypeName,
       List<RetrievedExperience> experiences,
-      Map<String, Double> candidateScores)
+      Map<String, Double> candidateScores,
+      @Nullable String planItemId)
       implements JudgmentPayload {
 
     public BindingPayload(
@@ -65,7 +66,8 @@ public sealed interface JudgmentPayload {
           null,
           null,
           List.of(),
-          Map.of());
+          Map.of(),
+          null);
     }
   }
 
