@@ -4,7 +4,7 @@
     <modelVersion>4.0.0</modelVersion>
     <groupId>io.casehub</groupId>
     <artifactId>casehub-engine-parent</artifactId>
-    <version>0.2-SNAPSHOT</version>
+    <version>0.3</version>
     <packaging>pom</packaging>
 
     <name>Case Hub :: Parent</name>
@@ -69,8 +69,8 @@
         <version.io.cloudevents>4.0.1</version.io.cloudevents>
 
         <!-- casehubio ecosystem dependencies — aligned on same version as this project -->
-        <version.io.casehub>0.2-SNAPSHOT</version.io.casehub>
-        <version.io.casehub.ledger>0.2-SNAPSHOT</version.io.casehub.ledger>
+        <version.io.casehub>0.3</version.io.casehub>
+        <version.io.casehub.ledger>0.3</version.io.casehub.ledger>
         <spring-boot.version>4.1.0</spring-boot.version>
 
 
