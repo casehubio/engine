@@ -17,7 +17,6 @@ package io.casehub.engine.planning.quarkus;
 
 import io.casehub.api.engine.CaseHubRuntime;
 import io.casehub.api.engine.ExpressionEngineRegistry;
-import io.casehub.api.model.ai.ChatModelProvider;
 import io.casehub.api.spi.event.EventDispatcher;
 import io.casehub.api.spi.routing.ImplementationRoutingStrategy;
 import io.casehub.engine.common.internal.context.BridgeResolver;
@@ -77,6 +76,7 @@ import io.casehub.engine.runtime.routing.CbrRetrievalService;
 import io.casehub.engine.runtime.routing.GoalAbandonmentEvaluator;
 import io.casehub.engine.runtime.work.CaseResumptionService;
 import io.casehub.engine.runtime.work.PendingWorkRegistry;
+import io.casehub.platform.agent.AgentProvider;
 import io.casehub.platform.api.routing.StrategyResolver;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.enterprise.event.Event;
@@ -127,20 +127,16 @@ public class PlanningBeans {
 
   @Produces
   @ApplicationScoped
-  LlmRepairStrategy llmRepairStrategy(Instance<ChatModelProvider> chatModelProviders) {
+  LlmRepairStrategy llmRepairStrategy(Instance<AgentProvider> agentProviders) {
     return new LlmRepairStrategy(
-        chatModelProviders.isResolvable()
-            ? Optional.of(chatModelProviders.get())
-            : Optional.empty());
+        agentProviders.isResolvable() ? Optional.of(agentProviders.get()) : Optional.empty());
   }
 
   @Produces
   @ApplicationScoped
-  ForwardReplanRevision forwardReplanRevision(Instance<ChatModelProvider> chatModelProviders) {
+  ForwardReplanRevision forwardReplanRevision(Instance<AgentProvider> agentProviders) {
     return new ForwardReplanRevision(
-        chatModelProviders.isResolvable()
-            ? Optional.of(chatModelProviders.get())
-            : Optional.empty());
+        agentProviders.isResolvable() ? Optional.of(agentProviders.get()) : Optional.empty());
   }
 
   @Produces
@@ -299,12 +295,9 @@ public class PlanningBeans {
 
   @Produces
   @ApplicationScoped
-  LlmDecompositionStrategy llmDecompositionStrategy(
-      Instance<ChatModelProvider> chatModelProviders) {
+  LlmDecompositionStrategy llmDecompositionStrategy(Instance<AgentProvider> agentProviders) {
     return new LlmDecompositionStrategy(
-        chatModelProviders.isResolvable()
-            ? Optional.of(chatModelProviders.get())
-            : Optional.empty());
+        agentProviders.isResolvable() ? Optional.of(agentProviders.get()) : Optional.empty());
   }
 
   @Produces

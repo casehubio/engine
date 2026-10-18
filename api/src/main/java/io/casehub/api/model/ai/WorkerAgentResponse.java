@@ -15,10 +15,9 @@
  */
 package io.casehub.api.model.ai;
 
-import dev.langchain4j.model.chat.ChatModel;
+import io.casehub.platform.agent.AgentInvocationResult;
+import io.casehub.worker.api.WorkerResult;
+import java.util.Map;
 
-public interface ChatModelProvider {
-  ModelType type();
-
-  ChatModel get();
-}
+public record WorkerAgentResponse(
+    WorkerResult<Map<String, Object>> result, AgentInvocationResult invocationResult) {}

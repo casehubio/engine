@@ -17,7 +17,6 @@ package io.casehub.engine.planning.spring;
 
 import io.casehub.api.engine.CaseHubRuntime;
 import io.casehub.api.engine.ExpressionEngineRegistry;
-import io.casehub.api.model.ai.ChatModelProvider;
 import io.casehub.api.spi.event.EventDispatcher;
 import io.casehub.api.spi.routing.ImplementationRoutingStrategy;
 import io.casehub.engine.common.internal.context.BridgeResolver;
@@ -57,6 +56,7 @@ import io.casehub.engine.runtime.engine.QuiescenceTracker;
 import io.casehub.engine.runtime.routing.CbrRetrievalService;
 import io.casehub.engine.runtime.routing.GoalAbandonmentEvaluator;
 import io.casehub.engine.runtime.work.CaseResumptionService;
+import io.casehub.platform.agent.AgentProvider;
 import io.casehub.platform.api.routing.StrategyResolver;
 import java.util.List;
 import java.util.Optional;
@@ -72,14 +72,13 @@ public class PlanningManualConfig {
   // ── adaptation (Instance<T> → Optional<T>) ──
 
   @Bean
-  public LlmRepairStrategy llmRepairStrategy(Optional<ChatModelProvider> chatModelProvider) {
-    return new LlmRepairStrategy(chatModelProvider);
+  public LlmRepairStrategy llmRepairStrategy(Optional<AgentProvider> agentProvider) {
+    return new LlmRepairStrategy(agentProvider);
   }
 
   @Bean
-  public ForwardReplanRevision forwardReplanRevision(
-      Optional<ChatModelProvider> chatModelProvider) {
-    return new ForwardReplanRevision(chatModelProvider);
+  public ForwardReplanRevision forwardReplanRevision(Optional<AgentProvider> agentProvider) {
+    return new ForwardReplanRevision(agentProvider);
   }
 
   @Bean
@@ -174,9 +173,8 @@ public class PlanningManualConfig {
   // ── decomposition (Instance<T> → Optional<T> + @ConfigProperty → @Value) ──
 
   @Bean
-  public LlmDecompositionStrategy llmDecompositionStrategy(
-      Optional<ChatModelProvider> chatModelProvider) {
-    return new LlmDecompositionStrategy(chatModelProvider);
+  public LlmDecompositionStrategy llmDecompositionStrategy(Optional<AgentProvider> agentProvider) {
+    return new LlmDecompositionStrategy(agentProvider);
   }
 
   @Bean

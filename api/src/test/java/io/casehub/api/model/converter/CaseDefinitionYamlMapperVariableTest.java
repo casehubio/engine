@@ -36,7 +36,7 @@ class CaseDefinitionYamlMapperVariableTest {
         null,
         null,
         sources,
-        io.casehub.api.model.ai.InlineChatModelProviderResolver.INSTANCE);
+        null);
   }
 
   @Test

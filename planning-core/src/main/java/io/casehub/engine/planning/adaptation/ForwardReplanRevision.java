@@ -17,23 +17,24 @@ package io.casehub.engine.planning.adaptation;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import io.casehub.api.model.ai.Agent;
 import io.casehub.api.model.ai.AgentException;
-import io.casehub.api.model.ai.ChatModelProvider;
 import io.casehub.engine.plan.adaptation.CompletedStep;
 import io.casehub.engine.plan.adaptation.OptimizationStrategy;
 import io.casehub.engine.plan.adaptation.PlanStepDescriptor;
 import io.casehub.engine.plan.adaptation.RevisedPlan;
 import io.casehub.engine.plan.adaptation.RevisionContext;
+import io.casehub.platform.agent.AgentProvider;
+import io.casehub.platform.agent.AgentSessionConfig;
+import java.time.Duration;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Map;
 import java.util.Optional;
 import java.util.stream.Collectors;
 
 public class ForwardReplanRevision implements OptimizationStrategy {
 
   private static final ObjectMapper MAPPER = new ObjectMapper();
+  private static final Duration LLM_TIMEOUT = Duration.ofSeconds(120);
 
   private static final String SYSTEM_PROMPT =
       "You are a planning assistant. A plan is in progress. Some steps have "
@@ -46,10 +47,10 @@ public class ForwardReplanRevision implements OptimizationStrategy {
           + "and optional 'dependsOn' (array of step ids this step depends on). "
           + "Produce a sequential plan where each step depends on the previous.";
 
-  private final Optional<ChatModelProvider> chatModelProviders;
+  private final Optional<AgentProvider> agentProvider;
 
-  public ForwardReplanRevision(Optional<ChatModelProvider> chatModelProviders) {
-    this.chatModelProviders = chatModelProviders;
+  public ForwardReplanRevision(Optional<AgentProvider> agentProvider) {
+    this.agentProvider = agentProvider;
   }
 
   @Override
@@ -59,8 +60,8 @@ public class ForwardReplanRevision implements OptimizationStrategy {
 
   @Override
   public RevisedPlan revise(RevisionContext context) {
-    if (chatModelProviders.isEmpty()) {
-      throw new UnsupportedOperationException("No ChatModelProvider available for plan revision");
+    if (agentProvider.isEmpty()) {
+      throw new UnsupportedOperationException("No AgentProvider available for plan revision");
     }
 
     {
@@ -97,17 +98,12 @@ public class ForwardReplanRevision implements OptimizationStrategy {
         }
       }
 
-      var agent =
-          Agent.builder().systemPrompt(SYSTEM_PROMPT).model(chatModelProviders.get().get()).build();
-
-      var result = agent.execute(Map.of("prompt", userPrompt));
-      var output = result.output();
+      var config = AgentSessionConfig.of(SYSTEM_PROMPT, userPrompt);
+      var invocationResult = agentProvider.get().invokeBlocking(config, LLM_TIMEOUT);
 
       JsonNode responseJson;
       try {
-        var outputStr =
-            output instanceof Map ? MAPPER.writeValueAsString(output) : output.toString();
-        responseJson = MAPPER.readTree(outputStr);
+        responseJson = MAPPER.readTree(invocationResult.text());
       } catch (Exception e) {
         throw new AgentException("Failed to parse plan revision response", e);
       }

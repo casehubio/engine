@@ -50,7 +50,7 @@ class LlmRepairStrategyTest {
   }
 
   @Test
-  void throwsWhenNoChatModelProvider() {
+  void throwsWhenNoAgentProvider() {
     var strategy = new LlmRepairStrategy(Optional.empty());
 
     ObjectNode context = MAPPER.createObjectNode();

@@ -163,12 +163,7 @@ class CaseDefinitionYamlMapperExpressionOverrideTest {
 
   private CaseDefinition loadYaml(String yaml) throws IOException {
     try (InputStream is = new ByteArrayInputStream(yaml.getBytes(StandardCharsets.UTF_8))) {
-      return CaseDefinitionYamlMapper.load(
-          is,
-          YAML,
-          registry,
-          node -> null,
-          io.casehub.api.model.ai.InlineChatModelProviderResolver.INSTANCE);
+      return CaseDefinitionYamlMapper.load(is, YAML, registry, node -> null, null);
     }
   }
 

@@ -18,18 +18,17 @@ package io.casehub.engine.runtime.routing;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.casehub.api.model.RetrievedMemory;
-import io.casehub.api.model.ai.Agent;
 import io.casehub.api.model.ai.AgentException;
-import io.casehub.api.model.ai.ChatModelProvider;
 import io.casehub.api.spi.routing.GoalFormationContext;
 import io.casehub.api.spi.routing.GoalFormationProposal;
 import io.casehub.api.spi.routing.GoalFormationStrategy;
 import io.casehub.eidos.api.AgentGoal;
 import io.casehub.eidos.api.GoalPriority;
-import io.casehub.worker.api.WorkerResult;
+import io.casehub.platform.agent.AgentProvider;
+import io.casehub.platform.agent.AgentSessionConfig;
+import java.time.Duration;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Map;
 import java.util.Optional;
 import org.jboss.logging.Logger;
 
@@ -37,11 +36,12 @@ public class LlmGoalFormationStrategy implements GoalFormationStrategy {
 
   private static final Logger LOG = Logger.getLogger(LlmGoalFormationStrategy.class);
   private static final ObjectMapper MAPPER = new ObjectMapper();
+  private static final Duration LLM_TIMEOUT = Duration.ofSeconds(120);
 
-  private final Optional<ChatModelProvider> chatModelProvider;
+  private final Optional<AgentProvider> agentProvider;
 
-  public LlmGoalFormationStrategy(Optional<ChatModelProvider> chatModelProvider) {
-    this.chatModelProvider = chatModelProvider;
+  public LlmGoalFormationStrategy(Optional<AgentProvider> agentProvider) {
+    this.agentProvider = agentProvider;
   }
 
   @Override
@@ -51,34 +51,23 @@ public class LlmGoalFormationStrategy implements GoalFormationStrategy {
 
   @Override
   public GoalFormationProposal propose(GoalFormationContext context) {
-    if (chatModelProvider.isEmpty()) {
-      throw new UnsupportedOperationException("No ChatModelProvider available for goal formation");
+    if (agentProvider.isEmpty()) {
+      throw new UnsupportedOperationException("No AgentProvider available for goal formation");
     }
+
+    String systemPrompt =
+        "You are a goal discovery analyst. Given an agent's recent reflection "
+            + "insights, its current goals, and relevant memories, identify new goals "
+            + "the agent should pursue. Only propose goals that represent genuinely new "
+            + "objectives — not refinements of existing goals. Each goal must be "
+            + "specific, actionable, and distinct from existing goals. "
+            + "Respond with JSON only.";
 
     String userPrompt = buildPrompt(context);
-    Agent agent =
-        Agent.builder()
-            .systemPrompt(
-                "You are a goal discovery analyst. Given an agent's recent reflection "
-                    + "insights, its current goals, and relevant memories, identify new goals "
-                    + "the agent should pursue. Only propose goals that represent genuinely new "
-                    + "objectives — not refinements of existing goals. Each goal must be "
-                    + "specific, actionable, and distinct from existing goals. "
-                    + "Respond with JSON only.")
-            .model(chatModelProvider.get().get())
-            .build();
+    var config = AgentSessionConfig.of(systemPrompt, userPrompt);
+    var invocationResult = agentProvider.get().invokeBlocking(config, LLM_TIMEOUT);
 
-    WorkerResult result = agent.execute(Map.of("prompt", userPrompt));
-    Object output = result.output();
-
-    String outputStr;
-    try {
-      outputStr = output instanceof Map ? MAPPER.writeValueAsString(output) : output.toString();
-    } catch (Exception e) {
-      throw new AgentException("Failed to serialize LLM response", e);
-    }
-
-    return parseResponse(outputStr);
+    return parseResponse(invocationResult.text());
   }
 
   private String buildPrompt(GoalFormationContext context) {

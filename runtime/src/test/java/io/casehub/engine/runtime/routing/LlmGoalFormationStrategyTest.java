@@ -17,23 +17,20 @@ package io.casehub.engine.runtime.routing;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.fail;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.when;
 
-import dev.langchain4j.data.message.AiMessage;
-import dev.langchain4j.model.chat.ChatModel;
-import dev.langchain4j.model.chat.request.ChatRequest;
-import dev.langchain4j.model.chat.response.ChatResponse;
 import io.casehub.api.model.RetrievedMemory;
 import io.casehub.api.model.ai.AgentException;
-import io.casehub.api.model.ai.ChatModelProvider;
-import io.casehub.api.model.ai.ModelType;
 import io.casehub.api.spi.routing.GoalFormationContext;
 import io.casehub.api.spi.routing.GoalFormationProposal;
 import io.casehub.eidos.api.AgentGoal;
 import io.casehub.eidos.api.GoalPriority;
 import io.casehub.eidos.api.Visibility;
+import io.casehub.platform.agent.AgentEvent;
+import io.casehub.platform.agent.AgentProvider;
+import io.casehub.platform.agent.AgentSession;
+import io.casehub.platform.agent.AgentSessionConfig;
+import io.casehub.platform.agent.AgentSessionInit;
+import io.smallrye.mutiny.Multi;
 import java.time.Instant;
 import java.util.List;
 import java.util.Map;
@@ -78,7 +75,7 @@ class LlmGoalFormationStrategyTest {
 
   @SuppressWarnings("unchecked")
   @Test
-  void failsWhenChatModelProviderAbsent() {
+  void failsWhenAgentProviderAbsent() {
     LlmGoalFormationStrategy strategy = new LlmGoalFormationStrategy(Optional.empty());
 
     try {
@@ -103,19 +100,20 @@ class LlmGoalFormationStrategyTest {
 
   @SuppressWarnings("unchecked")
   private LlmGoalFormationStrategy strategyWithResponse(String response) {
-    ChatModel chatModel = mock(ChatModel.class);
-    when(chatModel.chat(any(ChatRequest.class)))
-        .thenReturn(ChatResponse.builder().aiMessage(AiMessage.from(response)).build());
-    ChatModelProvider provider =
-        new ChatModelProvider() {
+    AgentProvider provider =
+        new AgentProvider() {
           @Override
-          public ModelType type() {
-            return ModelType.OPENAI;
+          public Multi<AgentEvent> invoke(AgentSessionConfig config) {
+            return Multi.createFrom()
+                .items(
+                    new AgentEvent.TextDelta(response),
+                    new AgentEvent.InvocationComplete(
+                        0, 0, 0, 0, 0, null, 0L, 0L, null, 0, false, null, null));
           }
 
           @Override
-          public ChatModel get() {
-            return chatModel;
+          public AgentSession openSession(AgentSessionInit init) {
+            throw new UnsupportedOperationException();
           }
         };
     return new LlmGoalFormationStrategy(Optional.of(provider));

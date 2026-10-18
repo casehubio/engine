@@ -356,7 +356,7 @@ public class CbrCaseRetainObserver implements CaseOutcomeObserver {
         .filter(w -> w.name().equals(record.executorName()))
         .findFirst()
         .filter(w -> w.function() instanceof AgentWorkerFunction)
-        .map(w -> ((AgentWorkerFunction) w.function()).agent().modelId())
+        .map(w -> ((AgentWorkerFunction) w.function()).invoker().model())
         .filter(java.util.Objects::nonNull)
         .map(id -> Map.<String, Object>of("modelId", id))
         .orElse(Map.of());

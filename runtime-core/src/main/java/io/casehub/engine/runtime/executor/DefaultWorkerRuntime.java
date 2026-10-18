@@ -221,7 +221,7 @@ class DefaultWorkerRuntime implements WorkerRuntime {
       }
     }
     if (function instanceof AgentWorkerFunction agent) {
-      return (WorkerResult<R>) agent.agent().execute((java.util.Map<String, Object>) input);
+      return (WorkerResult<R>) agent.invoker().execute((java.util.Map<String, Object>) input);
     }
     return (WorkerResult<R>)
         WorkerResult.failed(

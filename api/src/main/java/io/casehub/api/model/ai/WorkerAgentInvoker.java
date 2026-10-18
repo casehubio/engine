@@ -18,81 +18,79 @@ package io.casehub.api.model.ai;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import dev.langchain4j.data.message.SystemMessage;
-import dev.langchain4j.data.message.UserMessage;
-import dev.langchain4j.model.chat.ChatModel;
-import dev.langchain4j.model.chat.request.ChatRequest;
-import dev.langchain4j.model.chat.request.ResponseFormat;
-import dev.langchain4j.model.chat.request.ResponseFormatType;
-import dev.langchain4j.model.chat.request.json.JsonSchema;
-import dev.langchain4j.model.chat.response.ChatResponse;
-import dev.langchain4j.model.input.PromptTemplate;
+import io.casehub.platform.agent.AgentInvocationResult;
+import io.casehub.platform.agent.AgentProvider;
+import io.casehub.platform.agent.AgentSessionConfig;
 import io.casehub.worker.api.PlannedAction;
 import io.casehub.worker.api.WorkerResult;
-import java.util.List;
+import java.time.Duration;
 import java.util.Map;
 import java.util.function.Function;
 import java.util.function.UnaryOperator;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
-public final class Agent {
+public final class WorkerAgentInvoker {
 
   private static final ObjectMapper MAPPER = new ObjectMapper();
   private static final TypeReference<Map<String, Object>> MAP_TYPE = new TypeReference<>() {};
+  private static final Pattern TEMPLATE_PATTERN = Pattern.compile("\\{\\{\\s*(.+?)\\s*\\}\\}");
+  private static final Duration DEFAULT_TIMEOUT = Duration.ofSeconds(120);
 
+  private final AgentProvider agentProvider;
   private final String systemPrompt;
   private final String userMessageTemplate;
   private final UnaryOperator<JsonNode> inputTransformer;
   private final UnaryOperator<JsonNode> outputTransformer;
-  private final ChatModel model;
-  private final JsonSchema responseSchema;
+  private final io.casehub.platform.agent.ResponseFormat responseFormat;
   private final Function<Map<String, Object>, PlannedAction> plannedActionExtractor;
-  private final String modelId;
+  private final String model;
+  private final Duration timeout;
 
-  Agent(
+  public WorkerAgentInvoker(
+      AgentProvider agentProvider,
       String systemPrompt,
       String userMessageTemplate,
       UnaryOperator<JsonNode> inputTransformer,
       UnaryOperator<JsonNode> outputTransformer,
-      ChatModel model,
-      JsonSchema responseSchema,
+      io.casehub.platform.agent.ResponseFormat responseFormat,
       Function<Map<String, Object>, PlannedAction> plannedActionExtractor,
-      String modelId) {
+      String model,
+      Duration timeout) {
+    this.agentProvider = agentProvider;
     this.systemPrompt = systemPrompt;
     this.userMessageTemplate = userMessageTemplate;
     this.inputTransformer = inputTransformer;
     this.outputTransformer = outputTransformer;
-    this.model = model;
-    this.responseSchema = responseSchema;
+    this.responseFormat = responseFormat;
     this.plannedActionExtractor = plannedActionExtractor;
-    this.modelId = modelId;
+    this.model = model;
+    this.timeout = timeout;
   }
 
-  public String modelId() {
-    return modelId;
+  static String applyTemplate(String template, Map<String, Object> variables) {
+    Matcher matcher = TEMPLATE_PATTERN.matcher(template);
+    StringBuilder result = new StringBuilder();
+    while (matcher.find()) {
+      String key = matcher.group(1);
+      if (!variables.containsKey(key)) {
+        throw new AgentException("Template variable '{{" + key + "}}' not found in input");
+      }
+      Object value = variables.get(key);
+      if (value == null) {
+        throw new AgentException("Template variable '{{" + key + "}}' is null");
+      }
+      matcher.appendReplacement(result, Matcher.quoteReplacement(value.toString()));
+    }
+    matcher.appendTail(result);
+    return result.toString();
   }
 
-  public static AgentBuilder builder() {
-    return new AgentBuilder();
-  }
-
-  /**
-   * Executes this agent with the given input and returns a {@link WorkerResult}.
-   *
-   * <p>The output map is the LLM response after applying the output transformer. When a {@code
-   * plannedActionExtractor} is configured and returns a non-null {@link PlannedAction}, the result
-   * carries the action for downstream risk classification via {@link WorkerResult#of(Object,
-   * PlannedAction)}.
-   */
   public WorkerResult<Map<String, Object>> execute(Map<String, Object> input) {
     return executeDetailed(input).result();
   }
 
-  /**
-   * Executes this agent and returns an {@link AgentResponse} containing both the {@link
-   * WorkerResult} and {@link TokenUsage} from the LLM call. Token usage is null when the model does
-   * not report it.
-   */
-  public AgentResponse executeDetailed(Map<String, Object> input) {
+  public WorkerAgentResponse executeDetailed(Map<String, Object> input) {
     JsonNode inputNode = MAPPER.convertValue(input, JsonNode.class);
     JsonNode transformed = inputTransformer.apply(inputNode);
 
@@ -100,7 +98,9 @@ public final class Agent {
     if (userMessageTemplate != null) {
       try {
         Map<String, Object> variables = MAPPER.convertValue(transformed, MAP_TYPE);
-        userText = PromptTemplate.from(userMessageTemplate).apply(variables).text();
+        userText = applyTemplate(userMessageTemplate, variables);
+      } catch (AgentException e) {
+        throw e;
       } catch (Exception e) {
         throw new AgentException("Failed to apply userMessage template: " + e.getMessage(), e);
       }
@@ -108,15 +108,23 @@ public final class Agent {
       userText = transformed.toString();
     }
 
-    ChatRequest request =
-        ChatRequest.builder()
-            .messages(List.of(SystemMessage.from(systemPrompt), UserMessage.from(userText)))
-            .responseFormat(buildResponseFormat())
-            .build();
+    AgentSessionConfig config = AgentSessionConfig.of(systemPrompt, userText);
+    if (model != null) {
+      config = config.withModel(model);
+    }
+    if (responseFormat != null) {
+      config = config.withResponseFormat(responseFormat);
+    }
 
-    ChatResponse response = model.chat(request);
-    String responseText = response.aiMessage().text();
+    AgentInvocationResult invocationResult;
+    try {
+      invocationResult =
+          agentProvider.invokeBlocking(config, timeout != null ? timeout : DEFAULT_TIMEOUT);
+    } catch (Exception e) {
+      throw new AgentException("LLM invocation failed: " + e.getMessage(), e);
+    }
 
+    String responseText = invocationResult.text();
     if (responseText == null || responseText.isEmpty()) {
       throw new AgentException("LLM returned empty response");
     }
@@ -139,22 +147,10 @@ public final class Agent {
       workerResult = WorkerResult.of(output);
     }
 
-    dev.langchain4j.model.output.TokenUsage lc4jUsage = response.tokenUsage();
-    TokenUsage tokenUsage =
-        lc4jUsage != null
-            ? new TokenUsage(
-                lc4jUsage.inputTokenCount() != null ? lc4jUsage.inputTokenCount() : 0,
-                lc4jUsage.outputTokenCount() != null ? lc4jUsage.outputTokenCount() : 0)
-            : null;
-
-    return new AgentResponse(workerResult, tokenUsage);
+    return new WorkerAgentResponse(workerResult, invocationResult);
   }
 
-  private ResponseFormat buildResponseFormat() {
-    ResponseFormat.Builder builder = ResponseFormat.builder().type(ResponseFormatType.JSON);
-    if (responseSchema != null) {
-      builder.jsonSchema(responseSchema);
-    }
-    return builder.build();
+  public String model() {
+    return model;
   }
 }

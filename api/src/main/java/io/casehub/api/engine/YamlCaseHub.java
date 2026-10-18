@@ -48,6 +48,9 @@ public class YamlCaseHub extends CaseHub {
 
   @Inject WorkerFunctionProviderRegistry workerFunctionProviderRegistry;
 
+  @Inject
+  jakarta.enterprise.inject.Instance<io.casehub.platform.agent.AgentProvider> agentProviderInstance;
+
   private final String path;
   private final String overlayPath;
   private volatile CaseDefinition definition;
@@ -76,7 +79,9 @@ public class YamlCaseHub extends CaseHub {
                     objectMapper,
                     expressionEngineRegistry,
                     workerFunctionProviderRegistry,
-                    io.casehub.api.model.ai.InlineChatModelProviderResolver.INSTANCE);
+                    agentProviderInstance != null && agentProviderInstance.isResolvable()
+                        ? agentProviderInstance.get()
+                        : null);
             augment(loaded);
             definition = loaded;
           } catch (RuntimeException e) {

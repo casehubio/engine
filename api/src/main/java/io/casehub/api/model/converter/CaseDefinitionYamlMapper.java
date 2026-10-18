@@ -127,7 +127,7 @@ public final class CaseDefinitionYamlMapper {
       final ObjectMapper objectMapper,
       final ExpressionEngineRegistry registry,
       final WorkerFunctionProviderRegistry providerRegistry,
-      final io.casehub.api.model.ai.ChatModelProviderResolver chatModelResolver)
+      final io.casehub.platform.agent.AgentProvider agentProvider)
       throws IOException {
     if (yamlStream == null) {
       throw new IllegalArgumentException("InputStream cannot be null");
@@ -150,9 +150,7 @@ public final class CaseDefinitionYamlMapper {
         yaml,
         registry != null ? registry : JQ_ONLY,
         providerRegistry != null ? providerRegistry : EMPTY_PROVIDERS,
-        chatModelResolver != null
-            ? chatModelResolver
-            : io.casehub.api.model.ai.InlineChatModelProviderResolver.INSTANCE);
+        agentProvider);
   }
 
   /**
@@ -174,7 +172,7 @@ public final class CaseDefinitionYamlMapper {
       final ExpressionEngineRegistry registry,
       final WorkerFunctionProviderRegistry providerRegistry,
       final java.util.Map<String, io.casehub.yaml.core.resolver.VariableSource> variableSources,
-      final io.casehub.api.model.ai.ChatModelProviderResolver chatModelResolver)
+      final io.casehub.platform.agent.AgentProvider agentProvider)
       throws IOException {
     if (yamlStream == null) {
       throw new IllegalArgumentException("InputStream cannot be null");
@@ -199,9 +197,7 @@ public final class CaseDefinitionYamlMapper {
         yaml,
         registry != null ? registry : JQ_ONLY,
         providerRegistry != null ? providerRegistry : EMPTY_PROVIDERS,
-        chatModelResolver != null
-            ? chatModelResolver
-            : io.casehub.api.model.ai.InlineChatModelProviderResolver.INSTANCE);
+        agentProvider);
   }
 
   /**
@@ -219,7 +215,7 @@ public final class CaseDefinitionYamlMapper {
       final ObjectMapper objectMapper,
       final ExpressionEngineRegistry registry,
       final WorkerFunctionProviderRegistry providerRegistry,
-      final io.casehub.api.model.ai.ChatModelProviderResolver chatModelResolver) {
+      final io.casehub.platform.agent.AgentProvider agentProvider) {
     if (mergedNode == null) {
       throw new IllegalArgumentException("JsonNode cannot be null");
     }
@@ -239,9 +235,7 @@ public final class CaseDefinitionYamlMapper {
         yaml,
         registry != null ? registry : JQ_ONLY,
         providerRegistry != null ? providerRegistry : EMPTY_PROVIDERS,
-        chatModelResolver != null
-            ? chatModelResolver
-            : io.casehub.api.model.ai.InlineChatModelProviderResolver.INSTANCE);
+        agentProvider);
   }
 
   /**
@@ -595,11 +589,6 @@ public final class CaseDefinitionYamlMapper {
    * @throws IOException if reading or parsing fails
    */
   public static CaseDefinition load(final InputStream yamlStream) throws IOException {
-    return load(
-        yamlStream,
-        YamlMappers.create(),
-        JQ_ONLY,
-        EMPTY_PROVIDERS,
-        io.casehub.api.model.ai.InlineChatModelProviderResolver.INSTANCE);
+    return load(yamlStream, YamlMappers.create(), JQ_ONLY, EMPTY_PROVIDERS, null);
   }
 }

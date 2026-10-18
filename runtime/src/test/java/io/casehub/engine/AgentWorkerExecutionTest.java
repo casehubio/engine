@@ -19,10 +19,6 @@ import static org.awaitility.Awaitility.await;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 
-import dev.langchain4j.data.message.AiMessage;
-import dev.langchain4j.model.chat.ChatModel;
-import dev.langchain4j.model.chat.request.ChatRequest;
-import dev.langchain4j.model.chat.response.ChatResponse;
 import io.casehub.api.engine.CaseHub;
 import io.casehub.api.model.AgentWorkerFunction;
 import io.casehub.api.model.Binding;
@@ -33,16 +29,21 @@ import io.casehub.api.model.Goal;
 import io.casehub.api.model.GoalBasedCompletion;
 import io.casehub.api.model.GoalExpression;
 import io.casehub.api.model.StandardGoalKind;
-import io.casehub.api.model.ai.Agent;
-import io.casehub.api.model.ai.ChatModelProvider;
-import io.casehub.api.model.ai.ModelType;
+import io.casehub.api.model.ai.WorkerAgentInvoker;
 import io.casehub.api.model.evaluator.JQExpressionEvaluator;
 import io.casehub.engine.common.spi.cache.CaseInstanceCache;
+import io.casehub.platform.agent.AgentEvent;
+import io.casehub.platform.agent.AgentProvider;
+import io.casehub.platform.agent.AgentSession;
+import io.casehub.platform.agent.AgentSessionConfig;
+import io.casehub.platform.agent.AgentSessionInit;
 import io.casehub.worker.api.Capability;
 import io.casehub.worker.api.Worker;
 import io.quarkus.test.junit.QuarkusTest;
+import io.smallrye.mutiny.Multi;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
+import java.time.Duration;
 import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.TimeUnit;
@@ -90,36 +91,36 @@ public class AgentWorkerExecutionTest {
     }
 
     private static CaseDefinition createDefinition() {
-      // Mock ChatModelProvider that returns fixed sentiment
-      ChatModelProvider mockProvider =
-          new ChatModelProvider() {
+      // Stub AgentProvider that returns fixed sentiment
+      AgentProvider stubProvider =
+          new AgentProvider() {
             @Override
-            public ModelType type() {
-              return ModelType.OPENAI;
+            public Multi<AgentEvent> invoke(AgentSessionConfig config) {
+              return Multi.createFrom()
+                  .items(
+                      new AgentEvent.TextDelta("{\"sentiment\": \"POSITIVE\"}"),
+                      new AgentEvent.InvocationComplete(
+                          0, 0, 0, 0, 0, null, 0L, 0L, null, 0, false, null, null));
             }
 
             @Override
-            public ChatModel get() {
-              return new ChatModel() {
-                @Override
-                public ChatResponse doChat(ChatRequest request) {
-                  return ChatResponse.builder()
-                      .aiMessage(AiMessage.from("{\"sentiment\": \"POSITIVE\"}"))
-                      .build();
-                }
-              };
+            public AgentSession openSession(AgentSessionInit init) {
+              throw new UnsupportedOperationException();
             }
           };
 
-      // Create AI Agent
-      Agent sentimentAgent =
-          Agent.builder()
-              .systemPrompt(
-                  "You are a sentiment analyzer. Analyze the text and return POSITIVE, NEGATIVE, or NEUTRAL.")
-              .inputProjection("{ text: .text }")
-              .outputProjection("{ sentiment: .sentiment }")
-              .model(mockProvider)
-              .build();
+      // Create WorkerAgentInvoker
+      WorkerAgentInvoker sentimentInvoker =
+          new WorkerAgentInvoker(
+              stubProvider,
+              "You are a sentiment analyzer. Analyze the text and return POSITIVE, NEGATIVE, or NEUTRAL.",
+              null,
+              new io.casehub.api.model.ai.JqTransformer("{ text: .text }")::apply,
+              new io.casehub.api.model.ai.JqTransformer("{ sentiment: .sentiment }")::apply,
+              null,
+              null,
+              null,
+              Duration.ofSeconds(30));
 
       // Create capability
       Capability sentimentCapability =
@@ -133,7 +134,7 @@ public class AgentWorkerExecutionTest {
           Worker.builder()
               .name("sentiment-worker")
               .capabilityName("analyzeSentiment")
-              .function(new AgentWorkerFunction(sentimentAgent))
+              .function(new AgentWorkerFunction(sentimentInvoker))
               .description("AI-powered sentiment analysis worker")
               .build();
 

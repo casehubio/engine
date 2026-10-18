@@ -17,21 +17,21 @@ package io.casehub.engine.planning.decomposition;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import io.casehub.api.model.ai.Agent;
 import io.casehub.api.model.ai.AgentException;
-import io.casehub.api.model.ai.ChatModelProvider;
 import io.casehub.engine.plan.DagNode;
 import io.casehub.engine.plan.DagPlan;
 import io.casehub.engine.plan.DecompositionContext;
 import io.casehub.engine.plan.DecompositionStrategy;
 import io.casehub.engine.plan.JoinType;
 import io.casehub.engine.plan.TaskNode;
+import io.casehub.platform.agent.AgentProvider;
+import io.casehub.platform.agent.AgentSessionConfig;
 import io.casehub.worker.api.Capability;
+import java.time.Duration;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
-import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
 import java.util.stream.Collectors;
@@ -39,6 +39,7 @@ import java.util.stream.Collectors;
 public class LlmDecompositionStrategy implements DecompositionStrategy<JsonNode> {
 
   private static final ObjectMapper MAPPER = new ObjectMapper();
+  private static final Duration LLM_TIMEOUT = Duration.ofSeconds(120);
 
   private static final String SYSTEM_PROMPT =
       "You are a planning assistant. Given a goal and available capabilities, "
@@ -61,10 +62,10 @@ public class LlmDecompositionStrategy implements DecompositionStrategy<JsonNode>
           + "and optional 'dependsOn' (array of step ids this step depends on). "
           + "Produce a sequential plan where each step depends on the previous.";
 
-  private final Optional<ChatModelProvider> chatModelProviders;
+  private final Optional<AgentProvider> agentProvider;
 
-  public LlmDecompositionStrategy(Optional<ChatModelProvider> chatModelProviders) {
-    this.chatModelProviders = chatModelProviders;
+  public LlmDecompositionStrategy(Optional<AgentProvider> agentProvider) {
+    this.agentProvider = agentProvider;
   }
 
   @Override
@@ -76,9 +77,8 @@ public class LlmDecompositionStrategy implements DecompositionStrategy<JsonNode>
   public DagPlan<TaskNode.LeafTask<JsonNode>> decompose(
       TaskNode<JsonNode> task, DecompositionContext<JsonNode> context) {
 
-    if (chatModelProviders.isEmpty()) {
-      throw new UnsupportedOperationException(
-          "No ChatModelProvider available for LLM decomposition");
+    if (agentProvider.isEmpty()) {
+      throw new UnsupportedOperationException("No AgentProvider available for LLM decomposition");
     }
 
     {
@@ -106,17 +106,12 @@ public class LlmDecompositionStrategy implements DecompositionStrategy<JsonNode>
         userPrompt = userPrompt + "\n\n" + constraintText;
       }
 
-      var agent =
-          Agent.builder().systemPrompt(SYSTEM_PROMPT).model(chatModelProviders.get().get()).build();
-
-      var result = agent.execute(Map.of("prompt", userPrompt));
-      var output = result.output();
+      var config = AgentSessionConfig.of(SYSTEM_PROMPT, userPrompt);
+      var invocationResult = agentProvider.get().invokeBlocking(config, LLM_TIMEOUT);
 
       JsonNode responseJson;
       try {
-        var outputStr =
-            output instanceof Map ? MAPPER.writeValueAsString(output) : output.toString();
-        responseJson = MAPPER.readTree(outputStr);
+        responseJson = MAPPER.readTree(invocationResult.text());
       } catch (Exception e) {
         throw new AgentException("Failed to parse LLM decomposition response", e);
       }
@@ -202,8 +197,8 @@ public class LlmDecompositionStrategy implements DecompositionStrategy<JsonNode>
       DecompositionContext<JsonNode> context,
       io.casehub.engine.plan.ReplanContext<JsonNode> replanContext) {
 
-    if (chatModelProviders.isEmpty()) {
-      throw new UnsupportedOperationException("No ChatModelProvider available for LLM re-planning");
+    if (agentProvider.isEmpty()) {
+      throw new UnsupportedOperationException("No AgentProvider available for LLM re-planning");
     }
 
     {
@@ -221,20 +216,12 @@ public class LlmDecompositionStrategy implements DecompositionStrategy<JsonNode>
         userPrompt = userPrompt + "\n\n" + constraintText;
       }
 
-      var agent =
-          Agent.builder()
-              .systemPrompt(REPLAN_SYSTEM_PROMPT)
-              .model(chatModelProviders.get().get())
-              .build();
-
-      var result = agent.execute(Map.of("prompt", userPrompt));
-      var output = result.output();
+      var config = AgentSessionConfig.of(REPLAN_SYSTEM_PROMPT, userPrompt);
+      var invocationResult = agentProvider.get().invokeBlocking(config, LLM_TIMEOUT);
 
       JsonNode responseJson;
       try {
-        var outputStr =
-            output instanceof Map ? MAPPER.writeValueAsString(output) : output.toString();
-        responseJson = MAPPER.readTree(outputStr);
+        responseJson = MAPPER.readTree(invocationResult.text());
       } catch (Exception e) {
         throw new AgentException("Failed to parse LLM replan response", e);
       }

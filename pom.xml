@@ -69,7 +69,8 @@
         <version.io.cloudevents>4.0.1</version.io.cloudevents>
 
         <!-- casehubio ecosystem dependencies — aligned on same version as this project -->
-        <version.io.casehub>0.4-SNAPSHOT</version.io.casehub>
+        <casehub.version>0.4-SNAPSHOT</casehub.version>
+        <version.io.casehub>${casehub.version}</version.io.casehub>
         <version.io.casehub.ledger>0.4-SNAPSHOT</version.io.casehub.ledger>
         <spring-boot.version>4.1.0</spring-boot.version>
 
@@ -308,6 +309,11 @@
             <dependency>
                 <groupId>io.casehub</groupId>
                 <artifactId>casehub-platform-schema-generator</artifactId>
+                <version>${version.io.casehub}</version>
+            </dependency>
+            <dependency>
+                <groupId>io.casehub</groupId>
+                <artifactId>casehub-platform-agent-api</artifactId>
                 <version>${version.io.casehub}</version>
             </dependency>
             <dependency>
