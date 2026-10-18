@@ -19,9 +19,9 @@ import com.fasterxml.jackson.databind.JsonNode;
 import io.casehub.api.model.CaseDefinition;
 import io.casehub.api.model.FailureCategory;
 import io.casehub.api.model.FailureDiagnosis;
-import io.casehub.api.model.ai.Agent;
-import io.casehub.api.model.ai.ChatModelProvider;
-import java.util.Map;
+import io.casehub.platform.agent.AgentProvider;
+import io.casehub.platform.agent.AgentSessionConfig;
+import java.time.Duration;
 import java.util.Optional;
 import org.jboss.logging.Logger;
 
@@ -29,15 +29,17 @@ public class FailureCritiqueService {
 
   private static final Logger LOG = Logger.getLogger(FailureCritiqueService.class);
 
+  private static final Duration LLM_TIMEOUT = Duration.ofSeconds(120);
+
   private static final String SYSTEM_PROMPT =
       "You are a failure analyst. Given a worker failure and the current case "
           + "context, produce a single sentence explaining what went wrong and what "
           + "should change on retry. Be specific and actionable.";
 
-  private final Optional<ChatModelProvider> chatModelProvider;
+  private final Optional<AgentProvider> agentProvider;
 
-  public FailureCritiqueService(Optional<ChatModelProvider> chatModelProvider) {
-    this.chatModelProvider = chatModelProvider;
+  public FailureCritiqueService(Optional<AgentProvider> agentProvider) {
+    this.agentProvider = agentProvider;
   }
 
   public String generateCritique(
@@ -47,21 +49,16 @@ public class FailureCritiqueService {
       return diagnosis.category().reason();
     }
 
-    if (chatModelProvider.isEmpty()) {
+    if (agentProvider.isEmpty()) {
       return diagnosis.category().reason();
     }
 
     try {
       String userPrompt = buildUserPrompt(diagnosis, workingLayer);
-      var agent =
-          Agent.builder().systemPrompt(SYSTEM_PROMPT).model(chatModelProvider.get().get()).build();
-
-      var result = agent.execute(Map.of("prompt", userPrompt));
-      var output = result.output();
-      if (output instanceof Map<?, ?> m && m.containsKey("result")) {
-        return m.get("result").toString();
-      }
-      return output != null ? output.toString() : diagnosis.category().reason();
+      var config = AgentSessionConfig.of(SYSTEM_PROMPT, userPrompt);
+      var invocationResult = agentProvider.get().invokeBlocking(config, LLM_TIMEOUT);
+      var text = invocationResult.text();
+      return text != null && !text.isBlank() ? text.trim() : diagnosis.category().reason();
     } catch (Exception e) {
       LOG.debugf(e, "LLM critique generation failed — using classical fallback");
       return diagnosis.category().reason();

@@ -22,14 +22,17 @@ import io.casehub.api.engine.CaseHub;
 import io.casehub.api.model.Binding;
 import io.casehub.api.model.CaseDefinition;
 import io.casehub.api.model.ContextChangeTrigger;
-import io.casehub.api.model.ai.ChatModelProvider;
-import io.casehub.api.model.ai.ModelType;
 import io.casehub.eidos.api.AgentDescriptor;
 import io.casehub.eidos.api.AgentGoal;
 import io.casehub.eidos.api.GoalPriority;
 import io.casehub.eidos.api.Visibility;
 import io.casehub.engine.common.internal.model.CaseInstance;
 import io.casehub.engine.common.spi.CaseInstanceRepository;
+import io.casehub.platform.agent.AgentEvent;
+import io.casehub.platform.agent.AgentProvider;
+import io.casehub.platform.agent.AgentSession;
+import io.casehub.platform.agent.AgentSessionConfig;
+import io.casehub.platform.agent.AgentSessionInit;
 import io.casehub.platform.api.governance.ExecutionPolicy;
 import io.casehub.platform.api.governance.RetryPolicy;
 import io.casehub.platform.api.identity.TenancyConstants;
@@ -40,6 +43,7 @@ import io.casehub.worker.api.WorkerResult;
 import io.quarkus.test.junit.QuarkusTest;
 import io.quarkus.test.junit.QuarkusTestProfile;
 import io.quarkus.test.junit.TestProfile;
+import io.smallrye.mutiny.Multi;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
 import java.util.List;
@@ -198,7 +202,7 @@ class GoalFormationIntegrationTest {
   @jakarta.annotation.Priority(1)
   @jakarta.enterprise.inject.Alternative
   @ApplicationScoped
-  public static class TestChatModelProvider implements ChatModelProvider {
+  public static class TestAgentProvider implements AgentProvider {
     private static final String RESPONSE_JSON =
         "{\"goals\": [{\"name\": \"quality-metrics\", "
             + "\"description\": \"Track code quality metrics over time\", "
@@ -207,21 +211,17 @@ class GoalFormationIntegrationTest {
             + "\"rationale\": \"Reflection insights suggest quality awareness\"}";
 
     @Override
-    public ModelType type() {
-      return ModelType.OPENAI;
+    public Multi<AgentEvent> invoke(AgentSessionConfig config) {
+      return Multi.createFrom()
+          .items(
+              new AgentEvent.TextDelta(RESPONSE_JSON),
+              new AgentEvent.InvocationComplete(
+                  0, 0, 0, 0, 0, null, 0L, 0L, null, 0, false, null, null));
     }
 
     @Override
-    public dev.langchain4j.model.chat.ChatModel get() {
-      return new dev.langchain4j.model.chat.ChatModel() {
-        @Override
-        public dev.langchain4j.model.chat.response.ChatResponse chat(
-            dev.langchain4j.model.chat.request.ChatRequest request) {
-          return dev.langchain4j.model.chat.response.ChatResponse.builder()
-              .aiMessage(dev.langchain4j.data.message.AiMessage.from(RESPONSE_JSON))
-              .build();
-        }
-      };
+    public AgentSession openSession(AgentSessionInit init) {
+      throw new UnsupportedOperationException();
     }
   }
 

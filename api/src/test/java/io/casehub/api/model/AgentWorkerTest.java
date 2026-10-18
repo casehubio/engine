@@ -19,56 +19,62 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertInstanceOf;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 
-import dev.langchain4j.data.message.AiMessage;
-import dev.langchain4j.model.chat.ChatModel;
-import dev.langchain4j.model.chat.request.ChatRequest;
-import dev.langchain4j.model.chat.response.ChatResponse;
-import io.casehub.api.model.ai.Agent;
-import io.casehub.api.model.ai.ChatModelProvider;
-import io.casehub.api.model.ai.ModelType;
+import io.casehub.api.model.ai.WorkerAgentInvoker;
+import io.casehub.platform.agent.AgentEvent;
+import io.casehub.platform.agent.AgentProvider;
+import io.casehub.platform.agent.AgentSession;
+import io.casehub.platform.agent.AgentSessionConfig;
+import io.casehub.platform.agent.AgentSessionInit;
 import io.casehub.platform.api.governance.BackoffStrategy;
 import io.casehub.platform.api.governance.ExecutionPolicy;
 import io.casehub.platform.api.governance.RetryPolicy;
 import io.casehub.worker.api.Worker;
+import io.smallrye.mutiny.Multi;
+import java.time.Duration;
 import java.util.Map;
+import java.util.function.UnaryOperator;
 import org.junit.jupiter.api.Test;
 
 class AgentWorkerTest {
 
-  private ChatModelProvider fixedResponseProvider(String jsonResponse) {
-    return new ChatModelProvider() {
-      @Override
-      public ModelType type() {
-        return ModelType.OPENAI;
-      }
-
-      @Override
-      public ChatModel get() {
-        return new ChatModel() {
+  private WorkerAgentInvoker stubInvoker(String jsonResponse) {
+    AgentProvider provider =
+        new AgentProvider() {
           @Override
-          public ChatResponse doChat(ChatRequest request) {
-            return ChatResponse.builder().aiMessage(AiMessage.from(jsonResponse)).build();
+          public Multi<AgentEvent> invoke(AgentSessionConfig config) {
+            return Multi.createFrom()
+                .items(
+                    new AgentEvent.TextDelta(jsonResponse),
+                    new AgentEvent.InvocationComplete(
+                        0, 0, 0, 0, 0, null, 0L, 0L, null, 0, false, null, null));
+          }
+
+          @Override
+          public AgentSession openSession(AgentSessionInit init) {
+            throw new UnsupportedOperationException();
           }
         };
-      }
-    };
+    return new WorkerAgentInvoker(
+        provider,
+        "test system prompt",
+        null,
+        UnaryOperator.identity(),
+        UnaryOperator.identity(),
+        null,
+        null,
+        null,
+        Duration.ofSeconds(30));
   }
 
   @Test
   void workerCanBeCreatedWithAgent() {
-    Agent agent =
-        Agent.builder()
-            .systemPrompt("You are a helpful assistant")
-            .inputProjection("{ text: .input }")
-            .outputProjection("{ result: .output }")
-            .model(fixedResponseProvider("{\"output\": \"processed\"}"))
-            .build();
+    var invoker = stubInvoker("{\"output\": \"processed\"}");
 
     Worker worker =
         Worker.builder()
             .name("ai-text-processor")
             .capabilityName("text-processing")
-            .function(new AgentWorkerFunction(agent))
+            .function(new AgentWorkerFunction(invoker))
             .description("AI-powered text processing worker")
             .build();
 
@@ -83,36 +89,24 @@ class AgentWorkerTest {
 
   @Test
   void workerExecutesAgentCorrectly() {
-    Agent agent =
-        Agent.builder()
-            .systemPrompt("You translate text to uppercase")
-            .inputProjection(".")
-            .outputProjection(".")
-            .model(fixedResponseProvider("{\"result\": \"HELLO WORLD\"}"))
-            .build();
+    var invoker = stubInvoker("{\"result\": \"HELLO WORLD\"}");
 
     Worker worker =
         Worker.builder()
             .name("uppercase-transformer")
             .capabilityName("transform")
-            .function(new AgentWorkerFunction(agent))
+            .function(new AgentWorkerFunction(invoker))
             .build();
 
-    Agent extractedAgent = ((AgentWorkerFunction) worker.function()).agent();
-    Map<String, Object> result = extractedAgent.execute(Map.of("text", "hello world")).output();
+    WorkerAgentInvoker extracted = ((AgentWorkerFunction) worker.function()).invoker();
+    Map<String, Object> result = extracted.execute(Map.of("text", "hello world")).output();
 
     assertEquals("HELLO WORLD", result.get("result"));
   }
 
   @Test
   void agentWorkerSupportsExecutionPolicy() {
-    Agent agent =
-        Agent.builder()
-            .systemPrompt("Test agent")
-            .inputProjection(".")
-            .outputProjection(".")
-            .model(fixedResponseProvider("{}"))
-            .build();
+    var invoker = stubInvoker("{}");
 
     ExecutionPolicy policy =
         new ExecutionPolicy(5000, new RetryPolicy(3, 1000, BackoffStrategy.EXPONENTIAL));
@@ -121,7 +115,7 @@ class AgentWorkerTest {
         Worker.builder()
             .name("policy-test")
             .capabilityName("test")
-            .function(new AgentWorkerFunction(agent))
+            .function(new AgentWorkerFunction(invoker))
             .executionPolicy(policy)
             .build();
 

@@ -19,51 +19,55 @@ import static org.junit.jupiter.api.Assertions.assertInstanceOf;
 import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
-import dev.langchain4j.data.message.AiMessage;
-import dev.langchain4j.model.chat.ChatModel;
-import dev.langchain4j.model.chat.request.ChatRequest;
-import dev.langchain4j.model.chat.response.ChatResponse;
-import io.casehub.api.model.ai.Agent;
-import io.casehub.api.model.ai.ChatModelProvider;
-import io.casehub.api.model.ai.ModelType;
+import io.casehub.api.model.ai.WorkerAgentInvoker;
+import io.casehub.platform.agent.AgentEvent;
+import io.casehub.platform.agent.AgentProvider;
+import io.casehub.platform.agent.AgentSession;
+import io.casehub.platform.agent.AgentSessionConfig;
+import io.casehub.platform.agent.AgentSessionInit;
 import io.casehub.worker.api.WorkerFunction;
+import io.smallrye.mutiny.Multi;
+import java.time.Duration;
+import java.util.function.UnaryOperator;
 import org.junit.jupiter.api.Test;
 
 class AgentWorkerFunctionTest {
 
   @Test
   void implementsWorkerFunction() {
-    Agent agent = testAgent();
-    var fn = new AgentWorkerFunction(agent);
+    var invoker = testInvoker();
+    var fn = new AgentWorkerFunction(invoker);
     assertInstanceOf(WorkerFunction.class, fn);
-    assertSame(agent, fn.agent());
+    assertSame(invoker, fn.invoker());
   }
 
   @Test
-  void rejectsNullAgent() {
+  void rejectsNullInvoker() {
     assertThrows(NullPointerException.class, () -> new AgentWorkerFunction(null));
   }
 
-  private Agent testAgent() {
-    return Agent.builder()
-        .systemPrompt("test")
-        .model(
-            new ChatModelProvider() {
-              @Override
-              public ModelType type() {
-                return ModelType.OPENAI;
-              }
+  private WorkerAgentInvoker testInvoker() {
+    AgentProvider stubProvider =
+        new AgentProvider() {
+          @Override
+          public Multi<AgentEvent> invoke(AgentSessionConfig config) {
+            return Multi.createFrom().empty();
+          }
 
-              @Override
-              public ChatModel get() {
-                return new ChatModel() {
-                  @Override
-                  public ChatResponse doChat(ChatRequest request) {
-                    return ChatResponse.builder().aiMessage(AiMessage.from("{}")).build();
-                  }
-                };
-              }
-            })
-        .build();
+          @Override
+          public AgentSession openSession(AgentSessionInit init) {
+            throw new UnsupportedOperationException();
+          }
+        };
+    return new WorkerAgentInvoker(
+        stubProvider,
+        "test",
+        null,
+        UnaryOperator.identity(),
+        UnaryOperator.identity(),
+        null,
+        null,
+        null,
+        Duration.ofSeconds(30));
   }
 }

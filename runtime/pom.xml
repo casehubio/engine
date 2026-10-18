@@ -17,22 +17,22 @@
         <dependency>
             <groupId>io.casehub</groupId>
             <artifactId>casehub-neocortex-memory-api</artifactId>
-            <version>${casehub.version}</version>
+            <version>${version.io.casehub}</version>
         </dependency>
         <dependency>
             <groupId>io.casehub</groupId>
             <artifactId>casehub-neocortex-mindmap-api</artifactId>
-            <version>${casehub.version}</version>
+            <version>${version.io.casehub}</version>
         </dependency>
         <dependency>
             <groupId>io.casehub</groupId>
             <artifactId>casehub-neocortex-mindmap-intelligence</artifactId>
-            <version>${casehub.version}</version>
+            <version>${version.io.casehub}</version>
         </dependency>
         <dependency>
             <groupId>io.casehub</groupId>
             <artifactId>casehub-neocortex-caps-api</artifactId>
-            <version>${casehub.version}</version>
+            <version>${version.io.casehub}</version>
         </dependency>
         <dependency>
             <groupId>io.casehub</groupId>
@@ -43,30 +43,30 @@
         <dependency>
             <groupId>io.casehub</groupId>
             <artifactId>casehub-neocortex-memory</artifactId>
-            <version>${casehub.version}</version>
+            <version>${version.io.casehub}</version>
         </dependency>
 
         <dependency>
             <groupId>io.casehub</groupId>
             <artifactId>casehub-neocortex-rag-api</artifactId>
-            <version>${casehub.version}</version>
+            <version>${version.io.casehub}</version>
         </dependency>
         <dependency>
             <groupId>io.casehub</groupId>
             <artifactId>casehub-neocortex-rag-expansion</artifactId>
-            <version>${casehub.version}</version>
+            <version>${version.io.casehub}</version>
             <scope>runtime</scope>
         </dependency>
         <dependency>
             <groupId>io.casehub</groupId>
             <artifactId>casehub-neocortex-rag-testing</artifactId>
-            <version>${casehub.version}</version>
+            <version>${version.io.casehub}</version>
             <scope>test</scope>
         </dependency>
         <dependency>
             <groupId>io.casehub</groupId>
             <artifactId>casehub-neocortex-memory-cbr-inmem</artifactId>
-            <version>${casehub.version}</version>
+            <version>${version.io.casehub}</version>
             <scope>test</scope>
         </dependency>
         <dependency>

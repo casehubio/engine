@@ -31,34 +31,25 @@ class ForwardReplanRevisionTest {
   void includesConstraintTextInRevisionPrompt() {
     var capturedPrompt = new java.util.concurrent.atomic.AtomicReference<String>();
 
-    dev.langchain4j.model.chat.ChatModel capturingModel =
-        new dev.langchain4j.model.chat.ChatModel() {
+    io.casehub.platform.agent.AgentProvider provider =
+        new io.casehub.platform.agent.AgentProvider() {
           @Override
-          public dev.langchain4j.model.chat.response.ChatResponse doChat(
-              dev.langchain4j.model.chat.request.ChatRequest request) {
-            for (var msg : request.messages()) {
-              if (msg instanceof dev.langchain4j.data.message.UserMessage um) {
-                capturedPrompt.set(um.singleText());
-              }
-            }
-            return dev.langchain4j.model.chat.response.ChatResponse.builder()
-                .aiMessage(
-                    dev.langchain4j.data.message.AiMessage.from(
-                        "{\"steps\": [{\"id\": \"s1\", \"description\": \"step\", \"capabilityName\": \"analysis\"}]}"))
-                .build();
-          }
-        };
-
-    io.casehub.api.model.ai.ChatModelProvider provider =
-        new io.casehub.api.model.ai.ChatModelProvider() {
-          @Override
-          public io.casehub.api.model.ai.ModelType type() {
-            return io.casehub.api.model.ai.ModelType.ANTHROPIC;
+          public io.smallrye.mutiny.Multi<io.casehub.platform.agent.AgentEvent> invoke(
+              io.casehub.platform.agent.AgentSessionConfig config) {
+            capturedPrompt.set(config.userPrompt());
+            String responseJson =
+                "{\"steps\": [{\"id\": \"s1\", \"description\": \"step\", \"capabilityName\": \"analysis\"}]}";
+            return io.smallrye.mutiny.Multi.createFrom()
+                .items(
+                    new io.casehub.platform.agent.AgentEvent.TextDelta(responseJson),
+                    new io.casehub.platform.agent.AgentEvent.InvocationComplete(
+                        0, 0, 0, 0, 0, null, 0L, 0L, null, 0, false, null, null));
           }
 
           @Override
-          public dev.langchain4j.model.chat.ChatModel get() {
-            return capturingModel;
+          public io.casehub.platform.agent.AgentSession openSession(
+              io.casehub.platform.agent.AgentSessionInit init) {
+            throw new UnsupportedOperationException();
           }
         };
 
@@ -115,34 +106,25 @@ class ForwardReplanRevisionTest {
   void includesCritiqueInPromptOnStepFailed() {
     var capturedPrompt = new java.util.concurrent.atomic.AtomicReference<String>();
 
-    dev.langchain4j.model.chat.ChatModel capturingModel =
-        new dev.langchain4j.model.chat.ChatModel() {
+    io.casehub.platform.agent.AgentProvider provider =
+        new io.casehub.platform.agent.AgentProvider() {
           @Override
-          public dev.langchain4j.model.chat.response.ChatResponse doChat(
-              dev.langchain4j.model.chat.request.ChatRequest request) {
-            for (var msg : request.messages()) {
-              if (msg instanceof dev.langchain4j.data.message.UserMessage um) {
-                capturedPrompt.set(um.singleText());
-              }
-            }
-            return dev.langchain4j.model.chat.response.ChatResponse.builder()
-                .aiMessage(
-                    dev.langchain4j.data.message.AiMessage.from(
-                        "{\"steps\": [{\"id\": \"s1\", \"description\": \"retry\", \"capabilityName\": \"analysis\"}]}"))
-                .build();
-          }
-        };
-
-    io.casehub.api.model.ai.ChatModelProvider provider =
-        new io.casehub.api.model.ai.ChatModelProvider() {
-          @Override
-          public io.casehub.api.model.ai.ModelType type() {
-            return io.casehub.api.model.ai.ModelType.ANTHROPIC;
+          public io.smallrye.mutiny.Multi<io.casehub.platform.agent.AgentEvent> invoke(
+              io.casehub.platform.agent.AgentSessionConfig config) {
+            capturedPrompt.set(config.userPrompt());
+            String responseJson =
+                "{\"steps\": [{\"id\": \"s1\", \"description\": \"retry\", \"capabilityName\": \"analysis\"}]}";
+            return io.smallrye.mutiny.Multi.createFrom()
+                .items(
+                    new io.casehub.platform.agent.AgentEvent.TextDelta(responseJson),
+                    new io.casehub.platform.agent.AgentEvent.InvocationComplete(
+                        0, 0, 0, 0, 0, null, 0L, 0L, null, 0, false, null, null));
           }
 
           @Override
-          public dev.langchain4j.model.chat.ChatModel get() {
-            return capturingModel;
+          public io.casehub.platform.agent.AgentSession openSession(
+              io.casehub.platform.agent.AgentSessionInit init) {
+            throw new UnsupportedOperationException();
           }
         };
 
@@ -197,34 +179,25 @@ class ForwardReplanRevisionTest {
   void noCritiqueBlockWhenStepCompleted() {
     var capturedPrompt = new java.util.concurrent.atomic.AtomicReference<String>();
 
-    dev.langchain4j.model.chat.ChatModel capturingModel =
-        new dev.langchain4j.model.chat.ChatModel() {
+    io.casehub.platform.agent.AgentProvider provider =
+        new io.casehub.platform.agent.AgentProvider() {
           @Override
-          public dev.langchain4j.model.chat.response.ChatResponse doChat(
-              dev.langchain4j.model.chat.request.ChatRequest request) {
-            for (var msg : request.messages()) {
-              if (msg instanceof dev.langchain4j.data.message.UserMessage um) {
-                capturedPrompt.set(um.singleText());
-              }
-            }
-            return dev.langchain4j.model.chat.response.ChatResponse.builder()
-                .aiMessage(
-                    dev.langchain4j.data.message.AiMessage.from(
-                        "{\"steps\": [{\"id\": \"s1\", \"description\": \"next\", \"capabilityName\": \"analysis\"}]}"))
-                .build();
-          }
-        };
-
-    io.casehub.api.model.ai.ChatModelProvider provider =
-        new io.casehub.api.model.ai.ChatModelProvider() {
-          @Override
-          public io.casehub.api.model.ai.ModelType type() {
-            return io.casehub.api.model.ai.ModelType.ANTHROPIC;
+          public io.smallrye.mutiny.Multi<io.casehub.platform.agent.AgentEvent> invoke(
+              io.casehub.platform.agent.AgentSessionConfig config) {
+            capturedPrompt.set(config.userPrompt());
+            String responseJson =
+                "{\"steps\": [{\"id\": \"s1\", \"description\": \"next\", \"capabilityName\": \"analysis\"}]}";
+            return io.smallrye.mutiny.Multi.createFrom()
+                .items(
+                    new io.casehub.platform.agent.AgentEvent.TextDelta(responseJson),
+                    new io.casehub.platform.agent.AgentEvent.InvocationComplete(
+                        0, 0, 0, 0, 0, null, 0L, 0L, null, 0, false, null, null));
           }
 
           @Override
-          public dev.langchain4j.model.chat.ChatModel get() {
-            return capturingModel;
+          public io.casehub.platform.agent.AgentSession openSession(
+              io.casehub.platform.agent.AgentSessionInit init) {
+            throw new UnsupportedOperationException();
           }
         };
 

@@ -50,6 +50,11 @@
             <groupId>io.casehub</groupId>
             <artifactId>casehub-eidos-api</artifactId>
         </dependency>
+        <!-- EmbeddingModel for LangChain4j agent embedding provider -->
+        <dependency>
+            <groupId>dev.langchain4j</groupId>
+            <artifactId>langchain4j</artifactId>
+        </dependency>
 
         <dependency>
             <groupId>io.quarkus</groupId>

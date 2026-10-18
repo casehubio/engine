@@ -17,53 +17,50 @@ package io.casehub.api.model.converter;
 
 public class AgentConverter {
 
-  /**
-   * Builds an Agent directly from a raw YAML {@link com.fasterxml.jackson.databind.JsonNode},
-   * bypassing the generated schema POJOs. Supports the flat YAML format where {@code model:} is the
-   * provider name string and other fields ({@code modelName}, {@code apiKey}, etc.) sit at the same
-   * level.
-   */
-  public static io.casehub.api.model.ai.Agent toApiAgent(
+  public static io.casehub.api.model.ai.WorkerAgentInvoker toWorkerInvoker(
       com.fasterxml.jackson.databind.JsonNode agentNode,
-      io.casehub.api.model.ai.ChatModelProviderResolver resolver) {
+      io.casehub.platform.agent.AgentProvider agentProvider) {
     if (agentNode == null || agentNode.isNull()) {
       return null;
     }
 
-    String providerType;
-    com.fasterxml.jackson.databind.JsonNode providerConfigNode;
-    com.fasterxml.jackson.databind.JsonNode modelNode = agentNode.get("model");
-    if (modelNode != null && modelNode.isObject() && modelNode.size() > 0) {
-      var entry = modelNode.fields().next();
-      providerType = entry.getKey();
-      providerConfigNode = entry.getValue();
-    } else {
-      providerType = modelNode != null ? modelNode.asText() : null;
-      providerConfigNode = agentNode;
-    }
-    io.casehub.api.model.ai.ChatModelProvider modelProvider =
-        resolver.resolve(providerType, providerConfigNode);
-
-    String modelNameForId =
-        providerConfigNode.has("modelName") ? providerConfigNode.get("modelName").asText() : null;
-
-    io.casehub.api.model.ai.AgentBuilder builder =
-        io.casehub.api.model.ai.Agent.builder()
-            .systemPrompt(
-                agentNode.has("systemPrompt") ? agentNode.get("systemPrompt").asText() : null)
-            .model(modelProvider)
-            .modelId(modelNameForId);
-
-    if (agentNode.has("inputProjection")) {
-      builder.inputProjection(agentNode.get("inputProjection").asText());
-    }
-    if (agentNode.has("outputProjection")) {
-      builder.outputProjection(agentNode.get("outputProjection").asText());
-    }
-    if (agentNode.has("userMessageTemplate")) {
-      builder.userMessage(agentNode.get("userMessageTemplate").asText());
+    String model = null;
+    if (agentNode.has("modelName")) {
+      model = agentNode.get("modelName").asText();
+    } else if (agentNode.has("model")) {
+      com.fasterxml.jackson.databind.JsonNode modelNode = agentNode.get("model");
+      if (modelNode.isTextual()) {
+        model = modelNode.asText();
+      }
     }
 
-    return builder.build();
+    String systemPrompt =
+        agentNode.has("systemPrompt") ? agentNode.get("systemPrompt").asText() : null;
+
+    java.util.function.UnaryOperator<com.fasterxml.jackson.databind.JsonNode> inputTransformer =
+        agentNode.has("inputProjection")
+            ? new io.casehub.api.model.ai.JqTransformer(agentNode.get("inputProjection").asText())
+                ::apply
+            : java.util.function.UnaryOperator.identity();
+
+    java.util.function.UnaryOperator<com.fasterxml.jackson.databind.JsonNode> outputTransformer =
+        agentNode.has("outputProjection")
+            ? new io.casehub.api.model.ai.JqTransformer(agentNode.get("outputProjection").asText())
+                ::apply
+            : java.util.function.UnaryOperator.identity();
+
+    String userMessageTemplate =
+        agentNode.has("userMessageTemplate") ? agentNode.get("userMessageTemplate").asText() : null;
+
+    return new io.casehub.api.model.ai.WorkerAgentInvoker(
+        agentProvider,
+        systemPrompt,
+        userMessageTemplate,
+        inputTransformer,
+        outputTransformer,
+        null,
+        null,
+        model,
+        null);
   }
 }

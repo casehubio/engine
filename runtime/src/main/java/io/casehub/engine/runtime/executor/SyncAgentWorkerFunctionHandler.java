@@ -111,8 +111,9 @@ public class SyncAgentWorkerFunctionHandler implements WorkerFunctionHandler {
     final io.casehub.api.engine.WorkerRuntime runtime =
         workerRuntimeFactory.create(context.caseId(), metadata.workerName(), context, accState);
 
-    final java.util.concurrent.atomic.AtomicReference<io.casehub.api.model.ai.TokenUsage>
-        tokenUsageRef = new java.util.concurrent.atomic.AtomicReference<>();
+    final java.util.concurrent.atomic.AtomicReference<
+            io.casehub.platform.agent.AgentInvocationResult>
+        invocationResultRef = new java.util.concurrent.atomic.AtomicReference<>();
 
     java.util.function.Function<Object, WorkerResult<?>> fn =
         switch (function) {
@@ -125,10 +126,10 @@ public class SyncAgentWorkerFunctionHandler implements WorkerFunctionHandler {
           }
           case AgentWorkerFunction agent ->
               input -> {
-                var agentResponse =
-                    agent.agent().executeDetailed((java.util.Map<String, Object>) input);
-                tokenUsageRef.set(agentResponse.tokenUsage());
-                return agentResponse.result();
+                var response =
+                    agent.invoker().executeDetailed((java.util.Map<String, Object>) input);
+                invocationResultRef.set(response.invocationResult());
+                return response.result();
               };
           case WorkerFunction.ExchangeProcessor<?, ?> ep -> {
             @SuppressWarnings("unchecked")
@@ -169,14 +170,20 @@ public class SyncAgentWorkerFunctionHandler implements WorkerFunctionHandler {
                           .set(output));
         }
       }
-      io.casehub.api.model.ai.TokenUsage tokenUsage = tokenUsageRef.get();
-      if (tokenUsage != null) {
+      io.casehub.platform.agent.AgentInvocationResult ir = invocationResultRef.get();
+      if (ir != null) {
         return new HandlerResult(
             result,
             java.util.Map.of(
-                "inputTokens", tokenUsage.inputTokens(),
-                "outputTokens", tokenUsage.outputTokens(),
-                "totalTokens", tokenUsage.totalTokens()));
+                "inputTokens", ir.inputTokens(),
+                "outputTokens", ir.outputTokens(),
+                "thinkingTokens", ir.thinkingTokens(),
+                "cacheReadTokens", ir.cacheReadTokens(),
+                "cacheWriteTokens", ir.cacheWriteTokens(),
+                "totalCostUsd", ir.totalCostUsd() != null ? ir.totalCostUsd() : 0.0,
+                "durationMs", ir.durationMs(),
+                "backendKey", ir.backendKey() != null ? ir.backendKey() : "",
+                "instanceId", ir.instanceId() != null ? ir.instanceId() : ""));
       }
       return new HandlerResult(result);
     } catch (java.util.concurrent.TimeoutException e) {

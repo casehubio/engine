@@ -52,7 +52,6 @@ import io.casehub.api.model.SlaStartFrom;
 import io.casehub.api.model.SubCase;
 import io.casehub.api.model.Use;
 import io.casehub.api.model.WorkerFunctions;
-import io.casehub.api.model.ai.Agent;
 import io.casehub.api.model.converter.yaml.YamlAgentCapability;
 import io.casehub.api.model.converter.yaml.YamlAgentConstraint;
 import io.casehub.api.model.converter.yaml.YamlAgentDescriptor;
@@ -166,7 +165,7 @@ public final class YamlCaseDefinitionConverter {
       YamlCaseDefinition yaml,
       ExpressionEngineRegistry registry,
       WorkerFunctionProviderRegistry providers,
-      io.casehub.api.model.ai.ChatModelProviderResolver chatModelResolver) {
+      io.casehub.platform.agent.AgentProvider agentProvider) {
     CaseDefinition def = new CaseDefinition(yaml.namespace(), yaml.name(), yaml.version());
 
     convertTopLevel(yaml, def);
@@ -180,7 +179,7 @@ public final class YamlCaseDefinitionConverter {
         yaml.spec() != null && !yaml.spec().workers().isEmpty()
             ? yaml.spec().workers()
             : yaml.workers();
-    convertWorkers(effectiveWorkers, def, providers, chatModelResolver);
+    convertWorkers(effectiveWorkers, def, providers, agentProvider);
 
     List<YamlBinding> effectiveBindings =
         yaml.spec() != null && !yaml.spec().bindings().isEmpty()
@@ -495,7 +494,7 @@ public final class YamlCaseDefinitionConverter {
       List<YamlWorker> yamlWorkers,
       CaseDefinition def,
       WorkerFunctionProviderRegistry providers,
-      io.casehub.api.model.ai.ChatModelProviderResolver chatModelResolver) {
+      io.casehub.platform.agent.AgentProvider agentProvider) {
     Map<String, Worker> workerIndex = new LinkedHashMap<>();
     List<String> sequenceWorkerNames = new ArrayList<>();
 
@@ -545,7 +544,7 @@ public final class YamlCaseDefinitionConverter {
         WorkerFunction<?, ?> function = providers.createFunction(rawWorker);
         if (function == null) {
           if (yw.agent() != null) {
-            function = buildAgentFunction(yw, chatModelResolver);
+            function = buildAgentFunction(yw, agentProvider);
           } else if (yw.contextType() != null) {
             function = buildTypedSyncFunction(yw);
           } else {
@@ -611,11 +610,11 @@ public final class YamlCaseDefinitionConverter {
   }
 
   private static WorkerFunction<?, ?> buildAgentFunction(
-      YamlWorker yw, io.casehub.api.model.ai.ChatModelProviderResolver chatModelResolver) {
+      YamlWorker yw, io.casehub.platform.agent.AgentProvider agentProvider) {
     try {
       JsonNode agentNode = MAPPER.valueToTree(yw.agent());
-      Agent agent = AgentConverter.toApiAgent(agentNode, chatModelResolver);
-      return new AgentWorkerFunction(agent);
+      var invoker = AgentConverter.toWorkerInvoker(agentNode, agentProvider);
+      return new AgentWorkerFunction(invoker);
     } catch (Exception e) {
       LOG.warnf(
           "Worker '%s': agent conversion failed, falling back to NONE — %s",

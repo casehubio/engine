@@ -26,7 +26,7 @@ import io.casehub.api.model.CapabilityTarget;
 import io.casehub.api.model.CaseDefinition;
 import io.casehub.api.model.JudgmentTarget;
 import io.casehub.api.model.TaskStatus;
-import io.casehub.api.model.ai.Agent;
+import io.casehub.api.model.ai.WorkerAgentInvoker;
 import io.casehub.api.model.cbr.CbrConfig;
 import io.casehub.api.spi.CaseOutcomeEvent;
 import io.casehub.engine.common.internal.jq.JQEvaluator;
@@ -45,8 +45,14 @@ import io.casehub.neocortex.memory.cbr.CbrRecord;
 import io.casehub.neocortex.memory.cbr.CbrRecordSchema;
 import io.casehub.neocortex.memory.cbr.CbrRecordStore;
 import io.casehub.neocortex.memory.cbr.FeatureValue;
+import io.casehub.platform.agent.AgentEvent;
+import io.casehub.platform.agent.AgentProvider;
+import io.casehub.platform.agent.AgentSession;
+import io.casehub.platform.agent.AgentSessionConfig;
+import io.casehub.platform.agent.AgentSessionInit;
 import io.casehub.worker.api.Capability;
 import io.casehub.worker.api.Worker;
+import io.smallrye.mutiny.Multi;
 import jakarta.enterprise.inject.Instance;
 import java.time.Instant;
 import java.util.ArrayList;
@@ -405,26 +411,38 @@ class CbrCaseRetainObserverTest {
 
   @Test
   void resolution_step_parameters_contain_modelId_for_agent_worker() {
-    Agent agent =
-        Agent.builder()
-            .systemPrompt("test")
-            .model(
-                new dev.langchain4j.model.chat.ChatModel() {
-                  @Override
-                  public dev.langchain4j.model.chat.response.ChatResponse doChat(
-                      dev.langchain4j.model.chat.request.ChatRequest request) {
-                    return dev.langchain4j.model.chat.response.ChatResponse.builder()
-                        .aiMessage(dev.langchain4j.data.message.AiMessage.from("{}"))
-                        .build();
-                  }
-                })
-            .modelId("claude-sonnet-4-20250514")
-            .build();
+    AgentProvider stubProvider =
+        new AgentProvider() {
+          @Override
+          public Multi<AgentEvent> invoke(AgentSessionConfig config) {
+            return Multi.createFrom()
+                .items(
+                    new AgentEvent.TextDelta("{}"),
+                    new AgentEvent.InvocationComplete(
+                        0, 0, 0, 0, 0, null, 0L, 0L, null, 0, false, null, null));
+          }
+
+          @Override
+          public AgentSession openSession(AgentSessionInit init) {
+            throw new UnsupportedOperationException();
+          }
+        };
+    WorkerAgentInvoker invoker =
+        new WorkerAgentInvoker(
+            stubProvider,
+            "test",
+            null,
+            java.util.function.UnaryOperator.identity(),
+            java.util.function.UnaryOperator.identity(),
+            null,
+            null,
+            "claude-sonnet-4-20250514",
+            java.time.Duration.ofSeconds(30));
     Worker worker =
         Worker.builder()
             .name("agent-1")
             .capabilityName("risk-assessment")
-            .function(new AgentWorkerFunction(agent))
+            .function(new AgentWorkerFunction(invoker))
             .build();
     var configBuilder = CbrConfig.builder();
     configBuilder.feature("k", ".k");

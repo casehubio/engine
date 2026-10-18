@@ -81,22 +81,28 @@ public class CaseDefinitionRecorder {
       var workerBuilder = Worker.builder().name(wd.name()).capabilityName(wd.capabilityName());
       if (wd.systemPrompt() != null) {
         try {
-          var chatModelProvider =
+          var agentProviderInstance =
               io.quarkus.arc.Arc.container()
-                  .instance(io.casehub.api.model.ai.ChatModelProvider.class);
-          if (chatModelProvider.isAvailable()) {
-            var agent =
-                io.casehub.api.model.ai.Agent.builder()
-                    .systemPrompt(wd.systemPrompt())
-                    .model(chatModelProvider.get().get())
-                    .build();
-            workerBuilder.function(new io.casehub.api.model.AgentWorkerFunction(agent));
+                  .instance(io.casehub.platform.agent.AgentProvider.class);
+          if (agentProviderInstance.isAvailable()) {
+            var invoker =
+                new io.casehub.api.model.ai.WorkerAgentInvoker(
+                    agentProviderInstance.get(),
+                    wd.systemPrompt(),
+                    null,
+                    java.util.function.UnaryOperator.identity(),
+                    java.util.function.UnaryOperator.identity(),
+                    null,
+                    null,
+                    null,
+                    null);
+            workerBuilder.function(new io.casehub.api.model.AgentWorkerFunction(invoker));
           } else {
             workerBuilder.noFunction();
           }
         } catch (Exception e) {
           LOG.warn(
-              "ChatModelProvider unavailable for @SystemPrompt worker '"
+              "AgentProvider unavailable for @SystemPrompt worker '"
                   + wd.name()
                   + "': "
                   + e.getMessage());

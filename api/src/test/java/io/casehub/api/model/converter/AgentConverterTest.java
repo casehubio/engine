@@ -16,193 +16,80 @@
 package io.casehub.api.model.converter;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
-import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import io.casehub.api.model.ai.Agent;
-import io.casehub.api.model.ai.ChatModelProviderResolver;
-import io.casehub.api.model.ai.InlineChatModelProviderResolver;
+import io.casehub.platform.agent.AgentEvent;
+import io.casehub.platform.agent.AgentProvider;
+import io.casehub.platform.agent.AgentSession;
+import io.casehub.platform.agent.AgentSessionConfig;
+import io.casehub.platform.agent.AgentSessionInit;
+import io.smallrye.mutiny.Multi;
 import org.junit.jupiter.api.Test;
 
-/**
- * Unit tests for {@link AgentConverter} — verifies null handling, error paths, and all 5 provider
- * dispatch branches. Pure unit tests, no Quarkus. See casehubio/engine#358.
- */
 class AgentConverterTest {
 
   private static final ObjectMapper JSON = new ObjectMapper();
-  private static final ChatModelProviderResolver RESOLVER =
-      InlineChatModelProviderResolver.INSTANCE;
 
-  // ---- null / error handling ------------------------------------------------
+  private static final AgentProvider MOCK_PROVIDER =
+      new AgentProvider() {
+        @Override
+        public Multi<AgentEvent> invoke(AgentSessionConfig c) {
+          return Multi.createFrom().empty();
+        }
+
+        @Override
+        public AgentSession openSession(AgentSessionInit i) {
+          throw new UnsupportedOperationException();
+        }
+      };
 
   @Test
-  void toApiAgent_nullInput_returnsNull() {
-    Agent result = AgentConverter.toApiAgent((JsonNode) null, RESOLVER);
+  void toWorkerInvoker_nullInput_returnsNull() {
+    var result = AgentConverter.toWorkerInvoker(null, MOCK_PROVIDER);
     assertThat(result).isNull();
   }
 
   @Test
-  void toApiAgent_nullJsonNode_returnsNull() throws Exception {
-    JsonNode node = JSON.readTree("null");
-    Agent result = AgentConverter.toApiAgent(node, RESOLVER);
+  void toWorkerInvoker_nullJsonNode_returnsNull() throws Exception {
+    var result = AgentConverter.toWorkerInvoker(JSON.readTree("null"), MOCK_PROVIDER);
     assertThat(result).isNull();
   }
 
   @Test
-  void toApiAgent_missingModel_throwsIllegalArgument() throws Exception {
-    JsonNode node = JSON.readTree("{\"systemPrompt\": \"You are a test agent\"}");
-    assertThatThrownBy(() -> AgentConverter.toApiAgent(node, RESOLVER))
-        .isInstanceOf(IllegalArgumentException.class)
-        .hasMessageContaining("model");
+  void toWorkerInvoker_buildsFromYamlNode() {
+    var agentNode = JSON.createObjectNode();
+    agentNode.put("systemPrompt", "You are helpful");
+    agentNode.put("model", "anthropic");
+    agentNode.put("modelName", "claude-3-5-sonnet");
+    agentNode.put("inputProjection", ".data");
+    agentNode.put("outputProjection", ".result");
+    agentNode.put("userMessageTemplate", "Process: {{input}}");
+
+    var invoker = AgentConverter.toWorkerInvoker(agentNode, MOCK_PROVIDER);
+    assertThat(invoker).isNotNull();
+    assertThat(invoker.model()).isEqualTo("claude-3-5-sonnet");
   }
 
   @Test
-  void toApiAgent_unknownProvider_throwsIllegalArgument() throws Exception {
-    JsonNode node = JSON.readTree("{\"model\": \"unknown-llm\", \"modelName\": \"x\"}");
-    assertThatThrownBy(() -> AgentConverter.toApiAgent(node, RESOLVER))
-        .isInstanceOf(IllegalArgumentException.class)
-        .hasMessageContaining("Unknown model provider");
-  }
+  void toWorkerInvoker_modelNameTakesPrecedence() {
+    var agentNode = JSON.createObjectNode();
+    agentNode.put("systemPrompt", "test");
+    agentNode.put("model", "anthropic");
+    agentNode.put("modelName", "claude-3-haiku");
 
-  // ---- OpenAI provider ------------------------------------------------------
-
-  @Test
-  void toApiAgent_openai_allFields() throws Exception {
-    JsonNode node =
-        JSON.readTree(
-            """
-        {"model":"openai","modelName":"gpt-4","apiKey":"sk-test-key",
-         "baseUrl":"http://openclaw:3000/v1","organizationId":"org-test",
-         "temperature":0.7,"topP":0.9,"maxTokens":1024,
-         "systemPrompt":"You are a test agent"}""");
-    Agent result = AgentConverter.toApiAgent(node, RESOLVER);
-    assertThat(result).isNotNull();
+    var invoker = AgentConverter.toWorkerInvoker(agentNode, MOCK_PROVIDER);
+    assertThat(invoker).isNotNull();
+    assertThat(invoker.model()).isEqualTo("claude-3-haiku");
   }
 
   @Test
-  void toApiAgent_openai_minimalFields() throws Exception {
-    JsonNode node =
-        JSON.readTree(
-            "{\"model\":\"openai\",\"modelName\":\"gpt-4o-mini\",\"apiKey\":\"sk-test-key\",\"systemPrompt\":\"test\"}");
-    Agent result = AgentConverter.toApiAgent(node, RESOLVER);
-    assertThat(result).isNotNull();
-  }
+  void toWorkerInvoker_fallsBackToModelField() {
+    var agentNode = JSON.createObjectNode();
+    agentNode.put("systemPrompt", "test");
+    agentNode.put("model", "gpt-4o-mini");
 
-  // ---- Ollama provider ------------------------------------------------------
-
-  @Test
-  void toApiAgent_ollama_allFields() throws Exception {
-    JsonNode node =
-        JSON.readTree(
-            "{\"model\":\"ollama\",\"baseUrl\":\"http://localhost:11434\","
-                + "\"modelName\":\"llama2\",\"temperature\":0.5,\"topP\":0.8,\"systemPrompt\":\"test\"}");
-    Agent result = AgentConverter.toApiAgent(node, RESOLVER);
-    assertThat(result).isNotNull();
-  }
-
-  @Test
-  void toApiAgent_ollama_minimalFields() throws Exception {
-    JsonNode node =
-        JSON.readTree(
-            "{\"model\":\"ollama\",\"baseUrl\":\"http://localhost:11434\","
-                + "\"modelName\":\"mistral\",\"systemPrompt\":\"test\"}");
-    Agent result = AgentConverter.toApiAgent(node, RESOLVER);
-    assertThat(result).isNotNull();
-  }
-
-  // ---- Anthropic provider ---------------------------------------------------
-
-  @Test
-  void toApiAgent_anthropic_allFields() throws Exception {
-    JsonNode node =
-        JSON.readTree(
-            """
-        {"model":"anthropic","modelName":"claude-3-sonnet-20240229",
-         "apiKey":"sk-ant-test-key","baseUrl":"https://custom-anthropic.example.com",
-         "version":"2023-06-01","temperature":0.3,"topP":0.95,"topK":40,"maxTokens":2048,
-         "systemPrompt":"You are a test agent"}""");
-    Agent result = AgentConverter.toApiAgent(node, RESOLVER);
-    assertThat(result).isNotNull();
-  }
-
-  @Test
-  void toApiAgent_anthropic_minimalFields() throws Exception {
-    JsonNode node =
-        JSON.readTree(
-            "{\"model\":\"anthropic\",\"modelName\":\"claude-3-haiku-20240307\","
-                + "\"apiKey\":\"sk-ant-key\",\"systemPrompt\":\"test\"}");
-    Agent result = AgentConverter.toApiAgent(node, RESOLVER);
-    assertThat(result).isNotNull();
-  }
-
-  // ---- Mistral provider -----------------------------------------------------
-
-  @Test
-  void toApiAgent_mistral_allFields() throws Exception {
-    JsonNode node =
-        JSON.readTree(
-            "{\"model\":\"mistralai\",\"modelName\":\"mistral-large-latest\","
-                + "\"apiKey\":\"msk-test-key\",\"baseUrl\":\"https://custom-mistral.example.com\","
-                + "\"temperature\":0.4,\"topP\":0.85,\"maxTokens\":512,\"systemPrompt\":\"test\"}");
-    Agent result = AgentConverter.toApiAgent(node, RESOLVER);
-    assertThat(result).isNotNull();
-  }
-
-  @Test
-  void toApiAgent_mistral_minimalFields() throws Exception {
-    JsonNode node =
-        JSON.readTree(
-            "{\"model\":\"mistral\",\"modelName\":\"mistral-small\",\"apiKey\":\"msk-key\",\"systemPrompt\":\"test\"}");
-    Agent result = AgentConverter.toApiAgent(node, RESOLVER);
-    assertThat(result).isNotNull();
-  }
-
-  // ---- Google AI Gemini provider --------------------------------------------
-
-  @Test
-  void toApiAgent_googleAiGemini_allFields() throws Exception {
-    JsonNode node =
-        JSON.readTree(
-            """
-        {"model":"googleaigemini","modelName":"gemini-pro",
-         "apiKey":"gai-test-key","temperature":0.6,"topP":0.7,"maxTokens":1500,
-         "systemPrompt":"test"}""");
-    Agent result = AgentConverter.toApiAgent(node, RESOLVER);
-    assertThat(result).isNotNull();
-  }
-
-  @Test
-  void toApiAgent_googleAiGemini_minimalFields() throws Exception {
-    JsonNode node =
-        JSON.readTree(
-            "{\"model\":\"gemini\",\"modelName\":\"gemini-1.5-pro\",\"apiKey\":\"gai-key\",\"systemPrompt\":\"test\"}");
-    Agent result = AgentConverter.toApiAgent(node, RESOLVER);
-    assertThat(result).isNotNull();
-  }
-
-  @Test
-  void toApiAgent_openai_setsModelId() throws Exception {
-    JsonNode node =
-        JSON.readTree(
-            """
-                        {"model":"openai","modelName":"gpt-4","apiKey":"sk-test",
-                         "systemPrompt":"You are a test agent"}""");
-    Agent result = AgentConverter.toApiAgent(node, RESOLVER);
-    assertThat(result).isNotNull();
-    assertThat(result.modelId()).isEqualTo("gpt-4");
-  }
-
-  @Test
-  void toApiAgent_noModelName_modelIdIsNull() throws Exception {
-    JsonNode node =
-        JSON.readTree(
-            """
-                        {"model":"openai","apiKey":"sk-test",
-                         "systemPrompt":"You are a test agent"}""");
-    Agent result = AgentConverter.toApiAgent(node, RESOLVER);
-    assertThat(result).isNotNull();
-    assertThat(result.modelId()).isNull();
+    var invoker = AgentConverter.toWorkerInvoker(agentNode, MOCK_PROVIDER);
+    assertThat(invoker).isNotNull();
+    assertThat(invoker.model()).isEqualTo("gpt-4o-mini");
   }
 }

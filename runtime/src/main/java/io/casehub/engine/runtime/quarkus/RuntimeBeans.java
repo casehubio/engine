@@ -529,10 +529,10 @@ public class RuntimeBeans {
   @Produces
   @ApplicationScoped
   io.casehub.engine.runtime.worker.FailureCritiqueService failureCritiqueService(
-      Instance<io.casehub.api.model.ai.ChatModelProvider> chatModelProvider) {
+      Instance<io.casehub.platform.agent.AgentProvider> agentProviders) {
     return new io.casehub.engine.runtime.worker.FailureCritiqueService(
-        chatModelProvider.isResolvable()
-            ? java.util.Optional.of(chatModelProvider.get())
+        agentProviders.isResolvable()
+            ? java.util.Optional.of(agentProviders.get())
             : java.util.Optional.empty());
   }
 
@@ -1196,20 +1196,20 @@ public class RuntimeBeans {
   @Produces
   @ApplicationScoped
   LlmGoalFormationStrategy llmGoalFormationStrategy(
-      Instance<io.casehub.api.model.ai.ChatModelProvider> chatModelProvider) {
+      Instance<io.casehub.platform.agent.AgentProvider> agentProviders) {
     return new LlmGoalFormationStrategy(
-        chatModelProvider.isResolvable()
-            ? java.util.Optional.of(chatModelProvider.get())
+        agentProviders.isResolvable()
+            ? java.util.Optional.of(agentProviders.get())
             : java.util.Optional.empty());
   }
 
   @Produces
   @ApplicationScoped
   LlmGoalRevisionStrategy llmGoalRevisionStrategy(
-      Instance<io.casehub.api.model.ai.ChatModelProvider> chatModelProvider) {
+      Instance<io.casehub.platform.agent.AgentProvider> agentProviders) {
     return new LlmGoalRevisionStrategy(
-        chatModelProvider.isResolvable()
-            ? java.util.Optional.of(chatModelProvider.get())
+        agentProviders.isResolvable()
+            ? java.util.Optional.of(agentProviders.get())
             : java.util.Optional.empty());
   }
 

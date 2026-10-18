@@ -1741,7 +1741,7 @@ class CaseDefinitionYamlMapperTest {
         mapper,
         registry,
         r -> null,
-        io.casehub.api.model.ai.InlineChatModelProviderResolver.INSTANCE);
+        null);
 
     assertThat(registry.exprs).hasSize(5);
     assertThat(registry.exprs)
@@ -1775,7 +1775,7 @@ class CaseDefinitionYamlMapperTest {
         mapper,
         registry,
         r -> null,
-        io.casehub.api.model.ai.InlineChatModelProviderResolver.INSTANCE);
+        null);
 
     assertThat(registry.langs).containsOnly("jq");
   }
@@ -1807,7 +1807,7 @@ class CaseDefinitionYamlMapperTest {
         mapper,
         registry,
         r -> null,
-        io.casehub.api.model.ai.InlineChatModelProviderResolver.INSTANCE);
+        null);
 
     assertThat(registry.langs).containsOnly("drools");
   }
@@ -1878,7 +1878,7 @@ class CaseDefinitionYamlMapperTest {
                     YamlMappers.create(),
                     strictRegistry,
                     r -> null,
-                    io.casehub.api.model.ai.InlineChatModelProviderResolver.INSTANCE))
+                    null))
         .isInstanceOf(IllegalArgumentException.class)
         .hasMessageContaining("unknown-lang");
   }
@@ -1918,7 +1918,7 @@ class CaseDefinitionYamlMapperTest {
             mapper,
             registry,
             r -> null,
-            io.casehub.api.model.ai.InlineChatModelProviderResolver.INSTANCE);
+            null);
 
     assertThat(def.getDefaultWorkerBridge()).isInstanceOf(JacksonPojoBridge.class);
     assertThat(def.getDefaultWorkerBridge().contextType()).isEqualTo(TestContextPojo.class);
@@ -1945,7 +1945,7 @@ class CaseDefinitionYamlMapperTest {
                     mapper,
                     new RecordingRegistry(),
                     r -> null,
-                    io.casehub.api.model.ai.InlineChatModelProviderResolver.INSTANCE))
+                    null))
         .isInstanceOf(IllegalArgumentException.class)
         .hasMessageContaining("not found");
   }
@@ -1977,7 +1977,7 @@ class CaseDefinitionYamlMapperTest {
             mapper,
             registry,
             r -> null,
-            io.casehub.api.model.ai.InlineChatModelProviderResolver.INSTANCE);
+            null);
 
     assertThat(def.getDefaultWorkerBridge()).isNull();
   }
@@ -2009,7 +2009,7 @@ class CaseDefinitionYamlMapperTest {
         mapper,
         registry,
         r -> null,
-        io.casehub.api.model.ai.InlineChatModelProviderResolver.INSTANCE);
+        null);
 
     assertThat(registry.langs).containsOnly("mvel");
   }
@@ -2042,7 +2042,7 @@ class CaseDefinitionYamlMapperTest {
         mapper,
         registry,
         r -> null,
-        io.casehub.api.model.ai.InlineChatModelProviderResolver.INSTANCE);
+        null);
 
     assertThat(registry.langs).containsOnly("jq");
   }
@@ -2075,7 +2075,7 @@ class CaseDefinitionYamlMapperTest {
         mapper,
         registry,
         r -> null,
-        io.casehub.api.model.ai.InlineChatModelProviderResolver.INSTANCE);
+        null);
 
     assertThat(registry.langs).containsOnly("mvel");
   }
@@ -2107,7 +2107,7 @@ class CaseDefinitionYamlMapperTest {
         mapper,
         registry,
         r -> null,
-        io.casehub.api.model.ai.InlineChatModelProviderResolver.INSTANCE);
+        null);
 
     assertThat(registry.langs).containsOnly("jq");
   }

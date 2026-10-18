@@ -20,15 +20,15 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import dev.langchain4j.data.message.AiMessage;
-import dev.langchain4j.model.chat.ChatModel;
-import dev.langchain4j.model.chat.request.ChatRequest;
-import dev.langchain4j.model.chat.response.ChatResponse;
 import io.casehub.api.model.ai.AgentException;
-import io.casehub.api.model.ai.ChatModelProvider;
-import io.casehub.api.model.ai.ModelType;
 import io.casehub.engine.plan.TaskNode;
+import io.casehub.platform.agent.AgentEvent;
+import io.casehub.platform.agent.AgentProvider;
+import io.casehub.platform.agent.AgentSession;
+import io.casehub.platform.agent.AgentSessionConfig;
+import io.casehub.platform.agent.AgentSessionInit;
 import io.casehub.worker.api.Capability;
+import io.smallrye.mutiny.Multi;
 import java.util.List;
 import java.util.Optional;
 import org.junit.jupiter.api.Test;
@@ -39,7 +39,7 @@ class LlmDecompositionStrategyTest {
 
   @Test
   void producesSequentialDagPlanFromLlmResponse() {
-    var strategy = buildWithMockChatModel(sequentialResponse());
+    var strategy = buildWithMockProvider(sequentialResponse());
     var context =
         new GoalDecompositionContext(
             MAPPER.createObjectNode(),
@@ -63,12 +63,12 @@ class LlmDecompositionStrategyTest {
 
   @Test
   void idIsLlm() {
-    var strategy = buildWithMockChatModel(sequentialResponse());
+    var strategy = buildWithMockProvider(sequentialResponse());
     assertThat(strategy.id()).isEqualTo("llm");
   }
 
   @Test
-  void failsWhenChatModelProviderAbsent() {
+  void failsWhenAgentProviderAbsent() {
     var strategy = new LlmDecompositionStrategy(Optional.empty());
     var context = new GoalDecompositionContext(MAPPER.createObjectNode(), 0, List.of());
     var task = new TaskNode.CompoundTask<JsonNode>("goal-1", "goal-1", List.of());
@@ -79,7 +79,7 @@ class LlmDecompositionStrategyTest {
 
   @Test
   void failsOnEmptySteps() {
-    var strategy = buildWithMockChatModel("{\"steps\": []}");
+    var strategy = buildWithMockProvider("{\"steps\": []}");
     var context = new GoalDecompositionContext(MAPPER.createObjectNode(), 0, List.of());
     var task = new TaskNode.CompoundTask<JsonNode>("goal-1", "goal-1", List.of());
 
@@ -90,7 +90,7 @@ class LlmDecompositionStrategyTest {
 
   @Test
   void failsOnMissingStepsField() {
-    var strategy = buildWithMockChatModel("{\"result\": \"ok\"}");
+    var strategy = buildWithMockProvider("{\"result\": \"ok\"}");
     var context = new GoalDecompositionContext(MAPPER.createObjectNode(), 0, List.of());
     var task = new TaskNode.CompoundTask<JsonNode>("goal-1", "goal-1", List.of());
 
@@ -101,34 +101,25 @@ class LlmDecompositionStrategyTest {
   void includesConstraintsInPromptWhenPresent() {
     var capturedPrompt = new java.util.concurrent.atomic.AtomicReference<String>();
 
-    ChatModel capturingModel =
-        new ChatModel() {
+    AgentProvider capturingProvider =
+        new AgentProvider() {
           @Override
-          public ChatResponse doChat(ChatRequest request) {
-            var messages = request.messages();
-            for (var msg : messages) {
-              if (msg instanceof dev.langchain4j.data.message.UserMessage um) {
-                capturedPrompt.set(um.singleText());
-              }
-            }
-            return ChatResponse.builder().aiMessage(AiMessage.from(sequentialResponse())).build();
+          public Multi<AgentEvent> invoke(AgentSessionConfig config) {
+            capturedPrompt.set(config.userPrompt());
+            return Multi.createFrom()
+                .items(
+                    new AgentEvent.TextDelta(sequentialResponse()),
+                    new AgentEvent.InvocationComplete(
+                        0, 0, 0, 0, 0, null, 0L, 0L, null, 0, false, null, null));
+          }
+
+          @Override
+          public AgentSession openSession(AgentSessionInit init) {
+            throw new UnsupportedOperationException();
           }
         };
 
-    ChatModelProvider provider =
-        new ChatModelProvider() {
-          @Override
-          public ModelType type() {
-            return ModelType.ANTHROPIC;
-          }
-
-          @Override
-          public ChatModel get() {
-            return capturingModel;
-          }
-        };
-
-    var strategy = new LlmDecompositionStrategy(Optional.of(provider));
+    var strategy = new LlmDecompositionStrategy(Optional.of(capturingProvider));
 
     var constraints =
         io.casehub.engine.plan.PlanningConstraints.of(java.time.Duration.ofMinutes(30), 3);
@@ -149,33 +140,9 @@ class LlmDecompositionStrategyTest {
   void includesCostBudgetsInPromptWhenPresent() {
     var capturedPrompt = new java.util.concurrent.atomic.AtomicReference<String>();
 
-    ChatModel capturingModel =
-        new ChatModel() {
-          @Override
-          public ChatResponse doChat(ChatRequest request) {
-            for (var msg : request.messages()) {
-              if (msg instanceof dev.langchain4j.data.message.UserMessage um) {
-                capturedPrompt.set(um.singleText());
-              }
-            }
-            return ChatResponse.builder().aiMessage(AiMessage.from(sequentialResponse())).build();
-          }
-        };
-
-    ChatModelProvider provider =
-        new ChatModelProvider() {
-          @Override
-          public ModelType type() {
-            return ModelType.ANTHROPIC;
-          }
-
-          @Override
-          public ChatModel get() {
-            return capturingModel;
-          }
-        };
-
-    var strategy = new LlmDecompositionStrategy(Optional.of(provider));
+    var strategy =
+        new LlmDecompositionStrategy(
+            Optional.of(capturingProvider(sequentialResponse(), capturedPrompt)));
 
     var constraints =
         new io.casehub.engine.plan.PlanningConstraints(
@@ -197,33 +164,9 @@ class LlmDecompositionStrategyTest {
   void includesWeightsInPromptWhenPresent() {
     var capturedPrompt = new java.util.concurrent.atomic.AtomicReference<String>();
 
-    ChatModel capturingModel =
-        new ChatModel() {
-          @Override
-          public ChatResponse doChat(ChatRequest request) {
-            for (var msg : request.messages()) {
-              if (msg instanceof dev.langchain4j.data.message.UserMessage um) {
-                capturedPrompt.set(um.singleText());
-              }
-            }
-            return ChatResponse.builder().aiMessage(AiMessage.from(sequentialResponse())).build();
-          }
-        };
-
-    ChatModelProvider provider =
-        new ChatModelProvider() {
-          @Override
-          public ModelType type() {
-            return ModelType.ANTHROPIC;
-          }
-
-          @Override
-          public ChatModel get() {
-            return capturingModel;
-          }
-        };
-
-    var strategy = new LlmDecompositionStrategy(Optional.of(provider));
+    var strategy =
+        new LlmDecompositionStrategy(
+            Optional.of(capturingProvider(sequentialResponse(), capturedPrompt)));
 
     var constraints =
         new io.casehub.engine.plan.PlanningConstraints(
@@ -245,33 +188,9 @@ class LlmDecompositionStrategyTest {
   void rendersCostBudgetsOnlyWithNoTimeBudgetOrResourceLimit() {
     var capturedPrompt = new java.util.concurrent.atomic.AtomicReference<String>();
 
-    ChatModel capturingModel =
-        new ChatModel() {
-          @Override
-          public ChatResponse doChat(ChatRequest request) {
-            for (var msg : request.messages()) {
-              if (msg instanceof dev.langchain4j.data.message.UserMessage um) {
-                capturedPrompt.set(um.singleText());
-              }
-            }
-            return ChatResponse.builder().aiMessage(AiMessage.from(sequentialResponse())).build();
-          }
-        };
-
-    ChatModelProvider provider =
-        new ChatModelProvider() {
-          @Override
-          public ModelType type() {
-            return ModelType.ANTHROPIC;
-          }
-
-          @Override
-          public ChatModel get() {
-            return capturingModel;
-          }
-        };
-
-    var strategy = new LlmDecompositionStrategy(Optional.of(provider));
+    var strategy =
+        new LlmDecompositionStrategy(
+            Optional.of(capturingProvider(sequentialResponse(), capturedPrompt)));
 
     var constraints =
         new io.casehub.engine.plan.PlanningConstraints(
@@ -293,33 +212,9 @@ class LlmDecompositionStrategyTest {
   void omitsConstraintTextWhenUnconstrained() {
     var capturedPrompt = new java.util.concurrent.atomic.AtomicReference<String>();
 
-    ChatModel capturingModel =
-        new ChatModel() {
-          @Override
-          public ChatResponse doChat(ChatRequest request) {
-            for (var msg : request.messages()) {
-              if (msg instanceof dev.langchain4j.data.message.UserMessage um) {
-                capturedPrompt.set(um.singleText());
-              }
-            }
-            return ChatResponse.builder().aiMessage(AiMessage.from(sequentialResponse())).build();
-          }
-        };
-
-    ChatModelProvider provider =
-        new ChatModelProvider() {
-          @Override
-          public ModelType type() {
-            return ModelType.ANTHROPIC;
-          }
-
-          @Override
-          public ChatModel get() {
-            return capturingModel;
-          }
-        };
-
-    var strategy = new LlmDecompositionStrategy(Optional.of(provider));
+    var strategy =
+        new LlmDecompositionStrategy(
+            Optional.of(capturingProvider(sequentialResponse(), capturedPrompt)));
 
     var context =
         new GoalDecompositionContext(
@@ -335,39 +230,11 @@ class LlmDecompositionStrategyTest {
   void replanIncludesFailureContextInPrompt() {
     var capturedPrompt = new java.util.concurrent.atomic.AtomicReference<String>();
 
-    ChatModel capturingModel =
-        new ChatModel() {
-          @Override
-          public ChatResponse doChat(ChatRequest request) {
-            var messages = request.messages();
-            for (var msg : messages) {
-              if (msg instanceof dev.langchain4j.data.message.UserMessage um) {
-                capturedPrompt.set(um.singleText());
-              }
-            }
-            return ChatResponse.builder()
-                .aiMessage(
-                    AiMessage.from(
-                        "{\"steps\": [{\"id\": \"r1\", \"description\": \"recovery step\","
-                            + " \"capabilityName\": \"analysis\"}]}"))
-                .build();
-          }
-        };
-
-    ChatModelProvider provider =
-        new ChatModelProvider() {
-          @Override
-          public ModelType type() {
-            return ModelType.ANTHROPIC;
-          }
-
-          @Override
-          public ChatModel get() {
-            return capturingModel;
-          }
-        };
-
-    var strategy = new LlmDecompositionStrategy(Optional.of(provider));
+    var replanResponse =
+        "{\"steps\": [{\"id\": \"r1\", \"description\": \"recovery step\", \"capabilityName\": \"analysis\"}]}";
+    var strategy =
+        new LlmDecompositionStrategy(
+            Optional.of(capturingProvider(replanResponse, capturedPrompt)));
 
     var completed =
         List.of(
@@ -409,7 +276,7 @@ class LlmDecompositionStrategyTest {
 
   @Test
   void replanFailsOnEmptySteps() {
-    var strategy = buildWithMockChatModel("{\"steps\": []}");
+    var strategy = buildWithMockProvider("{\"steps\": []}");
 
     var failed = new io.casehub.engine.plan.ReplanContext.FailedStep("s1", "err", null, 0);
     var replanCtx = new io.casehub.engine.plan.ReplanContext<JsonNode>(List.of(), failed, null, 0);
@@ -430,7 +297,7 @@ class LlmDecompositionStrategyTest {
             + "{\"id\": \"s2\", \"description\": \"Second\", \"capabilityName\": \"second-cap\","
             + " \"dependsOn\": [\"s1\"]}"
             + "]}";
-    var strategy = buildWithMockChatModel(response);
+    var strategy = buildWithMockProvider(response);
     var context =
         new GoalDecompositionContext(
             MAPPER.createObjectNode(),
@@ -455,7 +322,7 @@ class LlmDecompositionStrategyTest {
 
   @Test
   void noContingencyField_nodeHasNullContingency() {
-    var strategy = buildWithMockChatModel(sequentialResponse());
+    var strategy = buildWithMockProvider(sequentialResponse());
     var context =
         new GoalDecompositionContext(
             MAPPER.createObjectNode(),
@@ -479,29 +346,45 @@ class LlmDecompositionStrategyTest {
         + "]}";
   }
 
-  private static LlmDecompositionStrategy buildWithMockChatModel(String cannedResponse) {
-    ChatModel mockModel =
-        new ChatModel() {
-          @Override
-          public ChatResponse doChat(ChatRequest request) {
-            return ChatResponse.builder().aiMessage(AiMessage.from(cannedResponse)).build();
-          }
-        };
+  private static AgentProvider stubProvider(String cannedResponse) {
+    return new AgentProvider() {
+      @Override
+      public Multi<AgentEvent> invoke(AgentSessionConfig config) {
+        return Multi.createFrom()
+            .items(
+                new AgentEvent.TextDelta(cannedResponse),
+                new AgentEvent.InvocationComplete(
+                    0, 0, 0, 0, 0, null, 0L, 0L, null, 0, false, null, null));
+      }
 
-    ChatModelProvider provider =
-        new ChatModelProvider() {
-          @Override
-          public ModelType type() {
-            return ModelType.ANTHROPIC;
-          }
+      @Override
+      public AgentSession openSession(AgentSessionInit init) {
+        throw new UnsupportedOperationException();
+      }
+    };
+  }
 
-          @Override
-          public ChatModel get() {
-            return mockModel;
-          }
-        };
+  private static LlmDecompositionStrategy buildWithMockProvider(String cannedResponse) {
+    return new LlmDecompositionStrategy(Optional.of(stubProvider(cannedResponse)));
+  }
 
-    var strategy = new LlmDecompositionStrategy(Optional.of(provider));
-    return strategy;
+  private static AgentProvider capturingProvider(
+      String cannedResponse, java.util.concurrent.atomic.AtomicReference<String> capturedPrompt) {
+    return new AgentProvider() {
+      @Override
+      public Multi<AgentEvent> invoke(AgentSessionConfig config) {
+        capturedPrompt.set(config.userPrompt());
+        return Multi.createFrom()
+            .items(
+                new AgentEvent.TextDelta(cannedResponse),
+                new AgentEvent.InvocationComplete(
+                    0, 0, 0, 0, 0, null, 0L, 0L, null, 0, false, null, null));
+      }
+
+      @Override
+      public AgentSession openSession(AgentSessionInit init) {
+        throw new UnsupportedOperationException();
+      }
+    };
   }
 }

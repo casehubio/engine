@@ -17,23 +17,25 @@ package io.casehub.engine.runtime.executor;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-import dev.langchain4j.data.message.AiMessage;
-import dev.langchain4j.model.chat.ChatModel;
-import dev.langchain4j.model.chat.request.ChatRequest;
-import dev.langchain4j.model.chat.response.ChatResponse;
 import io.casehub.api.model.AgentWorkerFunction;
 import io.casehub.api.model.WorkerContext;
-import io.casehub.api.model.ai.Agent;
-import io.casehub.api.model.ai.ChatModelProvider;
-import io.casehub.api.model.ai.ModelType;
+import io.casehub.api.model.ai.WorkerAgentInvoker;
 import io.casehub.engine.common.internal.executor.ExecutionMetadata;
 import io.casehub.engine.common.internal.executor.WorkerFunctionHandler;
+import io.casehub.platform.agent.AgentEvent;
+import io.casehub.platform.agent.AgentProvider;
+import io.casehub.platform.agent.AgentSession;
+import io.casehub.platform.agent.AgentSessionConfig;
+import io.casehub.platform.agent.AgentSessionInit;
 import io.casehub.worker.api.WorkerFunction;
 import io.casehub.worker.api.WorkerOutcome;
 import io.casehub.worker.api.WorkerResult;
+import io.smallrye.mutiny.Multi;
+import java.time.Duration;
 import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.Executors;
+import java.util.function.UnaryOperator;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
@@ -72,7 +74,7 @@ class SyncAgentWorkerFunctionHandlerTest {
 
   @Test
   void supports_agent() {
-    assertThat(handler.supports(new AgentWorkerFunction(testAgent()))).isTrue();
+    assertThat(handler.supports(new AgentWorkerFunction(testInvoker()))).isTrue();
   }
 
   @Test
@@ -113,28 +115,8 @@ class SyncAgentWorkerFunctionHandlerTest {
 
   @Test
   void executes_agent_function() {
-    ChatModelProvider mockProvider =
-        new ChatModelProvider() {
-          @Override
-          public ChatModel get() {
-            return new ChatModel() {
-              @Override
-              public ChatResponse doChat(ChatRequest request) {
-                return ChatResponse.builder()
-                    .aiMessage(AiMessage.from("{\"agentResult\": \"done\"}"))
-                    .build();
-              }
-            };
-          }
-
-          @Override
-          public ModelType type() {
-            return ModelType.OPENAI;
-          }
-        };
-
-    Agent agent = Agent.builder().systemPrompt("You are a test agent.").model(mockProvider).build();
-    AgentWorkerFunction agentFunction = new AgentWorkerFunction(agent);
+    WorkerAgentInvoker invoker = stubInvoker("{\"agentResult\": \"done\"}");
+    AgentWorkerFunction agentFunction = new AgentWorkerFunction(invoker);
 
     WorkerResult<?> result =
         handler
@@ -226,26 +208,36 @@ class SyncAgentWorkerFunctionHandlerTest {
         null);
   }
 
-  private Agent testAgent() {
-    ChatModelProvider mockProvider =
-        new ChatModelProvider() {
+  private WorkerAgentInvoker testInvoker() {
+    return stubInvoker("{\"result\": \"ok\"}");
+  }
+
+  private WorkerAgentInvoker stubInvoker(String jsonResponse) {
+    AgentProvider provider =
+        new AgentProvider() {
           @Override
-          public ChatModel get() {
-            return new ChatModel() {
-              @Override
-              public ChatResponse doChat(ChatRequest request) {
-                return ChatResponse.builder()
-                    .aiMessage(AiMessage.from("{\"result\": \"ok\"}"))
-                    .build();
-              }
-            };
+          public Multi<AgentEvent> invoke(AgentSessionConfig config) {
+            return Multi.createFrom()
+                .items(
+                    new AgentEvent.TextDelta(jsonResponse),
+                    new AgentEvent.InvocationComplete(
+                        0, 0, 0, 0, 0, null, 0L, 0L, null, 0, false, null, null));
           }
 
           @Override
-          public ModelType type() {
-            return ModelType.OPENAI;
+          public AgentSession openSession(AgentSessionInit init) {
+            throw new UnsupportedOperationException();
           }
         };
-    return Agent.builder().systemPrompt("Test agent").model(mockProvider).build();
+    return new WorkerAgentInvoker(
+        provider,
+        "Test agent",
+        null,
+        UnaryOperator.identity(),
+        UnaryOperator.identity(),
+        null,
+        null,
+        null,
+        Duration.ofSeconds(30));
   }
 }
