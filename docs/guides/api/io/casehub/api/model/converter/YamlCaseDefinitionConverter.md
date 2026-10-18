@@ -39,12 +39,12 @@ hand-coded deserializers and post-processor.
 - `yamlWorkers` (`java.util.List<YamlWorker>`)
 - `def` (`io.casehub.api.model.CaseDefinition`)
 
-### `private static WorkerFunction<?,?> buildAgentFunction(YamlWorker yw, io.casehub.api.model.ai.ChatModelProviderResolver chatModelResolver)`
+### `private static WorkerFunction<?,?> buildAgentFunction(YamlWorker yw, io.casehub.platform.agent.AgentProvider agentProvider)`
 
 #### Parameters
 
 - `yw` (`YamlWorker`)
-- `chatModelResolver` (`io.casehub.api.model.ai.ChatModelProviderResolver`)
+- `agentProvider` (`io.casehub.platform.agent.AgentProvider`)
 
 ### `private static WorkerFunction<?,?> buildTypedSyncFunction(YamlWorker yw)`
 
@@ -52,14 +52,14 @@ hand-coded deserializers and post-processor.
 
 - `yw` (`YamlWorker`)
 
-### `public static io.casehub.api.model.CaseDefinition convert(YamlCaseDefinition yaml, io.casehub.api.engine.ExpressionEngineRegistry registry, io.casehub.api.spi.WorkerFunctionProviderRegistry providers, io.casehub.api.model.ai.ChatModelProviderResolver chatModelResolver)`
+### `public static io.casehub.api.model.CaseDefinition convert(YamlCaseDefinition yaml, io.casehub.api.engine.ExpressionEngineRegistry registry, io.casehub.api.spi.WorkerFunctionProviderRegistry providers, io.casehub.platform.agent.AgentProvider agentProvider)`
 
 #### Parameters
 
 - `yaml` (`YamlCaseDefinition`)
 - `registry` (`io.casehub.api.engine.ExpressionEngineRegistry`)
 - `providers` (`io.casehub.api.spi.WorkerFunctionProviderRegistry`)
-- `chatModelResolver` (`io.casehub.api.model.ai.ChatModelProviderResolver`)
+- `agentProvider` (`io.casehub.platform.agent.AgentProvider`)
 
 ### `static AgentDescriptor convertAgentDescriptor(YamlAgentDescriptor yad, java.lang.String workerName)`
 
@@ -255,14 +255,14 @@ hand-coded deserializers and post-processor.
 - `yaml` (`YamlCaseDefinition`)
 - `def` (`io.casehub.api.model.CaseDefinition`)
 
-### `private static void convertWorkers(java.util.List<YamlWorker> yamlWorkers, io.casehub.api.model.CaseDefinition def, io.casehub.api.spi.WorkerFunctionProviderRegistry providers, io.casehub.api.model.ai.ChatModelProviderResolver chatModelResolver)`
+### `private static void convertWorkers(java.util.List<YamlWorker> yamlWorkers, io.casehub.api.model.CaseDefinition def, io.casehub.api.spi.WorkerFunctionProviderRegistry providers, io.casehub.platform.agent.AgentProvider agentProvider)`
 
 #### Parameters
 
 - `yamlWorkers` (`java.util.List<YamlWorker>`)
 - `def` (`io.casehub.api.model.CaseDefinition`)
 - `providers` (`io.casehub.api.spi.WorkerFunctionProviderRegistry`)
-- `chatModelResolver` (`io.casehub.api.model.ai.ChatModelProviderResolver`)
+- `agentProvider` (`io.casehub.platform.agent.AgentProvider`)
 
 ### `private static io.casehub.api.model.routing.WorkloadConstraint convertWorkloadConstraint(YamlWorkloadConstraint ywc)`
 

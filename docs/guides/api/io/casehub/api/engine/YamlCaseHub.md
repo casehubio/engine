@@ -19,6 +19,8 @@ directory). After merging, `.augment(CaseDefinition)` runs for programmatic modi
 
 ## Fields
 
+### `agentProviderInstance` (`jakarta.enterprise.inject.Instance<io.casehub.platform.agent.AgentProvider>`)
+
 ### `definition` (`io.casehub.api.model.CaseDefinition`)
 
 ### `expressionEngineRegistry` (`io.casehub.api.engine.ExpressionEngineRegistry`)
