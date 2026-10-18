@@ -377,36 +377,6 @@
                 <version>${version.io.quarkiverse.langchain4j}</version>
             </dependency>
             <dependency>
-                <groupId>dev.langchain4j</groupId>
-                <artifactId>langchain4j-open-ai</artifactId>
-                <version>${version.dev.langchain4j}</version>
-                <scope>test</scope>
-            </dependency>
-            <dependency>
-                <groupId>dev.langchain4j</groupId>
-                <artifactId>langchain4j-ollama</artifactId>
-                <version>${version.dev.langchain4j}</version>
-                <scope>test</scope>
-            </dependency>
-            <dependency>
-                <groupId>dev.langchain4j</groupId>
-                <artifactId>langchain4j-anthropic</artifactId>
-                <version>${version.dev.langchain4j}</version>
-                <scope>test</scope>
-            </dependency>
-            <dependency>
-                <groupId>dev.langchain4j</groupId>
-                <artifactId>langchain4j-mistral-ai</artifactId>
-                <version>${version.dev.langchain4j}</version>
-                <scope>test</scope>
-            </dependency>
-            <dependency>
-                <groupId>dev.langchain4j</groupId>
-                <artifactId>langchain4j-google-ai-gemini</artifactId>
-                <version>${version.dev.langchain4j}</version>
-                <scope>test</scope>
-            </dependency>
-            <dependency>
                 <groupId>com.squareup.okhttp3</groupId>
                 <artifactId>mockwebserver</artifactId>
                 <scope>test</scope>

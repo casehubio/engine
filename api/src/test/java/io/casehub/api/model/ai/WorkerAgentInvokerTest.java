@@ -243,4 +243,24 @@ class WorkerAgentInvokerTest {
     assertNotNull(success.plannedAction());
     assertEquals("deploy", success.plannedAction().actionType());
   }
+
+  @Test
+  void executeWithNullTimeoutUsesDefault() {
+    var provider = stubProvider("{\"result\": \"ok\"}");
+    var invoker =
+        new WorkerAgentInvoker(
+            provider,
+            "system",
+            null,
+            UnaryOperator.identity(),
+            UnaryOperator.identity(),
+            null,
+            null,
+            null,
+            null);
+
+    WorkerResult<Map<String, Object>> result = invoker.execute(Map.of("input", "test"));
+
+    assertEquals("ok", result.output().get("result"));
+  }
 }
