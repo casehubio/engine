@@ -17,7 +17,7 @@ package io.casehub.engine.runtime.worker;
 
 import io.casehub.eidos.api.DispositionAxis;
 import io.casehub.eidos.api.MatchDegree;
-import io.casehub.eidos.api.VocabularyMetadata;
+import io.casehub.eidos.api.VocabularyInfo;
 import io.casehub.eidos.api.VocabularyRegistry;
 import io.casehub.eidos.api.VocabularyTerm;
 import java.util.List;
@@ -34,6 +34,14 @@ public class NoOpVocabularyRegistry implements VocabularyRegistry {
 
   @Override
   public <T extends Enum<T> & VocabularyTerm> void register(final Class<T> vocab) {}
+
+  @Override
+  public void register(
+      final String uri,
+      final String name,
+      final String description,
+      final String version,
+      final List<? extends VocabularyTerm> terms) {}
 
   @Override
   public boolean isRegistered(final String vocabUri) {
@@ -82,7 +90,7 @@ public class NoOpVocabularyRegistry implements VocabularyRegistry {
   }
 
   @Override
-  public Optional<VocabularyMetadata> vocabularyMetadata(final String uri) {
+  public Optional<VocabularyInfo> vocabularyMetadata(final String uri) {
     return Optional.empty();
   }
 
