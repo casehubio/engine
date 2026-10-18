@@ -6,23 +6,21 @@
 
 ## Fields
 
-### `agent` (`io.casehub.api.model.ai.Agent`)
+### `invoker` (`io.casehub.api.model.ai.WorkerAgentInvoker`)
 
 ## Record Components
 
-### `agent` (`io.casehub.api.model.ai.Agent`)
+### `invoker` (`io.casehub.api.model.ai.WorkerAgentInvoker`)
 
 ## Constructors
 
-### `public AgentWorkerFunction(io.casehub.api.model.ai.Agent agent)`
+### `public AgentWorkerFunction(io.casehub.api.model.ai.WorkerAgentInvoker invoker)`
 
 #### Parameters
 
-- `agent` (`io.casehub.api.model.ai.Agent`)
+- `invoker` (`io.casehub.api.model.ai.WorkerAgentInvoker`)
 
 ## Methods
-
-### `public io.casehub.api.model.ai.Agent agent()`
 
 ### `public final boolean equals(java.lang.Object o)`
 
@@ -33,6 +31,8 @@
 ### `public final int hashCode()`
 
 ### `public java.lang.Class<java.util.Map<java.lang.String,java.lang.Object>> inputType()`
+
+### `public io.casehub.api.model.ai.WorkerAgentInvoker invoker()`
 
 ### `public java.lang.Class<java.util.Map<java.lang.String,java.lang.Object>> outputType()`
 

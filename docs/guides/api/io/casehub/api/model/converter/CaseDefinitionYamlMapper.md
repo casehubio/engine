@@ -71,7 +71,7 @@ JQ-only registry for non-CDI contexts. Does not support custom expression langua
 - `node` (`JsonNode`)
 - `mapper` (`ObjectMapper`)
 
-### `public static io.casehub.api.model.CaseDefinition load(JsonNode mergedNode, ObjectMapper objectMapper, io.casehub.api.engine.ExpressionEngineRegistry registry, io.casehub.api.spi.WorkerFunctionProviderRegistry providerRegistry, io.casehub.api.model.ai.ChatModelProviderResolver chatModelResolver)`
+### `public static io.casehub.api.model.CaseDefinition load(JsonNode mergedNode, ObjectMapper objectMapper, io.casehub.api.engine.ExpressionEngineRegistry registry, io.casehub.api.spi.WorkerFunctionProviderRegistry providerRegistry, io.casehub.platform.agent.AgentProvider agentProvider)`
 
 Loads a CaseDefinition from a pre-merged JsonNode. For use with the YAML overlay/merge pipeline
 where base and overlay documents have already been merged via YamlMerger.
@@ -82,7 +82,7 @@ where base and overlay documents have already been merged via YamlMerger.
 - `objectMapper` (`ObjectMapper`) — ObjectMapper for type conversion
 - `registry` (`io.casehub.api.engine.ExpressionEngineRegistry`) — ExpressionEngineRegistry (nullable — falls back to JQ-only)
 - `providerRegistry` (`io.casehub.api.spi.WorkerFunctionProviderRegistry`) — WorkerFunctionProviderRegistry (nullable — falls back to no-op)
-- `chatModelResolver` (`io.casehub.api.model.ai.ChatModelProviderResolver`)
+- `agentProvider` (`io.casehub.platform.agent.AgentProvider`)
 
 #### Returns
 
@@ -108,7 +108,7 @@ API model CaseDefinition
 
 - `IOException` — if reading or parsing fails
 
-### `public static io.casehub.api.model.CaseDefinition load(java.io.InputStream yamlStream, ObjectMapper objectMapper, io.casehub.api.engine.ExpressionEngineRegistry registry, io.casehub.api.spi.WorkerFunctionProviderRegistry providerRegistry, io.casehub.api.model.ai.ChatModelProviderResolver chatModelResolver)`
+### `public static io.casehub.api.model.CaseDefinition load(java.io.InputStream yamlStream, ObjectMapper objectMapper, io.casehub.api.engine.ExpressionEngineRegistry registry, io.casehub.api.spi.WorkerFunctionProviderRegistry providerRegistry, io.casehub.platform.agent.AgentProvider agentProvider)`
 
 Loads a CaseDefinition from a YAML InputStream using the CDI-managed ObjectMapper and
 ExpressionEngineRegistry. Supports all registered expression languages.
@@ -119,7 +119,7 @@ ExpressionEngineRegistry. Supports all registered expression languages.
 - `objectMapper` (`ObjectMapper`) — ObjectMapper configured for YAML (with config/secret placeholder support)
 - `registry` (`io.casehub.api.engine.ExpressionEngineRegistry`) — ExpressionEngineRegistry for creating evaluators from YAML expression strings
 - `providerRegistry` (`io.casehub.api.spi.WorkerFunctionProviderRegistry`) — WorkerFunctionProviderRegistry for SDK-dependent worker construction
-- `chatModelResolver` (`io.casehub.api.model.ai.ChatModelProviderResolver`)
+- `agentProvider` (`io.casehub.platform.agent.AgentProvider`)
 
 #### Returns
 
@@ -129,7 +129,7 @@ API model CaseDefinition
 
 - `IOException` — if reading or parsing fails
 
-### `public static io.casehub.api.model.CaseDefinition load(java.io.InputStream yamlStream, ObjectMapper objectMapper, io.casehub.api.engine.ExpressionEngineRegistry registry, io.casehub.api.spi.WorkerFunctionProviderRegistry providerRegistry, java.util.Map<java.lang.String,io.casehub.yaml.core.resolver.VariableSource> variableSources, io.casehub.api.model.ai.ChatModelProviderResolver chatModelResolver)`
+### `public static io.casehub.api.model.CaseDefinition load(java.io.InputStream yamlStream, ObjectMapper objectMapper, io.casehub.api.engine.ExpressionEngineRegistry registry, io.casehub.api.spi.WorkerFunctionProviderRegistry providerRegistry, java.util.Map<java.lang.String,io.casehub.yaml.core.resolver.VariableSource> variableSources, io.casehub.platform.agent.AgentProvider agentProvider)`
 
 Loads a CaseDefinition with variable resolution. Variables like `${env.X`} and `${config.X`} are resolved before Jackson deserialization. The `each` prefix is deferred —
 it is resolved during forEach expansion.
@@ -141,7 +141,7 @@ it is resolved during forEach expansion.
 - `registry` (`io.casehub.api.engine.ExpressionEngineRegistry`) — ExpressionEngineRegistry for creating evaluators
 - `providerRegistry` (`io.casehub.api.spi.WorkerFunctionProviderRegistry`) — WorkerFunctionProviderRegistry for SDK-dependent worker construction
 - `variableSources` (`java.util.Map<java.lang.String,io.casehub.yaml.core.resolver.VariableSource>`) — prefix-keyed variable sources (e.g., "env" → System::getenv)
-- `chatModelResolver` (`io.casehub.api.model.ai.ChatModelProviderResolver`)
+- `agentProvider` (`io.casehub.platform.agent.AgentProvider`)
 
 #### Returns
 
