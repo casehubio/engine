@@ -83,6 +83,7 @@ public class DefaultEngineCaseApi implements EngineCaseApi {
 
   @Override
   public Flow.Publisher<CaseStreamEventView> caseStream(UUID caseId) {
+    caseService.requireCaseAccess(caseId, AclAction.READ);
     return caseStreamBroadcaster.stream(caseId);
   }
 }

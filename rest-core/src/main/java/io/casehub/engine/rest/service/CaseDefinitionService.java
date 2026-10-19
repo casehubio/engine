@@ -25,6 +25,7 @@ import io.casehub.engine.common.spi.CaseDefinitionRegistry;
 import io.casehub.engine.common.spi.CaseMetaModelRepository;
 import io.casehub.engine.common.spi.query.CaseDefinitionQuery;
 import io.casehub.platform.api.acl.AccessControlProvider;
+import io.casehub.platform.api.acl.AccessDeniedException;
 import io.casehub.platform.api.acl.AclAction;
 import io.casehub.platform.api.acl.ResourceId;
 import io.casehub.platform.api.identity.CurrentPrincipal;
@@ -80,8 +81,17 @@ public class CaseDefinitionService {
   public List<CaseDefinitionView> getDefinitionsByName(
       String namespace, String name, String tenancyId) {
     String resolvedTenancyId = tenancyId != null ? tenancyId : currentPrincipal.tenancyId();
+    String actorId = currentPrincipal.actorId();
     var query = CaseDefinitionQuery.builder().namespace(namespace).name(name).build();
     return metaModelRepository.query(query, resolvedTenancyId).stream()
+        .filter(
+            meta ->
+                accessControlProvider.canAccess(
+                    actorId,
+                    new ResourceId(
+                        EngineResourceTypes.CASE_DEFINITION,
+                        meta.getNamespace() + "/" + meta.getName() + "/" + meta.getVersion()),
+                    AclAction.READ))
         .map(
             meta -> {
               CaseDefinition def = definitionRegistry.getCaseDefinition(meta);
@@ -100,6 +110,12 @@ public class CaseDefinitionService {
                 () ->
                     new EntityNotFoundException(
                         String.format("No definition for %s/%s/%s", namespace, name, version)));
+    String actorId = currentPrincipal.actorId();
+    ResourceId rid =
+        new ResourceId(EngineResourceTypes.CASE_DEFINITION, namespace + "/" + name + "/" + version);
+    if (!accessControlProvider.canAccess(actorId, rid, AclAction.READ)) {
+      throw new AccessDeniedException(actorId, rid, AclAction.READ);
+    }
     CaseDefinition def = definitionRegistry.getCaseDefinition(meta);
     if (def == null) {
       throw new EntityNotFoundException(
