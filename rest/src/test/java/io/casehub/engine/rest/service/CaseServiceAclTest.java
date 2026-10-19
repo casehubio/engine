@@ -21,6 +21,7 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import io.casehub.api.acl.EngineResourceTypes;
 import io.casehub.api.engine.EntityNotFoundException;
 import io.casehub.api.model.CaseStatus;
+import io.casehub.api.view.StartCaseRequest;
 import io.casehub.engine.common.internal.model.CaseInstance;
 import io.casehub.engine.common.spi.CaseInstanceRepository;
 import io.casehub.platform.api.acl.AccessControlProvider;
@@ -142,5 +143,13 @@ class CaseServiceAclTest {
     serviceWithCapture.requireCaseAccess(caseId, AclAction.ADMIN);
     assertThat(capturedResourceId[0])
         .isEqualTo(new ResourceId(EngineResourceTypes.CASE, caseId.toString()));
+  }
+
+  @Test
+  void startCaseAndMap_denied_throwsAccessDenied() {
+    aclAllowed = false;
+    var request = new StartCaseRequest("ns", "name", "1.0", null);
+    assertThatThrownBy(() -> caseService.startCaseAndMap(request, "t1"))
+        .isInstanceOf(AccessDeniedException.class);
   }
 }

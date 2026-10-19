@@ -180,6 +180,13 @@ public class CaseService {
   }
 
   public CaseInstanceView startCaseAndMap(StartCaseRequest request, String tenancyId) {
+    String actorId = currentPrincipal.actorId();
+    ResourceId rid =
+        new ResourceId(
+            EngineResourceTypes.CASE_DEFINITION, request.namespace() + "/" + request.name());
+    if (!accessControlProvider.canAccess(actorId, rid, AclAction.WRITE)) {
+      throw new AccessDeniedException(actorId, rid, AclAction.WRITE);
+    }
     String resolvedTenancyId = tenancyId != null ? tenancyId : currentPrincipal.tenancyId();
     var instance =
         startCase(
