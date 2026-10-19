@@ -26,7 +26,6 @@ import jakarta.enterprise.inject.Instance;
 import java.io.ByteArrayInputStream;
 import java.nio.charset.StandardCharsets;
 import java.util.Set;
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
@@ -40,9 +39,6 @@ class SituationYamlRegistrarTest {
   @Mock Instance<SituationRegistrar> situationRegistrarInstance;
   @Mock SituationRegistrar situationRegistrar;
   @InjectMocks SituationYamlRegistrar registrar;
-
-  @BeforeEach
-  void setUp() {}
 
   @Test
   void sectionKey() {

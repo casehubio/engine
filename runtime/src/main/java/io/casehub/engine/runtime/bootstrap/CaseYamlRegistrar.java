@@ -56,6 +56,8 @@ public class CaseYamlRegistrar implements ClasspathYamlRegistrar {
       LOG.debugf("Registered case definition from %s: %s", resourcePath, definition.getName());
     } catch (IOException e) {
       LOG.errorf(e, "Failed to load case definition from %s", resourcePath);
+    } catch (RuntimeException e) {
+      LOG.errorf(e, "Failed to register case definition from %s", resourcePath);
     }
   }
 }
