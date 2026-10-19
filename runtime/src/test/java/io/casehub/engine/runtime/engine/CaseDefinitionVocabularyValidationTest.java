@@ -20,7 +20,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import io.casehub.api.model.CaseDefinition;
 import io.casehub.eidos.api.DispositionAxis;
 import io.casehub.eidos.api.MatchDegree;
-import io.casehub.eidos.api.VocabularyMetadata;
+import io.casehub.eidos.api.VocabularyInfo;
 import io.casehub.eidos.api.VocabularyRegistry;
 import io.casehub.eidos.api.VocabularyTerm;
 import io.casehub.platform.api.path.Path;
@@ -185,6 +185,14 @@ class CaseDefinitionVocabularyValidationTest {
     public <T extends Enum<T> & VocabularyTerm> void register(Class<T> vocab) {}
 
     @Override
+    public void register(
+        String uri,
+        String name,
+        String description,
+        String version,
+        java.util.List<? extends VocabularyTerm> terms) {}
+
+    @Override
     public boolean isRegistered(String vocabUri) {
       return true;
     }
@@ -228,7 +236,7 @@ class CaseDefinitionVocabularyValidationTest {
     }
 
     @Override
-    public Optional<VocabularyMetadata> vocabularyMetadata(String uri) {
+    public Optional<VocabularyInfo> vocabularyMetadata(String uri) {
       return Optional.empty();
     }
 
