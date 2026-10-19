@@ -24,8 +24,6 @@
 
 ### `plannedActionExtractor` (`java.util.function.Function<java.util.Map<java.lang.String,java.lang.Object>,PlannedAction>`)
 
-### `responseFormat` (`io.casehub.platform.agent.ResponseFormat`)
-
 ### `systemPrompt` (`java.lang.String`)
 
 ### `timeout` (`java.time.Duration`)
@@ -34,7 +32,7 @@
 
 ## Constructors
 
-### `public WorkerAgentInvoker(AgentProvider agentProvider, java.lang.String systemPrompt, java.lang.String userMessageTemplate, java.util.function.UnaryOperator<JsonNode> inputTransformer, java.util.function.UnaryOperator<JsonNode> outputTransformer, io.casehub.platform.agent.ResponseFormat responseFormat, java.util.function.Function<java.util.Map<java.lang.String,java.lang.Object>,PlannedAction> plannedActionExtractor, java.lang.String model, java.time.Duration timeout)`
+### `public WorkerAgentInvoker(AgentProvider agentProvider, java.lang.String systemPrompt, java.lang.String userMessageTemplate, java.util.function.UnaryOperator<JsonNode> inputTransformer, java.util.function.UnaryOperator<JsonNode> outputTransformer, java.util.function.Function<java.util.Map<java.lang.String,java.lang.Object>,PlannedAction> plannedActionExtractor, java.lang.String model, java.time.Duration timeout)`
 
 #### Parameters
 
@@ -43,7 +41,6 @@
 - `userMessageTemplate` (`java.lang.String`)
 - `inputTransformer` (`java.util.function.UnaryOperator<JsonNode>`)
 - `outputTransformer` (`java.util.function.UnaryOperator<JsonNode>`)
-- `responseFormat` (`io.casehub.platform.agent.ResponseFormat`)
 - `plannedActionExtractor` (`java.util.function.Function<java.util.Map<java.lang.String,java.lang.Object>,PlannedAction>`)
 - `model` (`java.lang.String`)
 - `timeout` (`java.time.Duration`)

@@ -6,24 +6,24 @@
 
 ## Fields
 
-### `invocationResult` (`AgentInvocationResult`)
+### `invocationResult` (`AgentEvent.InvocationComplete`)
 
 ### `result` (`WorkerResult<java.util.Map<java.lang.String,java.lang.Object>>`)
 
 ## Record Components
 
-### `invocationResult` (`AgentInvocationResult`)
+### `invocationResult` (`AgentEvent.InvocationComplete`)
 
 ### `result` (`WorkerResult<java.util.Map<java.lang.String,java.lang.Object>>`)
 
 ## Constructors
 
-### `public WorkerAgentResponse(WorkerResult<java.util.Map<java.lang.String,java.lang.Object>> result, AgentInvocationResult invocationResult)`
+### `public WorkerAgentResponse(WorkerResult<java.util.Map<java.lang.String,java.lang.Object>> result, AgentEvent.InvocationComplete invocationResult)`
 
 #### Parameters
 
 - `result` (`WorkerResult<java.util.Map<java.lang.String,java.lang.Object>>`)
-- `invocationResult` (`AgentInvocationResult`)
+- `invocationResult` (`AgentEvent.InvocationComplete`)
 
 ## Methods
 
@@ -35,7 +35,7 @@
 
 ### `public final int hashCode()`
 
-### `public AgentInvocationResult invocationResult()`
+### `public AgentEvent.InvocationComplete invocationResult()`
 
 ### `public WorkerResult<java.util.Map<java.lang.String,java.lang.Object>> result()`
 
