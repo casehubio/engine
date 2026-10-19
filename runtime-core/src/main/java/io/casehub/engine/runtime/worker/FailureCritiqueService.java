@@ -56,7 +56,8 @@ public class FailureCritiqueService {
     try {
       String userPrompt = buildUserPrompt(diagnosis, workingLayer);
       var config = AgentSessionConfig.of(SYSTEM_PROMPT, userPrompt);
-      var invocationResult = agentProvider.get().invokeBlocking(config, LLM_TIMEOUT);
+      var invocationResult =
+          io.casehub.api.model.ai.AgentInvocation.invoke(agentProvider.get(), config, LLM_TIMEOUT);
       var text = invocationResult.text();
       return text != null && !text.isBlank() ? text.trim() : diagnosis.category().reason();
     } catch (Exception e) {
