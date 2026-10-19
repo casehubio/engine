@@ -15,8 +15,11 @@
  */
 package io.casehub.api.engine.rest;
 
+import io.casehub.api.acl.AclCheck;
+import io.casehub.api.acl.EngineResourceTypes;
 import io.casehub.api.view.CaseDefinitionPage;
 import io.casehub.api.view.CaseDefinitionView;
+import io.casehub.platform.api.acl.AclAction;
 import io.casehub.platform.api.mcp.McpDomain;
 import io.casehub.platform.api.mcp.PaginatedResponse;
 import io.casehub.platform.api.mcp.PathParam;
@@ -30,14 +33,17 @@ import java.util.List;
         "List registered case definitions; Get definitions by namespace and name; Get a specific definition by namespace, name, and version")
 public interface EngineCaseDefinitionApi {
 
+  @AclCheck(resourceType = EngineResourceTypes.CASE_DEFINITION, action = AclAction.READ)
   @PlatformQuery("List registered case definitions")
   @PaginatedResponse
   CaseDefinitionPage listDefinitions(String tenancyId, Integer offset, Integer limit);
 
+  @AclCheck(resourceType = EngineResourceTypes.CASE_DEFINITION, action = AclAction.READ)
   @PlatformQuery("Get definitions by namespace and name")
   List<CaseDefinitionView> getDefinitionsByName(
       @PathParam String namespace, @PathParam String name, String tenancyId);
 
+  @AclCheck(resourceType = EngineResourceTypes.CASE_DEFINITION, action = AclAction.READ)
   @PlatformQuery("Get a specific definition by namespace, name, and version")
   CaseDefinitionView getDefinitionByKey(
       @PathParam String namespace,
