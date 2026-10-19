@@ -75,6 +75,10 @@
             <version>${version.io.casehub}</version>
         </dependency>
         <dependency>
+            <groupId>io.smallrye</groupId>
+            <artifactId>jandex</artifactId>
+        </dependency>
+        <dependency>
             <groupId>io.casehub</groupId>
             <artifactId>casehub-engine-runtime-core</artifactId>
             <version>${project.version}</version>
