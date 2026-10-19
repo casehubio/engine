@@ -15,7 +15,10 @@
  */
 package io.casehub.api.engine.rest;
 
+import io.casehub.api.acl.AclCheck;
+import io.casehub.api.acl.EngineResourceTypes;
 import io.casehub.api.view.EventLogPage;
+import io.casehub.platform.api.acl.AclAction;
 import io.casehub.platform.api.mcp.McpDomain;
 import io.casehub.platform.api.mcp.PaginatedResponse;
 import io.casehub.platform.api.mcp.PathParam;
@@ -30,6 +33,10 @@ import java.util.UUID;
     summary = "Case event log — audit trail of all case actions")
 public interface EngineEventLogApi {
 
+  @AclCheck(
+      resourceType = EngineResourceTypes.CASE,
+      action = AclAction.READ,
+      resourceIdParam = "caseId")
   @PlatformQuery("Get paginated and filtered event log for a case")
   @PaginatedResponse
   EventLogPage getEventLog(

@@ -16,6 +16,9 @@
 package io.casehub.api.engine.rest;
 
 import com.fasterxml.jackson.databind.JsonNode;
+import io.casehub.api.acl.AclCheck;
+import io.casehub.api.acl.EngineResourceTypes;
+import io.casehub.platform.api.acl.AclAction;
 import io.casehub.platform.api.mcp.McpDomain;
 import io.casehub.platform.api.mcp.PathParam;
 import io.casehub.platform.api.mcp.PlatformQuery;
@@ -26,24 +29,52 @@ import java.util.concurrent.Flow;
 @McpDomain(value = "engine/plan", app = "engine", summary = "Plan — get, live operations")
 public interface EnginePlanApi {
 
+  @AclCheck(
+      resourceType = EngineResourceTypes.CASE,
+      action = AclAction.READ,
+      resourceIdParam = "caseId")
   @PlatformQuery("Get live case plan model snapshot")
   JsonNode getPlanModel(@PathParam UUID caseId, String tenancyId);
 
+  @AclCheck(
+      resourceType = EngineResourceTypes.CASE,
+      action = AclAction.READ,
+      resourceIdParam = "caseId")
   @PlatformQuery("Get plan item definition hierarchy")
   JsonNode getPlanDefinitions(@PathParam UUID caseId, String tenancyId);
 
+  @AclCheck(
+      resourceType = EngineResourceTypes.CASE,
+      action = AclAction.READ,
+      resourceIdParam = "caseId")
   @PlatformQuery("Get HTN decomposition tree snapshot")
   JsonNode getDecomposition(@PathParam UUID caseId, String tenancyId);
 
+  @AclCheck(
+      resourceType = EngineResourceTypes.CASE,
+      action = AclAction.READ,
+      resourceIdParam = "caseId")
   @PlatformQuery("Get DAG plan snapshot")
   JsonNode getDagPlan(@PathParam UUID caseId, String tenancyId);
 
+  @AclCheck(
+      resourceType = EngineResourceTypes.CASE,
+      action = AclAction.READ,
+      resourceIdParam = "caseId")
   @PlatformQuery("Get DAG execution result snapshot")
   JsonNode getDagResult(@PathParam UUID caseId, String tenancyId);
 
+  @AclCheck(
+      resourceType = EngineResourceTypes.CASE,
+      action = AclAction.READ,
+      resourceIdParam = "caseId")
   @PlatformQuery("Get composed execution state snapshot")
   JsonNode getExecutionState(@PathParam UUID caseId, String tenancyId);
 
+  @AclCheck(
+      resourceType = EngineResourceTypes.CASE,
+      action = AclAction.READ,
+      resourceIdParam = "caseId")
   @PlatformStream("Live execution state updates")
   Flow.Publisher<JsonNode> executionStateStream(@PathParam UUID caseId);
 }
