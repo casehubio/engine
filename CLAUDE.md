@@ -127,6 +127,21 @@ These cause silent failures — read before making changes in the relevant area.
 
 See `docs/guides/contributor-guide.md` §CDI Conventions and §Test Conventions for the full list.
 
+## Bootstrap Registrars
+
+Classpath YAML bootstrap via `casehub-platform-bootstrap` SPI. Registrars in `runtime/src/main/java/.../bootstrap/`:
+
+| Registrar | Section | Priority | Registers via |
+|-----------|---------|----------|---------------|
+| AgentYamlRegistrar | `agents` | 100 | AgentDefinitionRegistry |
+| CaseHubClassRegistrar | — | 150 (StartupEvent) | CaseDefinitionRegistry (Jandex scan, non-CDI only) |
+| CaseYamlRegistrar | `cases` | 200 | CaseDefinitionRegistry |
+| SituationYamlRegistrar | `situations` | 300 | SituationRegistrar (optional — defers if ras runtime absent) |
+
+`DefaultAgentDefinitionRegistry` (`@DefaultBean`) — in-memory agent definition store, replaceable by app-specific implementations.
+
+SPIs in `common-core`: `AgentDefinition` (record), `AgentDefinitionRegistry` (interface).
+
 ---
 
 ## IntelliJ MCP Tools
