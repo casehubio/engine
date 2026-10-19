@@ -15,9 +15,9 @@
  */
 package io.casehub.api.model.ai;
 
-import io.casehub.platform.agent.AgentInvocationResult;
+import io.casehub.platform.agent.AgentEvent;
 import io.casehub.worker.api.WorkerResult;
 import java.util.Map;
 
 public record WorkerAgentResponse(
-    WorkerResult<Map<String, Object>> result, AgentInvocationResult invocationResult) {}
+    WorkerResult<Map<String, Object>> result, AgentEvent.InvocationComplete invocationResult) {}

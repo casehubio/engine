@@ -94,7 +94,6 @@ public class CaseDefinitionRecorder {
                     java.util.function.UnaryOperator.identity(),
                     null,
                     null,
-                    null,
                     null);
             workerBuilder.function(new io.casehub.api.model.AgentWorkerFunction(invoker));
           } else {

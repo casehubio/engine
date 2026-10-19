@@ -18,7 +18,6 @@ package io.casehub.api.model.ai;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import io.casehub.platform.agent.AgentInvocationResult;
 import io.casehub.platform.agent.AgentProvider;
 import io.casehub.platform.agent.AgentSessionConfig;
 import io.casehub.worker.api.PlannedAction;
@@ -42,7 +41,6 @@ public final class WorkerAgentInvoker {
   private final String userMessageTemplate;
   private final UnaryOperator<JsonNode> inputTransformer;
   private final UnaryOperator<JsonNode> outputTransformer;
-  private final io.casehub.platform.agent.ResponseFormat responseFormat;
   private final Function<Map<String, Object>, PlannedAction> plannedActionExtractor;
   private final String model;
   private final Duration timeout;
@@ -53,7 +51,6 @@ public final class WorkerAgentInvoker {
       String userMessageTemplate,
       UnaryOperator<JsonNode> inputTransformer,
       UnaryOperator<JsonNode> outputTransformer,
-      io.casehub.platform.agent.ResponseFormat responseFormat,
       Function<Map<String, Object>, PlannedAction> plannedActionExtractor,
       String model,
       Duration timeout) {
@@ -62,7 +59,6 @@ public final class WorkerAgentInvoker {
     this.userMessageTemplate = userMessageTemplate;
     this.inputTransformer = inputTransformer;
     this.outputTransformer = outputTransformer;
-    this.responseFormat = responseFormat;
     this.plannedActionExtractor = plannedActionExtractor;
     this.model = model;
     this.timeout = timeout;
@@ -112,14 +108,11 @@ public final class WorkerAgentInvoker {
     if (model != null) {
       config = config.withModel(model);
     }
-    if (responseFormat != null) {
-      config = config.withResponseFormat(responseFormat);
-    }
-
-    AgentInvocationResult invocationResult;
+    AgentInvocation invocationResult;
     try {
       invocationResult =
-          agentProvider.invokeBlocking(config, timeout != null ? timeout : DEFAULT_TIMEOUT);
+          AgentInvocation.invoke(
+              agentProvider, config, timeout != null ? timeout : DEFAULT_TIMEOUT);
     } catch (Exception e) {
       throw new AgentException("LLM invocation failed: " + e.getMessage(), e);
     }
@@ -147,7 +140,7 @@ public final class WorkerAgentInvoker {
       workerResult = WorkerResult.of(output);
     }
 
-    return new WorkerAgentResponse(workerResult, invocationResult);
+    return new WorkerAgentResponse(workerResult, invocationResult.completion());
   }
 
   public String model() {

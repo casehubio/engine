@@ -119,7 +119,6 @@ public class AgentWorkerExecutionTest {
               new io.casehub.api.model.ai.JqTransformer("{ sentiment: .sentiment }")::apply,
               null,
               null,
-              null,
               Duration.ofSeconds(30));
 
       // Create capability

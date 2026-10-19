@@ -237,7 +237,6 @@ class SyncAgentWorkerFunctionHandlerTest {
         UnaryOperator.identity(),
         null,
         null,
-        null,
         Duration.ofSeconds(30));
   }
 }

@@ -435,7 +435,6 @@ class CbrCaseRetainObserverTest {
             java.util.function.UnaryOperator.identity(),
             java.util.function.UnaryOperator.identity(),
             null,
-            null,
             "claude-sonnet-4-20250514",
             java.time.Duration.ofSeconds(30));
     Worker worker =

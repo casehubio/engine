@@ -112,7 +112,7 @@ public class SyncAgentWorkerFunctionHandler implements WorkerFunctionHandler {
         workerRuntimeFactory.create(context.caseId(), metadata.workerName(), context, accState);
 
     final java.util.concurrent.atomic.AtomicReference<
-            io.casehub.platform.agent.AgentInvocationResult>
+            io.casehub.platform.agent.AgentEvent.InvocationComplete>
         invocationResultRef = new java.util.concurrent.atomic.AtomicReference<>();
 
     java.util.function.Function<Object, WorkerResult<?>> fn =
@@ -170,7 +170,7 @@ public class SyncAgentWorkerFunctionHandler implements WorkerFunctionHandler {
                           .set(output));
         }
       }
-      io.casehub.platform.agent.AgentInvocationResult ir = invocationResultRef.get();
+      io.casehub.platform.agent.AgentEvent.InvocationComplete ir = invocationResultRef.get();
       if (ir != null) {
         return new HandlerResult(
             result,

@@ -65,7 +65,8 @@ public class LlmGoalFormationStrategy implements GoalFormationStrategy {
 
     String userPrompt = buildPrompt(context);
     var config = AgentSessionConfig.of(systemPrompt, userPrompt);
-    var invocationResult = agentProvider.get().invokeBlocking(config, LLM_TIMEOUT);
+    var invocationResult =
+        io.casehub.api.model.ai.AgentInvocation.invoke(agentProvider.get(), config, LLM_TIMEOUT);
 
     return parseResponse(invocationResult.text());
   }
