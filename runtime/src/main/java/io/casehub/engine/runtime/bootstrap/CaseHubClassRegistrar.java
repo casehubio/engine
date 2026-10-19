@@ -33,10 +33,70 @@ public class CaseHubClassRegistrar {
   @Inject CaseDefinitionRegistry caseDefinitionRegistry;
 
   void onStart(@Observes @Priority(150) StartupEvent event) {
-    // TODO: use Jandex CompositeIndex to scan for concrete CaseHub subclasses
-    //  that are not CDI-managed, instantiate via reflection, and register via
-    //  caseDefinitionRegistry.registerCaseDefinition(). This replaces scaffold's
-    //  CaseHubClassPathLoader.
-    LOG.debug("CaseHubClassRegistrar: Jandex classpath scan not yet implemented");
+    var indexes = new java.util.ArrayList<org.jboss.jandex.IndexView>();
+    try {
+      var resources =
+          Thread.currentThread().getContextClassLoader().getResources("META-INF/jandex.idx");
+      while (resources.hasMoreElements()) {
+        try (var is = resources.nextElement().openStream()) {
+          indexes.add(new org.jboss.jandex.IndexReader(is).read());
+        }
+      }
+    } catch (java.io.IOException e) {
+      LOG.warn("Failed to read Jandex indexes from classpath", e);
+      return;
+    }
+
+    if (indexes.isEmpty()) {
+      LOG.debug("No Jandex indexes found on classpath — skipping CaseHub class scan");
+      return;
+    }
+
+    var composite = org.jboss.jandex.CompositeIndex.create(indexes);
+    var caseHubName =
+        org.jboss.jandex.DotName.createSimple(io.casehub.api.engine.CaseHub.class.getName());
+    var subclasses = composite.getAllKnownSubclasses(caseHubName);
+    int registered = 0;
+
+    for (var classInfo : subclasses) {
+      if (java.lang.reflect.Modifier.isAbstract(classInfo.flags())) {
+        continue;
+      }
+
+      Class<?> clazz;
+      try {
+        clazz =
+            Thread.currentThread().getContextClassLoader().loadClass(classInfo.name().toString());
+      } catch (ClassNotFoundException e) {
+        LOG.debugf("CaseHub subclass %s not loadable — skipping", classInfo.name());
+        continue;
+      }
+
+      if (io.quarkus.arc.Arc.container().instance(clazz).isAvailable()) {
+        continue;
+      }
+
+      try {
+        var constructor = clazz.getDeclaredConstructor();
+        constructor.setAccessible(true);
+        var hub = (io.casehub.api.engine.CaseHub) constructor.newInstance();
+        var definition = hub.getDefinition();
+        caseDefinitionRegistry.registerCaseDefinition(definition);
+        registered++;
+        LOG.debugf(
+            "Registered non-CDI CaseHub definition from %s: %s",
+            clazz.getName(), definition.getName());
+      } catch (NoSuchMethodException e) {
+        LOG.warnf("CaseHub subclass %s has no no-arg constructor — skipping", clazz.getName());
+      } catch (Exception e) {
+        LOG.warnf(e, "Failed to instantiate CaseHub subclass %s", clazz.getName());
+      }
+    }
+
+    if (registered > 0) {
+      LOG.infof("CaseHubClassRegistrar: registered %d non-CDI case definition(s)", registered);
+    } else {
+      LOG.debug("CaseHubClassRegistrar: no non-CDI CaseHub subclasses found");
+    }
   }
 }
