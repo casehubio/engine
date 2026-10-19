@@ -59,7 +59,6 @@ public class AgentConverter {
         inputTransformer,
         outputTransformer,
         null,
-        null,
         model,
         null);
   }

@@ -67,7 +67,6 @@ class AgentWorkerFunctionTest {
         UnaryOperator.identity(),
         null,
         null,
-        null,
         Duration.ofSeconds(30));
   }
 }

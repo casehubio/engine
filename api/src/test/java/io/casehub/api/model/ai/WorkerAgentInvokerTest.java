@@ -69,7 +69,6 @@ class WorkerAgentInvokerTest {
             UnaryOperator.identity(),
             null,
             null,
-            null,
             TIMEOUT);
 
     WorkerResult<Map<String, Object>> result = invoker.execute(Map.of("prompt", "say hello"));
@@ -87,7 +86,6 @@ class WorkerAgentInvokerTest {
             null,
             UnaryOperator.identity(),
             UnaryOperator.identity(),
-            null,
             null,
             null,
             TIMEOUT);
@@ -111,7 +109,6 @@ class WorkerAgentInvokerTest {
             UnaryOperator.identity(),
             null,
             null,
-            null,
             TIMEOUT);
 
     invoker.execute(Map.of("name", "Alice", "role", "admin"));
@@ -127,7 +124,6 @@ class WorkerAgentInvokerTest {
             "Hello {{name}}, you are {{role}}",
             UnaryOperator.identity(),
             UnaryOperator.identity(),
-            null,
             null,
             null,
             TIMEOUT);
@@ -146,7 +142,6 @@ class WorkerAgentInvokerTest {
             null,
             jqTransformer::apply,
             UnaryOperator.identity(),
-            null,
             null,
             null,
             TIMEOUT);
@@ -170,7 +165,6 @@ class WorkerAgentInvokerTest {
             jqTransformer::apply,
             null,
             null,
-            null,
             TIMEOUT);
 
     WorkerResult<Map<String, Object>> result = invoker.execute(Map.of("prompt", "test"));
@@ -188,7 +182,6 @@ class WorkerAgentInvokerTest {
             null,
             UnaryOperator.identity(),
             UnaryOperator.identity(),
-            null,
             null,
             null,
             TIMEOUT);
@@ -210,7 +203,6 @@ class WorkerAgentInvokerTest {
             UnaryOperator.identity(),
             null,
             null,
-            null,
             TIMEOUT);
 
     AgentException ex =
@@ -228,7 +220,6 @@ class WorkerAgentInvokerTest {
             null,
             UnaryOperator.identity(),
             UnaryOperator.identity(),
-            null,
             output ->
                 io.casehub.worker.api.PlannedAction.of(
                     "Containment: " + output.get("action"), (String) output.get("action"), output),
@@ -254,7 +245,6 @@ class WorkerAgentInvokerTest {
             null,
             UnaryOperator.identity(),
             UnaryOperator.identity(),
-            null,
             null,
             null,
             null);

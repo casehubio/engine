@@ -107,7 +107,8 @@ public class LlmDecompositionStrategy implements DecompositionStrategy<JsonNode>
       }
 
       var config = AgentSessionConfig.of(SYSTEM_PROMPT, userPrompt);
-      var invocationResult = agentProvider.get().invokeBlocking(config, LLM_TIMEOUT);
+      var invocationResult =
+          io.casehub.api.model.ai.AgentInvocation.invoke(agentProvider.get(), config, LLM_TIMEOUT);
 
       JsonNode responseJson;
       try {
@@ -217,7 +218,8 @@ public class LlmDecompositionStrategy implements DecompositionStrategy<JsonNode>
       }
 
       var config = AgentSessionConfig.of(REPLAN_SYSTEM_PROMPT, userPrompt);
-      var invocationResult = agentProvider.get().invokeBlocking(config, LLM_TIMEOUT);
+      var invocationResult =
+          io.casehub.api.model.ai.AgentInvocation.invoke(agentProvider.get(), config, LLM_TIMEOUT);
 
       JsonNode responseJson;
       try {
