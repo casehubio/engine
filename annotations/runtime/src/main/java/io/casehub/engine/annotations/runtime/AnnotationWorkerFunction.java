@@ -16,6 +16,7 @@
 package io.casehub.engine.annotations.runtime;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import io.casehub.worker.api.WorkerFunction;
 import io.casehub.worker.api.WorkerResult;
 import java.lang.reflect.Method;
@@ -25,7 +26,8 @@ import java.util.Map;
 
 public final class AnnotationWorkerFunction {
 
-  private static final ObjectMapper MAPPER = new ObjectMapper();
+  private static final ObjectMapper MAPPER =
+      new ObjectMapper().registerModule(new JavaTimeModule());
 
   private AnnotationWorkerFunction() {}
 

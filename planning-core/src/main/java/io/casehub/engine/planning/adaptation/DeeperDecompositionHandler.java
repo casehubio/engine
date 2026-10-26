@@ -30,6 +30,7 @@ import io.casehub.engine.common.internal.history.EventLog;
 import io.casehub.engine.common.internal.model.CaseInstance;
 import io.casehub.engine.common.internal.model.PlanItemSaveRequest;
 import io.casehub.engine.common.internal.model.TargetType;
+import io.casehub.engine.common.internal.utils.EngineMappers;
 import io.casehub.engine.common.spi.CaseDefinitionRegistry;
 import io.casehub.engine.common.spi.EventLogRepository;
 import io.casehub.engine.common.spi.PlanItemStore;
@@ -55,7 +56,7 @@ import org.jboss.logging.Logger;
 public class DeeperDecompositionHandler {
 
   private static final Logger LOG = Logger.getLogger(DeeperDecompositionHandler.class);
-  private static final ObjectMapper OBJECT_MAPPER = new ObjectMapper();
+  private static final ObjectMapper OBJECT_MAPPER = EngineMappers.defaultMapper();
   private static final int DEFAULT_MAX_DEPTH = 3;
   private static final int MIN_SUB_STEPS = 2;
 

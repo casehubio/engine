@@ -29,6 +29,7 @@ import io.casehub.engine.common.internal.model.CaseInstance;
 import io.casehub.engine.common.internal.model.PlanItemSaveRequest;
 import io.casehub.engine.common.internal.model.TargetType;
 import io.casehub.engine.common.internal.routing.BindingExecutorResolver;
+import io.casehub.engine.common.internal.utils.EngineMappers;
 import io.casehub.engine.common.spi.EventLogRepository;
 import io.casehub.engine.common.spi.PlanItemStore;
 import io.casehub.engine.plan.DagNode;
@@ -53,7 +54,7 @@ import org.jboss.logging.Logger;
 public class DefaultGoalDecomposer implements io.casehub.engine.common.spi.GoalDecomposer {
 
   private static final Logger LOG = Logger.getLogger(DefaultGoalDecomposer.class);
-  private static final ObjectMapper OBJECT_MAPPER = new ObjectMapper();
+  private static final ObjectMapper OBJECT_MAPPER = EngineMappers.defaultMapper();
 
   private final StrategyResolver strategyResolver;
   private final GoalAbandonmentEvaluator abandonmentEvaluator;
