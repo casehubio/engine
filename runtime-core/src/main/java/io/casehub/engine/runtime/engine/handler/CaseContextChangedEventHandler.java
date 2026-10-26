@@ -148,6 +148,7 @@ public class CaseContextChangedEventHandler {
   private final java.util.Optional<io.casehub.engine.runtime.stigmergy.SwarmProvisioner>
       swarmProvisionerInstance;
   private final EvolutionTicker evolutionTicker;
+  private final io.casehub.engine.runtime.improvement.EvolutionTimerBackstop evolutionTimerBackstop;
 
   public CaseContextChangedEventHandler(
       EventDispatcher eventDispatcher,
@@ -191,7 +192,8 @@ public class CaseContextChangedEventHandler {
           swarmProgressTrackerInstance,
       java.util.Optional<io.casehub.engine.runtime.stigmergy.SwarmProvisioner>
           swarmProvisionerInstance,
-      EvolutionTicker evolutionTicker) {
+      EvolutionTicker evolutionTicker,
+      io.casehub.engine.runtime.improvement.EvolutionTimerBackstop evolutionTimerBackstop) {
     this.eventDispatcher = eventDispatcher;
     this.jqEvaluator = jqEvaluator;
     this.caseDefinitionRegistry = caseDefinitionRegistry;
@@ -231,6 +233,7 @@ public class CaseContextChangedEventHandler {
     this.swarmProgressTrackerInstance = swarmProgressTrackerInstance;
     this.swarmProvisionerInstance = swarmProvisionerInstance;
     this.evolutionTicker = evolutionTicker;
+    this.evolutionTimerBackstop = evolutionTimerBackstop;
   }
 
   public void handle(final CaseContextChangedEvent event) {
@@ -1495,6 +1498,8 @@ public class CaseContextChangedEventHandler {
     var improvementConfig = stigConfig != null ? stigConfig.improvement() : null;
     if (improvementConfig != null) {
       evolutionTicker.tick(caseInstance.getUuid(), caseInstance.tenancyId, improvementConfig);
+      evolutionTimerBackstop.register(
+          caseInstance.getUuid(), caseInstance.tenancyId, improvementConfig);
     }
 
     var budgetConfig = caseDefinition.getBudgetConfig();

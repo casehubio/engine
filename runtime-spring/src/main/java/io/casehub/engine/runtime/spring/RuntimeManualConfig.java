@@ -242,7 +242,8 @@ public class RuntimeManualConfig {
       ObjectProvider<io.casehub.engine.runtime.stigmergy.TeamDetector> teamDetector,
       ObjectProvider<io.casehub.engine.runtime.stigmergy.SwarmProgressTracker> swarmProgressTracker,
       ObjectProvider<io.casehub.engine.runtime.stigmergy.SwarmProvisioner> swarmProvisioner,
-      io.casehub.engine.runtime.improvement.EvolutionTicker evolutionTicker) {
+      io.casehub.engine.runtime.improvement.EvolutionTicker evolutionTicker,
+      io.casehub.engine.runtime.improvement.EvolutionTimerBackstop evolutionTimerBackstop) {
     return new CaseContextChangedEventHandler(
         eventDispatcher,
         jqEvaluator,
@@ -282,7 +283,8 @@ public class RuntimeManualConfig {
         Optional.ofNullable(teamDetector.getIfAvailable()),
         Optional.ofNullable(swarmProgressTracker.getIfAvailable()),
         Optional.ofNullable(swarmProvisioner.getIfAvailable()),
-        evolutionTicker);
+        evolutionTicker,
+        evolutionTimerBackstop);
   }
 
   @Bean
