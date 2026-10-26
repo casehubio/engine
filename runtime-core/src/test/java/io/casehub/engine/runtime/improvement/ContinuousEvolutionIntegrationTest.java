@@ -262,6 +262,168 @@ class ContinuousEvolutionIntegrationTest {
     assertThat(categoryTracker.isSuppressed(caseId, "lint-fix")).isTrue();
   }
 
+  @Test
+  void cbrFeedbackLoop_highFailureRateSuppressesProposals() {
+    areaRegistry.register(area("stability", 0.8));
+
+    var outcomeStore = new ImprovementOutcomeStore();
+    var proposalSourceRegistry = new ImprovementProposalSourceRegistry();
+    proposalSourceRegistry.register(
+        new SignalConsensusProposalSource(signalRegistry, signalContext));
+    var categoryRegistryLocal = new ImprovementCategoryRegistry();
+    categoryRegistryLocal.registerProvider(new CodeEvolutionCategoryProvider());
+    var cbrGoalFormation =
+        new ImprovementGoalFormationStrategy(
+            budgetEnforcer,
+            proposalSourceRegistry,
+            categoryRegistryLocal,
+            categoryTracker,
+            rollbackHistory,
+            new ConflictStrategyRegistry(),
+            new DenyPatternProviderRegistry(),
+            outcomeStore);
+
+    outcomeStore.record(
+        new ImprovementOutcome(
+            caseId,
+            UUID.randomUUID(),
+            "lint-fix",
+            "checkstyle",
+            ImprovementOutcome.OutcomeStatus.FAILED,
+            null,
+            null,
+            null,
+            null,
+            java.time.Instant.now(),
+            Map.of()));
+    outcomeStore.record(
+        new ImprovementOutcome(
+            caseId,
+            UUID.randomUUID(),
+            "lint-fix",
+            "checkstyle",
+            ImprovementOutcome.OutcomeStatus.FAILED,
+            null,
+            null,
+            null,
+            null,
+            java.time.Instant.now(),
+            Map.of()));
+    outcomeStore.record(
+        new ImprovementOutcome(
+            caseId,
+            UUID.randomUUID(),
+            "lint-fix",
+            "checkstyle",
+            ImprovementOutcome.OutcomeStatus.FAILED,
+            null,
+            null,
+            null,
+            null,
+            java.time.Instant.now(),
+            Map.of()));
+
+    String signalName = "improvement:quality:lint:violation";
+    signalRegistry.deposit(caseId, signalName, 1.0, Duration.ofHours(1), "agent-1", 100);
+    signalRegistry.deposit(caseId, signalName, 1.0, Duration.ofHours(1), "agent-2", 100);
+    signalContext.register(
+        caseId,
+        signalName,
+        new ImprovementRequest(
+            "operational", "lint-fix", "checkstyle", 10, Map.of(), "code-evolution"));
+
+    var cbrTicker =
+        new EvolutionTicker(
+            cbrGoalFormation,
+            circuitBreaker,
+            healthTracker,
+            regressionDetector,
+            (a, t, p) -> new GoalFormationResult(List.of(), List.of(), 0),
+            new TickTraceBuffer(),
+            e -> {});
+
+    var config =
+        new ImprovementConfig(null, 2, null, null, null, true, null, null, null, null, null);
+    var trace = cbrTicker.tick(caseId, "tenant-1", config);
+
+    assertThat(trace.outcome())
+        .isInstanceOf(io.casehub.api.model.stigmergy.TickTrace.TickOutcome.NoProposal.class);
+
+    var summary = cbrGoalFormation.lastFilteringSummary();
+    assertThat(summary).isNotNull();
+    assertThat(summary.afterCbrFilter()).isEqualTo(0);
+  }
+
+  @Test
+  void outcomeCapture_bridgesCaseOutcomeToImprovementProcessing() {
+    var signalRegistryLocal = new SignalRegistry();
+    var outcomeRecorder =
+        new ImprovementOutcomeRecorder(
+            new ImprovementOutcomeEventCaptureTest.RecordingEventLogRepository());
+    var signalProjector = new ImprovementSignalProjector(signalRegistryLocal);
+    var cbrProjector = new ImprovementCbrProjector();
+    var budgetLocal = new ImprovementBudgetEnforcer(new InMemoryDenyPatternStore());
+
+    var capture =
+        new ImprovementOutcomeEventCapture(
+            outcomeRecorder, signalProjector, cbrProjector, budgetLocal);
+
+    var improvementCaseId = UUID.randomUUID();
+    budgetLocal.recordStart(
+        improvementCaseId,
+        new ImprovementRequest("operational", "lint-fix", "checkstyle", 10, Map.of(), null));
+
+    var snapshot = new java.util.HashMap<String, Object>();
+    snapshot.put(
+        "_improvement",
+        Map.of(
+            "parentCaseId", caseId.toString(),
+            "category", "lint-fix",
+            "target", "checkstyle",
+            "status", "MERGED"));
+
+    var outcomeEvent =
+        new io.casehub.api.spi.CaseOutcomeEvent(
+            "self-improvement",
+            "tenant-1",
+            improvementCaseId,
+            snapshot,
+            "COMPLETED",
+            java.time.Instant.now(),
+            Map.of());
+    capture.onOutcome(outcomeEvent);
+
+    var signals = signalRegistryLocal.getAllSignals(caseId);
+    assertThat(signals).containsKey("improvement:outcome:positive:pr-merged");
+    assertThat(budgetLocal.activeCount()).isEqualTo(0);
+  }
+
+  @Test
+  void timerBackstop_sweepTicksRegisteredCase() {
+    areaRegistry.register(area("stability", 0.8));
+    var traceBuffer = new TickTraceBuffer();
+    var localTicker =
+        new EvolutionTicker(
+            goalFormation,
+            circuitBreaker,
+            healthTracker,
+            regressionDetector,
+            (a, t, p) -> new GoalFormationResult(List.of(), List.of(), 0),
+            traceBuffer,
+            e -> {});
+
+    var backstop = new EvolutionTimerBackstop(localTicker);
+    var config =
+        new ImprovementConfig(null, null, null, null, null, true, 0, null, null, null, null);
+    backstop.register(caseId, "tenant-1", config);
+    backstop.sweep();
+
+    var traces = traceBuffer.recent(caseId, 10);
+    assertThat(traces).hasSize(1);
+    assertThat(traces.get(0).trigger())
+        .isEqualTo(io.casehub.api.model.stigmergy.TickTrace.TickTrigger.TIMER);
+  }
+
   private CapabilityArea area(String id, double health) {
     return new CapabilityArea() {
       public String id() {
