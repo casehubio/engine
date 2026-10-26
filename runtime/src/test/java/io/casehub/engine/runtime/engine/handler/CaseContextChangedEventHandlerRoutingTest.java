@@ -160,7 +160,8 @@ class CaseContextChangedEventHandlerRoutingTest {
             java.util.Optional.empty(),
             java.util.Optional.empty(),
             java.util.Optional.empty(),
-            new io.casehub.engine.runtime.improvement.EvolutionTicker());
+            new io.casehub.engine.runtime.improvement.EvolutionTicker(),
+            new io.casehub.engine.runtime.improvement.EvolutionTimerBackstop());
 
     final Capability capability =
         Capability.builder()

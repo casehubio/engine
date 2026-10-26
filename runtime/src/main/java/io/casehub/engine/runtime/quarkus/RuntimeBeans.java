@@ -439,7 +439,8 @@ public class RuntimeBeans {
       Instance<io.casehub.engine.runtime.stigmergy.RoleTracker> roleTracker,
       Instance<io.casehub.engine.runtime.stigmergy.TeamDetector> teamDetector,
       Instance<io.casehub.engine.runtime.stigmergy.SwarmProgressTracker> swarmProgressTracker,
-      Instance<io.casehub.engine.runtime.stigmergy.SwarmProvisioner> swarmProvisioner) {
+      Instance<io.casehub.engine.runtime.stigmergy.SwarmProvisioner> swarmProvisioner,
+      io.casehub.engine.runtime.improvement.EvolutionTimerBackstop evolutionTimerBackstop) {
     return new CaseStatusChangedHandler(
         eventDispatcher,
         caseInstanceRepository,
@@ -481,7 +482,8 @@ public class RuntimeBeans {
             : java.util.Optional.empty(),
         swarmProvisioner.isResolvable()
             ? java.util.Optional.of(swarmProvisioner.get())
-            : java.util.Optional.empty());
+            : java.util.Optional.empty(),
+        evolutionTimerBackstop);
   }
 
   @Produces
@@ -930,7 +932,8 @@ public class RuntimeBeans {
           Instance<io.casehub.engine.runtime.stigmergy.TeamDetector> teamDetector,
           Instance<io.casehub.engine.runtime.stigmergy.SwarmProgressTracker> swarmProgressTracker,
           Instance<io.casehub.engine.runtime.stigmergy.SwarmProvisioner> swarmProvisioner,
-          io.casehub.engine.runtime.improvement.EvolutionTicker evolutionTicker) {
+          io.casehub.engine.runtime.improvement.EvolutionTicker evolutionTicker,
+          io.casehub.engine.runtime.improvement.EvolutionTimerBackstop evolutionTimerBackstop) {
     return new io.casehub.engine.runtime.engine.handler.CaseContextChangedEventHandler(
         eventDispatcher,
         jqEvaluator,
@@ -988,7 +991,8 @@ public class RuntimeBeans {
         swarmProvisioner.isResolvable()
             ? java.util.Optional.of(swarmProvisioner.get())
             : java.util.Optional.empty(),
-        evolutionTicker);
+        evolutionTicker,
+        evolutionTimerBackstop);
   }
 
   @Produces
@@ -1007,6 +1011,13 @@ public class RuntimeBeans {
   @ApplicationScoped
   io.casehub.engine.runtime.improvement.TickTraceBuffer tickTraceBuffer() {
     return new io.casehub.engine.runtime.improvement.TickTraceBuffer();
+  }
+
+  @Produces
+  @ApplicationScoped
+  io.casehub.engine.runtime.improvement.EvolutionTimerBackstop evolutionTimerBackstop(
+      io.casehub.engine.runtime.improvement.EvolutionTicker evolutionTicker) {
+    return new io.casehub.engine.runtime.improvement.EvolutionTimerBackstop(evolutionTicker);
   }
 
   // --- Task 6: Simple services ---

@@ -90,6 +90,7 @@ public class CaseStatusChangedHandler {
       swarmProgressTrackerInstance;
   private final java.util.Optional<io.casehub.engine.runtime.stigmergy.SwarmProvisioner>
       swarmProvisionerInstance;
+  private final io.casehub.engine.runtime.improvement.EvolutionTimerBackstop evolutionTimerBackstop;
 
   public CaseStatusChangedHandler(
       EventDispatcher eventDispatcher,
@@ -119,7 +120,8 @@ public class CaseStatusChangedHandler {
       java.util.Optional<io.casehub.engine.runtime.stigmergy.SwarmProgressTracker>
           swarmProgressTrackerInstance,
       java.util.Optional<io.casehub.engine.runtime.stigmergy.SwarmProvisioner>
-          swarmProvisionerInstance) {
+          swarmProvisionerInstance,
+      io.casehub.engine.runtime.improvement.EvolutionTimerBackstop evolutionTimerBackstop) {
     this.eventDispatcher = eventDispatcher;
     this.caseInstanceRepository = caseInstanceRepository;
     this.schedulerService = schedulerService;
@@ -145,6 +147,7 @@ public class CaseStatusChangedHandler {
     this.teamDetectorInstance = teamDetectorInstance;
     this.swarmProgressTrackerInstance = swarmProgressTrackerInstance;
     this.swarmProvisionerInstance = swarmProvisionerInstance;
+    this.evolutionTimerBackstop = evolutionTimerBackstop;
   }
 
   public void handle(CaseStatusChanged event) {
@@ -218,6 +221,7 @@ public class CaseStatusChangedHandler {
       ruleRegistry.evictByCase(caseInstance.getUuid());
       activityTracker.evictByCase(caseInstance.getUuid());
       convergenceDetector.evictByCase(caseInstance.getUuid());
+      evolutionTimerBackstop.unregister(caseInstance.getUuid());
       if (stigmergyCoordinator.isPresent()) {
         stigmergyCoordinator.get().evictByCase(caseInstance.getUuid());
       }
