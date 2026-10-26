@@ -26,12 +26,13 @@ class ProposalFilteringSummaryTest {
   void constructsWithAllFields() {
     var summary =
         new ProposalFilteringSummary(
-            Map.of("signal-consensus", 5, "trading-source", 3), 8, 7, 6, 5, 4, 3, 2);
+            Map.of("signal-consensus", 5, "trading-source", 3), 8, 7, 6, 6, 5, 4, 3, 2);
     assertThat(summary.proposalsBySource()).containsEntry("signal-consensus", 5);
     assertThat(summary.proposalsBySource()).containsEntry("trading-source", 3);
     assertThat(summary.afterCategoryFilter()).isEqualTo(8);
     assertThat(summary.afterSuppressionFilter()).isEqualTo(7);
     assertThat(summary.afterAntiOscillationFilter()).isEqualTo(6);
+    assertThat(summary.afterCbrFilter()).isEqualTo(6);
     assertThat(summary.afterDenyFilter()).isEqualTo(5);
     assertThat(summary.afterBudgetFilter()).isEqualTo(4);
     assertThat(summary.afterConflictFilter()).isEqualTo(3);
@@ -40,7 +41,7 @@ class ProposalFilteringSummaryTest {
 
   @Test
   void emptySourceMapIsValid() {
-    var summary = new ProposalFilteringSummary(Map.of(), 0, 0, 0, 0, 0, 0, 0);
+    var summary = new ProposalFilteringSummary(Map.of(), 0, 0, 0, 0, 0, 0, 0, 0);
     assertThat(summary.proposalsBySource()).isEmpty();
     assertThat(summary.proposed()).isZero();
   }

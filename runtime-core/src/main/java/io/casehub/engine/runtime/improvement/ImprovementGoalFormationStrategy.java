@@ -18,6 +18,7 @@ package io.casehub.engine.runtime.improvement;
 import io.casehub.api.model.improvement.ImprovementConfig;
 import io.casehub.api.model.improvement.ImprovementRequest;
 import io.casehub.api.model.stigmergy.CategoryDescriptor;
+import io.casehub.api.model.stigmergy.ProposalFilteringSummary;
 import io.casehub.api.spi.improvement.ConflictStrategy;
 import io.casehub.api.spi.routing.GoalFormationContext;
 import io.casehub.api.spi.routing.GoalFormationProposal;
@@ -43,6 +44,11 @@ public class ImprovementGoalFormationStrategy implements GoalFormationStrategy {
   private final ConflictStrategyRegistry conflictStrategyRegistry;
   private final DenyPatternProviderRegistry denyPatternProviderRegistry;
   private final ImprovementOutcomeStore outcomeStore;
+  private volatile ProposalFilteringSummary lastFilteringSummary;
+
+  public ProposalFilteringSummary lastFilteringSummary() {
+    return lastFilteringSummary;
+  }
 
   public ImprovementGoalFormationStrategy(
       ImprovementBudgetEnforcer budgetEnforcer,
@@ -193,6 +199,18 @@ public class ImprovementGoalFormationStrategy implements GoalFormationStrategy {
               "Proposal from source",
               attributes));
     }
+
+    lastFilteringSummary =
+        new ProposalFilteringSummary(
+            proposalsBySource,
+            afterCategory.size(),
+            afterSuppression.size(),
+            afterAntiOscillation.size(),
+            afterCbr.size(),
+            afterDeny.size(),
+            afterBudget.size(),
+            afterConflict.size(),
+            goals.size());
 
     if (goals.isEmpty()) {
       return null;

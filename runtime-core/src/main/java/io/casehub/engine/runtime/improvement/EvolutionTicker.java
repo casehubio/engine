@@ -125,7 +125,8 @@ public class EvolutionTicker implements Resettable {
         caseId,
         trigger,
         gates,
-        new TickTrace.TickOutcome.ProposalGenerated(proposal.goals().size(), null));
+        new TickTrace.TickOutcome.ProposalGenerated(
+            proposal.goals().size(), goalFormation.lastFilteringSummary()));
   }
 
   private TickTrace recordTrace(
