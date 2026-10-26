@@ -21,11 +21,13 @@ import io.casehub.api.model.event.CaseHubEventType;
 import io.casehub.api.model.event.EventStreamType;
 import io.casehub.api.model.improvement.ImprovementOutcome;
 import io.casehub.api.model.improvement.ImprovementRequest;
+import io.casehub.api.spi.CaseOutcomeEvent;
 import io.casehub.engine.common.internal.history.EventLog;
 import io.casehub.engine.common.internal.signal.SignalRegistry;
 import io.casehub.engine.common.spi.EventLogRepository;
 import java.time.Instant;
 import java.util.Collection;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
@@ -89,6 +91,86 @@ class ImprovementOutcomeEventCaptureTest {
     assertThat(signals).containsKey("improvement:outcome:positive:pr-merged");
 
     assertThat(budgetEnforcer.activeCount()).isEqualTo(0);
+  }
+
+  @Test
+  void onOutcome_selfImprovementCaseProcessesThroughAllLayers() {
+    var improvementCaseId = UUID.randomUUID();
+    var parentCaseId = caseId;
+    budgetEnforcer.recordStart(
+        improvementCaseId,
+        new ImprovementRequest("operational", "lint-fix", "checkstyle", 10, Map.of(), null));
+
+    Map<String, Object> snapshot = new HashMap<>();
+    snapshot.put(
+        "_improvement",
+        Map.of(
+            "parentCaseId", parentCaseId.toString(),
+            "category", "lint-fix",
+            "target", "checkstyle",
+            "status", "MERGED"));
+
+    var event =
+        new CaseOutcomeEvent(
+            "self-improvement",
+            "tenant-1",
+            improvementCaseId,
+            snapshot,
+            "COMPLETED",
+            Instant.now(),
+            Map.of());
+
+    capture.onOutcome(event);
+
+    var entries =
+        eventLogRepo.findByCaseAndTypes(
+            parentCaseId, List.of(CaseHubEventType.IMPROVEMENT_OUTCOME), "tenant-1");
+    assertThat(entries).hasSize(1);
+  }
+
+  @Test
+  void onOutcome_nonImprovementCaseIsIgnored() {
+    var event =
+        new CaseOutcomeEvent(
+            "customer-onboarding",
+            "tenant-1",
+            UUID.randomUUID(),
+            Map.of(),
+            "COMPLETED",
+            Instant.now(),
+            Map.of());
+
+    capture.onOutcome(event);
+
+    assertThat(eventLogRepo.entries).isEmpty();
+  }
+
+  @Test
+  void onOutcome_faultedImprovementCaseMapsToFailed() {
+    Map<String, Object> snapshot = new HashMap<>();
+    snapshot.put(
+        "_improvement",
+        Map.of(
+            "parentCaseId", caseId.toString(),
+            "category", "dependency-update",
+            "target", "hibernate"));
+
+    var event =
+        new CaseOutcomeEvent(
+            "self-improvement",
+            "tenant-1",
+            UUID.randomUUID(),
+            snapshot,
+            "FAULTED",
+            Instant.now(),
+            Map.of());
+
+    capture.onOutcome(event);
+
+    var entries =
+        eventLogRepo.findByCaseAndTypes(
+            caseId, List.of(CaseHubEventType.IMPROVEMENT_OUTCOME), "tenant-1");
+    assertThat(entries).hasSize(1);
   }
 
   static class RecordingEventLogRepository implements EventLogRepository {
