@@ -2,6 +2,21 @@ id: self-improvement-rollback
 name: Improvement Rollback
 description: Revert a regressed improvement
 
+workers:
+  - name: rollback-outcome-recorder
+    description: Records rollback outcome to context for feedback loop
+    capabilities:
+      - improvement-outcome
+    do:
+      - setResult:
+          set:
+            _improvement:
+              parentCaseId: ${ .parentCaseId }
+              category: ${ .category }
+              target: ${ .target }
+              status: ${ .status // "MERGED" }
+              prUrl: ${ .prUrl }
+
 bindings:
   - name: confirm-regression
     trigger:
