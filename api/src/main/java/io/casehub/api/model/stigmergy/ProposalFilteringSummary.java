@@ -22,6 +22,7 @@ public record ProposalFilteringSummary(
     int afterCategoryFilter,
     int afterSuppressionFilter,
     int afterAntiOscillationFilter,
+    int afterCbrFilter,
     int afterDenyFilter,
     int afterBudgetFilter,
     int afterConflictFilter,

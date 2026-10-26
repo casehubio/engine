@@ -58,7 +58,8 @@ class TickTraceTest {
 
   @Test
   void proposalOutcomeIncludesFilteringSummary() {
-    var summary = new ProposalFilteringSummary(Map.of("signal-consensus", 10), 8, 7, 5, 5, 4, 3, 3);
+    var summary =
+        new ProposalFilteringSummary(Map.of("signal-consensus", 10), 8, 7, 5, 5, 5, 4, 3, 3);
     var outcome = new TickOutcome.ProposalGenerated(3, summary);
 
     assertThat(outcome.goalCount()).isEqualTo(3);
