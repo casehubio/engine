@@ -32,6 +32,7 @@ import io.casehub.engine.common.internal.history.EventLog;
 import io.casehub.engine.common.spi.EventLogRepository;
 import io.casehub.engine.plan.goap.GoapAction;
 import io.casehub.engine.plan.monitoring.MonitoringConfig;
+import io.casehub.engine.runtime.MemoryTestProfile;
 import io.casehub.platform.api.governance.ExecutionPolicy;
 import io.casehub.platform.api.governance.RetryPolicy;
 import io.casehub.platform.api.identity.TenancyConstants;
@@ -40,7 +41,6 @@ import io.casehub.worker.api.Worker;
 import io.casehub.worker.api.WorkerFunction;
 import io.casehub.worker.api.WorkerResult;
 import io.quarkus.test.junit.QuarkusTest;
-import io.quarkus.test.junit.QuarkusTestProfile;
 import io.quarkus.test.junit.TestProfile;
 import io.quarkus.vertx.ConsumeEvent;
 import jakarta.enterprise.context.ApplicationScoped;
@@ -62,7 +62,7 @@ import org.junit.jupiter.api.Test;
  * ExpectationViolationEvent publication when threshold is exceeded.
  */
 @QuarkusTest
-@TestProfile(EventLogMetadataValidationIntegrationTest.MemoryProfile.class)
+@TestProfile(MemoryTestProfile.class)
 class EventLogMetadataValidationIntegrationTest {
 
   @Inject PartialEffectsBean partialEffectsBean;
@@ -359,13 +359,6 @@ class EventLogMetadataValidationIntegrationTest {
     @ConsumeEvent(EventBusAddresses.EXPECTATION_VIOLATED)
     public void onViolation(final ExpectationViolationEvent event) {
       events.add(event);
-    }
-  }
-
-  public static class MemoryProfile implements QuarkusTestProfile {
-    @Override
-    public String getConfigProfile() {
-      return "memory";
     }
   }
 }
