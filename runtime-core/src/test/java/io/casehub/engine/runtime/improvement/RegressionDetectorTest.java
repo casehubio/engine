@@ -26,6 +26,7 @@ import io.casehub.api.model.stigmergy.StageDescriptor;
 import io.casehub.api.spi.improvement.CapabilityArea;
 import io.casehub.api.spi.improvement.ImprovementCategoryProvider;
 import io.casehub.engine.common.spi.event.RegressionDetectedEvent;
+import io.casehub.engine.common.spi.event.RollbackRequestedEvent;
 import java.time.Instant;
 import java.util.List;
 import java.util.Map;
@@ -45,6 +46,7 @@ class RegressionDetectorTest {
   private CapabilityAreaRegistry registry;
   private UUID caseId;
   private TestEvent<RegressionDetectedEvent> regressionDetectedEvents;
+  private TestEvent<RollbackRequestedEvent> rollbackRequestedEvents;
 
   @BeforeEach
   void setUp() {
@@ -74,6 +76,7 @@ class RegressionDetectorTest {
     registry = new CapabilityAreaRegistry();
     healthTracker = new HealthScoreTracker(registry);
     regressionDetectedEvents = new TestEvent<>();
+    rollbackRequestedEvents = new TestEvent<>();
     detector =
         new RegressionDetector(
             evaluatorRegistry,
@@ -81,7 +84,8 @@ class RegressionDetectorTest {
             categoryTracker,
             rollbackHistory,
             healthTracker,
-            regressionDetectedEvents);
+            regressionDetectedEvents,
+            rollbackRequestedEvents);
     caseId = UUID.randomUUID();
   }
 
@@ -187,6 +191,49 @@ class RegressionDetectorTest {
     detector.checkActiveMonitors(caseId, healthTracker, rollbackPolicy);
 
     assertThat(regressionDetectedEvents.fired()).isEmpty();
+  }
+
+  @Test
+  void firesRollbackRequestedAtHighConfidence() {
+    registry.register(area("stability", 0.8));
+    var healthPolicy = new HealthPolicy(null, null, null, null, null, null);
+    healthTracker.refresh(caseId, "test-tenant", healthPolicy);
+
+    var outcome = outcome(ImprovementOutcome.OutcomeStatus.MERGED);
+    detector.onOutcome(caseId, outcome);
+
+    registry.deprecate("stability");
+    registry.register(area("stability", 0.1));
+    healthTracker.refresh(caseId, "test-tenant", healthPolicy);
+
+    var rollbackPolicy = new RollbackPolicy(0.1, 0.05, null, null, null, null);
+    detector.checkActiveMonitors(caseId, healthTracker, rollbackPolicy);
+
+    assertThat(rollbackRequestedEvents.fired()).hasSize(1);
+    var event = rollbackRequestedEvents.fired().get(0);
+    assertThat(event.caseId()).isEqualTo(caseId);
+    assertThat(event.category()).isEqualTo("lint-fix");
+    assertThat(event.target()).isEqualTo("checkstyle");
+  }
+
+  @Test
+  void noRollbackRequestedBelowAutoRevertThreshold() {
+    registry.register(area("stability", 0.8));
+    var healthPolicy = new HealthPolicy(null, null, null, null, null, null);
+    healthTracker.refresh(caseId, "test-tenant", healthPolicy);
+
+    var outcome = outcome(ImprovementOutcome.OutcomeStatus.MERGED);
+    detector.onOutcome(caseId, outcome);
+
+    registry.deprecate("stability");
+    registry.register(area("stability", 0.3));
+    healthTracker.refresh(caseId, "test-tenant", healthPolicy);
+
+    var rollbackPolicy = new RollbackPolicy(0.99, 0.1, null, null, null, null);
+    detector.checkActiveMonitors(caseId, healthTracker, rollbackPolicy);
+
+    assertThat(rollbackRequestedEvents.fired()).isEmpty();
+    assertThat(categoryTracker.isSuppressed(caseId, "lint-fix")).isTrue();
   }
 
   private ImprovementOutcome outcome(ImprovementOutcome.OutcomeStatus status) {
