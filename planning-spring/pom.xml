@@ -37,6 +37,14 @@
             <artifactId>spring-boot-autoconfigure</artifactId>
         </dependency>
 
+        <!-- Quarkus module referenced by spring-generator (filesystem Jandex path) -->
+        <dependency>
+            <groupId>io.casehub</groupId>
+            <artifactId>casehub-engine-planning</artifactId>
+            <version>${project.version}</version>
+            <scope>provided</scope>
+        </dependency>
+
         <!-- Test -->
         <dependency>
             <groupId>org.springframework.boot</groupId>
