@@ -12,6 +12,8 @@
 
 ### `afterCategoryFilter` (`int`)
 
+### `afterCbrFilter` (`int`)
+
 ### `afterConflictFilter` (`int`)
 
 ### `afterDenyFilter` (`int`)
@@ -30,6 +32,8 @@
 
 ### `afterCategoryFilter` (`int`)
 
+### `afterCbrFilter` (`int`)
+
 ### `afterConflictFilter` (`int`)
 
 ### `afterDenyFilter` (`int`)
@@ -42,7 +46,7 @@
 
 ## Constructors
 
-### `public ProposalFilteringSummary(java.util.Map<java.lang.String,java.lang.Integer> proposalsBySource, int afterCategoryFilter, int afterSuppressionFilter, int afterAntiOscillationFilter, int afterDenyFilter, int afterBudgetFilter, int afterConflictFilter, int proposed)`
+### `public ProposalFilteringSummary(java.util.Map<java.lang.String,java.lang.Integer> proposalsBySource, int afterCategoryFilter, int afterSuppressionFilter, int afterAntiOscillationFilter, int afterCbrFilter, int afterDenyFilter, int afterBudgetFilter, int afterConflictFilter, int proposed)`
 
 #### Parameters
 
@@ -50,6 +54,7 @@
 - `afterCategoryFilter` (`int`)
 - `afterSuppressionFilter` (`int`)
 - `afterAntiOscillationFilter` (`int`)
+- `afterCbrFilter` (`int`)
 - `afterDenyFilter` (`int`)
 - `afterBudgetFilter` (`int`)
 - `afterConflictFilter` (`int`)
@@ -62,6 +67,8 @@
 ### `public int afterBudgetFilter()`
 
 ### `public int afterCategoryFilter()`
+
+### `public int afterCbrFilter()`
 
 ### `public int afterConflictFilter()`
 
