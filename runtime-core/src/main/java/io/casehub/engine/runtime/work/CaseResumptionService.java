@@ -23,6 +23,7 @@ import io.casehub.api.model.event.CaseHubEventType;
 import io.casehub.api.model.event.EventStreamType;
 import io.casehub.engine.common.internal.history.EventLog;
 import io.casehub.engine.common.internal.model.CaseInstance;
+import io.casehub.engine.common.internal.utils.EngineMappers;
 import io.casehub.engine.common.spi.CaseInstanceRepository;
 import java.time.Instant;
 import java.util.Map;
@@ -31,7 +32,7 @@ import org.jboss.logging.Logger;
 public class CaseResumptionService {
 
   private static final Logger LOG = Logger.getLogger(CaseResumptionService.class);
-  private static final ObjectMapper OBJECT_MAPPER = new ObjectMapper();
+  private static final ObjectMapper OBJECT_MAPPER = EngineMappers.defaultMapper();
 
   private final CaseInstanceRepository caseInstanceRepository;
   private final PendingWorkRegistry pendingWorkRegistry;

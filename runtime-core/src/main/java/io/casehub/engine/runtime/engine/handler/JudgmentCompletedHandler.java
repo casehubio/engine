@@ -29,6 +29,7 @@ import io.casehub.engine.common.internal.event.JudgmentEscalatedEvent;
 import io.casehub.engine.common.internal.history.EventLog;
 import io.casehub.engine.common.internal.judgment.JudgmentNodeExecutor;
 import io.casehub.engine.common.internal.model.CaseInstance;
+import io.casehub.engine.common.internal.utils.EngineMappers;
 import io.casehub.engine.common.spi.CaseDefinitionRegistry;
 import io.casehub.engine.common.spi.EventLogRepository;
 import io.casehub.engine.common.spi.cache.CaseInstanceCache;
@@ -42,7 +43,7 @@ import org.jboss.logging.Logger;
 public class JudgmentCompletedHandler {
 
   private static final Logger LOG = Logger.getLogger(JudgmentCompletedHandler.class);
-  private static final ObjectMapper MAPPER = new ObjectMapper();
+  private static final ObjectMapper MAPPER = EngineMappers.defaultMapper();
 
   private final CaseInstanceCache caseInstanceCache;
   private final CaseDefinitionRegistry caseDefinitionRegistry;

@@ -30,6 +30,7 @@ import io.casehub.engine.common.internal.event.MilestoneCompletedEvent;
 import io.casehub.engine.common.internal.history.EventLog;
 import io.casehub.engine.common.internal.model.CaseInstance;
 import io.casehub.engine.common.internal.scheduler.JobIdentifier;
+import io.casehub.engine.common.internal.utils.EngineMappers;
 import io.casehub.engine.common.spi.EventLogRepository;
 import io.casehub.engine.common.spi.event.CaseLifecycleEvent;
 import io.casehub.engine.common.spi.scheduler.JobScheduler;
@@ -43,7 +44,7 @@ import org.jboss.logging.Logger;
 public class MilestoneCompletedEventHandler {
 
   private static final Logger LOG = Logger.getLogger(MilestoneCompletedEventHandler.class);
-  private static final ObjectMapper OBJECT_MAPPER = new ObjectMapper();
+  private static final ObjectMapper OBJECT_MAPPER = EngineMappers.defaultMapper();
 
   private final EventLogRepository eventLogRepository;
   private final EventDispatcher eventDispatcher;

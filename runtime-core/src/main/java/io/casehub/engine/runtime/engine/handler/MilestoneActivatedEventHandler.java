@@ -34,6 +34,7 @@ import io.casehub.engine.common.internal.scheduler.JobIdentifier;
 import io.casehub.engine.common.internal.scheduler.JobType;
 import io.casehub.engine.common.internal.scheduler.ScheduleStrategy.FixedAtSchedule;
 import io.casehub.engine.common.internal.scheduler.ScheduledJobRequest;
+import io.casehub.engine.common.internal.utils.EngineMappers;
 import io.casehub.engine.common.spi.EventLogRepository;
 import io.casehub.engine.common.spi.event.CaseLifecycleEvent;
 import io.casehub.engine.common.spi.scheduler.JobScheduler;
@@ -48,7 +49,7 @@ import org.jboss.logging.Logger;
 public class MilestoneActivatedEventHandler {
 
   private static final Logger LOG = Logger.getLogger(MilestoneActivatedEventHandler.class);
-  private static final ObjectMapper OBJECT_MAPPER = new ObjectMapper();
+  private static final ObjectMapper OBJECT_MAPPER = EngineMappers.defaultMapper();
 
   private final EventLogRepository eventLogRepository;
   private final EventDispatcher eventDispatcher;

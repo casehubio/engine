@@ -31,6 +31,7 @@ import io.casehub.engine.common.internal.event.CaseStatusChanged;
 import io.casehub.engine.common.internal.event.GoalReachedEvent;
 import io.casehub.engine.common.internal.history.EventLog;
 import io.casehub.engine.common.internal.model.CaseInstance;
+import io.casehub.engine.common.internal.utils.EngineMappers;
 import io.casehub.engine.common.spi.CaseDefinitionRegistry;
 import io.casehub.engine.common.spi.EventLogRepository;
 import io.casehub.engine.common.spi.event.CaseLifecycleEvent;
@@ -45,7 +46,7 @@ import org.jboss.logging.Logger;
 public class GoalReachedEventHandler {
 
   private static final Logger LOG = Logger.getLogger(GoalReachedEventHandler.class);
-  private static final ObjectMapper OBJECT_MAPPER = new ObjectMapper();
+  private static final ObjectMapper OBJECT_MAPPER = EngineMappers.defaultMapper();
 
   private final CaseDefinitionRegistry caseDefinitionRegistry;
   private final EventDispatcher eventDispatcher;

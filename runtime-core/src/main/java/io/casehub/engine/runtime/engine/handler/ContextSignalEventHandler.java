@@ -22,6 +22,7 @@ import io.casehub.api.spi.event.EventDispatcher;
 import io.casehub.engine.common.internal.event.CaseContextChangedEvent;
 import io.casehub.engine.common.internal.event.ContextSignalEvent;
 import io.casehub.engine.common.internal.history.EventLog;
+import io.casehub.engine.common.internal.utils.EngineMappers;
 import io.casehub.engine.common.spi.EventLogRepository;
 import java.time.Instant;
 import org.jboss.logging.Logger;
@@ -29,7 +30,7 @@ import org.jboss.logging.Logger;
 public class ContextSignalEventHandler {
 
   private static final Logger LOG = Logger.getLogger(ContextSignalEventHandler.class);
-  private static final ObjectMapper MAPPER = new ObjectMapper();
+  private static final ObjectMapper MAPPER = EngineMappers.defaultMapper();
 
   private final EventDispatcher eventDispatcher;
   private final EventLogRepository eventLogRepository;

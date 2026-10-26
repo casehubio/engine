@@ -21,6 +21,7 @@ import io.casehub.api.context.CaseContextStore;
 import io.casehub.api.context.ReadOnlyLayerException;
 import io.casehub.api.context.ReadableLayer;
 import io.casehub.api.context.WritableLayer;
+import io.casehub.engine.common.internal.utils.EngineMappers;
 import io.fabric8.zjsonpatch.JsonDiff;
 import io.fabric8.zjsonpatch.JsonPatch;
 import java.util.ArrayList;
@@ -38,7 +39,7 @@ import java.util.function.Function;
 /** Thread-safe, versioned data store for a single CaseFile layer. */
 public class WritableLayerImpl implements WritableLayer {
 
-  private static final ObjectMapper MAPPER = new ObjectMapper();
+  private static final ObjectMapper MAPPER = EngineMappers.defaultMapper();
 
   private final String layerName;
   private final CaseContextStore store;

@@ -30,6 +30,7 @@ import io.casehub.engine.common.internal.scheduler.ScheduleStrategy;
 import io.casehub.engine.common.internal.scheduler.ScheduleStrategy.CronSchedule;
 import io.casehub.engine.common.internal.scheduler.ScheduleStrategy.DelaySchedule;
 import io.casehub.engine.common.internal.scheduler.ScheduledJobRequest;
+import io.casehub.engine.common.internal.utils.EngineMappers;
 import io.casehub.engine.common.spi.CaseDefinitionRegistry;
 import io.casehub.engine.common.spi.scheduler.JobScheduler;
 import io.casehub.worker.api.Capability;
@@ -43,7 +44,7 @@ import org.jboss.logging.Logger;
 public class SchedulerService {
 
   private static final Logger LOG = Logger.getLogger(SchedulerService.class);
-  private static final ObjectMapper SIGNAL_MAPPER = new ObjectMapper();
+  private static final ObjectMapper SIGNAL_MAPPER = EngineMappers.defaultMapper();
 
   private final JobScheduler scheduler;
   private final CaseDefinitionRegistry caseDefinitionRegistry;

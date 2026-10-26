@@ -17,6 +17,7 @@ package io.casehub.engine.runtime.convergence;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.casehub.api.model.convergence.OutputConvergenceConfig;
+import io.casehub.engine.common.internal.utils.EngineMappers;
 import io.casehub.engine.common.spi.Resettable;
 import jakarta.annotation.Nullable;
 import java.nio.charset.StandardCharsets;
@@ -35,7 +36,7 @@ import java.util.concurrent.ConcurrentHashMap;
 
 public class OutputConvergenceMonitor implements Resettable {
 
-  private static final ObjectMapper MAPPER = new ObjectMapper();
+  private static final ObjectMapper MAPPER = EngineMappers.defaultMapper();
   private final ConcurrentHashMap<UUID, ConcurrentHashMap<String, List<OutputFingerprint>>> state =
       new ConcurrentHashMap<>();
 
