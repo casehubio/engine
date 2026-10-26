@@ -17,12 +17,13 @@ package io.casehub.engine.common.internal.channel;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.casehub.api.spi.ExchangeProjectionStrategy;
+import io.casehub.engine.common.internal.utils.EngineMappers;
 import io.casehub.worker.api.Exchange;
 import java.util.Map;
 
 public class DualWriteProjection implements ExchangeProjectionStrategy {
 
-  private static final ObjectMapper MAPPER = new ObjectMapper();
+  private static final ObjectMapper MAPPER = EngineMappers.defaultMapper();
 
   @Override
   public Map<String, Object> project(Exchange<?> exchange, ProjectionContext context) {
