@@ -2,6 +2,22 @@ id: self-improvement
 name: Self-Improvement
 description: Autonomous improvement lifecycle — introspect, implement, review, integrate
 
+workers:
+  - name: outcome-recorder
+    description: Records improvement outcome to context for feedback loop
+    capabilities:
+      - improvement-outcome
+    do:
+      - setResult:
+          set:
+            _improvement:
+              parentCaseId: ${ .parentCaseId }
+              category: ${ .category }
+              target: ${ .target }
+              status: ${ .status // "MERGED" }
+              prUrl: ${ .prUrl }
+              targetPaths: ${ .targetPaths }
+
 bindings:
   - name: introspect
     trigger:
