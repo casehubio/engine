@@ -15,7 +15,16 @@
  */
 package io.casehub.engine.runtime.improvement;
 
-public class ImprovementOutcomeEventCapture {
+import io.casehub.api.model.improvement.ImprovementOutcome;
+import io.casehub.api.spi.CaseOutcomeEvent;
+import io.casehub.api.spi.CaseOutcomeObserver;
+import java.util.Map;
+import java.util.UUID;
+import org.jboss.logging.Logger;
+
+public class ImprovementOutcomeEventCapture implements CaseOutcomeObserver {
+
+  private static final Logger LOG = Logger.getLogger(ImprovementOutcomeEventCapture.class);
 
   private final ImprovementOutcomeRecorder outcomeRecorder;
   private final ImprovementSignalProjector signalProjector;
@@ -57,6 +66,63 @@ public class ImprovementOutcomeEventCapture {
             new RollbackHistory(),
             new HealthScoreTracker(new CapabilityAreaRegistry()),
             e -> {}));
+  }
+
+  @Override
+  public void onOutcome(CaseOutcomeEvent event) {
+    if (event.caseType() == null || !event.caseType().startsWith("self-improvement")) {
+      return;
+    }
+
+    @SuppressWarnings("unchecked")
+    var improvementData = (Map<String, Object>) event.caseFileSnapshot().get("_improvement");
+    if (improvementData == null) {
+      LOG.debugf(
+          "Improvement case %s completed but no _improvement context — skipping outcome capture",
+          event.caseId());
+      return;
+    }
+
+    var parentCaseIdStr = (String) improvementData.get("parentCaseId");
+    if (parentCaseIdStr == null) {
+      LOG.warnf("Improvement case %s missing parentCaseId in _improvement context", event.caseId());
+      return;
+    }
+
+    var parentCaseId = UUID.fromString(parentCaseIdStr);
+    var category = (String) improvementData.getOrDefault("category", "unknown");
+    var target = (String) improvementData.getOrDefault("target", "unknown");
+    var statusStr = (String) improvementData.get("status");
+    var prUrl = (String) improvementData.get("prUrl");
+
+    ImprovementOutcome.OutcomeStatus status;
+    if (statusStr != null) {
+      status = ImprovementOutcome.OutcomeStatus.valueOf(statusStr);
+    } else {
+      status =
+          switch (event.outcomeLabel()) {
+            case "COMPLETED" -> ImprovementOutcome.OutcomeStatus.MERGED;
+            case "FAULTED" -> ImprovementOutcome.OutcomeStatus.FAILED;
+            case "CANCELLED" -> ImprovementOutcome.OutcomeStatus.ABANDONED;
+            default -> ImprovementOutcome.OutcomeStatus.FAILED;
+          };
+    }
+
+    var outcome =
+        new ImprovementOutcome(
+            parentCaseId,
+            event.caseId(),
+            category,
+            target,
+            status,
+            prUrl,
+            null,
+            null,
+            null,
+            event.closedAt(),
+            Map.of());
+
+    onImprovementComplete(new ImprovementCaseCompleted(parentCaseId, event.tenancyId(), outcome));
   }
 
   public void onImprovementComplete(ImprovementCaseCompleted event) {
