@@ -18,6 +18,7 @@ package io.casehub.engine.planning.decomposition;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.casehub.api.model.ai.AgentException;
+import io.casehub.engine.common.internal.utils.EngineMappers;
 import io.casehub.engine.plan.DagNode;
 import io.casehub.engine.plan.DagPlan;
 import io.casehub.engine.plan.DecompositionContext;
@@ -38,7 +39,7 @@ import java.util.stream.Collectors;
 
 public class LlmDecompositionStrategy implements DecompositionStrategy<JsonNode> {
 
-  private static final ObjectMapper MAPPER = new ObjectMapper();
+  private static final ObjectMapper MAPPER = EngineMappers.defaultMapper();
   private static final Duration LLM_TIMEOUT = Duration.ofSeconds(120);
 
   private static final String SYSTEM_PROMPT =

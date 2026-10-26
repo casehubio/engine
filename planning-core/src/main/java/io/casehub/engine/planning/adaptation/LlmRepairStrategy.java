@@ -18,6 +18,7 @@ package io.casehub.engine.planning.adaptation;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.casehub.api.model.ai.AgentException;
+import io.casehub.engine.common.internal.utils.EngineMappers;
 import io.casehub.engine.plan.adaptation.AdaptationCause;
 import io.casehub.engine.plan.adaptation.PlanStepDescriptor;
 import io.casehub.engine.plan.adaptation.RepairStrategy;
@@ -32,7 +33,7 @@ import java.util.stream.Collectors;
 
 public class LlmRepairStrategy implements RepairStrategy {
 
-  private static final ObjectMapper MAPPER = new ObjectMapper();
+  private static final ObjectMapper MAPPER = EngineMappers.defaultMapper();
   private static final Duration LLM_TIMEOUT = Duration.ofSeconds(120);
 
   private static final String SYSTEM_PROMPT =

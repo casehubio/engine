@@ -28,6 +28,7 @@ import io.casehub.engine.common.internal.event.SubCaseScheduleEvent;
 import io.casehub.engine.common.internal.history.EventLog;
 import io.casehub.engine.common.internal.model.CaseInstance;
 import io.casehub.engine.common.internal.model.CaseMetaModel;
+import io.casehub.engine.common.internal.utils.EngineMappers;
 import io.casehub.engine.common.spi.CaseDefinitionRegistry;
 import io.casehub.engine.common.spi.CaseInstanceRepository;
 import io.casehub.engine.common.spi.EventLogRepository;
@@ -43,7 +44,7 @@ import org.jboss.logging.Logger;
 public class SubCaseExecutionHandler {
 
   private static final Logger LOG = Logger.getLogger(SubCaseExecutionHandler.class);
-  private static final ObjectMapper OBJECT_MAPPER = new ObjectMapper();
+  private static final ObjectMapper OBJECT_MAPPER = EngineMappers.defaultMapper();
 
   private final CaseHubRuntime caseHubRuntime;
   private final CaseDefinitionRegistry caseDefinitionRegistry;

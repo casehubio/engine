@@ -28,6 +28,7 @@ import io.casehub.engine.common.internal.history.EventLog;
 import io.casehub.engine.common.internal.model.CaseInstance;
 import io.casehub.engine.common.internal.model.PlanItemSaveRequest;
 import io.casehub.engine.common.internal.model.TargetType;
+import io.casehub.engine.common.internal.utils.EngineMappers;
 import io.casehub.engine.common.spi.CaseDefinitionRegistry;
 import io.casehub.engine.common.spi.CaseInstanceRepository;
 import io.casehub.engine.common.spi.EventLogRepository;
@@ -63,7 +64,7 @@ import org.jboss.logging.Logger;
 public class DefaultPlanAdaptationEvaluator implements PlanAdaptationEvaluator {
 
   private static final Logger LOG = Logger.getLogger(DefaultPlanAdaptationEvaluator.class);
-  private static final ObjectMapper OBJECT_MAPPER = new ObjectMapper();
+  private static final ObjectMapper OBJECT_MAPPER = EngineMappers.defaultMapper();
 
   private final BlackboardRegistry registry;
   private final PlanItemStore planItemStore;
