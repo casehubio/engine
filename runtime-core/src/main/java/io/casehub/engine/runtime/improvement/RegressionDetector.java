@@ -21,6 +21,7 @@ import io.casehub.api.model.stigmergy.HealthScoreSnapshot;
 import io.casehub.api.model.stigmergy.RegressionVerdict;
 import io.casehub.engine.common.spi.Resettable;
 import io.casehub.engine.common.spi.event.RegressionDetectedEvent;
+import io.casehub.engine.common.spi.event.RollbackRequestedEvent;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.List;
@@ -35,6 +36,7 @@ public class RegressionDetector implements Resettable {
       UUID improvementCaseId,
       String category,
       String target,
+      java.util.List<String> targetPaths,
       HealthScoreSnapshot baseline,
       Instant mergedAt,
       int checksRemaining) {}
@@ -49,6 +51,7 @@ public class RegressionDetector implements Resettable {
   private final RollbackHistory rollbackHistory;
   private final HealthScoreTracker healthTracker;
   private final Consumer<RegressionDetectedEvent> regressionDetectedEvent;
+  private final Consumer<RollbackRequestedEvent> rollbackRequestedEvent;
 
   public RegressionDetector(
       RegressionEvaluatorRegistry evaluatorRegistry,
@@ -57,12 +60,31 @@ public class RegressionDetector implements Resettable {
       RollbackHistory rollbackHistory,
       HealthScoreTracker healthTracker,
       Consumer<RegressionDetectedEvent> regressionDetectedEvent) {
+    this(
+        evaluatorRegistry,
+        categoryRegistry,
+        categoryTracker,
+        rollbackHistory,
+        healthTracker,
+        regressionDetectedEvent,
+        e -> {});
+  }
+
+  public RegressionDetector(
+      RegressionEvaluatorRegistry evaluatorRegistry,
+      ImprovementCategoryRegistry categoryRegistry,
+      ImprovementCategoryTracker categoryTracker,
+      RollbackHistory rollbackHistory,
+      HealthScoreTracker healthTracker,
+      Consumer<RegressionDetectedEvent> regressionDetectedEvent,
+      Consumer<RollbackRequestedEvent> rollbackRequestedEvent) {
     this.evaluatorRegistry = evaluatorRegistry;
     this.categoryRegistry = categoryRegistry;
     this.categoryTracker = categoryTracker;
     this.rollbackHistory = rollbackHistory;
     this.healthTracker = healthTracker;
     this.regressionDetectedEvent = regressionDetectedEvent;
+    this.rollbackRequestedEvent = rollbackRequestedEvent;
   }
 
   public void onOutcome(UUID caseId, ImprovementOutcome outcome) {
@@ -74,6 +96,11 @@ public class RegressionDetector implements Resettable {
       return;
     }
 
+    var targetPaths =
+        outcome.metadata().containsKey("targetPaths")
+            ? java.util.List.of(outcome.metadata().get("targetPaths").split(","))
+            : java.util.List.<String>of();
+
     monitors
         .computeIfAbsent(caseId, k -> new CopyOnWriteArrayList<>())
         .add(
@@ -81,6 +108,7 @@ public class RegressionDetector implements Resettable {
                 outcome.improvementCaseId(),
                 outcome.category(),
                 outcome.target(),
+                targetPaths,
                 baseline,
                 Instant.now(),
                 2));
@@ -137,6 +165,14 @@ public class RegressionDetector implements Resettable {
             caseId, monitor.improvementCaseId(), maxConfidence, monitor.category()));
 
     if (maxConfidence >= policy.effectiveAutoRevertThreshold()) {
+      rollbackRequestedEvent.accept(
+          new RollbackRequestedEvent(
+              caseId,
+              monitor.improvementCaseId(),
+              maxConfidence,
+              monitor.category(),
+              monitor.target(),
+              monitor.targetPaths()));
       rollbackHistory.record(
           caseId, monitor.improvementCaseId(), monitor.category(), monitor.target());
       categoryTracker.pauseCategory(
