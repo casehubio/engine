@@ -930,9 +930,7 @@ public class RuntimeBeans {
           Instance<io.casehub.engine.runtime.stigmergy.TeamDetector> teamDetector,
           Instance<io.casehub.engine.runtime.stigmergy.SwarmProgressTracker> swarmProgressTracker,
           Instance<io.casehub.engine.runtime.stigmergy.SwarmProvisioner> swarmProvisioner,
-          Instance<io.casehub.engine.runtime.improvement.ImprovementGoalFormationStrategy>
-              improvementStrategy,
-          Instance<io.casehub.api.spi.routing.GoalFormationService> goalFormationService) {
+          io.casehub.engine.runtime.improvement.EvolutionTicker evolutionTicker) {
     return new io.casehub.engine.runtime.engine.handler.CaseContextChangedEventHandler(
         eventDispatcher,
         jqEvaluator,
@@ -990,12 +988,7 @@ public class RuntimeBeans {
         swarmProvisioner.isResolvable()
             ? java.util.Optional.of(swarmProvisioner.get())
             : java.util.Optional.empty(),
-        improvementStrategy.isResolvable()
-            ? java.util.Optional.of(improvementStrategy.get())
-            : java.util.Optional.empty(),
-        goalFormationService.isResolvable()
-            ? java.util.Optional.of(goalFormationService.get())
-            : java.util.Optional.empty());
+        evolutionTicker);
   }
 
   @Produces

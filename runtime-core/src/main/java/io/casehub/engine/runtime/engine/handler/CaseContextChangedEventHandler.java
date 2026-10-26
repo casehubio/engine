@@ -47,7 +47,6 @@ import io.casehub.api.spi.routing.AgentRoutingStrategy;
 import io.casehub.api.spi.routing.CandidateSetContext;
 import io.casehub.api.spi.routing.CandidateSetSpec;
 import io.casehub.api.spi.routing.CandidateSetStrategy;
-import io.casehub.api.spi.routing.GoalFormationService;
 import io.casehub.api.spi.routing.HumanTaskCandidates;
 import io.casehub.api.spi.routing.HumanTaskRoutingContext;
 import io.casehub.api.spi.routing.HumanTaskRoutingResult;
@@ -78,7 +77,7 @@ import io.casehub.engine.runtime.acl.WorkerGrantOrchestrator;
 import io.casehub.engine.runtime.engine.CaseEvaluationSerializer;
 import io.casehub.engine.runtime.engine.QuiescenceTracker;
 import io.casehub.engine.runtime.engine.SignalSettlementTracker;
-import io.casehub.engine.runtime.improvement.ImprovementGoalFormationStrategy;
+import io.casehub.engine.runtime.improvement.EvolutionTicker;
 import io.casehub.engine.runtime.routing.AgentCandidateFactory;
 import io.casehub.engine.runtime.routing.CbrRetrievalService;
 import io.casehub.engine.runtime.routing.SelectionContextStore;
@@ -148,8 +147,7 @@ public class CaseContextChangedEventHandler {
       swarmProgressTrackerInstance;
   private final java.util.Optional<io.casehub.engine.runtime.stigmergy.SwarmProvisioner>
       swarmProvisionerInstance;
-  private final java.util.Optional<ImprovementGoalFormationStrategy> improvementStrategyInstance;
-  private final java.util.Optional<GoalFormationService> goalFormationServiceInstance;
+  private final EvolutionTicker evolutionTicker;
 
   public CaseContextChangedEventHandler(
       EventDispatcher eventDispatcher,
@@ -193,8 +191,7 @@ public class CaseContextChangedEventHandler {
           swarmProgressTrackerInstance,
       java.util.Optional<io.casehub.engine.runtime.stigmergy.SwarmProvisioner>
           swarmProvisionerInstance,
-      java.util.Optional<ImprovementGoalFormationStrategy> improvementStrategyInstance,
-      java.util.Optional<GoalFormationService> goalFormationServiceInstance) {
+      EvolutionTicker evolutionTicker) {
     this.eventDispatcher = eventDispatcher;
     this.jqEvaluator = jqEvaluator;
     this.caseDefinitionRegistry = caseDefinitionRegistry;
@@ -233,8 +230,7 @@ public class CaseContextChangedEventHandler {
     this.teamDetectorInstance = teamDetectorInstance;
     this.swarmProgressTrackerInstance = swarmProgressTrackerInstance;
     this.swarmProvisionerInstance = swarmProvisionerInstance;
-    this.improvementStrategyInstance = improvementStrategyInstance;
-    this.goalFormationServiceInstance = goalFormationServiceInstance;
+    this.evolutionTicker = evolutionTicker;
   }
 
   public void handle(final CaseContextChangedEvent event) {
@@ -1495,21 +1491,10 @@ public class CaseContextChangedEventHandler {
       }
     }
 
-    if (improvementStrategyInstance.isPresent()) {
-      var stigConfig = caseDefinition.getStigmergyConfig();
-      var improvementConfig = stigConfig != null ? stigConfig.improvement() : null;
-      if (improvementConfig != null) {
-        var improvementStrategy = improvementStrategyInstance.get();
-        var proposal =
-            improvementStrategy.proposeImprovements(
-                caseInstance.getUuid(), caseInstance.tenancyId, improvementConfig);
-        if (proposal != null
-            && !proposal.goals().isEmpty()
-            && goalFormationServiceInstance.isPresent()) {
-          String agentId = "improvement-system";
-          goalFormationServiceInstance.get().propose(agentId, caseInstance.tenancyId, proposal);
-        }
-      }
+    var stigConfig = caseDefinition.getStigmergyConfig();
+    var improvementConfig = stigConfig != null ? stigConfig.improvement() : null;
+    if (improvementConfig != null) {
+      evolutionTicker.tick(caseInstance.getUuid(), caseInstance.tenancyId, improvementConfig);
     }
 
     var budgetConfig = caseDefinition.getBudgetConfig();

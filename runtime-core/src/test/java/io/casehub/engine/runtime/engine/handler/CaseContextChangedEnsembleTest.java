@@ -138,8 +138,7 @@ class CaseContextChangedEnsembleTest {
             Optional.empty(),
             Optional.empty(),
             Optional.empty(),
-            Optional.empty(),
-            Optional.empty());
+            new io.casehub.engine.runtime.improvement.EvolutionTicker());
 
     Capability capability =
         Capability.builder().name("analysis").inputSchema(".").outputSchema(".").build();
