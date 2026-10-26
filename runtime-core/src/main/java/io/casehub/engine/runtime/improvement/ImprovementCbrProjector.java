@@ -22,7 +22,20 @@ public class ImprovementCbrProjector {
 
   private static final Logger LOG = Logger.getLogger(ImprovementCbrProjector.class);
 
+  private final ImprovementOutcomeStore outcomeStore;
+
+  public ImprovementCbrProjector(ImprovementOutcomeStore outcomeStore) {
+    this.outcomeStore = outcomeStore;
+  }
+
+  public ImprovementCbrProjector() {
+    this.outcomeStore = null;
+  }
+
   public void project(String tenancyId, ImprovementOutcome outcome) {
+    if (outcomeStore != null) {
+      outcomeStore.record(outcome);
+    }
     LOG.debugf(
         "CBR trace for improvement outcome: category=%s target=%s status=%s tenancyId=%s",
         outcome.category(), outcome.target(), outcome.status(), tenancyId);
