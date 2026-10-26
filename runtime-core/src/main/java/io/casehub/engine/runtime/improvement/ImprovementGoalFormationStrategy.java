@@ -33,6 +33,8 @@ import java.util.stream.Collectors;
 
 public class ImprovementGoalFormationStrategy implements GoalFormationStrategy {
 
+  private static final double HIGH_FAILURE_RATE_THRESHOLD = 0.7;
+
   private final ImprovementBudgetEnforcer budgetEnforcer;
   private final ImprovementProposalSourceRegistry proposalSourceRegistry;
   private final ImprovementCategoryRegistry categoryRegistry;
@@ -40,6 +42,7 @@ public class ImprovementGoalFormationStrategy implements GoalFormationStrategy {
   private final RollbackHistory rollbackHistory;
   private final ConflictStrategyRegistry conflictStrategyRegistry;
   private final DenyPatternProviderRegistry denyPatternProviderRegistry;
+  private final ImprovementOutcomeStore outcomeStore;
 
   public ImprovementGoalFormationStrategy(
       ImprovementBudgetEnforcer budgetEnforcer,
@@ -49,6 +52,26 @@ public class ImprovementGoalFormationStrategy implements GoalFormationStrategy {
       RollbackHistory rollbackHistory,
       ConflictStrategyRegistry conflictStrategyRegistry,
       DenyPatternProviderRegistry denyPatternProviderRegistry) {
+    this(
+        budgetEnforcer,
+        proposalSourceRegistry,
+        categoryRegistry,
+        categoryTracker,
+        rollbackHistory,
+        conflictStrategyRegistry,
+        denyPatternProviderRegistry,
+        null);
+  }
+
+  public ImprovementGoalFormationStrategy(
+      ImprovementBudgetEnforcer budgetEnforcer,
+      ImprovementProposalSourceRegistry proposalSourceRegistry,
+      ImprovementCategoryRegistry categoryRegistry,
+      ImprovementCategoryTracker categoryTracker,
+      RollbackHistory rollbackHistory,
+      ConflictStrategyRegistry conflictStrategyRegistry,
+      DenyPatternProviderRegistry denyPatternProviderRegistry,
+      ImprovementOutcomeStore outcomeStore) {
     this.budgetEnforcer = budgetEnforcer;
     this.proposalSourceRegistry = proposalSourceRegistry;
     this.categoryRegistry = categoryRegistry;
@@ -56,6 +79,7 @@ public class ImprovementGoalFormationStrategy implements GoalFormationStrategy {
     this.rollbackHistory = rollbackHistory;
     this.conflictStrategyRegistry = conflictStrategyRegistry;
     this.denyPatternProviderRegistry = denyPatternProviderRegistry;
+    this.outcomeStore = outcomeStore;
   }
 
   @Override
@@ -102,8 +126,18 @@ public class ImprovementGoalFormationStrategy implements GoalFormationStrategy {
       }
     }
 
-    List<ImprovementRequest> afterDeny = new ArrayList<>();
+    List<ImprovementRequest> afterCbr = new ArrayList<>();
     for (var request : afterAntiOscillation) {
+      if (outcomeStore != null
+          && outcomeStore.failureRate(request.category(), request.target())
+              >= HIGH_FAILURE_RATE_THRESHOLD) {
+        continue;
+      }
+      afterCbr.add(request);
+    }
+
+    List<ImprovementRequest> afterDeny = new ArrayList<>();
+    for (var request : afterCbr) {
       String domainId = request.domainId();
       if (domainId != null) {
         var provider = denyPatternProviderRegistry.forDomain(domainId);
