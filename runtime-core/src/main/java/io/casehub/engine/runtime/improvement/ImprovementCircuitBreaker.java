@@ -31,6 +31,9 @@ public class ImprovementCircuitBreaker implements Resettable {
 
   private final ConcurrentHashMap<UUID, CircuitBreakerState> states = new ConcurrentHashMap<>();
   private final ConcurrentHashMap<UUID, Integer> halfOpenCount = new ConcurrentHashMap<>();
+  private final ConcurrentHashMap<UUID, java.time.Instant> recoveryStartedAt =
+      new ConcurrentHashMap<>();
+  private final ConcurrentHashMap<UUID, Boolean> restored = new ConcurrentHashMap<>();
   private final Consumer<CircuitBreakerStateChangedEvent> stateChangedEvent;
   private final io.casehub.engine.common.spi.EventLogRepository eventLogRepository;
 
@@ -52,6 +55,10 @@ public class ImprovementCircuitBreaker implements Resettable {
 
   public void evaluate(
       UUID caseId, String tenancyId, HealthScoreTracker tracker, HealthPolicy policy) {
+    if (restored.putIfAbsent(caseId, Boolean.TRUE) == null) {
+      restoreFromEventLog(caseId, tenancyId);
+    }
+
     double score = tracker.computeScore(caseId, tenancyId, policy);
     double delta = tracker.delta(caseId, policy.effectiveHealthWindowMinutes());
     var current = state(caseId);
@@ -67,9 +74,14 @@ public class ImprovementCircuitBreaker implements Resettable {
       }
       case OPEN -> {
         if (score >= policy.effectiveHealthThreshold()) {
-          newState = CircuitBreakerState.HALF_OPEN;
-          states.put(caseId, newState);
-          halfOpenCount.put(caseId, 0);
+          if (sustainedRecovery(caseId, policy)) {
+            newState = CircuitBreakerState.HALF_OPEN;
+            states.put(caseId, newState);
+            halfOpenCount.put(caseId, 0);
+            recoveryStartedAt.remove(caseId);
+          }
+        } else {
+          recoveryStartedAt.remove(caseId);
         }
       }
       case HALF_OPEN -> {
@@ -145,6 +157,19 @@ public class ImprovementCircuitBreaker implements Resettable {
     }
   }
 
+  private boolean sustainedRecovery(UUID caseId, HealthPolicy policy) {
+    int window = policy.effectiveRecoveryWindowMinutes();
+    if (window <= 0) return true;
+
+    var started = recoveryStartedAt.get(caseId);
+    if (started == null) {
+      recoveryStartedAt.put(caseId, java.time.Instant.now());
+      return false;
+    }
+
+    return java.time.Duration.between(started, java.time.Instant.now()).toMinutes() >= window;
+  }
+
   private void emitEventLog(
       UUID caseId, String tenancyId, CircuitBreakerState from, CircuitBreakerState to) {
     if (eventLogRepository == null || tenancyId == null) {
@@ -175,5 +200,7 @@ public class ImprovementCircuitBreaker implements Resettable {
   public void reset() {
     states.clear();
     halfOpenCount.clear();
+    recoveryStartedAt.clear();
+    restored.clear();
   }
 }

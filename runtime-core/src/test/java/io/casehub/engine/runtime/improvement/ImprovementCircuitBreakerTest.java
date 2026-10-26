@@ -178,6 +178,59 @@ class ImprovementCircuitBreakerTest {
     assertThat(stateChangedEvents.fired()).isEmpty();
   }
 
+  @Test
+  void hysteresis_requiresSustainedRecoveryForHalfOpen() {
+    registry.register(area("stability", 0.3));
+    var policy = new HealthPolicy(0.6, null, null, 60, null, null);
+    tracker.refresh(caseId, "test-tenant", policy);
+    breaker.evaluate(caseId, "test-tenant", tracker, policy);
+    assertThat(breaker.state(caseId)).isEqualTo(CircuitBreakerState.OPEN);
+
+    registry.deprecate("stability");
+    registry.register(area("stability", 0.8));
+    tracker.refresh(caseId, "test-tenant", policy);
+    breaker.evaluate(caseId, "test-tenant", tracker, policy);
+
+    assertThat(breaker.state(caseId)).isEqualTo(CircuitBreakerState.OPEN);
+  }
+
+  @Test
+  void hysteresis_zeroWindowTransitionsImmediately() {
+    registry.register(area("stability", 0.3));
+    var policy = new HealthPolicy(0.6, null, null, 0, null, null);
+    tracker.refresh(caseId, "test-tenant", policy);
+    breaker.evaluate(caseId, "test-tenant", tracker, policy);
+    assertThat(breaker.state(caseId)).isEqualTo(CircuitBreakerState.OPEN);
+
+    registry.deprecate("stability");
+    registry.register(area("stability", 0.8));
+    tracker.refresh(caseId, "test-tenant", policy);
+    breaker.evaluate(caseId, "test-tenant", tracker, policy);
+
+    assertThat(breaker.state(caseId)).isEqualTo(CircuitBreakerState.HALF_OPEN);
+  }
+
+  @Test
+  void hysteresis_recoveryTimerResetsOnDip() {
+    registry.register(area("stability", 0.3));
+    var policy = new HealthPolicy(0.6, null, null, 60, null, null);
+    tracker.refresh(caseId, "test-tenant", policy);
+    breaker.evaluate(caseId, "test-tenant", tracker, policy);
+    assertThat(breaker.state(caseId)).isEqualTo(CircuitBreakerState.OPEN);
+
+    registry.deprecate("stability");
+    registry.register(area("stability", 0.8));
+    tracker.refresh(caseId, "test-tenant", policy);
+    breaker.evaluate(caseId, "test-tenant", tracker, policy);
+
+    registry.deprecate("stability");
+    registry.register(area("stability", 0.4));
+    tracker.refresh(caseId, "test-tenant", policy);
+    breaker.evaluate(caseId, "test-tenant", tracker, policy);
+
+    assertThat(breaker.state(caseId)).isEqualTo(CircuitBreakerState.OPEN);
+  }
+
   private CapabilityArea area(String id, double health) {
     return new CapabilityArea() {
       public String id() {
