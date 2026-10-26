@@ -34,6 +34,8 @@ public class ImprovementBudgetEnforcer implements Resettable {
   private final ConcurrentHashMap<LocalDate, AtomicInteger> dailyCounts = new ConcurrentHashMap<>();
   private volatile Instant lastCompletionTime = Instant.EPOCH;
 
+  public ImprovementBudgetEnforcer() {}
+
   ImprovementBudgetEnforcer(DenyPatternStore denyPatternStore) {}
 
   public sealed interface BudgetCheck permits BudgetCheck.Allowed, BudgetCheck.Denied {
