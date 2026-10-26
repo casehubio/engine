@@ -19,6 +19,7 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.casehub.engine.common.internal.config.ConfigManager;
 import io.casehub.engine.common.internal.config.SecretManager;
+import io.casehub.engine.common.internal.utils.EngineMappers;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -43,7 +44,7 @@ import net.thisptr.jackson.jq.Versions;
  */
 public class JQEvaluator {
 
-  private static final ObjectMapper MAPPER = new ObjectMapper();
+  private static final ObjectMapper MAPPER = EngineMappers.defaultMapper();
 
   private final SecretManager secretManager;
   private final ConfigManager configManager;

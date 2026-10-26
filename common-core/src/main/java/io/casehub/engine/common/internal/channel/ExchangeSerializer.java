@@ -19,6 +19,7 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.casehub.api.context.ContextBridge;
 import io.casehub.engine.common.internal.context.BridgeResolver;
+import io.casehub.engine.common.internal.utils.EngineMappers;
 import io.casehub.worker.api.Exchange;
 import java.util.LinkedHashMap;
 import java.util.Map;
@@ -29,7 +30,7 @@ public class ExchangeSerializer {
   private final ObjectMapper objectMapper;
 
   public ExchangeSerializer(BridgeResolver bridgeResolver) {
-    this(bridgeResolver, new ObjectMapper());
+    this(bridgeResolver, EngineMappers.defaultMapper());
   }
 
   public ExchangeSerializer(BridgeResolver bridgeResolver, ObjectMapper objectMapper) {

@@ -21,12 +21,13 @@ import com.fasterxml.jackson.databind.node.ObjectNode;
 import io.casehub.api.spi.ExchangeProjectionStrategy;
 import io.casehub.engine.common.internal.jq.JQEvaluator;
 import io.casehub.engine.common.internal.jq.ValidationResult;
+import io.casehub.engine.common.internal.utils.EngineMappers;
 import io.casehub.worker.api.Exchange;
 import java.util.Map;
 
 public class CustomJqProjection implements ExchangeProjectionStrategy {
 
-  private static final ObjectMapper MAPPER = new ObjectMapper();
+  private static final ObjectMapper MAPPER = EngineMappers.defaultMapper();
   private final JQEvaluator jqEvaluator;
 
   public CustomJqProjection(JQEvaluator jqEvaluator) {

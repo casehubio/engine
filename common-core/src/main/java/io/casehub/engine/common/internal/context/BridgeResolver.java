@@ -22,6 +22,7 @@ import io.casehub.api.context.DataRef;
 import io.casehub.api.context.JacksonPojoBridge;
 import io.casehub.api.context.MapBridge;
 import io.casehub.api.model.CaseDefinition;
+import io.casehub.engine.common.internal.utils.EngineMappers;
 import io.casehub.worker.api.Worker;
 import java.util.List;
 import java.util.Map;
@@ -30,7 +31,7 @@ public class BridgeResolver {
 
   private static final MapBridge MAP_BRIDGE = new MapBridge();
   private static final com.fasterxml.jackson.databind.ObjectMapper DATA_REF_MAPPER =
-      new com.fasterxml.jackson.databind.ObjectMapper();
+      EngineMappers.defaultMapper();
   private final List<ContextBridge<?>> bridges;
   private final DataRefRegistry dataRefRegistry;
 

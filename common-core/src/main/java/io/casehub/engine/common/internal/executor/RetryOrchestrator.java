@@ -26,6 +26,7 @@ import io.casehub.api.spi.event.EventDispatcher;
 import io.casehub.engine.common.internal.event.WorkerRetriesExhaustedEvent;
 import io.casehub.engine.common.internal.history.EventLog;
 import io.casehub.engine.common.internal.model.CaseInstance;
+import io.casehub.engine.common.internal.utils.EngineMappers;
 import io.casehub.engine.common.spi.CaseDefinitionRegistry;
 import io.casehub.engine.common.spi.EventLogRepository;
 import io.casehub.engine.common.spi.recovery.RecoveryContext;
@@ -43,7 +44,7 @@ import org.jboss.logging.Logger;
 public class RetryOrchestrator {
 
   private static final Logger LOG = Logger.getLogger(RetryOrchestrator.class);
-  private static final ObjectMapper MAPPER = new ObjectMapper();
+  private static final ObjectMapper MAPPER = EngineMappers.defaultMapper();
 
   private final EventLogRepository eventLogRepository;
   private final WorkerExecutionRecoveryService recoveryService;

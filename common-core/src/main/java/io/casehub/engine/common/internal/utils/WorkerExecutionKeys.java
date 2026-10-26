@@ -27,7 +27,7 @@ import java.util.UUID;
 public final class WorkerExecutionKeys {
 
   private static final ObjectMapper OBJECT_MAPPER =
-      new ObjectMapper().configure(SerializationFeature.ORDER_MAP_ENTRIES_BY_KEYS, true);
+      EngineMappers.defaultMapper().configure(SerializationFeature.ORDER_MAP_ENTRIES_BY_KEYS, true);
 
   private WorkerExecutionKeys() {}
 

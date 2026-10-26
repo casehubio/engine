@@ -30,6 +30,7 @@ import io.casehub.api.spi.event.EventDispatcher;
 import io.casehub.engine.common.internal.event.ContextSignalEvent;
 import io.casehub.engine.common.internal.event.WorkerScheduleEvent;
 import io.casehub.engine.common.internal.model.CaseInstance;
+import io.casehub.engine.common.internal.utils.EngineMappers;
 import io.casehub.engine.common.internal.worker.scope.ContextEvent;
 import io.casehub.engine.common.internal.worker.scope.ScopedWorkerRegistry;
 import io.casehub.engine.common.internal.worker.scope.ScopedWorkerSession;
@@ -50,7 +51,7 @@ import org.jboss.logging.Logger;
 public class ScheduledTriggerOrchestrator {
 
   private static final Logger LOG = Logger.getLogger(ScheduledTriggerOrchestrator.class);
-  private static final ObjectMapper OBJECT_MAPPER = new ObjectMapper();
+  private static final ObjectMapper OBJECT_MAPPER = EngineMappers.defaultMapper();
 
   private final CaseDefinitionRegistry caseDefinitionRegistry;
   private final WorkerExecutionRecoveryService recoveryService;

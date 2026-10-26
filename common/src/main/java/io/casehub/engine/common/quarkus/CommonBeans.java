@@ -41,6 +41,7 @@ import io.casehub.engine.common.internal.observation.RuleRegistry;
 import io.casehub.engine.common.internal.signal.SignalRegistry;
 import io.casehub.engine.common.internal.store.InMemoryExecutionSnapshotStore;
 import io.casehub.engine.common.internal.store.InMemoryPlanVersionStore;
+import io.casehub.engine.common.internal.utils.EngineMappers;
 import io.casehub.engine.common.internal.worker.scope.ScopedWorkerRegistry;
 import io.casehub.engine.common.spi.JudgmentScheduler;
 import io.casehub.engine.common.spi.event.PheromoneStateChangedEvent;
@@ -169,8 +170,7 @@ public class CommonBeans {
   @Produces
   @ApplicationScoped
   ExchangeSerializer exchangeSerializer(BridgeResolver bridgeResolver) {
-    return new ExchangeSerializer(
-        bridgeResolver, new com.fasterxml.jackson.databind.ObjectMapper());
+    return new ExchangeSerializer(bridgeResolver, EngineMappers.defaultMapper());
   }
 
   // --- Instance<T> → List<T> / Optional<T> bridging ---
