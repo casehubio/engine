@@ -35,12 +35,12 @@ import io.casehub.eidos.api.BehavioralSignalStore;
 import io.casehub.eidos.api.ComplianceDimension;
 import io.casehub.engine.common.internal.model.CaseInstance;
 import io.casehub.engine.common.internal.model.CaseMetaModel;
+import io.casehub.engine.runtime.MemoryTestProfile;
 import io.casehub.worker.api.Capability;
 import io.casehub.worker.api.Worker;
 import io.casehub.worker.api.WorkerOutcome;
 import io.casehub.worker.api.WorkerResult;
 import io.quarkus.test.junit.QuarkusTest;
-import io.quarkus.test.junit.QuarkusTestProfile;
 import io.quarkus.test.junit.TestProfile;
 import jakarta.annotation.Priority;
 import jakarta.enterprise.context.ApplicationScoped;
@@ -60,7 +60,7 @@ import org.junit.jupiter.api.Test;
  * infrastructure — covered by unit tests with mockStatic in BehavioralComplianceRecorderTest.
  */
 @QuarkusTest
-@TestProfile(BehavioralComplianceIntegrationTest.MemoryProfile.class)
+@TestProfile(MemoryTestProfile.class)
 class BehavioralComplianceIntegrationTest {
 
   @Inject BehavioralComplianceRecorder recorder;
@@ -284,13 +284,6 @@ class BehavioralComplianceIntegrationTest {
           .agentDescriptor("delegator", delegatorDescriptor)
           .agentDescriptor("non-delegator", nonDelegatorDescriptor)
           .build();
-    }
-  }
-
-  public static class MemoryProfile implements QuarkusTestProfile {
-    @Override
-    public String getConfigProfile() {
-      return "memory";
     }
   }
 }

@@ -23,6 +23,7 @@ import io.casehub.api.model.CaseDefinition;
 import io.casehub.api.spi.routing.AgentRoutingContext;
 import io.casehub.api.spi.routing.RetrievedExperience;
 import io.casehub.api.spi.routing.RoutingOutcome;
+import io.casehub.engine.runtime.MemoryTestProfile;
 import io.casehub.neocortex.memory.MemoryDomain;
 import io.casehub.neocortex.memory.cbr.CbrPlanRecord;
 import io.casehub.neocortex.memory.cbr.CbrPlanStep;
@@ -30,7 +31,6 @@ import io.casehub.neocortex.memory.cbr.CbrRecordStore;
 import io.casehub.neocortex.memory.cbr.FeatureValue;
 import io.casehub.platform.api.identity.TenancyConstants;
 import io.quarkus.test.junit.QuarkusTest;
-import io.quarkus.test.junit.QuarkusTestProfile;
 import io.quarkus.test.junit.TestProfile;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
@@ -49,7 +49,7 @@ import org.junit.jupiter.api.Test;
  * <p>Refs casehubio/engine#478.
  */
 @QuarkusTest
-@TestProfile(CbrRoutingIntegrationTest.MemoryProfile.class)
+@TestProfile(MemoryTestProfile.class)
 class CbrRoutingIntegrationTest {
 
   @Inject CbrYamlCaseHub caseHub;
@@ -137,13 +137,6 @@ class CbrRoutingIntegrationTest {
     @Override
     protected void augment(CaseDefinition definition) {
       definition.setAgentRouting("cbr-recording");
-    }
-  }
-
-  public static class MemoryProfile implements QuarkusTestProfile {
-    @Override
-    public String getConfigProfile() {
-      return "memory";
     }
   }
 }

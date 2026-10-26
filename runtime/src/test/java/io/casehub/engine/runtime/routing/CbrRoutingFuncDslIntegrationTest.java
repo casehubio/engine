@@ -26,6 +26,7 @@ import io.casehub.api.model.ContextChangeTrigger;
 import io.casehub.api.model.cbr.CbrConfig;
 import io.casehub.api.spi.routing.AgentRoutingContext;
 import io.casehub.api.spi.routing.RetrievedExperience;
+import io.casehub.engine.runtime.MemoryTestProfile;
 import io.casehub.neocortex.memory.MemoryDomain;
 import io.casehub.neocortex.memory.cbr.CbrPlanRecord;
 import io.casehub.neocortex.memory.cbr.CbrPlanStep;
@@ -56,7 +57,7 @@ import org.junit.jupiter.api.Test;
  * <p>Refs casehubio/engine#478.
  */
 @QuarkusTest
-@TestProfile(CbrRoutingIntegrationTest.MemoryProfile.class)
+@TestProfile(MemoryTestProfile.class)
 class CbrRoutingFuncDslIntegrationTest {
 
   @Inject FuncDslCbrCaseHub caseHub;

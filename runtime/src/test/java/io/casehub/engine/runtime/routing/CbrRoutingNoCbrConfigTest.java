@@ -23,6 +23,7 @@ import io.casehub.api.model.Binding;
 import io.casehub.api.model.CaseDefinition;
 import io.casehub.api.model.ContextChangeTrigger;
 import io.casehub.api.spi.routing.AgentRoutingContext;
+import io.casehub.engine.runtime.MemoryTestProfile;
 import io.casehub.worker.api.Capability;
 import io.casehub.worker.api.Worker;
 import io.casehub.worker.api.WorkerFunction;
@@ -43,7 +44,7 @@ import org.junit.jupiter.api.Test;
  * <p>Refs casehubio/engine#478.
  */
 @QuarkusTest
-@TestProfile(CbrRoutingIntegrationTest.MemoryProfile.class)
+@TestProfile(MemoryTestProfile.class)
 class CbrRoutingNoCbrConfigTest {
 
   @Inject NoCbrCaseHub caseHub;
