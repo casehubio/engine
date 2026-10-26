@@ -35,7 +35,7 @@ jobs:
           server-password: GITHUB_TOKEN
 
       - name: Build and test
-        run: mvn --batch-mode verify
+        run: mvn --batch-mode -T 1C verify
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           QUARKUS_LANGCHAIN4J_OLLAMA_DEVSERVICES_ENABLED: false
@@ -54,7 +54,7 @@ jobs:
 
       - name: Publish to GitHub Packages
         if: github.event_name != 'pull_request'
-        run: mvn --batch-mode deploy -DskipTests
+        run: mvn --batch-mode -T 1C deploy -DskipTests
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
