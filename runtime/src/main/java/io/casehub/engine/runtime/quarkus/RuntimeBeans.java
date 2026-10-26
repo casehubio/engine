@@ -1020,6 +1020,19 @@ public class RuntimeBeans {
     return new io.casehub.engine.runtime.improvement.EvolutionTimerBackstop(evolutionTicker);
   }
 
+  @Produces
+  @ApplicationScoped
+  io.casehub.engine.runtime.improvement.ImprovementOutcomeEventCapture
+      improvementOutcomeEventCapture(
+          io.casehub.engine.common.spi.EventLogRepository eventLogRepository,
+          io.casehub.engine.common.internal.signal.SignalRegistry signalRegistry) {
+    return new io.casehub.engine.runtime.improvement.ImprovementOutcomeEventCapture(
+        new io.casehub.engine.runtime.improvement.ImprovementOutcomeRecorder(eventLogRepository),
+        new io.casehub.engine.runtime.improvement.ImprovementSignalProjector(signalRegistry),
+        new io.casehub.engine.runtime.improvement.ImprovementCbrProjector(),
+        new io.casehub.engine.runtime.improvement.ImprovementBudgetEnforcer());
+  }
+
   // --- Task 6: Simple services ---
 
   @Produces
