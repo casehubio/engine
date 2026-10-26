@@ -20,6 +20,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import io.casehub.api.context.CaseContext;
 import io.casehub.api.context.ContextLayer;
 import io.casehub.api.context.ReadableLayer;
+import io.casehub.engine.common.internal.utils.EngineMappers;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -40,7 +41,7 @@ import java.util.function.Function;
  */
 final class SnapshotCaseContext implements CaseContext {
 
-  private static final ObjectMapper MAPPER = new ObjectMapper();
+  private static final ObjectMapper MAPPER = EngineMappers.defaultMapper();
 
   private final Map<String, Object> data;
   private final ReadableLayer workingLayer;

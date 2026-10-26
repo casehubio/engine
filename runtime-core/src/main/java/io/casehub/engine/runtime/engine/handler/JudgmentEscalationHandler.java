@@ -26,6 +26,7 @@ import io.casehub.engine.common.internal.event.JudgmentFaultEvent;
 import io.casehub.engine.common.internal.event.JudgmentReDispatchEvent;
 import io.casehub.engine.common.internal.history.EventLog;
 import io.casehub.engine.common.internal.judgment.JudgmentNodeExecutor;
+import io.casehub.engine.common.internal.utils.EngineMappers;
 import io.casehub.engine.common.spi.CaseDefinitionRegistry;
 import io.casehub.engine.common.spi.EventLogRepository;
 import io.casehub.engine.common.spi.JudgmentNodeResult;
@@ -38,7 +39,7 @@ import org.jboss.logging.Logger;
 public class JudgmentEscalationHandler {
 
   private static final Logger LOG = Logger.getLogger(JudgmentEscalationHandler.class);
-  private static final ObjectMapper MAPPER = new ObjectMapper();
+  private static final ObjectMapper MAPPER = EngineMappers.defaultMapper();
   private static final int DEFAULT_MAX_ESCALATIONS = 3;
 
   private final EventLogRepository eventLogRepository;

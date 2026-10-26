@@ -26,6 +26,7 @@ import io.casehub.engine.common.internal.event.WorkflowExecutionCompleted;
 import io.casehub.engine.common.internal.history.EventLog;
 import io.casehub.engine.common.internal.model.CaseInstance;
 import io.casehub.engine.common.internal.model.PendingActionGate;
+import io.casehub.engine.common.internal.utils.EngineMappers;
 import io.casehub.engine.common.spi.CaseDefinitionRegistry;
 import io.casehub.engine.common.spi.CaseInstanceRepository;
 import io.casehub.engine.common.spi.EventLogRepository;
@@ -38,7 +39,7 @@ import org.jboss.logging.Logger;
 public class ActionGateApprovedHandler {
 
   private static final Logger LOG = Logger.getLogger(ActionGateApprovedHandler.class);
-  private static final ObjectMapper OBJECT_MAPPER = new ObjectMapper();
+  private static final ObjectMapper OBJECT_MAPPER = EngineMappers.defaultMapper();
 
   private final CaseInstanceCache caseInstanceCache;
   private final CaseDefinitionRegistry caseDefinitionRegistry;

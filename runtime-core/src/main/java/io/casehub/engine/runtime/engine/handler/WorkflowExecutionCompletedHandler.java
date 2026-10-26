@@ -44,6 +44,7 @@ import io.casehub.engine.common.internal.event.WorkflowExecutionCompleted;
 import io.casehub.engine.common.internal.history.EventLog;
 import io.casehub.engine.common.internal.model.CaseInstance;
 import io.casehub.engine.common.internal.model.PendingActionGate;
+import io.casehub.engine.common.internal.utils.EngineMappers;
 import io.casehub.engine.common.spi.ActionGateScheduleRequest;
 import io.casehub.engine.common.spi.CaseDefinitionRegistry;
 import io.casehub.engine.common.spi.CaseInstanceRepository;
@@ -80,7 +81,7 @@ import org.jboss.logging.Logger;
  */
 public class WorkflowExecutionCompletedHandler {
 
-  private static final ObjectMapper OBJECT_MAPPER = new ObjectMapper();
+  private static final ObjectMapper OBJECT_MAPPER = EngineMappers.defaultMapper();
   private static final com.fasterxml.jackson.core.type.TypeReference<Map<String, Object>> MAP_TYPE =
       new com.fasterxml.jackson.core.type.TypeReference<>() {};
 

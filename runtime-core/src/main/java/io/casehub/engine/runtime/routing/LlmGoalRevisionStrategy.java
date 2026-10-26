@@ -24,6 +24,7 @@ import io.casehub.api.spi.routing.GoalRevisionProposal;
 import io.casehub.api.spi.routing.GoalRevisionStrategy;
 import io.casehub.eidos.api.AgentGoal;
 import io.casehub.eidos.api.GoalOutcomeCounts;
+import io.casehub.engine.common.internal.utils.EngineMappers;
 import io.casehub.platform.agent.AgentProvider;
 import io.casehub.platform.agent.AgentSessionConfig;
 import java.time.Duration;
@@ -35,7 +36,7 @@ import org.jboss.logging.Logger;
 public class LlmGoalRevisionStrategy implements GoalRevisionStrategy {
 
   private static final Logger LOG = Logger.getLogger(LlmGoalRevisionStrategy.class);
-  private static final ObjectMapper MAPPER = new ObjectMapper();
+  private static final ObjectMapper MAPPER = EngineMappers.defaultMapper();
   private static final Duration LLM_TIMEOUT = Duration.ofSeconds(120);
 
   private final Optional<AgentProvider> agentProvider;

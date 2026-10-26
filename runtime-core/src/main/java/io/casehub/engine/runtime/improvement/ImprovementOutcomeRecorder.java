@@ -20,13 +20,14 @@ import com.fasterxml.jackson.databind.node.ObjectNode;
 import io.casehub.api.model.event.CaseHubEventType;
 import io.casehub.api.model.improvement.ImprovementOutcome;
 import io.casehub.engine.common.internal.history.EventLog;
+import io.casehub.engine.common.internal.utils.EngineMappers;
 import io.casehub.engine.common.spi.EventLogRepository;
 import java.util.Objects;
 import java.util.UUID;
 
 public class ImprovementOutcomeRecorder {
 
-  private static final ObjectMapper MAPPER = new ObjectMapper();
+  private static final ObjectMapper MAPPER = EngineMappers.defaultMapper();
 
   private final EventLogRepository eventLogRepository;
 

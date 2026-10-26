@@ -27,6 +27,7 @@ import io.casehub.engine.common.internal.event.CaseContextChangedEvent;
 import io.casehub.engine.common.internal.event.MilestoneSLAViolatedEvent;
 import io.casehub.engine.common.internal.history.EventLog;
 import io.casehub.engine.common.internal.model.CaseInstance;
+import io.casehub.engine.common.internal.utils.EngineMappers;
 import io.casehub.engine.common.spi.EventLogRepository;
 import java.time.Instant;
 import org.jboss.logging.Logger;
@@ -34,7 +35,7 @@ import org.jboss.logging.Logger;
 public class MilestoneSLAViolatedEventHandler {
 
   private static final Logger LOG = Logger.getLogger(MilestoneSLAViolatedEventHandler.class);
-  private static final ObjectMapper OBJECT_MAPPER = new ObjectMapper();
+  private static final ObjectMapper OBJECT_MAPPER = EngineMappers.defaultMapper();
 
   private final EventLogRepository eventLogRepository;
   private final EventDispatcher eventDispatcher;

@@ -27,6 +27,7 @@ import io.casehub.engine.common.internal.event.CaseContextChangedEvent;
 import io.casehub.engine.common.internal.event.ScopedWorkerOutputEvent;
 import io.casehub.engine.common.internal.history.EventLog;
 import io.casehub.engine.common.internal.model.CaseInstance;
+import io.casehub.engine.common.internal.utils.EngineMappers;
 import io.casehub.engine.common.spi.CaseDefinitionRegistry;
 import io.casehub.engine.common.spi.EventLogRepository;
 import io.casehub.engine.runtime.memory.AgentExperienceRecorder;
@@ -38,7 +39,7 @@ import org.jboss.logging.Logger;
 public class ScopedWorkerOutputHandler {
 
   private static final Logger LOG = Logger.getLogger(ScopedWorkerOutputHandler.class);
-  private static final ObjectMapper OBJECT_MAPPER = new ObjectMapper();
+  private static final ObjectMapper OBJECT_MAPPER = EngineMappers.defaultMapper();
 
   private final ContextOutputApplier contextOutputApplier;
   private final EventLogRepository eventLogRepository;

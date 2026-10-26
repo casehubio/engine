@@ -19,6 +19,7 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import io.casehub.api.spi.ContextDiffStrategy;
+import io.casehub.engine.common.internal.utils.EngineMappers;
 
 /**
  * Top-level key {@link ContextDiffStrategy}: records a before/after entry per changed top-level
@@ -41,7 +42,7 @@ import io.casehub.api.spi.ContextDiffStrategy;
  */
 public class TopLevelContextDiffStrategy implements ContextDiffStrategy {
 
-  private static final ObjectMapper MAPPER = new ObjectMapper();
+  private static final ObjectMapper MAPPER = EngineMappers.defaultMapper();
 
   @Override
   public JsonNode compute(JsonNode before, JsonNode after) {

@@ -36,6 +36,7 @@ import io.casehub.engine.common.internal.event.CaseStatusChanged;
 import io.casehub.engine.common.internal.history.EventLog;
 import io.casehub.engine.common.internal.model.CaseInstance;
 import io.casehub.engine.common.internal.model.CaseTerminatedException;
+import io.casehub.engine.common.internal.utils.EngineMappers;
 import io.casehub.engine.common.spi.CaseInstanceRepository;
 import io.casehub.engine.common.spi.event.CaseLifecycleEvent;
 import io.casehub.engine.common.spi.recovery.CompoundLockRegistry;
@@ -53,7 +54,7 @@ import org.jboss.logging.Logger;
 public class CaseStatusChangedHandler {
 
   private static final Logger LOG = Logger.getLogger(CaseStatusChangedHandler.class);
-  private static final ObjectMapper OBJECT_MAPPER = new ObjectMapper();
+  private static final ObjectMapper OBJECT_MAPPER = EngineMappers.defaultMapper();
   private static final TypeReference<Map<String, Object>> MAP_TYPE = new TypeReference<>() {};
 
   private final EventDispatcher eventDispatcher;

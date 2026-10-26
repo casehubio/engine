@@ -67,6 +67,7 @@ import io.casehub.engine.common.internal.event.WorkerScheduleEvent;
 import io.casehub.engine.common.internal.jq.JQEvaluator;
 import io.casehub.engine.common.internal.model.CaseInstance;
 import io.casehub.engine.common.internal.model.CaseMetaModel;
+import io.casehub.engine.common.internal.utils.EngineMappers;
 import io.casehub.engine.common.internal.worker.scope.ScopedWorkerRegistry;
 import io.casehub.engine.common.spi.CaseDefinitionRegistry;
 import io.casehub.engine.common.spi.event.CaseContextUpdatedEvent;
@@ -99,7 +100,7 @@ import org.jboss.logging.Logger;
 public class CaseContextChangedEventHandler {
 
   private static final Logger LOG = Logger.getLogger(CaseContextChangedEventHandler.class);
-  private static final ObjectMapper MAPPER = new ObjectMapper();
+  private static final ObjectMapper MAPPER = EngineMappers.defaultMapper();
   private static final TypeReference<Map<String, Object>> MAP_TYPE = new TypeReference<>() {};
 
   private final EventDispatcher eventDispatcher;

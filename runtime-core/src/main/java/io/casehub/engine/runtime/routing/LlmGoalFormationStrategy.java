@@ -24,6 +24,7 @@ import io.casehub.api.spi.routing.GoalFormationProposal;
 import io.casehub.api.spi.routing.GoalFormationStrategy;
 import io.casehub.eidos.api.AgentGoal;
 import io.casehub.eidos.api.GoalPriority;
+import io.casehub.engine.common.internal.utils.EngineMappers;
 import io.casehub.platform.agent.AgentProvider;
 import io.casehub.platform.agent.AgentSessionConfig;
 import java.time.Duration;
@@ -35,7 +36,7 @@ import org.jboss.logging.Logger;
 public class LlmGoalFormationStrategy implements GoalFormationStrategy {
 
   private static final Logger LOG = Logger.getLogger(LlmGoalFormationStrategy.class);
-  private static final ObjectMapper MAPPER = new ObjectMapper();
+  private static final ObjectMapper MAPPER = EngineMappers.defaultMapper();
   private static final Duration LLM_TIMEOUT = Duration.ofSeconds(120);
 
   private final Optional<AgentProvider> agentProvider;
