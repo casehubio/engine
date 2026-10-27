@@ -92,6 +92,7 @@ types:
       humanTask: { type: YamlHumanTaskTarget }
       subCase: { type: YamlSubCaseTarget }
       judgment: { type: YamlJudgmentTarget }
+      requires: { type: YamlBindingRequires }
     extra:
       - { name: sideEffectClassification, type: String }
       - { name: recoveryOverride, type: YamlRecoveryOverride }
@@ -204,6 +205,13 @@ types:
       actions: { type: "List<YamlLabelAction>" }
 
   # ── Extra types (no schema $defs) ──
+
+  YamlBindingRequires:
+    record: YamlBindingRequires
+    extra:
+      - { name: bindings, type: "List<String>" }
+      - { name: atLeast, type: Integer }
+      - { name: onThresholdReached, type: String }
 
   YamlA2A:
     record: YamlA2A

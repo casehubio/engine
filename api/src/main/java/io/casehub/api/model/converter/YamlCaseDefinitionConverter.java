@@ -21,6 +21,7 @@ import io.casehub.api.context.JacksonPojoBridge;
 import io.casehub.api.engine.ExpressionEngineRegistry;
 import io.casehub.api.model.AgentWorkerFunction;
 import io.casehub.api.model.Binding;
+import io.casehub.api.model.BindingRequires;
 import io.casehub.api.model.CapabilityTarget;
 import io.casehub.api.model.CaseDefinition;
 import io.casehub.api.model.ChannelDeclaration;
@@ -846,6 +847,16 @@ public final class YamlCaseDefinitionConverter {
           actions.add(io.casehub.api.acl.EngineWorkerActions.fromKebabCase(pi));
         }
         builder.permissionIntent(actions);
+      }
+
+      if (yb.requires() != null) {
+        builder.requires(
+            new BindingRequires(
+                yb.requires().bindings(),
+                yb.requires().atLeast(),
+                yb.requires().onThresholdReached() != null
+                    ? OnThresholdReached.valueOf(yb.requires().onThresholdReached())
+                    : OnThresholdReached.KEEP));
       }
 
       Binding result = builder.build();
