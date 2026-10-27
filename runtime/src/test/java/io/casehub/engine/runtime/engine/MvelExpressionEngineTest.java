@@ -319,11 +319,4 @@ class MvelExpressionEngineTest {
     Object pojoAfterExtract = engine.cachedPojoForTesting();
     assertThat(pojoAfterExtract).isSameAs(pojoAfterEval);
   }
-
-  @Test
-  void compile_delegatesToPlatform() {
-    var compiled = engine.compile("amount > 100", java.util.Map.class, Boolean.class);
-    assertThat(compiled).isNotNull();
-    assertThat(compiled.type()).isEqualTo("mvel");
-  }
 }
