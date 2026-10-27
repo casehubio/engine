@@ -122,6 +122,8 @@ public class Binding {
       "Marks this binding as a compensating binding — excluded from forward execution planning.")
   private boolean compensation;
 
+  private BindingRequires requires;
+
   private Binding(String name, BindingTarget target, Trigger on) {
     this.name = name;
     this.target = target;
@@ -319,8 +321,20 @@ public class Binding {
     return compensation;
   }
 
+  public BindingRequires getRequires() {
+    return requires;
+  }
+
+  public BindingRequires requires() {
+    return requires;
+  }
+
   public void setCompensation(boolean compensation) {
     this.compensation = compensation;
+  }
+
+  public void setRequires(BindingRequires requires) {
+    this.requires = requires;
   }
 
   public static java.util.List<String> validateCompensationBindings(
@@ -410,6 +424,7 @@ public class Binding {
     private String compensatedBy;
     private Integer compensationOrder;
     private boolean compensation;
+    private BindingRequires requires;
 
     private Builder() {}
 
@@ -602,6 +617,11 @@ public class Binding {
       return this;
     }
 
+    public Builder requires(BindingRequires requires) {
+      this.requires = requires;
+      return this;
+    }
+
     public Binding build() {
       Objects.requireNonNull(name);
       Objects.requireNonNull(on);
@@ -666,6 +686,7 @@ public class Binding {
       b.setCompensatedBy(this.compensatedBy);
       b.setCompensationOrder(this.compensationOrder);
       b.setCompensation(this.compensation);
+      b.setRequires(this.requires);
       return b;
     }
   }
