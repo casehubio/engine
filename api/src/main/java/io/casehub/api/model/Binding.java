@@ -394,6 +394,93 @@ public class Binding {
     return errors;
   }
 
+  public static java.util.List<String> validateRequiresBindings(
+      java.util.List<Binding> bindings, java.util.List<CompoundDeclaration> compounds) {
+    java.util.List<String> errors = new java.util.ArrayList<>();
+    java.util.Map<String, Binding> byName = new java.util.LinkedHashMap<>();
+    for (Binding b : bindings) {
+      if (b.getName() != null) {
+        byName.put(b.getName(), b);
+      }
+    }
+    java.util.Map<String, String> bindingToCompound = new java.util.HashMap<>();
+    for (CompoundDeclaration c : compounds) {
+      if (c.scopedBindings() != null) {
+        for (String bName : c.scopedBindings().keySet()) {
+          bindingToCompound.put(bName, c.name());
+        }
+      }
+    }
+    for (Binding b : bindings) {
+      if (b.getRequires() == null) {
+        continue;
+      }
+      BindingRequires req = b.getRequires();
+      java.util.Set<String> seen = new java.util.HashSet<>();
+      for (String ref : req.bindings()) {
+        if (!seen.add(ref)) {
+          errors.add("Binding '" + b.getName() + "' requires: duplicate reference '" + ref + "'");
+        }
+      }
+      if (req.bindings().contains(b.getName())) {
+        errors.add("Binding '" + b.getName() + "' requires: self-reference");
+      }
+      for (String ref : req.bindings()) {
+        if (!byName.containsKey(ref)) {
+          errors.add(
+              "Binding '"
+                  + b.getName()
+                  + "' requires: referenced binding '"
+                  + ref
+                  + "' does not exist");
+        }
+      }
+      String myCompound = bindingToCompound.get(b.getName());
+      for (String ref : req.bindings()) {
+        String refCompound = bindingToCompound.get(ref);
+        if (!java.util.Objects.equals(myCompound, refCompound)) {
+          errors.add(
+              "Binding '"
+                  + b.getName()
+                  + "' requires: referenced binding '"
+                  + ref
+                  + "' is in a different scope ('"
+                  + refCompound
+                  + "' vs '"
+                  + myCompound
+                  + "')");
+        }
+      }
+    }
+    for (Binding b : bindings) {
+      if (b.getRequires() == null) {
+        continue;
+      }
+      java.util.Set<String> visited = new java.util.HashSet<>();
+      if (hasCycleInRequires(b.getName(), byName, visited)) {
+        errors.add("Binding '" + b.getName() + "' requires: cycle detected in requires chain");
+      }
+    }
+    return errors;
+  }
+
+  private static boolean hasCycleInRequires(
+      String name, java.util.Map<String, Binding> byName, java.util.Set<String> visited) {
+    if (!visited.add(name)) {
+      return true;
+    }
+    Binding b = byName.get(name);
+    if (b == null || b.getRequires() == null) {
+      return false;
+    }
+    for (String ref : b.getRequires().bindings()) {
+      if (hasCycleInRequires(ref, byName, new java.util.HashSet<>(visited))) {
+        return true;
+      }
+    }
+    return false;
+  }
+
   public static Builder builder() {
     return new Builder();
   }
