@@ -24,6 +24,7 @@ import jakarta.annotation.Nullable;
  * any future executor types.
  */
 public interface ExecutorRef {
+  ExecutorRef NONE = new SimpleExecutorRef("__none__", null);
 
   String name();
 

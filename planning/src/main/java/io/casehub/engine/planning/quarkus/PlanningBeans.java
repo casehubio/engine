@@ -64,6 +64,7 @@ import io.casehub.engine.planning.handler.CompoundCompletionEvaluator;
 import io.casehub.engine.planning.handler.JudgmentPlanItemHandler;
 import io.casehub.engine.planning.handler.PlanItemCompletionHandler;
 import io.casehub.engine.planning.handler.PlanItemEscalationHandler;
+import io.casehub.engine.planning.handler.RequiresThresholdEvaluator;
 import io.casehub.engine.planning.handler.WorkerOutcomeResolvedHandler;
 import io.casehub.engine.planning.handler.WorkerRetryExhaustionHandler;
 import io.casehub.engine.planning.registry.BlackboardRegistry;
@@ -341,6 +342,22 @@ public class PlanningBeans {
   @ApplicationScoped
   CompoundCompletionEvaluator compoundCompletionEvaluator(EventDispatcher eventDispatcher) {
     return new CompoundCompletionEvaluator(eventDispatcher);
+  }
+
+  @Produces
+  @ApplicationScoped
+  RequiresThresholdEvaluator requiresThresholdEvaluator(
+      CompoundCompletionEvaluator compoundCompletionEvaluator,
+      Event<PlanItemStateChangedEvent> planItemStateChangedEvents) {
+    return new RequiresThresholdEvaluator(
+        compoundCompletionEvaluator, event -> planItemStateChangedEvents.fireAsync(event));
+  }
+
+  void onPlanItemStateChangedForRequires(
+      @jakarta.enterprise.event.ObservesAsync PlanItemStateChangedEvent event,
+      RequiresThresholdEvaluator evaluator,
+      BlackboardRegistry registry) {
+    registry.get(event.caseId()).ifPresent(plan -> evaluator.onPlanItemStateChanged(plan, event));
   }
 
   @Produces
