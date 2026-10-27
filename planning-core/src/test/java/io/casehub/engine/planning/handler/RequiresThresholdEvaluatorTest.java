@@ -210,6 +210,112 @@ class RequiresThresholdEvaluatorTest {
     verify(compoundEvaluator, never()).evaluate(any(), any(), any(), any());
   }
 
+  private void drainCascade() {
+    int guard = 0;
+    while (!firedEvents.isEmpty() && guard++ < 20) {
+      var pending = new ArrayList<>(firedEvents);
+      firedEvents.clear();
+      for (var event : pending) {
+        evaluator.onPlanItemStateChanged(plan, event);
+      }
+    }
+  }
+
+  @Test
+  void nestedRequiresFaultCascadesThroughTwoLevels() {
+    plan.registerRequiresMetadata(
+        "enrich-counterparty",
+        new BindingRequires(List.of("check-kyc", "check-sanctions"), 2, OnThresholdReached.KEEP));
+    plan.registerRequiresMetadata(
+        "settle-trade",
+        new BindingRequires(
+            List.of("enrich-counterparty", "enrich-instrument", "enrich-market-data"),
+            2,
+            OnThresholdReached.CANCEL));
+
+    PlanItem kyc = faultedItem("check-kyc");
+    PlanItem sanctions = faultedItem("check-sanctions");
+    PlanItem instrument = completedItem("enrich-instrument");
+    PlanItem marketData = runningItem("enrich-market-data");
+    plan.addPlanItem(kyc);
+    plan.addPlanItem(sanctions);
+    plan.addPlanItem(instrument);
+    plan.addPlanItem(marketData);
+
+    evaluator.onPlanItemStateChanged(plan, faultEvent("check-sanctions", sanctions.id()));
+    drainCascade();
+
+    var counterparty = plan.findPlanItemByBindingName("enrich-counterparty");
+    assertThat(counterparty).isPresent();
+    assertThat(counterparty.get().getStatus()).isEqualTo(TaskStatus.FAULTED);
+
+    var settle = plan.findPlanItemByBindingName("settle-trade");
+    assertThat(settle).isEmpty();
+  }
+
+  @Test
+  void nestedRequiresFaultCascadesFullyWhenOuterAlsoUnreachable() {
+    plan.registerRequiresMetadata(
+        "enrich-counterparty",
+        new BindingRequires(List.of("check-kyc", "check-sanctions"), 2, OnThresholdReached.KEEP));
+    plan.registerRequiresMetadata(
+        "settle-trade",
+        new BindingRequires(
+            List.of("enrich-counterparty", "enrich-instrument", "enrich-market-data"),
+            2,
+            OnThresholdReached.CANCEL));
+
+    PlanItem kyc = faultedItem("check-kyc");
+    PlanItem sanctions = faultedItem("check-sanctions");
+    PlanItem instrument = completedItem("enrich-instrument");
+    PlanItem marketData = faultedItem("enrich-market-data");
+    plan.addPlanItem(kyc);
+    plan.addPlanItem(sanctions);
+    plan.addPlanItem(instrument);
+    plan.addPlanItem(marketData);
+
+    evaluator.onPlanItemStateChanged(plan, faultEvent("check-sanctions", sanctions.id()));
+    drainCascade();
+
+    var counterparty = plan.findPlanItemByBindingName("enrich-counterparty");
+    assertThat(counterparty).isPresent();
+    assertThat(counterparty.get().getStatus()).isEqualTo(TaskStatus.FAULTED);
+
+    var settle = plan.findPlanItemByBindingName("settle-trade");
+    assertThat(settle).isPresent();
+    assertThat(settle.get().getStatus()).isEqualTo(TaskStatus.FAULTED);
+  }
+
+  @Test
+  void nestedRequiresHappyPathWithCancel() {
+    plan.registerRequiresMetadata(
+        "enrich-counterparty",
+        new BindingRequires(List.of("check-kyc", "check-sanctions"), 2, OnThresholdReached.KEEP));
+    plan.registerRequiresMetadata(
+        "settle-trade",
+        new BindingRequires(
+            List.of("enrich-counterparty", "enrich-instrument", "enrich-market-data"),
+            2,
+            OnThresholdReached.CANCEL));
+
+    PlanItem kyc = completedItem("check-kyc");
+    PlanItem sanctions = completedItem("check-sanctions");
+    PlanItem counterparty = completedItem("enrich-counterparty");
+    PlanItem instrument = completedItem("enrich-instrument");
+    PlanItem marketData = runningItem("enrich-market-data");
+    plan.addPlanItem(kyc);
+    plan.addPlanItem(sanctions);
+    plan.addPlanItem(counterparty);
+    plan.addPlanItem(instrument);
+    plan.addPlanItem(marketData);
+
+    evaluator.onPlanItemStateChanged(plan, completionEvent("enrich-instrument", instrument.id()));
+    drainCascade();
+
+    assertThat(marketData.getStatus()).isEqualTo(TaskStatus.CANCELLED);
+    assertThat(plan.isRequiresThresholdTriggered("settle-trade")).isTrue();
+  }
+
   @Test
   void cancelSkipsAlreadyTerminalItems() {
     plan.registerRequiresMetadata(
