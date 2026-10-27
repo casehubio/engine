@@ -25,6 +25,8 @@ import java.lang.annotation.Target;
 @Target(ElementType.METHOD)
 @Repeatable(Bindings.class)
 public @interface Bind {
+  String name() default "";
+
   String capability() default "";
 
   String contextChange() default "";
@@ -42,4 +44,6 @@ public @interface Bind {
   String conflictStrategy() default "";
 
   String[] producedKeys() default {};
+
+  Requires requires() default @Requires(bindings = {});
 }
