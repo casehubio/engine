@@ -17,10 +17,8 @@ package io.casehub.api.engine;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import io.casehub.api.context.CaseContext;
-import io.casehub.platform.api.expression.CompiledExpression;
 import io.casehub.platform.api.expression.ExpressionEvaluator;
 import java.util.List;
-import java.util.Map;
 import java.util.Optional;
 
 /**
@@ -33,12 +31,11 @@ import java.util.Optional;
  * @see io.casehub.api.model.evaluator.JQExpressionEvaluator
  * @see io.casehub.api.model.evaluator.LambdaExpressionEvaluator
  */
-public interface ExpressionEngine extends io.casehub.platform.api.expression.ExpressionEngine {
+public interface ExpressionEngine {
 
   /**
    * Returns the evaluator type this engine handles, matching {@link ExpressionEvaluator#type()}.
    */
-  @Override
   String type();
 
   /**
@@ -111,29 +108,10 @@ public interface ExpressionEngine extends io.casehub.platform.api.expression.Exp
    * io.casehub.engine.common.spi.ExpressionEngineRegistry#assertLanguageSupported} to distinguish
    * "no engine registered" from "engine registered but Java-DSL-only".
    */
-  @Override
   default boolean supportsStringCreation() {
     return false;
   }
 
-  @Override
-  default <C, R> CompiledExpression<C, R> compile(
-      final String expression, final Class<C> contextType, final Class<R> resultType) {
-    throw new UnsupportedOperationException(
-        "ExpressionEngine '" + type() + "' does not yet support typed compilation.");
-  }
-
-  @Override
-  default <C, R> CompiledExpression<C, R> compile(
-      final String expression,
-      final Class<C> contextType,
-      final Class<R> resultType,
-      final Map<String, Object> variables) {
-    throw new UnsupportedOperationException(
-        "ExpressionEngine '" + type() + "' does not yet support typed compilation.");
-  }
-
-  @Override
   default void validate(final String expression) {
     validate(create(expression));
   }

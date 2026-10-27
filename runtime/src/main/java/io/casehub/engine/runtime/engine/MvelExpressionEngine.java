@@ -151,21 +151,6 @@ public class MvelExpressionEngine implements ExpressionEngine {
   }
 
   @Override
-  public <C, R> CompiledExpression<C, R> compile(
-      final String expression, final Class<C> contextType, final Class<R> resultType) {
-    return platformMvel.compile(expression, contextType, resultType);
-  }
-
-  @Override
-  public <C, R> CompiledExpression<C, R> compile(
-      final String expression,
-      final Class<C> contextType,
-      final Class<R> resultType,
-      final Map<String, Object> variables) {
-    return platformMvel.compile(expression, contextType, resultType, variables);
-  }
-
-  @Override
   public void validate(final String expression) {
     platformMvel.validate(expression);
   }
