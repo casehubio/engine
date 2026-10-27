@@ -177,4 +177,17 @@ public interface CasePlanModel {
   default boolean hasAnyFaultedParticipant(String compoundId) {
     return false;
   }
+
+  default void registerRequiresMetadata(
+      String bindingName, io.casehub.api.model.BindingRequires requires) {}
+
+  default java.util.Map<String, io.casehub.api.model.BindingRequires> getRequiresMetadata() {
+    return java.util.Map.of();
+  }
+
+  default boolean isRequiresThresholdTriggered(String bindingName) {
+    return false;
+  }
+
+  default void markRequiresThresholdTriggered(String bindingName) {}
 }
