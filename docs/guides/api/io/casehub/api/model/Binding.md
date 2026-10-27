@@ -48,6 +48,8 @@
 
 ### `replanHint` (`io.casehub.api.model.ReplanHint`)
 
+### `requires` (`io.casehub.api.model.BindingRequires`)
+
 ### `sideEffectClassification` (`io.casehub.api.model.SideEffectClassification`)
 
 ### `target` (`io.casehub.api.model.BindingTarget`)
@@ -117,15 +119,27 @@ default. Overlaps within the same stage trigger a validation warning.
 
 ### `public io.casehub.api.model.ReplanHint getReplanHint()`
 
+### `public io.casehub.api.model.BindingRequires getRequires()`
+
 ### `public io.casehub.api.model.SideEffectClassification getSideEffectClassification()`
 
 ### `public ExpressionEvaluator getWhen()`
+
+### `private static boolean hasCycleInRequires(java.lang.String name, java.util.Map<java.lang.String,io.casehub.api.model.Binding> byName, java.util.Set<java.lang.String> visited)`
+
+#### Parameters
+
+- `name` (`java.lang.String`)
+- `byName` (`java.util.Map<java.lang.String,io.casehub.api.model.Binding>`)
+- `visited` (`java.util.Set<java.lang.String>`)
 
 ### `public boolean isCompensation()`
 
 ### `public io.casehub.api.model.LifecycleScope lifecycleScope()`
 
 ### `public io.casehub.api.model.Participation participation()`
+
+### `public io.casehub.api.model.BindingRequires requires()`
 
 ### `public void setCompensatedBy(java.lang.String compensatedBy)`
 
@@ -241,6 +255,12 @@ default. Overlaps within the same stage trigger a validation warning.
 
 - `replanHint` (`io.casehub.api.model.ReplanHint`)
 
+### `public void setRequires(io.casehub.api.model.BindingRequires requires)`
+
+#### Parameters
+
+- `requires` (`io.casehub.api.model.BindingRequires`)
+
 ### `public void setSideEffectClassification(io.casehub.api.model.SideEffectClassification sideEffectClassification)`
 
 #### Parameters
@@ -260,3 +280,10 @@ default. Overlaps within the same stage trigger a validation warning.
 #### Parameters
 
 - `bindings` (`java.util.List<io.casehub.api.model.Binding>`)
+
+### `public static java.util.List<java.lang.String> validateRequiresBindings(java.util.List<io.casehub.api.model.Binding> bindings, java.util.List<io.casehub.api.model.CompoundDeclaration> compounds)`
+
+#### Parameters
+
+- `bindings` (`java.util.List<io.casehub.api.model.Binding>`)
+- `compounds` (`java.util.List<io.casehub.api.model.CompoundDeclaration>`)

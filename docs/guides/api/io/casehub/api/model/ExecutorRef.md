@@ -9,6 +9,10 @@ Shared executor identity across all coordination models.
 <p>Implemented by engine's `Worker` (via adapter), blocks' `AgentRef` variants, and
 any future executor types.
 
+## Fields
+
+### `NONE` (`io.casehub.api.model.ExecutorRef`)
+
 ## Methods
 
 ### `public abstract java.lang.String description()`
