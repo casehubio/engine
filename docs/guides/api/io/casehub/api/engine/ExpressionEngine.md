@@ -12,23 +12,6 @@ to support new expression languages (e.g. Drools, SpEL) without modifying the ru
 
 ## Methods
 
-### `public default CompiledExpression<C,R> compile(java.lang.String expression, java.lang.Class<C> contextType, java.lang.Class<R> resultType)`
-
-#### Parameters
-
-- `expression` (`java.lang.String`)
-- `contextType` (`java.lang.Class<C>`)
-- `resultType` (`java.lang.Class<R>`)
-
-### `public default CompiledExpression<C,R> compile(java.lang.String expression, java.lang.Class<C> contextType, java.lang.Class<R> resultType, java.util.Map<java.lang.String,java.lang.Object> variables)`
-
-#### Parameters
-
-- `expression` (`java.lang.String`)
-- `contextType` (`java.lang.Class<C>`)
-- `resultType` (`java.lang.Class<R>`)
-- `variables` (`java.util.Map<java.lang.String,java.lang.Object>`)
-
 ### `public default ExpressionEvaluator create(java.lang.String expression)`
 
 Creates an `ExpressionEvaluator` from a raw expression string.
