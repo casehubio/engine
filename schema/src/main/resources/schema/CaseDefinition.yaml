@@ -29,6 +29,33 @@ $defs:
           type: number
           minimum: 0
           maximum: 1
+  BindingRequires:
+    type: object
+    unevaluatedProperties: false
+    required:
+    - bindings
+    - atLeast
+    properties:
+      bindings:
+        type: array
+        items:
+          type: string
+          minLength: 1
+        minItems: 2
+        description: Binding names to wait for.
+      atLeast:
+        type: integer
+        minimum: 1
+        description: Number of referenced bindings that must COMPLETE before this binding
+          becomes eligible.
+      onThresholdReached:
+        type: string
+        enum:
+        - KEEP
+        - CANCEL
+        default: KEEP
+        description: What happens to remaining referenced bindings once the threshold
+          is met.
   Binding:
     type: object
     properties:
@@ -143,6 +170,10 @@ $defs:
         - never
         description: "Hint for plan adaptation: always, conditional, or never."
         default: conditional
+      requires:
+        $ref: "#/$defs/BindingRequires"
+        description: Quorum prerequisite — binding is held until atLeast of the referenced
+          bindings have COMPLETED.
       exchangeProjection:
         oneOf:
         - type: string
