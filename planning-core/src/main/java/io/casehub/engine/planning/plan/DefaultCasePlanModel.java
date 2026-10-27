@@ -34,6 +34,10 @@ import org.jboss.logging.Logger;
  * casehubio/engine#84.
  */
 public class DefaultCasePlanModel implements CasePlanModel {
+  private final java.util.Map<String, io.casehub.api.model.BindingRequires> requiresMetadata =
+      new java.util.concurrent.ConcurrentHashMap<>();
+  private final java.util.Set<String> requiresThresholdTriggered =
+      java.util.concurrent.ConcurrentHashMap.newKeySet();
 
   private static final Logger LOG = Logger.getLogger(DefaultCasePlanModel.class);
 
@@ -471,5 +475,26 @@ public class DefaultCasePlanModel implements CasePlanModel {
       }
     }
     return false;
+  }
+
+  @Override
+  public void registerRequiresMetadata(
+      String bindingName, io.casehub.api.model.BindingRequires requires) {
+    requiresMetadata.put(bindingName, requires);
+  }
+
+  @Override
+  public java.util.Map<String, io.casehub.api.model.BindingRequires> getRequiresMetadata() {
+    return java.util.Collections.unmodifiableMap(requiresMetadata);
+  }
+
+  @Override
+  public boolean isRequiresThresholdTriggered(String bindingName) {
+    return requiresThresholdTriggered.contains(bindingName);
+  }
+
+  @Override
+  public void markRequiresThresholdTriggered(String bindingName) {
+    requiresThresholdTriggered.add(bindingName);
   }
 }
