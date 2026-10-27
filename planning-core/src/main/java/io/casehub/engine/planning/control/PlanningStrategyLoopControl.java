@@ -110,7 +110,9 @@ public class PlanningStrategyLoopControl implements LoopControl {
                             || activeScopedNames.contains(b.getName()))
                 .collect(Collectors.toList());
 
-    List<Binding> routed = applyImplementationRouting(ctx, gatedEligible);
+    List<Binding> requiresSatisfied = filterByRequires(gatedEligible, plan);
+
+    List<Binding> routed = applyImplementationRouting(ctx, requiresSatisfied);
 
     routed.forEach(
         binding -> {
@@ -296,5 +298,24 @@ public class PlanningStrategyLoopControl implements LoopControl {
       }
     }
     return resolved;
+  }
+
+  static List<Binding> filterByRequires(List<Binding> eligible, CasePlanModel plan) {
+    return eligible.stream().filter(b -> isRequiresSatisfied(b, plan)).toList();
+  }
+
+  static boolean isRequiresSatisfied(Binding binding, CasePlanModel plan) {
+    if (binding.getRequires() == null) {
+      return true;
+    }
+    io.casehub.api.model.BindingRequires req = binding.getRequires();
+    long completed =
+        req.bindings().stream()
+            .map(plan::findPlanItemByBindingName)
+            .filter(java.util.Optional::isPresent)
+            .map(java.util.Optional::get)
+            .filter(pi -> pi.getStatus() == io.casehub.api.model.TaskStatus.COMPLETED)
+            .count();
+    return completed >= req.atLeast();
   }
 }
