@@ -22,8 +22,10 @@ import io.casehub.api.engine.ExpressionEngine;
 import io.casehub.api.model.evaluator.JQExpressionEvaluator;
 import io.casehub.engine.common.internal.jq.JQEvaluator;
 import io.casehub.engine.common.internal.jq.ValidationResult;
+import io.casehub.platform.api.expression.CompiledExpression;
 import io.casehub.platform.api.expression.ExpressionEvaluator;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import net.thisptr.jackson.jq.JsonQuery;
 import net.thisptr.jackson.jq.Versions;
@@ -34,6 +36,8 @@ public class JQExpressionEngine implements ExpressionEngine {
   private static final Logger LOG = Logger.getLogger(JQExpressionEngine.class);
 
   private final JQEvaluator jqEvaluator;
+  private final io.casehub.platform.expression.JQExpressionEngine platformJQ =
+      new io.casehub.platform.expression.JQExpressionEngine();
 
   public JQExpressionEngine(JQEvaluator jqEvaluator) {
     this.jqEvaluator = jqEvaluator;
@@ -99,6 +103,21 @@ public class JQExpressionEngine implements ExpressionEngine {
   @Override
   public boolean supportsStringCreation() {
     return true;
+  }
+
+  @Override
+  public <C, R> CompiledExpression<C, R> compile(
+      final String expression, final Class<C> contextType, final Class<R> resultType) {
+    return platformJQ.compile(expression, contextType, resultType);
+  }
+
+  @Override
+  public <C, R> CompiledExpression<C, R> compile(
+      final String expression,
+      final Class<C> contextType,
+      final Class<R> resultType,
+      final Map<String, Object> variables) {
+    return platformJQ.compile(expression, contextType, resultType, variables);
   }
 
   @Override
