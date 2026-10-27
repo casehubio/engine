@@ -1328,9 +1328,15 @@ public final class YamlCaseDefinitionConverter {
     if (!yc.scopedBindings().isEmpty()) {
       yc.scopedBindings().forEach((k, v) -> scopedBindings.put(k, Participation.valueOf(v)));
     }
+    String resolvedSemantics = yc.completionSemantics();
+    if (yc.mofnRequired() != null) {
+      if (resolvedSemantics == null || "mofn".equalsIgnoreCase(resolvedSemantics)) {
+        resolvedSemantics = String.valueOf(yc.mofnRequired());
+      }
+    }
     return new CompoundDeclaration(
         yc.name(),
-        yc.completionSemantics(),
+        resolvedSemantics,
         yc.dispatchMode(),
         scopedBindings,
         yc.entryCondition(),

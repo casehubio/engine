@@ -294,6 +294,11 @@ $defs:
         type: boolean
       scopedBindings:
         $ref: "#/$defs/Map(String,Participation)"
+      mofnRequired:
+        type: integer
+        minimum: 1
+        description: Number of scoped bindings that must complete for MofN completion
+          semantics.
     unevaluatedProperties: false
   CompoundTask(JsonNode):
     type: object
