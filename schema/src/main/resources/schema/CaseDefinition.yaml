@@ -29,39 +29,17 @@ $defs:
           type: number
           minimum: 0
           maximum: 1
-  BindingRequires:
-    type: object
-    unevaluatedProperties: false
-    required:
-    - bindings
-    - atLeast
-    properties:
-      bindings:
-        type: array
-        items:
-          type: string
-          minLength: 1
-        minItems: 2
-        description: Binding names to wait for.
-      atLeast:
-        type: integer
-        minimum: 1
-        description: Number of referenced bindings that must COMPLETE before this binding
-          becomes eligible.
-      onThresholdReached:
-        type: string
-        enum:
-        - KEEP
-        - CANCEL
-        default: KEEP
-        description: What happens to remaining referenced bindings once the threshold
-          is met.
   Binding:
     type: object
     properties:
       compensatedBy:
         type: string
         description: Name of the binding to execute as compensation during saga reversal.
+      compensation:
+        type: boolean
+        description: Marks this binding as a compensating binding — excluded from
+          forward execution planning.
+        default: false
       compensationOrder:
         type: integer
         description: Explicit compensation ordering when topological sort is ambiguous.
@@ -80,16 +58,6 @@ $defs:
       contextWrite:
         type: object
         additionalProperties: true
-      compensatedBy:
-        type: string
-        description: Name of the binding to execute as compensation during saga reversal.
-      compensationOrder:
-        type: integer
-        description: Explicit compensation ordering when topological sort is ambiguous.
-      compensation:
-        type: boolean
-        description: Marks this binding as a compensating binding — excluded from forward execution planning.
-        default: false
       contingency:
         description: Alternative capability names activated on primary node failure.
         type: array
@@ -146,6 +114,8 @@ $defs:
       produces:
         type: string
         description: Output channel name for Exchange data flow.
+      requires:
+        $ref: "#/$defs/BindingRequires"
       when:
         $ref: "#/$defs/ExpressionOrOverride"
         description: Additional guard condition evaluated after the trigger fires.
@@ -170,10 +140,6 @@ $defs:
         - never
         description: "Hint for plan adaptation: always, conditional, or never."
         default: conditional
-      requires:
-        $ref: "#/$defs/BindingRequires"
-        description: Quorum prerequisite — binding is held until atLeast of the referenced
-          bindings have COMPLETED.
       exchangeProjection:
         oneOf:
         - type: string
@@ -200,6 +166,21 @@ $defs:
     unevaluatedProperties: false
     required:
     - "on"
+  BindingRequires:
+    type: object
+    properties:
+      atLeast:
+        type: integer
+      bindings:
+        type: array
+        items:
+          type: string
+      onThresholdReached:
+        type: string
+        enum:
+        - KEEP
+        - CANCEL
+    unevaluatedProperties: false
   BudgetConfig:
     type: object
     properties:
@@ -294,11 +275,6 @@ $defs:
         type: boolean
       scopedBindings:
         $ref: "#/$defs/Map(String,Participation)"
-      mofnRequired:
-        type: integer
-        minimum: 1
-        description: Number of scoped bindings that must complete for MofN completion
-          semantics.
     unevaluatedProperties: false
   CompoundTask(JsonNode):
     type: object
@@ -1684,6 +1660,34 @@ $defs:
         - none
       tokenConfigKey:
         type: string
+  OllamaModel:
+    type: object
+    unevaluatedProperties: false
+    required:
+    - baseUrl
+    - modelName
+    properties:
+      baseUrl:
+        type: string
+      modelName:
+        type: string
+      temperature:
+        oneOf:
+        - type: number
+          minimum: 0.0
+          maximum: 2.0
+        - type: string
+      maxTokens:
+        oneOf:
+        - type: integer
+        - type: string
+      topP:
+        type: number
+        minimum: 0.0
+        maximum: 1.0
+      topK:
+        type: integer
+        minimum: 1
   AnthropicModel:
     type: object
     unevaluatedProperties: false
@@ -1804,34 +1808,6 @@ $defs:
         maximum: 1.0
       baseUrl:
         type: string
-  OllamaModel:
-    type: object
-    unevaluatedProperties: false
-    required:
-    - baseUrl
-    - modelName
-    properties:
-      baseUrl:
-        type: string
-      modelName:
-        type: string
-      temperature:
-        oneOf:
-        - type: number
-          minimum: 0.0
-          maximum: 2.0
-        - type: string
-      maxTokens:
-        oneOf:
-        - type: integer
-        - type: string
-      topP:
-        type: number
-        minimum: 0.0
-        maximum: 1.0
-      topK:
-        type: integer
-        minimum: 1
 type: object
 properties:
   contextType:
