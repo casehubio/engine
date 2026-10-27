@@ -48,8 +48,8 @@ import io.casehub.engine.planning.handler.CompoundCompletionEvaluator;
 import io.casehub.engine.planning.handler.JudgmentPlanItemHandler;
 import io.casehub.engine.planning.handler.PlanItemCompletionHandler;
 import io.casehub.engine.planning.handler.PlanItemEscalationHandler;
-import io.casehub.engine.planning.handler.WorkerOutcomeResolvedHandler;
 import io.casehub.engine.planning.handler.RequiresThresholdEvaluator;
+import io.casehub.engine.planning.handler.WorkerOutcomeResolvedHandler;
 import io.casehub.engine.planning.handler.WorkerRetryExhaustionHandler;
 import io.casehub.engine.planning.registry.BlackboardRegistry;
 import io.casehub.engine.planning.subcase.SubCaseCompletionService;
@@ -59,14 +59,13 @@ import io.casehub.engine.runtime.routing.GoalAbandonmentEvaluator;
 import io.casehub.engine.runtime.work.CaseResumptionService;
 import io.casehub.platform.agent.AgentProvider;
 import io.casehub.platform.api.routing.StrategyResolver;
+import java.util.List;
+import java.util.Optional;
+import java.util.stream.Collectors;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.autoconfigure.AutoConfiguration;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.context.annotation.Bean;
-
-import java.util.List;
-import java.util.Optional;
-import java.util.stream.Collectors;
 
 @AutoConfiguration
 public class PlanningManualConfig {
@@ -272,15 +271,14 @@ public class PlanningManualConfig {
         deeperDecompositionHandler);
   }
 
-    @Bean
-    public RequiresThresholdEvaluator requiresThresholdEvaluator(
-            CompoundCompletionEvaluator compoundCompletionEvaluator,
-            ApplicationEventPublisher publisher) {
-        return new RequiresThresholdEvaluator(compoundCompletionEvaluator, publisher::publishEvent);
-    }
+  @Bean
+  public RequiresThresholdEvaluator requiresThresholdEvaluator(
+      CompoundCompletionEvaluator compoundCompletionEvaluator,
+      ApplicationEventPublisher publisher) {
+    return new RequiresThresholdEvaluator(compoundCompletionEvaluator, publisher::publishEvent);
+  }
 
-
-    // ── subcase (Event<T> → ApplicationEventPublisher) ──
+  // ── subcase (Event<T> → ApplicationEventPublisher) ──
 
   @Bean
   public SubCaseCompletionService subCaseCompletionService(

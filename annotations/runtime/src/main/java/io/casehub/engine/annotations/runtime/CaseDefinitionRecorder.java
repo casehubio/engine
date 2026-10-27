@@ -159,8 +159,11 @@ public class CaseDefinitionRecorder {
       if (bd.producedKeys() != null && !bd.producedKeys().isEmpty()) {
         bindingBuilder.producedKeys(new HashSet<>(bd.producedKeys()));
       }
+      if (bd.requires() != null) {
+        bindingBuilder.requires(bd.requires());
+      }
 
-      WorkerDescriptor wd = workerByName.get(bd.name());
+      WorkerDescriptor wd = workerByName.get(bd.methodName());
       if (wd != null) {
         if (wd.scope() != null && !"BINDING".equals(wd.scope())) {
           bindingBuilder.lifecycleScope(LifecycleScope.valueOf(wd.scope()));

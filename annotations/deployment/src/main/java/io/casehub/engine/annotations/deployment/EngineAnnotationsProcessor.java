@@ -513,7 +513,15 @@ public class EngineAnnotationsProcessor {
     } else if (planning == PlanningMode.GOAP || planning == PlanningMode.ADAPTIVE) {
       bindings.add(
           new BindingDescriptor(
-              method.name(), capabilityName, "contextChange", "true", null, null, null));
+              method.name(),
+              method.name(),
+              capabilityName,
+              "contextChange",
+              "true",
+              null,
+              null,
+              null,
+              null));
     }
 
     if (planning == PlanningMode.GOAP || planning == PlanningMode.ADAPTIVE) {
@@ -531,6 +539,11 @@ public class EngineAnnotationsProcessor {
 
   private BindingDescriptor processBindAnnotation(
       MethodInfo method, AnnotationInstance bindAnn, String capabilityName, IndexView index) {
+
+    String bindingName = stringValueOrDefault(bindAnn, index, "name", "");
+    if (bindingName.isEmpty()) {
+      bindingName = method.name();
+    }
 
     String contextChange = stringValueOrDefault(bindAnn, index, "contextChange", "");
     String cron = stringValueOrDefault(bindAnn, index, "cron", "");
@@ -561,14 +574,38 @@ public class EngineAnnotationsProcessor {
     java.util.List<String> producedKeys =
         producedKeysArr.length > 0 ? java.util.List.of(producedKeysArr) : null;
 
+    io.casehub.api.model.BindingRequires requires = null;
+    AnnotationValue requiresValue = bindAnn.value("requires");
+    if (requiresValue != null) {
+      AnnotationInstance reqAnn = requiresValue.asNested();
+      AnnotationValue bindingsValue = reqAnn.value("bindings");
+      if (bindingsValue != null) {
+        String[] reqBindings = bindingsValue.asStringArray();
+        if (reqBindings.length >= 2) {
+          int atLeast = intValueOrDefault(reqAnn, index, "atLeast", 0);
+          if (atLeast == 0) {
+            atLeast = reqBindings.length;
+          }
+          String onThreshold = stringValueOrDefault(reqAnn, index, "onThresholdReached", "KEEP");
+          requires =
+              new io.casehub.api.model.BindingRequires(
+                  java.util.List.of(reqBindings),
+                  atLeast,
+                  io.casehub.api.model.OnThresholdReached.valueOf(onThreshold));
+        }
+      }
+    }
+
     return new BindingDescriptor(
+        bindingName,
         method.name(),
         capabilityName,
         triggerType,
         triggerValue,
         when.isEmpty() ? null : when,
         conflictStrategy.isEmpty() ? null : conflictStrategy,
-        producedKeys);
+        producedKeys,
+        requires);
   }
 
   private void processGoalMethod(

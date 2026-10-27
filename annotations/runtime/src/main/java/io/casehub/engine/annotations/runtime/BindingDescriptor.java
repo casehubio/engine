@@ -17,9 +17,11 @@ package io.casehub.engine.annotations.runtime;
 
 public record BindingDescriptor(
     String name,
+    String methodName,
     String capabilityName,
     String triggerType,
     String triggerValue,
     String when,
     String conflictStrategy,
-    java.util.List<String> producedKeys) {}
+    java.util.List<String> producedKeys,
+    io.casehub.api.model.BindingRequires requires) {}
