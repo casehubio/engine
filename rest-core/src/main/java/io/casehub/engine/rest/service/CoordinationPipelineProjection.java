@@ -89,6 +89,8 @@ public class CoordinationPipelineProjection {
 
   private PhaseItemView stepPhase(Binding b) {
     CoordinationStepView step = bindingToStep(b);
+    Integer required = b.getRequires() != null ? b.getRequires().atLeast() : null;
+    Integer of = b.getRequires() != null ? b.getRequires().bindings().size() : null;
     return new PhaseItemView(
         "step",
         step.action(),
@@ -99,8 +101,8 @@ public class CoordinationPipelineProjection {
         step.params(),
         null,
         null,
-        null,
-        null,
+        required,
+        of,
         null);
   }
 
