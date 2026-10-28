@@ -28,17 +28,18 @@ import java.util.concurrent.locks.ReentrantLock;
 public class QuiescenceTracker {
 
   private final ConcurrentHashMap<UUID, QuiescenceState> trackers = new ConcurrentHashMap<>();
+  private final ConcurrentHashMap.KeySetView<UUID, Boolean> resolvedBeforeWaiter =
+      ConcurrentHashMap.newKeySet();
 
   public CompletableFuture<Void> register(UUID caseId) {
+    if (resolvedBeforeWaiter.remove(caseId)) {
+      return CompletableFuture.completedFuture(null);
+    }
     QuiescenceState state = trackers.computeIfAbsent(caseId, k -> new QuiescenceState());
     state.lock.lock();
     try {
       if (state.future == null) {
         state.future = new CompletableFuture<>();
-      }
-      if (state.resolvedWithoutWaiter) {
-        state.future.complete(null);
-        trackers.remove(caseId);
       }
       return state.future;
     } finally {
@@ -137,7 +138,8 @@ public class QuiescenceTracker {
           state.future.complete(null);
           trackers.remove(caseId);
         } else if (quiescent && state.future == null) {
-          state.resolvedWithoutWaiter = true;
+          trackers.remove(caseId);
+          resolvedBeforeWaiter.add(caseId);
         }
       } finally {
         state.lock.unlock();
@@ -158,7 +160,6 @@ public class QuiescenceTracker {
     final AtomicInteger pendingContextChanges = new AtomicInteger(0);
     final AtomicInteger drainCount = new AtomicInteger(0);
     boolean evaluationInProgress;
-    boolean resolvedWithoutWaiter;
     volatile CompletableFuture<Void> future;
   }
 }
