@@ -46,19 +46,22 @@ public class RestServiceBeans {
   @Inject EventLogRepository eventLogRepository;
   @Inject CasePlanModelSnapshotProvider planModelProvider;
   @Inject ExecutionSnapshotStore snapshotStore;
+  @Inject
+          io.casehub.engine.common.spi.SubCaseGroupRepository subCaseGroupRepository;
 
-  @Produces
+
+    @Produces
   @ApplicationScoped
   public CaseService caseService() {
     return new CaseService(
-        accessControlProvider,
-        currentPrincipal,
-        definitionRegistry,
-        runtime,
-        instanceRepository,
-        expressionEngineRegistry,
-        planItemStore,
-        objectMapper);
+            accessControlProvider,
+            currentPrincipal,
+            definitionRegistry,
+            runtime,
+            instanceRepository,
+            expressionEngineRegistry,
+            planItemStore,
+            objectMapper, subCaseGroupRepository);
   }
 
   @Produces

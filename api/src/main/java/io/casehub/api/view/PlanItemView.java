@@ -18,4 +18,11 @@ package io.casehub.api.view;
 import io.casehub.api.model.TaskStatus;
 import java.util.UUID;
 
-public record PlanItemView(UUID id, String name, TaskStatus status, String type, UUID parentId) {}
+public record PlanItemView(
+    UUID id,
+    String name,
+    TaskStatus status,
+    String type,
+    UUID parentId,
+    String capabilityName,
+    java.util.List<UUID> subCaseIds) {}

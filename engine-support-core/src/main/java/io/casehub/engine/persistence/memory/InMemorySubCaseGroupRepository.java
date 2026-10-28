@@ -18,6 +18,7 @@ package io.casehub.engine.persistence.memory;
 import io.casehub.api.model.OnThresholdReached;
 import io.casehub.engine.common.internal.model.SubCaseGroup;
 import io.casehub.engine.common.spi.SubCaseGroupRepository;
+import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
@@ -42,7 +43,8 @@ public class InMemorySubCaseGroupRepository implements SubCaseGroupRepository {
       int totalInGroup,
       int requiredCount,
       OnThresholdReached onThresholdReached,
-      String tenancyId) {
+      String tenancyId,
+      String bindingName) {
     String k = key(parentCaseId, groupId);
     return groups.computeIfAbsent(
         k,
@@ -54,6 +56,7 @@ public class InMemorySubCaseGroupRepository implements SubCaseGroupRepository {
           ng.setRequiredCount(requiredCount);
           ng.setOnThresholdReached(
               onThresholdReached != null ? onThresholdReached : OnThresholdReached.KEEP);
+          ng.setBindingName(bindingName);
           return ng;
         });
   }
@@ -117,5 +120,10 @@ public class InMemorySubCaseGroupRepository implements SubCaseGroupRepository {
       return Optional.empty();
     }
     return Optional.ofNullable(groups.get(k));
+  }
+
+  @Override
+  public List<SubCaseGroup> findAllByParentCaseId(UUID parentCaseId, String tenancyId) {
+    return groups.values().stream().filter(g -> g.getParentCaseId().equals(parentCaseId)).toList();
   }
 }

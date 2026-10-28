@@ -30,6 +30,7 @@ public class SubCaseGroup {
   private boolean policyTriggered;
   private OnThresholdReached onThresholdReached;
   private final Set<UUID> childCaseIds = new HashSet<>();
+  private String bindingName;
 
   public UUID getParentCaseId() {
     return parentCaseId;
@@ -105,5 +106,13 @@ public class SubCaseGroup {
 
   public void addAllChildCaseIds(Set<UUID> ids) {
     childCaseIds.addAll(ids);
+  }
+
+  public String getBindingName() {
+    return bindingName;
+  }
+
+  public void setBindingName(String v) {
+    bindingName = v;
   }
 }

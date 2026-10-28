@@ -17,6 +17,7 @@ package io.casehub.engine.common.spi;
 
 import io.casehub.api.model.OnThresholdReached;
 import io.casehub.engine.common.internal.model.SubCaseGroup;
+import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -33,7 +34,8 @@ public interface SubCaseGroupRepository {
       int totalInGroup,
       int requiredCount,
       OnThresholdReached onThresholdReached,
-      String tenancyId);
+      String tenancyId,
+      String bindingName);
 
   SubCaseGroup registerChild(UUID parentCaseId, String groupId, UUID childCaseId, String tenancyId);
 
@@ -45,4 +47,6 @@ public interface SubCaseGroupRepository {
   boolean markPolicyTriggered(UUID parentCaseId, String groupId, String tenancyId);
 
   Optional<SubCaseGroup> findByChildCaseId(UUID childCaseId, String tenancyId);
+
+  List<SubCaseGroup> findAllByParentCaseId(UUID parentCaseId, String tenancyId);
 }

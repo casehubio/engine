@@ -44,7 +44,8 @@ class SpringJpaSubCaseGroupRepository implements SubCaseGroupRepository {
       int totalInGroup,
       int requiredCount,
       OnThresholdReached onThresholdReached,
-      String tenancyId) {
+      String tenancyId,
+      String bindingName) {
     tcm.setTenantContext(tenancyId);
     List<SubCaseGroupEntity> existing =
         em.createQuery(
@@ -66,6 +67,7 @@ class SpringJpaSubCaseGroupRepository implements SubCaseGroupRepository {
     e.requiredCount = requiredCount;
     e.onThresholdReached =
         onThresholdReached != null ? onThresholdReached : OnThresholdReached.KEEP;
+    e.bindingName = bindingName;
     em.persist(e);
     em.flush();
     return toDomain(e);
@@ -181,6 +183,21 @@ class SpringJpaSubCaseGroupRepository implements SubCaseGroupRepository {
     return results.isEmpty() ? Optional.empty() : Optional.of(toDomain(results.get(0)));
   }
 
+  @Override
+  public List<SubCaseGroup> findAllByParentCaseId(UUID parentCaseId, String tenancyId) {
+    tcm.setTenantContext(tenancyId);
+    return em
+        .createQuery(
+            "SELECT g FROM SubCaseGroupEntity g WHERE g.parentCaseId = :pid AND g.tenancyId = :tid",
+            SubCaseGroupEntity.class)
+        .setParameter("pid", parentCaseId)
+        .setParameter("tid", tenancyId)
+        .getResultList()
+        .stream()
+        .map(this::toDomain)
+        .toList();
+  }
+
   private SubCaseGroup toDomain(SubCaseGroupEntity e) {
     SubCaseGroup g = new SubCaseGroup();
     g.setParentCaseId(e.parentCaseId);
@@ -191,6 +208,7 @@ class SpringJpaSubCaseGroupRepository implements SubCaseGroupRepository {
     g.setRejectedCount(e.rejectedCount);
     g.setPolicyTriggered(e.policyTriggered);
     g.setOnThresholdReached(e.onThresholdReached);
+    g.setBindingName(e.bindingName);
     if (e.childCaseIds != null) {
       g.addAllChildCaseIds(e.childCaseIds);
     }

@@ -78,7 +78,7 @@ class SubCaseExecutionHandlerTest {
 
     // SubCaseGroupRepository: stub grouped path methods
     SubCaseGroup stubGroup = mock(SubCaseGroup.class);
-    when(subCaseGroupRepository.getOrCreate(any(), any(), anyInt(), anyInt(), any(), any()))
+    when(subCaseGroupRepository.getOrCreate(any(), any(), anyInt(), anyInt(), any(), any(), null))
         .thenReturn(stubGroup);
     when(subCaseGroupRepository.registerChild(any(), any(), any(), any())).thenReturn(stubGroup);
 

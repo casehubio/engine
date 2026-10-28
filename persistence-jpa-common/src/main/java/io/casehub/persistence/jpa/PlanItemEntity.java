@@ -88,4 +88,7 @@ public class PlanItemEntity {
 
   @Column(name = "activation_context", columnDefinition = "text")
   public String activationContext;
+
+  @Column(name = "capability_name", length = 255)
+  public String capabilityName;
 }

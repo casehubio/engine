@@ -38,7 +38,8 @@ public record PlanItemSaveRequest(
     boolean repeatable,
     String parentCompoundId,
     String lifecycleScope,
-    com.fasterxml.jackson.databind.JsonNode activationContext) {
+    com.fasterxml.jackson.databind.JsonNode activationContext,
+    String capabilityName) {
 
   public static PlanItemSaveRequest primitive(
       UUID caseId,
@@ -69,6 +70,7 @@ public record PlanItemSaveRequest(
         null,
         null,
         false,
+        null,
         null,
         null,
         null);

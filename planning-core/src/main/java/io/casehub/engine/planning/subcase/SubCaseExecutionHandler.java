@@ -217,7 +217,8 @@ public class SubCaseExecutionHandler {
         subCase.totalInGroup(),
         subCase.requiredCount(),
         subCase.onThresholdReached(),
-        parent.tenancyId);
+        parent.tenancyId,
+        null);
     subCaseGroupRepository.registerChild(parent.getUuid(), groupId, childCaseId, parent.tenancyId);
 
     EventLog log = new EventLog();

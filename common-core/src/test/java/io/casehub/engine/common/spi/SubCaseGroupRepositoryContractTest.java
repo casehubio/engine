@@ -34,7 +34,8 @@ public abstract class SubCaseGroupRepositoryContractTest {
   @Test
   void getOrCreate_createsNewGroup() {
     SubCaseGroup group =
-        repository().getOrCreate(parentCaseId, "g1", 3, 2, OnThresholdReached.KEEP, tenancyId());
+        repository()
+            .getOrCreate(parentCaseId, "g1", 3, 2, OnThresholdReached.KEEP, tenancyId(), null);
 
     assertThat(group.getParentCaseId()).isEqualTo(parentCaseId);
     assertThat(group.getGroupId()).isEqualTo("g1");
@@ -47,9 +48,10 @@ public abstract class SubCaseGroupRepositoryContractTest {
 
   @Test
   void getOrCreate_returnsExistingGroup() {
-    repository().getOrCreate(parentCaseId, "g1", 3, 2, OnThresholdReached.KEEP, tenancyId());
+    repository().getOrCreate(parentCaseId, "g1", 3, 2, OnThresholdReached.KEEP, tenancyId(), null);
     SubCaseGroup second =
-        repository().getOrCreate(parentCaseId, "g1", 5, 4, OnThresholdReached.CANCEL, tenancyId());
+        repository()
+            .getOrCreate(parentCaseId, "g1", 5, 4, OnThresholdReached.CANCEL, tenancyId(), null);
 
     assertThat(second.getInstanceCount()).isEqualTo(3);
     assertThat(second.getRequiredCount()).isEqualTo(2);
@@ -57,7 +59,7 @@ public abstract class SubCaseGroupRepositoryContractTest {
 
   @Test
   void registerChild_addsChildToGroup() {
-    repository().getOrCreate(parentCaseId, "g1", 3, 2, OnThresholdReached.KEEP, tenancyId());
+    repository().getOrCreate(parentCaseId, "g1", 3, 2, OnThresholdReached.KEEP, tenancyId(), null);
     UUID childId = UUID.randomUUID();
 
     SubCaseGroup group = repository().registerChild(parentCaseId, "g1", childId, tenancyId());
@@ -76,7 +78,7 @@ public abstract class SubCaseGroupRepositoryContractTest {
 
   @Test
   void incrementCompleted_incrementsCount() {
-    repository().getOrCreate(parentCaseId, "g1", 3, 2, OnThresholdReached.KEEP, tenancyId());
+    repository().getOrCreate(parentCaseId, "g1", 3, 2, OnThresholdReached.KEEP, tenancyId(), null);
 
     repository().incrementCompleted(parentCaseId, "g1", tenancyId());
     SubCaseGroup group = repository().incrementCompleted(parentCaseId, "g1", tenancyId());
@@ -86,7 +88,7 @@ public abstract class SubCaseGroupRepositoryContractTest {
 
   @Test
   void incrementRejected_incrementsCount() {
-    repository().getOrCreate(parentCaseId, "g1", 3, 2, OnThresholdReached.KEEP, tenancyId());
+    repository().getOrCreate(parentCaseId, "g1", 3, 2, OnThresholdReached.KEEP, tenancyId(), null);
 
     SubCaseGroup group = repository().incrementRejected(parentCaseId, "g1", tenancyId());
 
@@ -95,14 +97,14 @@ public abstract class SubCaseGroupRepositoryContractTest {
 
   @Test
   void markPolicyTriggered_returnsTrueFirstTime() {
-    repository().getOrCreate(parentCaseId, "g1", 3, 2, OnThresholdReached.KEEP, tenancyId());
+    repository().getOrCreate(parentCaseId, "g1", 3, 2, OnThresholdReached.KEEP, tenancyId(), null);
 
     assertThat(repository().markPolicyTriggered(parentCaseId, "g1", tenancyId())).isTrue();
   }
 
   @Test
   void markPolicyTriggered_returnsFalseSecondTime() {
-    repository().getOrCreate(parentCaseId, "g1", 3, 2, OnThresholdReached.KEEP, tenancyId());
+    repository().getOrCreate(parentCaseId, "g1", 3, 2, OnThresholdReached.KEEP, tenancyId(), null);
 
     repository().markPolicyTriggered(parentCaseId, "g1", tenancyId());
     assertThat(repository().markPolicyTriggered(parentCaseId, "g1", tenancyId())).isFalse();
@@ -116,7 +118,7 @@ public abstract class SubCaseGroupRepositoryContractTest {
 
   @Test
   void findByChildCaseId_findsRegisteredChild() {
-    repository().getOrCreate(parentCaseId, "g1", 3, 2, OnThresholdReached.KEEP, tenancyId());
+    repository().getOrCreate(parentCaseId, "g1", 3, 2, OnThresholdReached.KEEP, tenancyId(), null);
     UUID childId = UUID.randomUUID();
     repository().registerChild(parentCaseId, "g1", childId, tenancyId());
 

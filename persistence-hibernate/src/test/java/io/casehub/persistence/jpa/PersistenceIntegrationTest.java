@@ -163,7 +163,7 @@ class PersistenceIntegrationTest {
     run(
         () ->
             subCaseGroupRepository.getOrCreate(
-                parentCaseId, groupId, 3, 2, OnThresholdReached.KEEP, "test-tenant"));
+                parentCaseId, groupId, 3, 2, OnThresholdReached.KEEP, "test-tenant", null));
 
     SubCaseGroup group =
         run(
@@ -191,7 +191,7 @@ class PersistenceIntegrationTest {
         run(
             () ->
                 subCaseGroupRepository.getOrCreate(
-                    parentCaseId, groupId, 3, 2, OnThresholdReached.KEEP, "test-tenant"));
+                    parentCaseId, groupId, 3, 2, OnThresholdReached.KEEP, "test-tenant", null));
     run(
         () ->
             subCaseGroupRepository.registerChild(
@@ -213,7 +213,7 @@ class PersistenceIntegrationTest {
     run(
         () ->
             subCaseGroupRepository.getOrCreate(
-                parentCaseId, groupId, 3, 2, OnThresholdReached.KEEP, "test-tenant"));
+                parentCaseId, groupId, 3, 2, OnThresholdReached.KEEP, "test-tenant", null));
 
     UUID child1 = UUID.randomUUID();
     UUID child2 = UUID.randomUUID();
@@ -235,7 +235,7 @@ class PersistenceIntegrationTest {
     run(
         () ->
             subCaseGroupRepository.getOrCreate(
-                parentCaseId, groupId, 3, 2, OnThresholdReached.KEEP, "test-tenant"));
+                parentCaseId, groupId, 3, 2, OnThresholdReached.KEEP, "test-tenant", null));
 
     SubCaseGroup group =
         run(() -> subCaseGroupRepository.incrementCompleted(parentCaseId, groupId, "test-tenant"));
@@ -252,7 +252,7 @@ class PersistenceIntegrationTest {
     run(
         () ->
             subCaseGroupRepository.getOrCreate(
-                parentCaseId, groupId, 3, 2, OnThresholdReached.KEEP, "test-tenant"));
+                parentCaseId, groupId, 3, 2, OnThresholdReached.KEEP, "test-tenant", null));
 
     SubCaseGroup group =
         run(() -> subCaseGroupRepository.incrementRejected(parentCaseId, groupId, "test-tenant"));
@@ -265,7 +265,7 @@ class PersistenceIntegrationTest {
     run(
         () ->
             subCaseGroupRepository.getOrCreate(
-                parentCaseId, groupId, 3, 2, OnThresholdReached.KEEP, "test-tenant"));
+                parentCaseId, groupId, 3, 2, OnThresholdReached.KEEP, "test-tenant", null));
 
     boolean firstMark =
         run(() -> subCaseGroupRepository.markPolicyTriggered(parentCaseId, groupId, "test-tenant"));
@@ -296,7 +296,13 @@ class PersistenceIntegrationTest {
     run(
         () ->
             subCaseGroupRepository.getOrCreate(
-                parentInstance.getUuid(), groupId, 2, 2, OnThresholdReached.CANCEL, "test-tenant"));
+                parentInstance.getUuid(),
+                groupId,
+                2,
+                2,
+                OnThresholdReached.CANCEL,
+                "test-tenant",
+                null));
 
     // Create child cases
     CaseInstance child1 = newInstance(CaseStatus.RUNNING);
