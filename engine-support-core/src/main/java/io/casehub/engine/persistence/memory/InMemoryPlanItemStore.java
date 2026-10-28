@@ -64,7 +64,8 @@ public class InMemoryPlanItemStore
             request.parentCompoundId(),
             request.lifecycleScope(),
             request.activationContext(),
-            null));
+            null,
+            request.capabilityName()));
   }
 
   @Override
@@ -93,7 +94,8 @@ public class InMemoryPlanItemStore
                 r.parentCompoundId(),
                 r.lifecycleScope(),
                 r.activationContext(),
-                r.variantId()));
+                r.variantId(),
+                r.capabilityName()));
   }
 
   @Override

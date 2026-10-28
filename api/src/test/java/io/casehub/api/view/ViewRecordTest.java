@@ -106,7 +106,7 @@ class ViewRecordTest {
   void planItemView_holdsFields() {
     var id = UUID.randomUUID();
     var parentId = UUID.randomUUID();
-    var view = new PlanItemView(id, "step1", TaskStatus.PENDING, "WORKER", parentId);
+    var view = new PlanItemView(id, "step1", TaskStatus.PENDING, "WORKER", parentId, null, null);
     assertEquals("step1", view.name());
     assertEquals(TaskStatus.PENDING, view.status());
     assertEquals(parentId, view.parentId());

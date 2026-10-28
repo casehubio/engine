@@ -50,14 +50,15 @@ import io.casehub.platform.api.acl.AccessDeniedException;
 import io.casehub.platform.api.acl.AclAction;
 import io.casehub.platform.api.acl.ResourceId;
 import io.casehub.platform.api.identity.CurrentPrincipal;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 public class CaseService {
 
@@ -230,14 +231,16 @@ public class CaseService {
         instance.getActorId());
   }
 
-  public PlanItemView mapPlanItem(PlanItemRecord record) {
-    return new PlanItemView(
-        UUID.fromString(record.planItemId()),
-        record.bindingName(),
-        record.status(),
-        record.targetType().name().toLowerCase().replace('_', '-'),
-        record.parentCompoundId() != null ? UUID.fromString(record.parentCompoundId()) : null);
-  }
+    public PlanItemView mapPlanItem(PlanItemRecord record) {
+        return new PlanItemView(
+                UUID.fromString(record.planItemId()),
+                record.bindingName(),
+                record.status(),
+                record.targetType().name().toLowerCase().replace('_', '-'),
+                record.parentCompoundId() != null ? UUID.fromString(record.parentCompoundId()) : null,
+                null,
+                null);
+    }
 
   public GoalEvaluationView evaluateGoals(UUID caseId, String tenancyId) {
     CaseInstance instance = requireCaseAccess(caseId, AclAction.READ);

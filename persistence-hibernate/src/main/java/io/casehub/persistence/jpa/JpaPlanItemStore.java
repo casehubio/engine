@@ -64,6 +64,7 @@ public class JpaPlanItemStore implements PlanItemStore, CrossTenantPlanItemStore
     e.lifecycleScope = request.lifecycleScope();
     e.activationContext =
         request.activationContext() != null ? request.activationContext().toString() : null;
+    e.capabilityName = request.capabilityName();
     em.persist(e);
   }
 
@@ -172,7 +173,8 @@ public class JpaPlanItemStore implements PlanItemStore, CrossTenantPlanItemStore
         null,
         e.lifecycleScope,
         parseJsonNode(e.activationContext),
-        null);
+        null,
+        e.capabilityName);
   }
 
   private static com.fasterxml.jackson.databind.JsonNode parseJsonNode(String json) {

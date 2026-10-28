@@ -79,4 +79,7 @@ public class SubCaseGroupEntity {
 
   @Column(name = "tenancy_id", nullable = false, length = 64)
   public String tenancyId;
+
+  @Column(name = "binding_name", length = 255)
+  public String bindingName;
 }
