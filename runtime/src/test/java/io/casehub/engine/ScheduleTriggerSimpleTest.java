@@ -87,12 +87,8 @@ class ScheduleTriggerSimpleTest {
   void cronTriggerExecutesWorker() {
     cronBean.startCase(Map.of("started", true));
 
-    // Should NOT execute immediately
-    assertThat(CronTriggerTestBean.executionCount.get()).isEqualTo(0);
-
-    // Wait for first execution (cron runs every 2 seconds: "*/2 * * * * ?")
-    // Note: worker deduplication prevents repeated execution of the same worker
-    // Testing periodic execution would require different workers or idempotency keys
+    // Cron "*/2 * * * * ?" may fire immediately if startCase returns near an
+    // even-second boundary — no pre-condition assertion on count == 0.
     await()
         .atMost(5, TimeUnit.SECONDS)
         .pollInterval(100, TimeUnit.MILLISECONDS)

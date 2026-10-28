@@ -53,6 +53,7 @@ class QuiescenceIntegrationTest {
   @Inject ThreeStepQuiescenceBean threeStepBean;
   @Inject SlowWorkerBean slowWorkerBean;
   @Inject SingleWorkerBean singleWorkerBean;
+  @Inject TwoSignalBean twoSignalBean;
 
   @Test
   void awaitQuiescence_waitsForCascadingWorkers() {
@@ -100,15 +101,15 @@ class QuiescenceIntegrationTest {
 
   @Test
   void awaitQuiescence_calledTwiceAfterSeparateSignals() {
-    UUID caseId = singleWorkerBean.startCase(Map.of());
+    UUID caseId = twoSignalBean.startCase(Map.of());
 
-    runtime.signal(caseId, Map.of("trigger", "go"));
+    runtime.signal(caseId, Map.of("trigger1", "go"));
     CaseContext ctx1 = runtime.awaitQuiescence(caseId, Duration.ofSeconds(15));
-    assertThat(ctx1.get("result")).isEqualTo("done");
+    assertThat(ctx1.get("result1")).isEqualTo("done");
 
     runtime.signal(caseId, Map.of("trigger2", "go"));
     CaseContext ctx2 = runtime.awaitQuiescence(caseId, Duration.ofSeconds(15));
-    assertThat(ctx2.get("result")).isEqualTo("done");
+    assertThat(ctx2.get("result2")).isEqualTo("done");
   }
 
   @ApplicationScoped
@@ -339,6 +340,67 @@ class QuiescenceIntegrationTest {
                   .name("triggerStep2")
                   .capability(cap2)
                   .on(new ContextChangeTrigger(".step1 == \"done\""))
+                  .build())
+          .build();
+    }
+  }
+
+  @ApplicationScoped
+  public static class TwoSignalBean extends CaseHub {
+    @Override
+    public CaseDefinition getDefinition() {
+      Capability cap1 =
+          Capability.builder()
+              .name("sig1Work")
+              .inputSchema(".")
+              .outputSchema("{ result1: \"done\" }")
+              .build();
+
+      Capability cap2 =
+          Capability.builder()
+              .name("sig2Work")
+              .inputSchema(".")
+              .outputSchema("{ result2: \"done\" }")
+              .build();
+
+      Worker worker1 =
+          Worker.builder()
+              .name("sig1Worker")
+              .capabilityName("sig1Work")
+              .function(
+                  new WorkerFunction.Sync<>(
+                      Map.class,
+                      Map.class,
+                      (input, scope) -> WorkerResult.of(Map.of("result1", "done"))))
+              .build();
+
+      Worker worker2 =
+          Worker.builder()
+              .name("sig2Worker")
+              .capabilityName("sig2Work")
+              .function(
+                  new WorkerFunction.Sync<>(
+                      Map.class,
+                      Map.class,
+                      (input, scope) -> WorkerResult.of(Map.of("result2", "done"))))
+              .build();
+
+      return CaseDefinition.builder()
+          .namespace("test")
+          .name("TwoSignalQuiescence")
+          .version("1.0.0")
+          .capabilities(cap1, cap2)
+          .workers(worker1, worker2)
+          .bindings(
+              Binding.builder()
+                  .name("onTrigger1")
+                  .capability(cap1)
+                  .on(new ContextChangeTrigger(".trigger1 != null"))
+                  .build(),
+              Binding.builder()
+                  .name("onTrigger2")
+                  .capability(cap2)
+                  .on(new ContextChangeTrigger(".trigger2 != null"))
                   .build())
           .build();
     }
