@@ -41,24 +41,26 @@ import io.casehub.api.view.StartCaseRequest;
 import io.casehub.engine.common.internal.model.CaseInstance;
 import io.casehub.engine.common.internal.model.CaseMetaModel;
 import io.casehub.engine.common.internal.model.PlanItemRecord;
+import io.casehub.engine.common.internal.model.SubCaseGroup;
 import io.casehub.engine.common.spi.CaseDefinitionRegistry;
 import io.casehub.engine.common.spi.CaseInstanceRepository;
 import io.casehub.engine.common.spi.PlanItemStore;
+import io.casehub.engine.common.spi.SubCaseGroupRepository;
 import io.casehub.engine.common.spi.query.CaseInstanceQuery;
 import io.casehub.platform.api.acl.AccessControlProvider;
 import io.casehub.platform.api.acl.AccessDeniedException;
 import io.casehub.platform.api.acl.AclAction;
 import io.casehub.platform.api.acl.ResourceId;
 import io.casehub.platform.api.identity.CurrentPrincipal;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
+import java.util.stream.Collectors;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class CaseService {
 
@@ -72,6 +74,7 @@ public class CaseService {
   private final ExpressionEngineRegistry expressionEngineRegistry;
   private final PlanItemStore planItemStore;
   private final ObjectMapper objectMapper;
+  private final SubCaseGroupRepository subCaseGroupRepository;
 
   public CaseService(
       AccessControlProvider accessControlProvider,
@@ -81,7 +84,8 @@ public class CaseService {
       CaseInstanceRepository instanceRepository,
       ExpressionEngineRegistry expressionEngineRegistry,
       PlanItemStore planItemStore,
-      ObjectMapper objectMapper) {
+      ObjectMapper objectMapper,
+      SubCaseGroupRepository subCaseGroupRepository) {
     this.accessControlProvider = accessControlProvider;
     this.currentPrincipal = currentPrincipal;
     this.definitionRegistry = definitionRegistry;
@@ -90,6 +94,7 @@ public class CaseService {
     this.expressionEngineRegistry = expressionEngineRegistry;
     this.planItemStore = planItemStore;
     this.objectMapper = objectMapper;
+    this.subCaseGroupRepository = subCaseGroupRepository;
   }
 
   public CaseInstance startCase(
@@ -214,9 +219,17 @@ public class CaseService {
   public List<PlanItemView> getPlanItems(UUID caseId, String tenancyId) {
     requireCaseAccess(caseId, AclAction.READ);
     String resolvedTenancyId = tenancyId != null ? tenancyId : currentPrincipal.tenancyId();
-    return planItemStore.findByCaseId(caseId, resolvedTenancyId).stream()
-        .map(this::mapPlanItem)
-        .toList();
+    List<PlanItemRecord> records = planItemStore.findByCaseId(caseId, resolvedTenancyId);
+
+    Map<String, List<UUID>> childMap =
+        subCaseGroupRepository.findAllByParentCaseId(caseId, resolvedTenancyId).stream()
+            .collect(
+                Collectors.toMap(
+                    SubCaseGroup::getBindingName,
+                    g -> List.copyOf(g.getChildCaseIds()),
+                    (a, b) -> a));
+
+    return records.stream().map(r -> mapPlanItem(r, childMap)).toList();
   }
 
   public CaseInstanceView mapInstance(CaseInstance instance) {
@@ -231,16 +244,28 @@ public class CaseService {
         instance.getActorId());
   }
 
-    public PlanItemView mapPlanItem(PlanItemRecord record) {
-        return new PlanItemView(
-                UUID.fromString(record.planItemId()),
-                record.bindingName(),
-                record.status(),
-                record.targetType().name().toLowerCase().replace('_', '-'),
-                record.parentCompoundId() != null ? UUID.fromString(record.parentCompoundId()) : null,
-                null,
-                null);
-    }
+  public PlanItemView mapPlanItem(PlanItemRecord record) {
+    return new PlanItemView(
+        UUID.fromString(record.planItemId()),
+        record.bindingName(),
+        record.status(),
+        record.targetType().name().toLowerCase().replace('_', '-'),
+        record.parentCompoundId() != null ? UUID.fromString(record.parentCompoundId()) : null,
+        null,
+        null);
+  }
+
+  private PlanItemView mapPlanItem(PlanItemRecord record, Map<String, List<UUID>> childMap) {
+    boolean isSubCase = record.capabilityName() != null;
+    return new PlanItemView(
+        UUID.fromString(record.planItemId()),
+        record.bindingName(),
+        record.status(),
+        record.targetType().name().toLowerCase().replace('_', '-'),
+        record.parentCompoundId() != null ? UUID.fromString(record.parentCompoundId()) : null,
+        record.capabilityName(),
+        isSubCase ? childMap.getOrDefault(record.bindingName(), List.of()) : null);
+  }
 
   public GoalEvaluationView evaluateGoals(UUID caseId, String tenancyId) {
     CaseInstance instance = requireCaseAccess(caseId, AclAction.READ);

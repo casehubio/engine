@@ -23,6 +23,7 @@ import io.casehub.engine.common.spi.CaseInstanceRepository;
 import io.casehub.engine.common.spi.CaseMetaModelRepository;
 import io.casehub.engine.common.spi.EventLogRepository;
 import io.casehub.engine.common.spi.PlanItemStore;
+import io.casehub.engine.common.spi.SubCaseGroupRepository;
 import io.casehub.engine.common.spi.recovery.ExecutionSnapshotStore;
 import io.casehub.engine.plan.execution.CasePlanModelSnapshotProvider;
 import io.casehub.platform.api.acl.AccessControlProvider;
@@ -46,8 +47,7 @@ public class RestServiceBeans {
   @Inject EventLogRepository eventLogRepository;
   @Inject CasePlanModelSnapshotProvider planModelProvider;
   @Inject ExecutionSnapshotStore snapshotStore;
-  @Inject
-          io.casehub.engine.common.spi.SubCaseGroupRepository subCaseGroupRepository;
+  @Inject SubCaseGroupRepository subCaseGroupRepository;
 
 
     @Produces

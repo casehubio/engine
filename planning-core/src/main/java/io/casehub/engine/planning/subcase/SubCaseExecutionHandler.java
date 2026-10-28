@@ -19,6 +19,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import io.casehub.api.engine.CaseHubRuntime;
 import io.casehub.api.model.CaseStatus;
+import io.casehub.api.model.OnThresholdReached;
 import io.casehub.api.model.SubCase;
 import io.casehub.api.model.TaskStatus;
 import io.casehub.api.model.evaluator.JQExpressionEvaluator;
@@ -218,7 +219,7 @@ public class SubCaseExecutionHandler {
         subCase.requiredCount(),
         subCase.onThresholdReached(),
         parent.tenancyId,
-        null);
+        bindingName);
     subCaseGroupRepository.registerChild(parent.getUuid(), groupId, childCaseId, parent.tenancyId);
 
     EventLog log = new EventLog();
@@ -253,6 +254,17 @@ public class SubCaseExecutionHandler {
 
   private void handleUngrouped(
       CaseInstance parent, SubCase subCase, UUID childCaseId, String bindingName) {
+    subCaseGroupRepository.getOrCreate(
+        parent.getUuid(),
+        bindingName,
+        1,
+        1,
+        OnThresholdReached.KEEP,
+        parent.tenancyId,
+        bindingName);
+    subCaseGroupRepository.registerChild(
+        parent.getUuid(), bindingName, childCaseId, parent.tenancyId);
+
     EventLog log = new EventLog();
     log.setCaseId(parent.getUuid());
     log.setWorkerId(childCaseId.toString());
