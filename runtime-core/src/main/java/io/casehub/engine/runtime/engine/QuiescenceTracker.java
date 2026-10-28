@@ -142,7 +142,7 @@ public class QuiescenceTracker {
           state.future.complete(null);
           trackers.remove(caseId);
         } else if (quiescent && state.future == null) {
-          trackers.remove(caseId);
+          state.resolvedWithoutWaiter = true;
         }
       } finally {
         state.lock.unlock();
@@ -163,6 +163,7 @@ public class QuiescenceTracker {
     final AtomicInteger pendingContextChanges = new AtomicInteger(0);
     final AtomicInteger drainCount = new AtomicInteger(0);
     boolean evaluationInProgress;
+    boolean resolvedWithoutWaiter;
     volatile CompletableFuture<Void> future;
   }
 }
