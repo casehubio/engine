@@ -85,15 +85,15 @@ class ScheduleTriggerSimpleTest {
 
   @Test
   void cronTriggerExecutesWorker() {
+    int baseline = CronTriggerTestBean.executionCount.get();
     cronBean.startCase(Map.of("started", true));
 
-    // Cron "*/2 * * * * ?" may fire immediately if startCase returns near an
-    // even-second boundary — no pre-condition assertion on count == 0.
+    // Wait for first execution (cron runs every 2 seconds: "*/2 * * * * ?")
     await()
         .atMost(5, TimeUnit.SECONDS)
         .pollInterval(100, TimeUnit.MILLISECONDS)
         .untilAsserted(
-            () -> assertThat(CronTriggerTestBean.executionCount.get()).isGreaterThanOrEqualTo(1));
+            () -> assertThat(CronTriggerTestBean.executionCount.get()).isGreaterThan(baseline));
   }
 
   @Test
