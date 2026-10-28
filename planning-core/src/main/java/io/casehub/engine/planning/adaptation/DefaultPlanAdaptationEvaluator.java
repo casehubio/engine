@@ -20,6 +20,7 @@ import io.casehub.api.context.ContextLayer;
 import io.casehub.api.model.AdaptationConfig;
 import io.casehub.api.model.CaseDefinition;
 import io.casehub.api.model.ExecutorRef;
+import io.casehub.api.model.SubCaseTarget;
 import io.casehub.api.model.TaskStatus;
 import io.casehub.api.model.event.CaseHubEventType;
 import io.casehub.api.model.event.EventStreamType;
@@ -27,6 +28,7 @@ import io.casehub.engine.common.internal.event.CompoundCompletedEvent;
 import io.casehub.engine.common.internal.history.EventLog;
 import io.casehub.engine.common.internal.model.CaseInstance;
 import io.casehub.engine.common.internal.model.PlanItemSaveRequest;
+import io.casehub.engine.common.internal.model.PlanItemType;
 import io.casehub.engine.common.internal.model.TargetType;
 import io.casehub.engine.common.internal.utils.EngineMappers;
 import io.casehub.engine.common.spi.CaseDefinitionRegistry;
@@ -391,19 +393,39 @@ public class DefaultPlanAdaptationEvaluator implements PlanAdaptationEvaluator {
 
     for (int i = 0; i < revisedPlan.steps().size(); i++) {
       var step = revisedPlan.steps().get(i);
+      TargetType resolvedType = TargetType.CAPABILITY;
+      String capName = null;
+      if (definition.getBindings() != null) {
+        for (var b : definition.getBindings()) {
+          if (step.capabilityName().equals(b.getName()) && b.target() instanceof SubCaseTarget st) {
+            resolvedType = TargetType.SUB_CASE;
+            capName = st.subCase().name();
+            break;
+          }
+        }
+      }
       planItemStore.save(
-          PlanItemSaveRequest.primitive(
+          new PlanItemSaveRequest(
               caseId,
               step.id(),
               step.capabilityName(),
               TaskStatus.PENDING,
               Instant.now(),
-              TargetType.CAPABILITY,
+              resolvedType,
               null,
               tenancyId,
               step.description(),
               null,
-              null),
+              null,
+              PlanItemType.PRIMITIVE,
+              null,
+              null,
+              null,
+              false,
+              null,
+              null,
+              null,
+              capName),
           tenancyId);
     }
 

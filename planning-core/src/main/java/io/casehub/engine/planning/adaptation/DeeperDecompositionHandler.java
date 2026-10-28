@@ -22,6 +22,7 @@ import io.casehub.api.model.Binding;
 import io.casehub.api.model.CaseDefinition;
 import io.casehub.api.model.ExecutorRef;
 import io.casehub.api.model.FailureCategory;
+import io.casehub.api.model.SubCaseTarget;
 import io.casehub.api.model.TaskStatus;
 import io.casehub.api.model.event.CaseHubEventType;
 import io.casehub.api.model.event.EventStreamType;
@@ -29,6 +30,7 @@ import io.casehub.api.spi.routing.RetrievedExperience;
 import io.casehub.engine.common.internal.history.EventLog;
 import io.casehub.engine.common.internal.model.CaseInstance;
 import io.casehub.engine.common.internal.model.PlanItemSaveRequest;
+import io.casehub.engine.common.internal.model.PlanItemType;
 import io.casehub.engine.common.internal.model.TargetType;
 import io.casehub.engine.common.internal.utils.EngineMappers;
 import io.casehub.engine.common.spi.CaseDefinitionRegistry;
@@ -207,19 +209,40 @@ public class DeeperDecompositionHandler {
     plan.promoteToCompound(bindingName, compound);
 
     for (var resolved : resolvedSteps) {
+      TargetType resolvedType = TargetType.CAPABILITY;
+      String capName = null;
+      if (definition.getBindings() != null) {
+        for (var b : definition.getBindings()) {
+          if (resolved.bindingName().equals(b.getName())
+              && b.target() instanceof SubCaseTarget st) {
+            resolvedType = TargetType.SUB_CASE;
+            capName = st.subCase().name();
+            break;
+          }
+        }
+      }
       planItemStore.save(
-          PlanItemSaveRequest.primitive(
+          new PlanItemSaveRequest(
               instance.getUuid(),
               resolved.stepId(),
               resolved.bindingName(),
               TaskStatus.PENDING,
               Instant.now(),
-              TargetType.CAPABILITY,
+              resolvedType,
               null,
               instance.tenancyId,
               resolved.description(),
               null,
-              null),
+              null,
+              PlanItemType.PRIMITIVE,
+              null,
+              null,
+              null,
+              false,
+              null,
+              null,
+              null,
+              capName),
           instance.tenancyId);
 
       var planItem =

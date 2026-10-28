@@ -73,7 +73,7 @@ class SubCaseRecursionDepthTest {
         .thenReturn(mock(io.casehub.api.model.CaseDefinition.class));
 
     SubCaseGroup stubGroup = mock(SubCaseGroup.class);
-    when(subCaseGroupRepository.getOrCreate(any(), any(), anyInt(), anyInt(), any(), any(), null))
+    when(subCaseGroupRepository.getOrCreate(any(), any(), anyInt(), anyInt(), any(), any(), any()))
         .thenReturn(stubGroup);
     when(subCaseGroupRepository.registerChild(any(), any(), any(), any())).thenReturn(stubGroup);
 

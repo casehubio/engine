@@ -19,7 +19,9 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.casehub.api.context.ContextLayer;
 import io.casehub.api.context.MutableCaseContext;
+import io.casehub.api.model.BindingTarget;
 import io.casehub.api.model.CaseDefinition;
+import io.casehub.api.model.SubCaseTarget;
 import io.casehub.api.model.TaskStatus;
 import io.casehub.api.model.event.CaseHubEventType;
 import io.casehub.api.model.event.EventStreamType;
@@ -27,6 +29,7 @@ import io.casehub.eidos.api.AgentGoal;
 import io.casehub.engine.common.internal.history.EventLog;
 import io.casehub.engine.common.internal.model.CaseInstance;
 import io.casehub.engine.common.internal.model.PlanItemSaveRequest;
+import io.casehub.engine.common.internal.model.PlanItemType;
 import io.casehub.engine.common.internal.model.TargetType;
 import io.casehub.engine.common.internal.routing.BindingExecutorResolver;
 import io.casehub.engine.common.internal.utils.EngineMappers;
@@ -265,19 +268,32 @@ public class DefaultGoalDecomposer implements io.casehub.engine.common.spi.GoalD
     casePlanModel.registerDefinition(compound);
 
     for (var resolved : availableSteps) {
+      BindingTarget target = resolved.binding().target();
+      TargetType resolvedType =
+          target instanceof SubCaseTarget ? TargetType.SUB_CASE : TargetType.CAPABILITY;
+      String capName = target instanceof SubCaseTarget st ? st.subCase().name() : null;
       planItemStore.save(
-          PlanItemSaveRequest.primitive(
+          new PlanItemSaveRequest(
               instance.getUuid(),
               resolved.step().id(),
               resolved.binding().getName(),
               TaskStatus.PENDING,
               Instant.now(),
-              TargetType.CAPABILITY,
+              resolvedType,
               null,
               instance.tenancyId,
               resolved.step().description(),
               null,
-              null),
+              null,
+              PlanItemType.PRIMITIVE,
+              null,
+              null,
+              null,
+              false,
+              null,
+              null,
+              null,
+              capName),
           instance.tenancyId);
     }
 

@@ -236,6 +236,7 @@ class BehavioralComplianceRecorderTest {
             "compound-1",
             null,
             null,
+            null,
             null);
     when(planItemStore.findByCaseId(caseUuid, "tenant-1"))
         .thenReturn(java.util.List.of(withParent));
