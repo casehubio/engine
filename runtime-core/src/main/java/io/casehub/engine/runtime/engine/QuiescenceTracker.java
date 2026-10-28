@@ -28,18 +28,22 @@ import java.util.concurrent.locks.ReentrantLock;
 public class QuiescenceTracker {
 
   private final ConcurrentHashMap<UUID, QuiescenceState> trackers = new ConcurrentHashMap<>();
-  private final ConcurrentHashMap.KeySetView<UUID, Boolean> resolvedBeforeWaiter =
-      ConcurrentHashMap.newKeySet();
 
   public CompletableFuture<Void> register(UUID caseId) {
-    if (resolvedBeforeWaiter.remove(caseId)) {
-      return CompletableFuture.completedFuture(null);
-    }
     QuiescenceState state = trackers.computeIfAbsent(caseId, k -> new QuiescenceState());
     state.lock.lock();
     try {
       if (state.future == null) {
         state.future = new CompletableFuture<>();
+      }
+      boolean alreadyQuiescent =
+          state.drainCount.get() > 0
+              && state.activeWorkers.get() <= 0
+              && state.pendingContextChanges.get() <= 0
+              && !state.evaluationInProgress;
+      if (alreadyQuiescent) {
+        state.future.complete(null);
+        trackers.remove(caseId);
       }
       return state.future;
     } finally {
@@ -139,7 +143,6 @@ public class QuiescenceTracker {
           trackers.remove(caseId);
         } else if (quiescent && state.future == null) {
           trackers.remove(caseId);
-          resolvedBeforeWaiter.add(caseId);
         }
       } finally {
         state.lock.unlock();
@@ -148,7 +151,6 @@ public class QuiescenceTracker {
   }
 
   public void remove(UUID caseId) {
-    resolvedBeforeWaiter.remove(caseId);
     QuiescenceState state = trackers.remove(caseId);
     if (state != null && state.future != null && !state.future.isDone()) {
       state.future.cancel(false);
