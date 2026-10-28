@@ -1,0 +1,2 @@
+ALTER TABLE plan_item ADD COLUMN IF NOT EXISTS capability_name VARCHAR(255);
+ALTER TABLE subcase_group ADD COLUMN IF NOT EXISTS binding_name VARCHAR(255);
