@@ -103,7 +103,8 @@ class CaseServiceAclTest {
             return false;
           }
         };
-    caseService = new CaseService(aclProvider, principal, null, null, repository, null, null, null, null);
+    caseService =
+        new CaseService(aclProvider, principal, null, null, repository, null, null, null, null);
   }
 
   @Test
@@ -139,7 +140,8 @@ class CaseServiceAclTest {
         };
 
     CaseService serviceWithCapture =
-        new CaseService(capturingProvider, principal, null, null, repository, null, null, null, null);
+        new CaseService(
+            capturingProvider, principal, null, null, repository, null, null, null, null);
     serviceWithCapture.requireCaseAccess(caseId, AclAction.ADMIN);
     assertThat(capturedResourceId[0])
         .isEqualTo(new ResourceId(EngineResourceTypes.CASE, caseId.toString()));

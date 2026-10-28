@@ -49,19 +49,19 @@ public class RestServiceBeans {
   @Inject ExecutionSnapshotStore snapshotStore;
   @Inject SubCaseGroupRepository subCaseGroupRepository;
 
-
-    @Produces
+  @Produces
   @ApplicationScoped
   public CaseService caseService() {
     return new CaseService(
-            accessControlProvider,
-            currentPrincipal,
-            definitionRegistry,
-            runtime,
-            instanceRepository,
-            expressionEngineRegistry,
-            planItemStore,
-            objectMapper, subCaseGroupRepository);
+        accessControlProvider,
+        currentPrincipal,
+        definitionRegistry,
+        runtime,
+        instanceRepository,
+        expressionEngineRegistry,
+        planItemStore,
+        objectMapper,
+        subCaseGroupRepository);
   }
 
   @Produces
