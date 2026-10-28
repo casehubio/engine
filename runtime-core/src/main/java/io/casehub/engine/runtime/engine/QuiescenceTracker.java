@@ -148,6 +148,7 @@ public class QuiescenceTracker {
   }
 
   public void remove(UUID caseId) {
+    resolvedBeforeWaiter.remove(caseId);
     QuiescenceState state = trackers.remove(caseId);
     if (state != null && state.future != null && !state.future.isDone()) {
       state.future.cancel(false);
