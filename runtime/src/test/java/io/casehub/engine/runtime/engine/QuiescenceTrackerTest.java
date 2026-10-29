@@ -329,8 +329,8 @@ class QuiescenceTrackerTest {
   }
 
   @Test
-  void orphanState_cleanedUpWhenNoFutureRegistered() {
-    // State created by onContextChangePublished (from startCase) but no awaitQuiescence called
+  void quiescentState_retainedUntilFutureRegistered() {
+    // Evaluation can finish before awaitQuiescence registers its future.
     tracker.onContextChangePublished(caseId);
 
     // CC consumed and evaluation drains
@@ -338,7 +338,9 @@ class QuiescenceTrackerTest {
     tracker.onContextChangeConsumed(caseId);
     tracker.onEvaluationDrained(caseId);
 
-    // State should be cleaned up — no future registered
+    // Preserve quiescence evidence so a late waiter resolves immediately.
+    assertThat(tracker.isTracking(caseId)).isTrue();
+    assertThat(tracker.register(caseId)).isCompleted();
     assertThat(tracker.isTracking(caseId)).isFalse();
   }
 
