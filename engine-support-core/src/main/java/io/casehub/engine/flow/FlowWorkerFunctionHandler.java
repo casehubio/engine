@@ -15,6 +15,8 @@
  */
 package io.casehub.engine.flow;
 
+import io.casehub.api.model.PlaybookExecutionResult;
+import io.casehub.api.model.StepResult;
 import io.casehub.api.model.WorkerContext;
 import io.casehub.engine.common.internal.executor.ExecutionMetadata;
 import io.casehub.engine.common.internal.executor.HandlerResult;
@@ -22,12 +24,11 @@ import io.casehub.engine.common.internal.executor.WorkerFunctionHandler;
 import io.casehub.worker.api.PlannedAction;
 import io.casehub.worker.api.WorkerFunction;
 import io.casehub.worker.api.WorkerResult;
-import io.serverlessworkflow.api.types.Workflow;
 import io.serverlessworkflow.impl.WorkflowApplication;
 import io.serverlessworkflow.impl.WorkflowInstance;
 import io.serverlessworkflow.impl.WorkflowModel;
+import java.util.List;
 import java.util.Map;
-import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutorService;
 import java.util.function.Function;
@@ -73,56 +74,58 @@ public class FlowWorkerFunctionHandler implements WorkerFunctionHandler {
     final SWFWorkerFunction swf = (SWFWorkerFunction) function;
     final Map<String, Object> mapInput = (Map<String, Object>) inputData;
 
-    WorkflowModel model =
-        executeWorkflow(
-                swf.workflow(),
-                mapInput,
-                context.caseId(),
-                metadata.workerName(),
-                metadata.inputDataHash())
-            .join();
-
-    Map<String, Object> outputMap =
-        model
-            .asMap()
-            .orElseThrow(
-                () ->
-                    new RuntimeException(
-                        "Workflow produced non-serializable model for worker: "
-                            + metadata.workerName()));
-
-    Function<Map<String, Object>, PlannedAction> plannedActionFn = null;
-    if (swf instanceof FlowWorkerFunction flow) {
-      plannedActionFn = flow.plannedActionFn();
-    } else if (swf instanceof PlaybookWorkerFunction pb) {
-      plannedActionFn = pb.plannedActionFn();
-    }
-
-    if (plannedActionFn != null) {
-      return new HandlerResult(WorkerResult.of(outputMap, plannedActionFn.apply(mapInput)));
-    }
-
-    return new HandlerResult(WorkerResult.of(outputMap));
-  }
-
-  private CompletableFuture<WorkflowModel> executeWorkflow(
-      final Workflow workflow,
-      final Map<String, Object> inputData,
-      final UUID caseId,
-      final String workerName,
-      final String inputDataHash) {
-
-    final WorkflowInstance wfInstance = app.workflowDefinition(workflow).instance(inputData);
-    // id() is assigned in WorkflowMutableInstance constructor — available before start()
+    final WorkflowInstance wfInstance = app.workflowDefinition(swf.workflow()).instance(mapInput);
     final String instanceId = wfInstance.id();
 
-    registry.register(instanceId, caseId, workerName, inputDataHash);
+    registry.register(
+        instanceId, context.caseId(), metadata.workerName(), metadata.inputDataHash());
     try {
       final CompletableFuture<WorkflowModel> future = wfInstance.start();
-      future.whenComplete((model, ex) -> registry.remove(instanceId));
-      return future;
+      future.whenComplete((m, ex) -> registry.remove(instanceId));
+
+      WorkflowModel model;
+      try {
+        model = future.join();
+      } catch (Exception e) {
+        List<StepResult> steps = registry.getSteps(instanceId);
+        registry.removeSteps(instanceId);
+        Throwable root = e.getCause() != null ? e.getCause() : e;
+        throw new PlaybookExecutionException(
+            root.getMessage(), root, new PlaybookExecutionResult.Failure(root.getMessage(), steps));
+      }
+
+      List<StepResult> steps = registry.getSteps(instanceId);
+      registry.removeSteps(instanceId);
+
+      Map<String, Object> outputMap =
+          model
+              .asMap()
+              .orElseThrow(
+                  () ->
+                      new RuntimeException(
+                          "Workflow produced non-serializable model for worker: "
+                              + metadata.workerName()));
+
+      Function<Map<String, Object>, PlannedAction> plannedActionFn = null;
+      if (swf instanceof FlowWorkerFunction flow) {
+        plannedActionFn = flow.plannedActionFn();
+      } else if (swf instanceof PlaybookWorkerFunction pb) {
+        plannedActionFn = pb.plannedActionFn();
+      }
+
+      PlaybookExecutionResult execResult = new PlaybookExecutionResult.Success(outputMap, steps);
+
+      if (plannedActionFn != null) {
+        return new HandlerResult(
+            WorkerResult.of(outputMap, plannedActionFn.apply(mapInput)), Map.of(), execResult);
+      }
+
+      return new HandlerResult(WorkerResult.of(outputMap), Map.of(), execResult);
+    } catch (PlaybookExecutionException e) {
+      throw e;
     } catch (final RuntimeException e) {
       registry.remove(instanceId);
+      registry.removeSteps(instanceId);
       throw e;
     }
   }

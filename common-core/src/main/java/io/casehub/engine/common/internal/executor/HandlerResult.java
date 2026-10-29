@@ -15,11 +15,19 @@
  */
 package io.casehub.engine.common.internal.executor;
 
+import io.casehub.api.model.PlaybookExecutionResult;
 import io.casehub.worker.api.WorkerResult;
 import java.util.Map;
 
-public record HandlerResult(WorkerResult<?> result, Map<String, Object> protocolMetadata) {
+public record HandlerResult(
+    WorkerResult<?> result,
+    Map<String, Object> protocolMetadata,
+    PlaybookExecutionResult executionResult) {
   public HandlerResult(WorkerResult<?> result) {
-    this(result, Map.of());
+    this(result, Map.of(), null);
+  }
+
+  public HandlerResult(WorkerResult<?> result, Map<String, Object> protocolMetadata) {
+    this(result, protocolMetadata, null);
   }
 }

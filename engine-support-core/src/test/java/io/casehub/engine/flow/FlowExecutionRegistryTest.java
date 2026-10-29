@@ -77,6 +77,58 @@ class FlowExecutionRegistryTest {
   }
 
   @Test
+  void find_returns_empty_for_unregistered_instance() {
+    assertThat(registry.find("nonexistent")).isEmpty();
+  }
+
+  @Test
+  void find_returns_execution_for_registered_instance() {
+    UUID caseId = UUID.randomUUID();
+    registry.register("wf-1", caseId, "worker-1", "hash-1");
+
+    var result = registry.find("wf-1");
+    assertThat(result).isPresent();
+    assertThat(result.get().caseId()).isEqualTo(caseId);
+  }
+
+  @Test
+  void records_and_retrieves_step_results() {
+    registry.register("wf-1", UUID.randomUUID(), "w", "h");
+    var step =
+        new io.casehub.api.model.StepResult(
+            "s1",
+            "fetch",
+            io.casehub.api.model.StepStatus.SUCCEEDED,
+            java.time.Duration.ofMillis(100),
+            null);
+
+    registry.recordStep("wf-1", step);
+
+    List<io.casehub.api.model.StepResult> steps = registry.getSteps("wf-1");
+    assertThat(steps).hasSize(1);
+    assertThat(steps.getFirst().stepId()).isEqualTo("s1");
+  }
+
+  @Test
+  void get_steps_returns_empty_when_no_steps_recorded() {
+    assertThat(registry.getSteps("wf-unknown")).isEmpty();
+  }
+
+  @Test
+  void remove_clears_step_data() {
+    registry.register("wf-1", UUID.randomUUID(), "w", "h");
+    registry.recordStep(
+        "wf-1",
+        new io.casehub.api.model.StepResult(
+            "s1", "s", io.casehub.api.model.StepStatus.SUCCEEDED, java.time.Duration.ZERO, null));
+
+    registry.remove("wf-1");
+
+    assertThat(registry.find("wf-1")).isEmpty();
+    assertThat(registry.getSteps("wf-1")).isEmpty();
+  }
+
+  @Test
   void concurrent_registrations_with_different_ids_do_not_cross_contaminate()
       throws InterruptedException {
     final int threads = 8;
