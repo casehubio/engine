@@ -26,6 +26,7 @@ import io.casehub.engine.flow.CasehubJudgment;
 import io.casehub.engine.flow.FlowExecutionRegistry;
 import io.casehub.engine.flow.FlowWorkerFunctionHandler;
 import io.casehub.engine.flow.FlowWorkerFunctionProvider;
+import io.casehub.engine.flow.PlaybookExecutionListener;
 import io.quarkus.virtual.threads.VirtualThreads;
 import io.serverlessworkflow.impl.WorkflowApplication;
 import jakarta.enterprise.context.ApplicationScoped;
@@ -45,6 +46,12 @@ public class FlowBeans {
   @ApplicationScoped
   FlowExecutionRegistry flowExecutionRegistry() {
     return new FlowExecutionRegistry();
+  }
+
+  @Produces
+  @ApplicationScoped
+  PlaybookExecutionListener playbookExecutionListener(FlowExecutionRegistry registry) {
+    return new PlaybookExecutionListener(registry);
   }
 
   @Produces
