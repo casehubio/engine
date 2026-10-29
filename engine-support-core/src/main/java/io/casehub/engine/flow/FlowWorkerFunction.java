@@ -16,14 +16,13 @@
 package io.casehub.engine.flow;
 
 import io.casehub.worker.api.PlannedAction;
-import io.casehub.worker.api.WorkerFunction;
 import io.serverlessworkflow.api.types.Workflow;
 import java.util.function.Function;
 
 @SuppressWarnings("unchecked")
 public record FlowWorkerFunction(
     Workflow workflow, Function<java.util.Map<String, Object>, PlannedAction> plannedActionFn)
-    implements WorkerFunction<java.util.Map<String, Object>, java.util.Map<String, Object>> {
+    implements SWFWorkerFunction {
 
   public FlowWorkerFunction(Workflow workflow) {
     this(workflow, null);

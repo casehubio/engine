@@ -65,6 +65,24 @@ class FlowWorkerFunctionHandlerTest {
   }
 
   @Test
+  void flow_worker_function_implements_swf_worker_function() {
+    FlowWorkerFunction fn = new FlowWorkerFunction(mock(Workflow.class));
+    assertThat(fn).isInstanceOf(SWFWorkerFunction.class);
+    assertThat(((SWFWorkerFunction) fn).workflow()).isNotNull();
+  }
+
+  @Test
+  void supports_playbook_worker_function() {
+    assertThat(handler.supports(new PlaybookWorkerFunction(mock(Workflow.class), null))).isTrue();
+  }
+
+  @Test
+  void supports_swf_worker_function_interface() {
+    SWFWorkerFunction swf = new FlowWorkerFunction(mock(Workflow.class));
+    assertThat(handler.supports(swf)).isTrue();
+  }
+
+  @Test
   void execute_registers_before_start_and_removes_on_success() {
     final String instanceId = "wf-abc";
     final UUID caseId = UUID.randomUUID();

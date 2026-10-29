@@ -19,6 +19,7 @@ import io.casehub.api.model.WorkerContext;
 import io.casehub.engine.common.internal.executor.ExecutionMetadata;
 import io.casehub.engine.common.internal.executor.HandlerResult;
 import io.casehub.engine.common.internal.executor.WorkerFunctionHandler;
+import io.casehub.worker.api.PlannedAction;
 import io.casehub.worker.api.WorkerFunction;
 import io.casehub.worker.api.WorkerResult;
 import io.serverlessworkflow.api.types.Workflow;
@@ -29,6 +30,7 @@ import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutorService;
+import java.util.function.Function;
 
 /**
  * {@link WorkerFunctionHandler} for Serverless Workflow workers.
@@ -57,7 +59,7 @@ public class FlowWorkerFunctionHandler implements WorkerFunctionHandler {
 
   @Override
   public boolean supports(final WorkerFunction<?, ?> function) {
-    return function instanceof FlowWorkerFunction;
+    return function instanceof SWFWorkerFunction;
   }
 
   @SuppressWarnings("unchecked")
@@ -68,12 +70,12 @@ public class FlowWorkerFunctionHandler implements WorkerFunctionHandler {
       final WorkerContext context,
       final int timeoutMs,
       final ExecutionMetadata metadata) {
-    final FlowWorkerFunction flow = (FlowWorkerFunction) function;
+    final SWFWorkerFunction swf = (SWFWorkerFunction) function;
     final Map<String, Object> mapInput = (Map<String, Object>) inputData;
 
     WorkflowModel model =
         executeWorkflow(
-                flow.workflow(),
+                swf.workflow(),
                 mapInput,
                 context.caseId(),
                 metadata.workerName(),
@@ -89,8 +91,15 @@ public class FlowWorkerFunctionHandler implements WorkerFunctionHandler {
                         "Workflow produced non-serializable model for worker: "
                             + metadata.workerName()));
 
-    if (flow.plannedActionFn() != null) {
-      return new HandlerResult(WorkerResult.of(outputMap, flow.plannedActionFn().apply(mapInput)));
+    Function<Map<String, Object>, PlannedAction> plannedActionFn = null;
+    if (swf instanceof FlowWorkerFunction flow) {
+      plannedActionFn = flow.plannedActionFn();
+    } else if (swf instanceof PlaybookWorkerFunction pb) {
+      plannedActionFn = pb.plannedActionFn();
+    }
+
+    if (plannedActionFn != null) {
+      return new HandlerResult(WorkerResult.of(outputMap, plannedActionFn.apply(mapInput)));
     }
 
     return new HandlerResult(WorkerResult.of(outputMap));
