@@ -83,6 +83,68 @@ class FlowWorkerFunctionHandlerTest {
   }
 
   @Test
+  void execute_wraps_failure_in_playbook_execution_exception() {
+    final String instanceId = "wf-fail";
+    final UUID caseId = UUID.randomUUID();
+
+    final WorkflowInstance wfInstance = mockWorkflowInstance(instanceId);
+    final CompletableFuture<WorkflowModel> failed = new CompletableFuture<>();
+    failed.completeExceptionally(new RuntimeException("step failed"));
+    when(wfInstance.start()).thenReturn(failed);
+
+    stubApp(wfInstance);
+
+    FlowExecutionRegistry realRegistry = new FlowExecutionRegistry();
+    FlowWorkerFunctionHandler handlerWithRealRegistry =
+        new FlowWorkerFunctionHandler(
+            app, realRegistry, java.util.concurrent.Executors.newSingleThreadExecutor());
+
+    final WorkerContext context =
+        new WorkerContext("worker-E", caseId, null, null, PropagationContext.createRoot(), null);
+    final ExecutionMetadata metadata = new ExecutionMetadata("worker-E", "hash-e");
+
+    try {
+      handlerWithRealRegistry.execute(
+          new FlowWorkerFunction(mock(Workflow.class)), Map.of(), context, 60000, metadata);
+      throw new AssertionError("Should have thrown");
+    } catch (PlaybookExecutionException e) {
+      assertThat(e.getExecutionResult()).isNotNull();
+      assertThat(e.getExecutionResult())
+          .isInstanceOf(io.casehub.api.model.PlaybookExecutionResult.Failure.class);
+    }
+  }
+
+  @Test
+  void execute_success_populates_execution_result() {
+    final String instanceId = "wf-success-result";
+    final UUID caseId = UUID.randomUUID();
+    final WorkflowModel model = mock(WorkflowModel.class);
+    when(model.asMap()).thenReturn(Optional.of(Map.of("out", "val")));
+
+    final WorkflowInstance wfInstance = mockWorkflowInstance(instanceId);
+    when(wfInstance.start()).thenReturn(CompletableFuture.completedFuture(model));
+
+    stubApp(wfInstance);
+
+    FlowExecutionRegistry realRegistry = new FlowExecutionRegistry();
+    FlowWorkerFunctionHandler handlerWithRealRegistry =
+        new FlowWorkerFunctionHandler(
+            app, realRegistry, java.util.concurrent.Executors.newSingleThreadExecutor());
+
+    final WorkerContext context =
+        new WorkerContext("w", caseId, null, null, PropagationContext.createRoot(), null);
+    final ExecutionMetadata metadata = new ExecutionMetadata("w", "h");
+
+    var result =
+        handlerWithRealRegistry.execute(
+            new FlowWorkerFunction(mock(Workflow.class)), Map.of(), context, 60000, metadata);
+
+    assertThat(result.executionResult()).isNotNull();
+    assertThat(result.executionResult())
+        .isInstanceOf(io.casehub.api.model.PlaybookExecutionResult.Success.class);
+  }
+
+  @Test
   void execute_registers_before_start_and_removes_on_success() {
     final String instanceId = "wf-abc";
     final UUID caseId = UUID.randomUUID();

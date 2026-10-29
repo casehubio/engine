@@ -26,6 +26,8 @@ import java.util.concurrent.ConcurrentHashMap;
 public class FlowExecutionRegistry {
 
   private final ConcurrentHashMap<String, FlowExecution> executions = new ConcurrentHashMap<>();
+  private final ConcurrentHashMap<String, java.util.List<io.casehub.api.model.StepResult>>
+      stepData = new ConcurrentHashMap<>();
 
   public void register(
       final String instanceId,
@@ -46,7 +48,28 @@ public class FlowExecutionRegistry {
     return execution;
   }
 
+  public java.util.Optional<FlowExecution> find(final String instanceId) {
+    return java.util.Optional.ofNullable(executions.get(instanceId));
+  }
+
+  public void recordStep(final String instanceId, final io.casehub.api.model.StepResult step) {
+    stepData
+        .computeIfAbsent(
+            instanceId, k -> java.util.Collections.synchronizedList(new java.util.ArrayList<>()))
+        .add(step);
+  }
+
+  public java.util.List<io.casehub.api.model.StepResult> getSteps(final String instanceId) {
+    java.util.List<io.casehub.api.model.StepResult> steps = stepData.get(instanceId);
+    return steps != null ? java.util.List.copyOf(steps) : java.util.List.of();
+  }
+
+  public void removeSteps(final String instanceId) {
+    stepData.remove(instanceId);
+  }
+
   public void remove(final String instanceId) {
     executions.remove(instanceId);
+    stepData.remove(instanceId);
   }
 }
