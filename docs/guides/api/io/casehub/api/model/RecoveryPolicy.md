@@ -18,6 +18,8 @@
 
 ### `maxRetries` (`int`)
 
+### `maxTriageAttempts` (`int`)
+
 ### `replanStrategyId` (`java.lang.String`)
 
 ### `revisionStrategyId` (`java.lang.String`)
@@ -32,13 +34,15 @@
 
 ### `maxRetries` (`int`)
 
+### `maxTriageAttempts` (`int`)
+
 ### `replanStrategyId` (`java.lang.String`)
 
 ### `revisionStrategyId` (`java.lang.String`)
 
 ## Constructors
 
-### `public RecoveryPolicy(int maxRetries, int maxRerouteAttempts, java.lang.String classifierId, java.lang.String revisionStrategyId, java.lang.String replanStrategyId, boolean enabled)`
+### `public RecoveryPolicy(int maxRetries, int maxRerouteAttempts, java.lang.String classifierId, java.lang.String revisionStrategyId, java.lang.String replanStrategyId, boolean enabled, int maxTriageAttempts)`
 
 #### Parameters
 
@@ -48,6 +52,7 @@
 - `revisionStrategyId` (`java.lang.String`)
 - `replanStrategyId` (`java.lang.String`)
 - `enabled` (`boolean`)
+- `maxTriageAttempts` (`int`)
 
 ## Methods
 
@@ -66,6 +71,8 @@
 ### `public int maxRerouteAttempts()`
 
 ### `public int maxRetries()`
+
+### `public int maxTriageAttempts()`
 
 ### `public java.lang.String replanStrategyId()`
 
