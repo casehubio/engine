@@ -81,21 +81,20 @@ public class FlowWorkerFunctionHandler implements WorkerFunctionHandler {
         instanceId, context.caseId(), metadata.workerName(), metadata.inputDataHash());
     try {
       final CompletableFuture<WorkflowModel> future = wfInstance.start();
-      future.whenComplete((m, ex) -> registry.remove(instanceId));
 
       WorkflowModel model;
       try {
         model = future.join();
       } catch (Exception e) {
         List<StepResult> steps = registry.getSteps(instanceId);
-        registry.removeSteps(instanceId);
+        registry.remove(instanceId);
         Throwable root = e.getCause() != null ? e.getCause() : e;
         throw new PlaybookExecutionException(
             root.getMessage(), root, new PlaybookExecutionResult.Failure(root.getMessage(), steps));
       }
 
       List<StepResult> steps = registry.getSteps(instanceId);
-      registry.removeSteps(instanceId);
+      registry.remove(instanceId);
 
       Map<String, Object> outputMap =
           model
@@ -125,7 +124,6 @@ public class FlowWorkerFunctionHandler implements WorkerFunctionHandler {
       throw e;
     } catch (final RuntimeException e) {
       registry.remove(instanceId);
-      registry.removeSteps(instanceId);
       throw e;
     }
   }
