@@ -80,7 +80,8 @@ class QuartzRetryServiceTest {
             recoveryService,
             caseDefinitionRegistry,
             eventDispatcher,
-            recoveryCoordinator);
+            recoveryCoordinator,
+            (caseId, bindingName) -> 0);
     retryService = new QuartzRetryService(retryOrchestrator, schedulerService);
   }
 

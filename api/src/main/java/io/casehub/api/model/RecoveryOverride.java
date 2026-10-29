@@ -22,13 +22,17 @@ public record RecoveryOverride(
     Integer maxRerouteAttempts,
     RecoveryLevel maxLevel,
     boolean skipRecovery,
-    Set<OutcomeType> skipRecoveryFor) {
+    Set<OutcomeType> skipRecoveryFor,
+    boolean skipTriage,
+    Integer maxTriageAttempts) {
   public RecoveryOverride {
-    if (skipRecoveryFor == null) skipRecoveryFor = Set.of();
+    if (skipRecoveryFor == null) {
+      skipRecoveryFor = Set.of();
+    }
   }
 
   public static RecoveryOverride skip() {
-    return new RecoveryOverride(null, null, null, true, Set.of());
+    return new RecoveryOverride(null, null, null, true, Set.of(), false, null);
   }
 
   public int effectiveMaxRetries(RecoveryPolicy policy) {
@@ -41,5 +45,9 @@ public record RecoveryOverride(
 
   public RecoveryLevel effectiveMaxLevel() {
     return maxLevel != null ? maxLevel : RecoveryLevel.FUNDAMENTAL;
+  }
+
+  public int effectiveMaxTriageAttempts(RecoveryPolicy policy) {
+    return maxTriageAttempts != null ? maxTriageAttempts : policy.maxTriageAttempts();
   }
 }

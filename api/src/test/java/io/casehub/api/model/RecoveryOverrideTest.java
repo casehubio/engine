@@ -24,31 +24,32 @@ class RecoveryOverrideTest {
 
   @Test
   void effectiveMaxRetriesUsesOverrideWhenPresent() {
-    var override = new RecoveryOverride(5, null, null, false, Set.of());
+    var override = new RecoveryOverride(5, null, null, false, Set.of(), false, null);
     assertThat(override.effectiveMaxRetries(RecoveryPolicy.DEFAULT)).isEqualTo(5);
   }
 
   @Test
   void effectiveMaxRetriesFallsThroughToPolicy() {
-    var override = new RecoveryOverride(null, null, null, false, Set.of());
+    var override = new RecoveryOverride(null, null, null, false, Set.of(), false, null);
     assertThat(override.effectiveMaxRetries(RecoveryPolicy.DEFAULT)).isEqualTo(3);
   }
 
   @Test
   void effectiveMaxRerouteUsesOverrideWhenPresent() {
-    var override = new RecoveryOverride(null, 10, null, false, Set.of());
+    var override = new RecoveryOverride(null, 10, null, false, Set.of(), false, null);
     assertThat(override.effectiveMaxRerouteAttempts(RecoveryPolicy.DEFAULT)).isEqualTo(10);
   }
 
   @Test
   void effectiveMaxLevelDefaultsToFundamental() {
-    var override = new RecoveryOverride(null, null, null, false, Set.of());
+    var override = new RecoveryOverride(null, null, null, false, Set.of(), false, null);
     assertThat(override.effectiveMaxLevel()).isEqualTo(RecoveryLevel.FUNDAMENTAL);
   }
 
   @Test
   void effectiveMaxLevelUsesOverrideWhenPresent() {
-    var override = new RecoveryOverride(null, null, RecoveryLevel.TRANSIENT, false, Set.of());
+    var override =
+        new RecoveryOverride(null, null, RecoveryLevel.TRANSIENT, false, Set.of(), false, null);
     assertThat(override.effectiveMaxLevel()).isEqualTo(RecoveryLevel.TRANSIENT);
   }
 
@@ -60,13 +61,38 @@ class RecoveryOverrideTest {
 
   @Test
   void skipRecoveryForDefaultsToEmptySet() {
-    var override = new RecoveryOverride(null, null, null, false, null);
+    var override = new RecoveryOverride(null, null, null, false, null, false, null);
     assertThat(override.skipRecoveryFor()).isEmpty();
   }
 
   @Test
   void skipRecoveryForPreservesValues() {
-    var override = new RecoveryOverride(null, null, null, false, Set.of(OutcomeType.DECLINED));
+    var override =
+        new RecoveryOverride(null, null, null, false, Set.of(OutcomeType.DECLINED), false, null);
     assertThat(override.skipRecoveryFor()).containsExactly(OutcomeType.DECLINED);
+  }
+
+  @Test
+  void skipTriageDefaultsToFalse() {
+    var override = new RecoveryOverride(null, null, null, false, Set.of(), false, null);
+    assertThat(override.skipTriage()).isFalse();
+  }
+
+  @Test
+  void effectiveMaxTriageAttemptsFallsThroughToPolicy() {
+    var override = new RecoveryOverride(null, null, null, false, Set.of(), false, null);
+    assertThat(override.effectiveMaxTriageAttempts(RecoveryPolicy.DEFAULT)).isEqualTo(2);
+  }
+
+  @Test
+  void effectiveMaxTriageAttemptsUsesOverrideWhenSet() {
+    var override = new RecoveryOverride(null, null, null, false, Set.of(), false, 5);
+    assertThat(override.effectiveMaxTriageAttempts(RecoveryPolicy.DEFAULT)).isEqualTo(5);
+  }
+
+  @Test
+  void skipFactoryDoesNotSkipTriage() {
+    var override = RecoveryOverride.skip();
+    assertThat(override.skipTriage()).isFalse();
   }
 }

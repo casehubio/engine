@@ -51,18 +51,21 @@ public class RetryOrchestrator {
   private final CaseDefinitionRegistry caseDefinitionRegistry;
   private final EventDispatcher eventDispatcher;
   private final RecoveryCoordinator recoveryCoordinator;
+  private final java.util.function.BiFunction<java.util.UUID, String, Integer> triageRoundLookup;
 
   public RetryOrchestrator(
       EventLogRepository eventLogRepository,
       WorkerExecutionRecoveryService recoveryService,
       CaseDefinitionRegistry caseDefinitionRegistry,
       EventDispatcher eventDispatcher,
-      RecoveryCoordinator recoveryCoordinator) {
+      RecoveryCoordinator recoveryCoordinator,
+      java.util.function.BiFunction<java.util.UUID, String, Integer> triageRoundLookup) {
     this.eventLogRepository = eventLogRepository;
     this.recoveryService = recoveryService;
     this.caseDefinitionRegistry = caseDefinitionRegistry;
     this.eventDispatcher = eventDispatcher;
     this.recoveryCoordinator = recoveryCoordinator;
+    this.triageRoundLookup = triageRoundLookup;
   }
 
   public void handleFailure(
@@ -80,11 +83,12 @@ public class RetryOrchestrator {
     }
 
     long failureCount = countFailedAttempts(taskData);
-    applyRetryDecision(taskData, retryPolicy, failureCount, rescheduleCallback);
+    applyRetryDecision(taskData, cause, retryPolicy, failureCount, rescheduleCallback);
   }
 
   private void applyRetryDecision(
       WorkerTaskData taskData,
+      Throwable cause,
       RetryPolicy retryPolicy,
       long failureCount,
       RescheduleCallback rescheduleCallback) {
@@ -105,6 +109,10 @@ public class RetryOrchestrator {
             "Worker %s exhausted all %d retry attempts for case %s: %s",
             taskData.workerId(), retryPolicy.maxAttempts(), taskData.caseId(), exhaust.reason());
 
+        io.casehub.api.model.PlaybookExecutionResult execResult = null;
+        if (cause instanceof io.casehub.api.model.ExecutionResultCarrier carrier) {
+          execResult = carrier.getExecutionResult();
+        }
         RecoveryContext recoveryCtx =
             new RecoveryContext(
                 taskData.caseId(),
@@ -114,7 +122,8 @@ public class RetryOrchestrator {
                 null,
                 null,
                 (int) failureCount,
-                null);
+                null,
+                execResult);
 
         if (recoveryCoordinator.handleFailure(recoveryCtx)) {
           return;
@@ -160,6 +169,7 @@ public class RetryOrchestrator {
   }
 
   private long countFailedAttempts(WorkerTaskData taskData) {
+    int currentTriageRound = resolveTriageRound(taskData);
     List<EventLog> eventLogs =
         eventLogRepository.findByCaseAndWorkerAndType(
             taskData.caseId(),
@@ -171,7 +181,11 @@ public class RetryOrchestrator {
             eventLog -> {
               JsonNode metadata = eventLog.getMetadata();
               JsonNode hashNode = metadata == null ? null : metadata.get("inputDataHash");
-              return hashNode != null && taskData.inputDataHash().equals(hashNode.asText());
+              JsonNode roundNode = metadata == null ? null : metadata.get("triageRound");
+              int round = roundNode != null ? roundNode.asInt(0) : 0;
+              return hashNode != null
+                  && taskData.inputDataHash().equals(hashNode.asText())
+                  && round == currentTriageRound;
             })
         .count();
   }
@@ -221,11 +235,20 @@ public class RetryOrchestrator {
     eventLog.setEventType(CaseHubEventType.WORKER_EXECUTION_FAILED);
     eventLog.setStreamType(EventStreamType.CASE);
     eventLog.setTimestamp(Instant.now());
+    int triageRound = resolveTriageRound(taskData);
     eventLog.setMetadata(
         MAPPER
             .createObjectNode()
             .put("inputDataHash", taskData.inputDataHash())
-            .put("errorMessage", errorMessage != null ? errorMessage : "unknown"));
+            .put("errorMessage", errorMessage != null ? errorMessage : "unknown")
+            .put("triageRound", triageRound));
     eventLogRepository.append(eventLog, taskData.tenancyId());
+  }
+
+  private int resolveTriageRound(WorkerTaskData taskData) {
+    if (taskData.bindingName() == null) {
+      return 0;
+    }
+    return triageRoundLookup.apply(taskData.caseId(), taskData.bindingName());
   }
 }

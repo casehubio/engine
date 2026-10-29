@@ -1153,13 +1153,30 @@ public final class YamlCaseDefinitionConverter {
         yro.maxRerouteAttempts(),
         yro.maxLevel() != null ? RecoveryLevel.valueOf(yro.maxLevel()) : null,
         yro.skipRecovery() != null && yro.skipRecovery(),
-        skipFor);
+        skipFor,
+        yro.skipTriage() != null && yro.skipTriage(),
+        yro.maxTriageAttempts());
   }
 
   // --- Config conversions -------------------------------------------------
 
   private static RecoveryPolicy convertRecoveryPolicy(YamlRecoveryPolicy yrp) {
-    return MAPPER.convertValue(yrp, RecoveryPolicy.class);
+    return new RecoveryPolicy(
+        yrp.maxRetries() != null ? yrp.maxRetries() : RecoveryPolicy.DEFAULT.maxRetries(),
+        yrp.maxRerouteAttempts() != null
+            ? yrp.maxRerouteAttempts()
+            : RecoveryPolicy.DEFAULT.maxRerouteAttempts(),
+        yrp.classifierId() != null ? yrp.classifierId() : RecoveryPolicy.DEFAULT.classifierId(),
+        yrp.revisionStrategyId() != null
+            ? yrp.revisionStrategyId()
+            : RecoveryPolicy.DEFAULT.revisionStrategyId(),
+        yrp.replanStrategyId() != null
+            ? yrp.replanStrategyId()
+            : RecoveryPolicy.DEFAULT.replanStrategyId(),
+        yrp.enabled() != null ? yrp.enabled() : RecoveryPolicy.DEFAULT.enabled(),
+        yrp.maxTriageAttempts() != null
+            ? yrp.maxTriageAttempts()
+            : RecoveryPolicy.DEFAULT.maxTriageAttempts());
   }
 
   private static MonitoringConfig convertMonitoring(YamlMonitoringConfig ym) {

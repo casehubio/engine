@@ -87,6 +87,11 @@ class DefaultRecoveryCoordinatorTest {
     when(planItemStoreInstance.isResolvable()).thenReturn(true);
     when(planItemStoreInstance.get()).thenReturn(planItemStore);
 
+    @SuppressWarnings("unchecked")
+    Instance<io.casehub.platform.api.governance.TriageHandler> triageInstance =
+        mock(Instance.class);
+    when(triageInstance.isResolvable()).thenReturn(false);
+
     coordinator =
         new DefaultRecoveryCoordinator(
             classifier,
@@ -99,7 +104,8 @@ class DefaultRecoveryCoordinatorTest {
             eventLogRepository,
             eventBus,
             lockRegistry,
-            planItemStoreInstance);
+            planItemStoreInstance,
+            triageInstance);
   }
 
   @Test
@@ -365,7 +371,8 @@ class DefaultRecoveryCoordinatorTest {
                     .capability(Capability.of("capability-1", ".", "."))
                     .on(new ContextChangeTrigger(".ready"))
                     .recoveryOverride(
-                        new RecoveryOverride(null, null, null, false, Set.of(OutcomeType.EXPIRED)))
+                        new RecoveryOverride(
+                            null, null, null, false, Set.of(OutcomeType.EXPIRED), false, null))
                     .build())
             .build();
     CaseMetaModel meta = new CaseMetaModel();
@@ -390,7 +397,8 @@ class DefaultRecoveryCoordinatorTest {
                     .capability(Capability.of("capability-1", ".", "."))
                     .on(new ContextChangeTrigger(".ready"))
                     .recoveryOverride(
-                        new RecoveryOverride(null, null, RecoveryLevel.REASONING, false, Set.of()))
+                        new RecoveryOverride(
+                            null, null, RecoveryLevel.REASONING, false, Set.of(), false, null))
                     .build())
             .build();
     CaseMetaModel meta = new CaseMetaModel();

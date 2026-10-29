@@ -39,4 +39,14 @@ class RecoveryPolicyTest {
     assertThat(policy.maxRetries()).isZero();
     assertThat(policy.maxRerouteAttempts()).isZero();
   }
+
+  @Test
+  void defaultPolicyHasMaxTriageAttempts() {
+    assertThat(RecoveryPolicy.DEFAULT.maxTriageAttempts()).isEqualTo(2);
+  }
+
+  @Test
+  void disabledPolicyHasZeroTriageAttempts() {
+    assertThat(RecoveryPolicy.DISABLED.maxTriageAttempts()).isZero();
+  }
 }
