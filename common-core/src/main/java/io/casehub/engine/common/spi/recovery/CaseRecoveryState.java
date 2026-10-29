@@ -28,6 +28,10 @@ public class CaseRecoveryState {
     return bindingStates.computeIfAbsent(bindingName, k -> new BindingRecoveryState());
   }
 
+  public BindingRecoveryState find(String bindingName) {
+    return bindingStates.get(bindingName);
+  }
+
   public void markCompoundAdapted(String compoundId) {
     recoveryAdaptedCompounds.add(compoundId);
   }

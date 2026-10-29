@@ -75,6 +75,7 @@ public class DefaultRecoveryCoordinator implements RecoveryCoordinator {
   private final CompoundLockRegistry lockRegistry;
 
   private final Instance<io.casehub.engine.common.spi.PlanItemStore> planItemStore;
+  private final Instance<io.casehub.platform.api.governance.TriageHandler> triageHandler;
 
   @Inject
   public DefaultRecoveryCoordinator(
@@ -88,7 +89,8 @@ public class DefaultRecoveryCoordinator implements RecoveryCoordinator {
       EventLogRepository eventLogRepository,
       EventBus eventBus,
       CompoundLockRegistry lockRegistry,
-      Instance<io.casehub.engine.common.spi.PlanItemStore> planItemStore) {
+      Instance<io.casehub.engine.common.spi.PlanItemStore> planItemStore,
+      Instance<io.casehub.platform.api.governance.TriageHandler> triageHandler) {
     this.classifier = classifier;
     this.stateRegistry = stateRegistry;
     this.planVersionStore = planVersionStore;
@@ -100,6 +102,7 @@ public class DefaultRecoveryCoordinator implements RecoveryCoordinator {
     this.eventBus = eventBus;
     this.lockRegistry = lockRegistry;
     this.planItemStore = planItemStore;
+    this.triageHandler = triageHandler;
   }
 
   @Override
@@ -122,40 +125,47 @@ public class DefaultRecoveryCoordinator implements RecoveryCoordinator {
     Binding binding = findBinding(definition, context.bindingName());
     RecoveryOverride override = binding != null ? binding.getRecoveryOverride() : null;
 
-    if (override != null && override.skipRecovery()) {
-      return false;
-    }
-    if (override != null
-        && !override.skipRecoveryFor().isEmpty()
-        && override.skipRecoveryFor().contains(toOutcomeType(context.outcome()))) {
-      return false;
-    }
-
-    RecoveryLevel level = classifier.classify(buildClassificationContext(context, definition));
-    RecoveryLevel maxLevel =
-        override != null ? override.effectiveMaxLevel() : RecoveryLevel.FUNDAMENTAL;
+    boolean skipStructural =
+        (override != null && override.skipRecovery())
+            || (override != null
+                && !override.skipRecoveryFor().isEmpty()
+                && override.skipRecoveryFor().contains(toOutcomeType(context.outcome())));
 
     CaseRecoveryState caseState = stateRegistry.getOrCreate(context.caseId());
     BindingRecoveryState bindingState = caseState.getOrCreate(context.bindingName());
-    bindingState.setCurrentLevel(level);
-    bindingState.incrementRetryCount();
 
-    return switch (level) {
-      case TRANSIENT -> {
-        LOG.infof(
-            "Recovery: TRANSIENT classification for case=%s binding=%s — no escalation, agent '%s' remains eligible",
-            context.caseId(), context.bindingName(), context.workerName());
-        yield false;
+    if (!skipStructural) {
+      RecoveryLevel level = classifier.classify(buildClassificationContext(context, definition));
+      RecoveryLevel maxLevel =
+          override != null ? override.effectiveMaxLevel() : RecoveryLevel.FUNDAMENTAL;
+
+      bindingState.setCurrentLevel(level);
+      bindingState.incrementRetryCount();
+
+      boolean structuralRecovered =
+          switch (level) {
+            case TRANSIENT -> {
+              LOG.infof(
+                  "Recovery: TRANSIENT classification for case=%s binding=%s — no escalation, agent '%s' remains eligible",
+                  context.caseId(), context.bindingName(), context.workerName());
+              yield false;
+            }
+            case REASONING -> {
+              bindingState.excludeAgent(context.workerName());
+              yield escalateToLevel2(context, instance, definition, maxLevel, caseState);
+            }
+            case FUNDAMENTAL -> {
+              bindingState.excludeAgent(context.workerName());
+              yield escalateToLevel3(context, instance, definition, maxLevel, caseState);
+            }
+          };
+
+      if (structuralRecovered) {
+        return true;
       }
-      case REASONING -> {
-        bindingState.excludeAgent(context.workerName());
-        yield escalateToLevel2(context, instance, definition, maxLevel, caseState);
-      }
-      case FUNDAMENTAL -> {
-        bindingState.excludeAgent(context.workerName());
-        yield escalateToLevel3(context, instance, definition, maxLevel, caseState);
-      }
-    };
+    }
+
+    return attemptTriage(context, instance, policy, override, bindingState);
   }
 
   private boolean escalateToLevel2(
@@ -276,6 +286,100 @@ public class DefaultRecoveryCoordinator implements RecoveryCoordinator {
         "Recovery: Level 3 replan for case=%s triggered by binding=%s",
         ctx.caseId(), ctx.bindingName());
     return true;
+  }
+
+  private boolean attemptTriage(
+      RecoveryContext ctx,
+      CaseInstance instance,
+      RecoveryPolicy policy,
+      RecoveryOverride override,
+      BindingRecoveryState bindingState) {
+    if (!triageHandler.isResolvable()) {
+      return false;
+    }
+    boolean skipTriage = override != null && override.skipTriage();
+    if (skipTriage) {
+      return false;
+    }
+    int maxTriageAttempts =
+        override != null ? override.effectiveMaxTriageAttempts(policy) : policy.maxTriageAttempts();
+    if (bindingState.triageAttemptCount() >= maxTriageAttempts) {
+      LOG.infof(
+          "Recovery: triage attempts exhausted (%d/%d) for case=%s binding=%s",
+          bindingState.triageAttemptCount(), maxTriageAttempts, ctx.caseId(), ctx.bindingName());
+      return false;
+    }
+
+    io.casehub.platform.api.governance.TriageContext triageCtx =
+        buildTriageContext(ctx, bindingState, maxTriageAttempts);
+    io.casehub.platform.api.governance.TriageDecision decision =
+        triageHandler.get().evaluate(triageCtx);
+
+    return switch (decision) {
+      case io.casehub.platform.api.governance.TriageDecision.Retry retry -> {
+        bindingState.recordTriageModifications(retry.modifications());
+        bindingState.incrementTriageAttemptCount();
+        LOG.infof(
+            "Recovery: triage Retry for case=%s binding=%s (attempt %d/%d)",
+            ctx.caseId(), ctx.bindingName(), bindingState.triageAttemptCount(), maxTriageAttempts);
+        eventBus.publish(
+            EventBusAddresses.CONTEXT_CHANGED,
+            new CaseContextChangedEvent(
+                instance, instance.getCaseContext().snapshot(), ContextLayer.WORKING));
+        yield true;
+      }
+      case io.casehub.platform.api.governance.TriageDecision.Abandon abandon -> {
+        LOG.infof(
+            "Recovery: triage Abandon for case=%s binding=%s: %s",
+            ctx.caseId(), ctx.bindingName(), abandon.reason());
+        eventBus.publish(
+            EventBusAddresses.COORDINATION_EXHAUSTED,
+            new io.casehub.platform.api.governance.CoordinationExhaustedEvent(
+                ctx.caseId() + ":" + ctx.bindingName(),
+                "worker-execution",
+                bindingState.triageAttemptCount(),
+                abandon.reason(),
+                Map.of()));
+        yield false;
+      }
+    };
+  }
+
+  private io.casehub.platform.api.governance.TriageContext buildTriageContext(
+      RecoveryContext ctx, BindingRecoveryState bindingState, int maxTriageAttempts) {
+    String failureSummary = "unknown";
+    java.util.Map<String, Object> failureDetail = Map.of();
+    if (ctx.executionResult()
+        instanceof io.casehub.api.model.PlaybookExecutionResult.Failure failure) {
+      failureSummary = failure.rootCause();
+      failureDetail =
+          Map.of(
+              "steps",
+              failure.steps().stream()
+                  .map(
+                      s ->
+                          Map.of(
+                              "stepId",
+                              (Object) s.stepId(),
+                              "stepName",
+                              s.stepName(),
+                              "status",
+                              s.status().name(),
+                              "error",
+                              s.error() != null ? s.error() : ""))
+                  .toList());
+    }
+    java.util.Map<String, Object> executionContext = new java.util.HashMap<>();
+    executionContext.put("previousTriageModifications", bindingState.previousTriageModifications());
+
+    return new io.casehub.platform.api.governance.TriageContext(
+        ctx.caseId() + ":" + ctx.bindingName(),
+        "worker-execution",
+        bindingState.triageAttemptCount() + 1,
+        maxTriageAttempts,
+        failureSummary,
+        failureDetail,
+        executionContext);
   }
 
   private void snapshotPlanVersion(RecoveryContext ctx, PlanVersionTrigger trigger) {

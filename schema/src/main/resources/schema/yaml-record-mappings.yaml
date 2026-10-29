@@ -487,6 +487,8 @@ types:
       - { name: maxLevel, type: String }
       - { name: skipRecovery, type: Boolean }
       - { name: skipRecoveryFor, type: "List<String>" }
+      - { name: skipTriage, type: Boolean }
+      - { name: maxTriageAttempts, type: Integer }
 
   RecoveryPolicy:
     record: YamlRecoveryPolicy
@@ -497,6 +499,7 @@ types:
       - { name: revisionStrategyId, type: String }
       - { name: replanStrategyId, type: String }
       - { name: enabled, type: Boolean }
+      - { name: maxTriageAttempts, type: Integer }
 
   YamlReflectionTriggerConfig:
     record: YamlReflectionTriggerConfig

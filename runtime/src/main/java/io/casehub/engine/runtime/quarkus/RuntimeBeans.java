@@ -1250,13 +1250,19 @@ public class RuntimeBeans {
       WorkerExecutionRecoveryService recoveryService,
       CaseDefinitionRegistry caseDefinitionRegistry,
       EventDispatcher eventDispatcher,
-      RecoveryCoordinator recoveryCoordinator) {
+      RecoveryCoordinator recoveryCoordinator,
+      CaseRecoveryStateRegistry recoveryStateRegistry) {
     return new RetryOrchestrator(
         eventLogRepository,
         recoveryService,
         caseDefinitionRegistry,
         eventDispatcher,
-        recoveryCoordinator);
+        recoveryCoordinator,
+        (caseId, bindingName) -> {
+          var caseState = recoveryStateRegistry.getOrCreate(caseId);
+          var bindingState = caseState.find(bindingName);
+          return bindingState != null ? bindingState.triageAttemptCount() : 0;
+        });
   }
 
   @Produces

@@ -24,6 +24,9 @@ public class BindingRecoveryState {
   private volatile RecoveryLevel currentLevel;
   private final AtomicInteger retryCount = new AtomicInteger(0);
   private final Set<String> excludedAgents = ConcurrentHashMap.newKeySet();
+  private final AtomicInteger triageAttemptCount = new AtomicInteger(0);
+  private final java.util.List<java.util.Map<String, Object>> triageModifications =
+      java.util.Collections.synchronizedList(new java.util.ArrayList<>());
 
   public RecoveryLevel currentLevel() {
     return currentLevel;
@@ -47,5 +50,21 @@ public class BindingRecoveryState {
 
   public void excludeAgent(String agentName) {
     excludedAgents.add(agentName);
+  }
+
+  public int triageAttemptCount() {
+    return triageAttemptCount.get();
+  }
+
+  public int incrementTriageAttemptCount() {
+    return triageAttemptCount.incrementAndGet();
+  }
+
+  public java.util.List<java.util.Map<String, Object>> previousTriageModifications() {
+    return java.util.List.copyOf(triageModifications);
+  }
+
+  public void recordTriageModifications(java.util.Map<String, Object> modifications) {
+    triageModifications.add(java.util.Map.copyOf(modifications));
   }
 }

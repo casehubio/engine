@@ -86,7 +86,8 @@ class DbSchedulerRetryServiceTest {
             recoveryService,
             caseDefinitionRegistry,
             eventDispatcher,
-            recoveryCoordinator);
+            recoveryCoordinator,
+            (caseId, bindingName) -> 0);
 
     workerExecutionTask =
         Tasks.oneTime(DbSchedulerLifecycle.TASK_WORKER_EXECUTION, ScheduledJobData.class)

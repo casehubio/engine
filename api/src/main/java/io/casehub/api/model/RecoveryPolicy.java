@@ -21,10 +21,11 @@ public record RecoveryPolicy(
     String classifierId,
     String revisionStrategyId,
     String replanStrategyId,
-    boolean enabled) {
+    boolean enabled,
+    int maxTriageAttempts) {
   public static final RecoveryPolicy DEFAULT =
-      new RecoveryPolicy(3, 3, "heuristic", "forward-replan", "llm", true);
+      new RecoveryPolicy(3, 3, "heuristic", "forward-replan", "llm", true, 2);
 
   public static final RecoveryPolicy DISABLED =
-      new RecoveryPolicy(0, 0, "heuristic", "forward-replan", "llm", false);
+      new RecoveryPolicy(0, 0, "heuristic", "forward-replan", "llm", false, 0);
 }

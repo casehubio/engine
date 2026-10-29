@@ -15,6 +15,7 @@
  */
 package io.casehub.engine.common.spi.recovery;
 
+import io.casehub.api.model.PlaybookExecutionResult;
 import io.casehub.worker.api.WorkerOutcome;
 import java.util.UUID;
 
@@ -26,4 +27,26 @@ public record RecoveryContext(
     String capabilityName,
     WorkerOutcome<?> outcome,
     int attemptCount,
-    UUID planItemId) {}
+    UUID planItemId,
+    PlaybookExecutionResult executionResult) {
+  public RecoveryContext(
+      UUID caseId,
+      String tenancyId,
+      String bindingName,
+      String workerName,
+      String capabilityName,
+      WorkerOutcome<?> outcome,
+      int attemptCount,
+      UUID planItemId) {
+    this(
+        caseId,
+        tenancyId,
+        bindingName,
+        workerName,
+        capabilityName,
+        outcome,
+        attemptCount,
+        planItemId,
+        null);
+  }
+}

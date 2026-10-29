@@ -17,7 +17,8 @@ package io.casehub.engine.flow;
 
 import io.casehub.api.model.PlaybookExecutionResult;
 
-public class PlaybookExecutionException extends RuntimeException {
+public class PlaybookExecutionException extends RuntimeException
+    implements io.casehub.api.model.ExecutionResultCarrier {
 
   private final PlaybookExecutionResult executionResult;
 
@@ -27,6 +28,7 @@ public class PlaybookExecutionException extends RuntimeException {
     this.executionResult = executionResult;
   }
 
+  @Override
   public PlaybookExecutionResult getExecutionResult() {
     return executionResult;
   }

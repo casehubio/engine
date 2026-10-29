@@ -49,6 +49,8 @@ public final class EventBusAddresses {
 
   public static final String AGENT_ROUTING_ESCALATION = "casehub.agent.routing.escalation";
 
+  public static final String COORDINATION_EXHAUSTED = "casehub.coordination.exhausted";
+
   // --- Action gate lifecycle ---
 
   /** Published by WorkflowExecutionCompletedHandler when GateRequired fires. */
