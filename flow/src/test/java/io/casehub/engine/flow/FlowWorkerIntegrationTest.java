@@ -38,6 +38,7 @@ class FlowWorkerIntegrationTest {
   @Inject WorkOrchestrator workOrchestrator;
   @Inject CasehubDispatch casehubDispatch;
   @Inject FlowExecutionRegistry flowExecutionRegistry;
+  @Inject PlaybookExecutionListener playbookExecutionListener;
 
   @Test
   void flow_module_boots_and_FlowWorkerFunctionHandler_is_discovered() {
@@ -62,5 +63,6 @@ class FlowWorkerIntegrationTest {
   void CasehubDispatch_and_FlowExecutionRegistry_are_injectable() {
     assertThat(casehubDispatch).isNotNull();
     assertThat(flowExecutionRegistry).isNotNull();
+    assertThat(playbookExecutionListener).isNotNull();
   }
 }

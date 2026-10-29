@@ -21,17 +21,13 @@ import io.serverlessworkflow.impl.TaskContextData;
 import io.serverlessworkflow.impl.lifecycle.TaskCompletedEvent;
 import io.serverlessworkflow.impl.lifecycle.TaskFailedEvent;
 import io.serverlessworkflow.impl.lifecycle.WorkflowExecutionListener;
-import jakarta.enterprise.context.ApplicationScoped;
-import jakarta.inject.Inject;
 import java.time.Duration;
 import java.time.Instant;
 
-@ApplicationScoped
 public class PlaybookExecutionListener implements WorkflowExecutionListener {
 
   private final FlowExecutionRegistry registry;
 
-  @Inject
   public PlaybookExecutionListener(FlowExecutionRegistry registry) {
     this.registry = registry;
   }
