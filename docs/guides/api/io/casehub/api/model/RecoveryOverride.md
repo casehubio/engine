@@ -12,9 +12,13 @@
 
 ### `maxRetries` (`java.lang.Integer`)
 
+### `maxTriageAttempts` (`java.lang.Integer`)
+
 ### `skipRecovery` (`boolean`)
 
 ### `skipRecoveryFor` (`java.util.Set<io.casehub.api.model.OutcomeType>`)
+
+### `skipTriage` (`boolean`)
 
 ## Record Components
 
@@ -24,13 +28,17 @@
 
 ### `maxRetries` (`java.lang.Integer`)
 
+### `maxTriageAttempts` (`java.lang.Integer`)
+
 ### `skipRecovery` (`boolean`)
 
 ### `skipRecoveryFor` (`java.util.Set<io.casehub.api.model.OutcomeType>`)
 
+### `skipTriage` (`boolean`)
+
 ## Constructors
 
-### `public RecoveryOverride(java.lang.Integer maxRetries, java.lang.Integer maxRerouteAttempts, io.casehub.api.model.RecoveryLevel maxLevel, boolean skipRecovery, java.util.Set<io.casehub.api.model.OutcomeType> skipRecoveryFor)`
+### `public RecoveryOverride(java.lang.Integer maxRetries, java.lang.Integer maxRerouteAttempts, io.casehub.api.model.RecoveryLevel maxLevel, boolean skipRecovery, java.util.Set<io.casehub.api.model.OutcomeType> skipRecoveryFor, boolean skipTriage, java.lang.Integer maxTriageAttempts)`
 
 #### Parameters
 
@@ -39,6 +47,8 @@
 - `maxLevel` (`io.casehub.api.model.RecoveryLevel`)
 - `skipRecovery` (`boolean`)
 - `skipRecoveryFor` (`java.util.Set<io.casehub.api.model.OutcomeType>`)
+- `skipTriage` (`boolean`)
+- `maxTriageAttempts` (`java.lang.Integer`)
 
 ## Methods
 
@@ -51,6 +61,12 @@
 - `policy` (`io.casehub.api.model.RecoveryPolicy`)
 
 ### `public int effectiveMaxRetries(io.casehub.api.model.RecoveryPolicy policy)`
+
+#### Parameters
+
+- `policy` (`io.casehub.api.model.RecoveryPolicy`)
+
+### `public int effectiveMaxTriageAttempts(io.casehub.api.model.RecoveryPolicy policy)`
 
 #### Parameters
 
@@ -70,10 +86,14 @@
 
 ### `public java.lang.Integer maxRetries()`
 
+### `public java.lang.Integer maxTriageAttempts()`
+
 ### `public static io.casehub.api.model.RecoveryOverride skip()`
 
 ### `public boolean skipRecovery()`
 
 ### `public java.util.Set<io.casehub.api.model.OutcomeType> skipRecoveryFor()`
+
+### `public boolean skipTriage()`
 
 ### `public final java.lang.String toString()`
