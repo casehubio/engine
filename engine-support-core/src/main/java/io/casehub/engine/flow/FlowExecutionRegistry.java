@@ -15,6 +15,7 @@
  */
 package io.casehub.engine.flow;
 
+import jakarta.enterprise.context.ApplicationScoped;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 
@@ -23,6 +24,7 @@ import java.util.concurrent.ConcurrentHashMap;
  * Workflow steps run on quarkus-flow's cached thread pool — thread-locals are not usable; a
  * ConcurrentHashMap keyed by instance ID is the correct cross-thread mechanism.
  */
+@ApplicationScoped
 public class FlowExecutionRegistry {
 
   private final ConcurrentHashMap<String, FlowExecution> executions = new ConcurrentHashMap<>();
