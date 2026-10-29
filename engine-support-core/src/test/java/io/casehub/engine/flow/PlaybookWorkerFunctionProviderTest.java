@@ -54,7 +54,7 @@ class PlaybookWorkerFunctionProviderTest {
     var provider = new PlaybookWorkerFunctionProvider();
     ObjectNode node = MAPPER.createObjectNode();
     ObjectNode step = MAPPER.createObjectNode();
-    step.putObject("rest-request").put("method", "GET").put("url", "/api/test");
+    step.putObject("rest-request").put("method", "GET").put("url", "https://example.test/api/test");
     node.putArray("steps").add(step);
 
     var fn = provider.create(node);
