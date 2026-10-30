@@ -22,6 +22,8 @@ import io.serverlessworkflow.api.types.Document;
 import io.serverlessworkflow.api.types.SetTask;
 import io.serverlessworkflow.api.types.Task;
 import io.serverlessworkflow.api.types.TaskItem;
+import io.serverlessworkflow.api.types.ForTask;
+import io.serverlessworkflow.api.types.ForTaskConfiguration;
 import io.serverlessworkflow.api.types.TryTask;
 import io.serverlessworkflow.api.types.TryTaskCatch;
 import io.serverlessworkflow.api.types.Workflow;
@@ -103,6 +105,28 @@ class PlaybookTriageModificationApplicatorTest {
     TryTask tryTask = result.workflow().getDo().getFirst().getTask().getTryTask();
     assertThat(tryTask.getTry().getFirst().getName()).isEqualTo("try-step-1");
     assertThat(tryTask.getTry().getFirst().getTask().getSetTask()).isNotNull();
+  }
+
+  @Test
+  void skipStepInForTask() {
+    var forConfig = new ForTaskConfiguration();
+    forConfig.setEach("item");
+    forConfig.setIn(".items");
+    var forTask =
+        new ForTask()
+            .withFor(forConfig)
+            .withDo(new ArrayList<>(List.of(setTask("loop-step-1"), setTask("loop-step-2"))));
+    Workflow wf = workflow(new TaskItem("loop", new Task().withForTask(forTask)));
+    var mods =
+        List.<PlaybookTriageModification>of(
+            new PlaybookTriageModification.SkipStep("loop-step-1"));
+
+    var result = PlaybookTriageModificationApplicator.apply(wf, mods);
+
+    ForTask resultFor = result.workflow().getDo().getFirst().getTask().getForTask();
+    assertThat(resultFor.getDo().getFirst().getName()).isEqualTo("loop-step-1");
+    assertThat(resultFor.getDo().getFirst().getTask().getSetTask()).isNotNull();
+    assertThat(resultFor.getDo().get(1).getName()).isEqualTo("loop-step-2");
   }
 
   @Test

@@ -25,12 +25,22 @@ import static org.mockito.Mockito.when;
 import io.casehub.api.context.PropagationContext;
 import io.casehub.api.model.WorkerContext;
 import io.casehub.engine.common.internal.executor.ExecutionMetadata;
+import io.casehub.engine.common.spi.recovery.TriageModificationProvider;
+import io.casehub.platform.compiler.CompilationResult;
+import io.casehub.platform.compiler.CoordinationSpec;
+import io.casehub.platform.compiler.SourceMap;
 import io.casehub.worker.api.WorkerFunction;
+import io.serverlessworkflow.api.types.Document;
+import io.serverlessworkflow.api.types.SetTask;
+import io.serverlessworkflow.api.types.Task;
+import io.serverlessworkflow.api.types.TaskItem;
 import io.serverlessworkflow.api.types.Workflow;
 import io.serverlessworkflow.impl.WorkflowApplication;
 import io.serverlessworkflow.impl.WorkflowDefinition;
 import io.serverlessworkflow.impl.WorkflowInstance;
 import io.serverlessworkflow.impl.WorkflowModel;
+import jakarta.enterprise.inject.Instance;
+import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
@@ -44,13 +54,16 @@ class FlowWorkerFunctionHandlerTest {
   private FlowExecutionRegistry registry;
   private FlowWorkerFunctionHandler handler;
 
+  @SuppressWarnings("unchecked")
   @BeforeEach
   void setUp() {
     app = mock(WorkflowApplication.class);
     registry = mock(FlowExecutionRegistry.class);
+    Instance<TriageModificationProvider> noProvider = mock(Instance.class);
+    when(noProvider.isResolvable()).thenReturn(false);
     handler =
         new FlowWorkerFunctionHandler(
-            app, registry, java.util.concurrent.Executors.newSingleThreadExecutor());
+            app, registry, java.util.concurrent.Executors.newSingleThreadExecutor(), noProvider);
   }
 
   @Test
@@ -97,7 +110,10 @@ class FlowWorkerFunctionHandlerTest {
     FlowExecutionRegistry realRegistry = new FlowExecutionRegistry();
     FlowWorkerFunctionHandler handlerWithRealRegistry =
         new FlowWorkerFunctionHandler(
-            app, realRegistry, java.util.concurrent.Executors.newSingleThreadExecutor());
+            app,
+            realRegistry,
+            java.util.concurrent.Executors.newSingleThreadExecutor(),
+            noProvider());
 
     final WorkerContext context =
         new WorkerContext("worker-E", caseId, null, null, PropagationContext.createRoot(), null);
@@ -129,7 +145,10 @@ class FlowWorkerFunctionHandlerTest {
     FlowExecutionRegistry realRegistry = new FlowExecutionRegistry();
     FlowWorkerFunctionHandler handlerWithRealRegistry =
         new FlowWorkerFunctionHandler(
-            app, realRegistry, java.util.concurrent.Executors.newSingleThreadExecutor());
+            app,
+            realRegistry,
+            java.util.concurrent.Executors.newSingleThreadExecutor(),
+            noProvider());
 
     final WorkerContext context =
         new WorkerContext("w", caseId, null, null, PropagationContext.createRoot(), null);
@@ -261,6 +280,21 @@ class FlowWorkerFunctionHandlerTest {
     when(app.workflowDefinition(any())).thenReturn(definition);
   }
 
+  @SuppressWarnings("unchecked")
+  private static Instance<TriageModificationProvider> noProvider() {
+    Instance<TriageModificationProvider> inst = mock(Instance.class);
+    when(inst.isResolvable()).thenReturn(false);
+    return inst;
+  }
+
+  @SuppressWarnings("unchecked")
+  private static Instance<TriageModificationProvider> withProvider(TriageModificationProvider p) {
+    Instance<TriageModificationProvider> inst = mock(Instance.class);
+    when(inst.isResolvable()).thenReturn(true);
+    when(inst.get()).thenReturn(p);
+    return inst;
+  }
+
   @Test
   void execute_includes_planned_action_when_provided() {
     final String instanceId = "wf-action";
@@ -300,5 +334,115 @@ class FlowWorkerFunctionHandlerTest {
     assertThat(successOutcome.plannedAction().description()).isEqualTo("Entity link proposed");
     assertThat(successOutcome.plannedAction().actionType()).isEqualTo("ENTITY_LINK");
     assertThat(successOutcome.plannedAction().parameters()).containsEntry("entityType", "PERSON");
+  }
+
+  @Test
+  void no_modification_when_provider_not_resolvable() {
+    var wfInstance = mockWorkflowInstance("inst-no-mod");
+    var model = mock(WorkflowModel.class);
+    when(model.asMap()).thenReturn(Optional.of(Map.of("result", "ok")));
+    when(wfInstance.start()).thenReturn(CompletableFuture.completedFuture(model));
+    stubApp(wfInstance);
+
+    Workflow wf = mock(Workflow.class);
+    var compilation = new CompilationResult(wf, CoordinationSpec.empty(), SourceMap.empty());
+    var function = new PlaybookWorkerFunction(wf, compilation);
+    var context =
+        new WorkerContext(
+            "task",
+            UUID.randomUUID(),
+            List.of(),
+            List.of(),
+            PropagationContext.createRoot(),
+            Map.of(),
+            List.of(),
+            List.of());
+    var metadata = new ExecutionMetadata("worker-1", "hash-1", "binding-a", null);
+
+    handler.execute(function, Map.of("key", "val"), context, 5000, metadata);
+
+    verify(app).workflowDefinition(eq(wf));
+  }
+
+  @Test
+  void applies_modifications_when_provider_returns_data() {
+    TriageModificationProvider provider = mock(TriageModificationProvider.class);
+    var modHandler =
+        new FlowWorkerFunctionHandler(
+            app,
+            registry,
+            java.util.concurrent.Executors.newSingleThreadExecutor(),
+            withProvider(provider));
+
+    UUID caseId = UUID.randomUUID();
+    when(provider.getModifications(caseId, "binding-a"))
+        .thenReturn(List.of(Map.of("playbook.updateParams.mode", "safe")));
+
+    var wfInstance = mockWorkflowInstance("inst-mod");
+    var model = mock(WorkflowModel.class);
+    when(model.asMap()).thenReturn(Optional.of(Map.of("result", "ok")));
+    when(wfInstance.start()).thenReturn(CompletableFuture.completedFuture(model));
+
+    var wfDef = mock(WorkflowDefinition.class);
+    when(app.workflowDefinition(any(Workflow.class))).thenReturn(wfDef);
+    when(wfDef.instance(any())).thenReturn(wfInstance);
+
+    var doc =
+        new Document().withDsl("1.0.0").withNamespace("test").withName("test").withVersion("0.1.0");
+    var taskItem = new TaskItem("step-1", new Task().withSetTask(new SetTask()));
+    Workflow wf = new Workflow(doc, List.of(taskItem));
+    var compilation = new CompilationResult(wf, CoordinationSpec.empty(), SourceMap.empty());
+    var function = new PlaybookWorkerFunction(wf, compilation);
+
+    var context =
+        new WorkerContext(
+            "task",
+            caseId,
+            List.of(),
+            List.of(),
+            PropagationContext.createRoot(),
+            Map.of(),
+            List.of(),
+            List.of());
+    var metadata = new ExecutionMetadata("worker-1", "hash-1", "binding-a", null);
+
+    modHandler.execute(function, Map.of("key", "val"), context, 5000, metadata);
+
+    verify(provider).getModifications(caseId, "binding-a");
+  }
+
+  @Test
+  void no_modification_for_non_playbook_function() {
+    TriageModificationProvider provider = mock(TriageModificationProvider.class);
+    var modHandler =
+        new FlowWorkerFunctionHandler(
+            app,
+            registry,
+            java.util.concurrent.Executors.newSingleThreadExecutor(),
+            withProvider(provider));
+
+    var wfInstance = mockWorkflowInstance("inst-flow");
+    var model = mock(WorkflowModel.class);
+    when(model.asMap()).thenReturn(Optional.of(Map.of("result", "ok")));
+    when(wfInstance.start()).thenReturn(CompletableFuture.completedFuture(model));
+    stubApp(wfInstance);
+
+    Workflow wf = mock(Workflow.class);
+    var function = new FlowWorkerFunction(wf, null);
+    var context =
+        new WorkerContext(
+            "task",
+            UUID.randomUUID(),
+            List.of(),
+            List.of(),
+            PropagationContext.createRoot(),
+            Map.of(),
+            List.of(),
+            List.of());
+    var metadata = new ExecutionMetadata("worker-1", "hash-1", "binding-a", null);
+
+    modHandler.execute(function, Map.of(), context, 5000, metadata);
+
+    verify(provider, org.mockito.Mockito.never()).getModifications(any(), any());
   }
 }

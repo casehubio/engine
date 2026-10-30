@@ -27,6 +27,10 @@ public class CaseRecoveryStateRegistry {
     return states.computeIfAbsent(caseId, k -> new CaseRecoveryState());
   }
 
+  public CaseRecoveryState find(UUID caseId) {
+    return states.get(caseId);
+  }
+
   public void evict(UUID caseId) {
     states.remove(caseId);
   }
