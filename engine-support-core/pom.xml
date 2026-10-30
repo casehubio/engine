@@ -90,10 +90,6 @@
             <groupId>io.serverlessworkflow</groupId>
             <artifactId>serverlessworkflow-impl-core</artifactId>
         </dependency>
-        <dependency>
-            <groupId>io.serverlessworkflow</groupId>
-            <artifactId>serverlessworkflow-experimental-types</artifactId>
-        </dependency>
         <!-- MCP client for mcp module -->
         <dependency>
             <groupId>io.modelcontextprotocol.sdk</groupId>

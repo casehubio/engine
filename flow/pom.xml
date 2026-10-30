@@ -46,12 +46,6 @@
             <artifactId>quarkus-flow</artifactId>
         </dependency>
 
-        <!-- CallFunction, FunctionArguments for YAML call: casehub:dispatch -->
-        <dependency>
-            <groupId>io.serverlessworkflow</groupId>
-            <artifactId>serverlessworkflow-experimental-types</artifactId>
-        </dependency>
-
         <!-- Reactive (Uni) for EventLogRepository fire-and-forget writes -->
         <dependency>
             <groupId>io.smallrye.reactive</groupId>
