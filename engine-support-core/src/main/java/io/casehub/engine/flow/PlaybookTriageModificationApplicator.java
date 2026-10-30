@@ -79,9 +79,7 @@ public final class PlaybookTriageModificationApplicator {
   }
 
   private static List<TaskItem> transformTaskList(
-      List<TaskItem> tasks,
-      Set<String> skipSteps,
-      Map<String, Map<String, Object>> replaceInputs) {
+      List<TaskItem> tasks, Set<String> skipSteps, Map<String, Map<String, Object>> replaceInputs) {
     List<TaskItem> result = new ArrayList<>(tasks.size());
     for (TaskItem item : tasks) {
       result.add(transformTaskItem(item, skipSteps, replaceInputs));
@@ -90,9 +88,7 @@ public final class PlaybookTriageModificationApplicator {
   }
 
   private static TaskItem transformTaskItem(
-      TaskItem item,
-      Set<String> skipSteps,
-      Map<String, Map<String, Object>> replaceInputs) {
+      TaskItem item, Set<String> skipSteps, Map<String, Map<String, Object>> replaceInputs) {
     String name = item.getName();
 
     if (skipSteps.contains(name)) {

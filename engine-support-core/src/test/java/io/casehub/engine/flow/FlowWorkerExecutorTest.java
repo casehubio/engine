@@ -46,9 +46,14 @@ class FlowWorkerExecutorTest {
   void setUp() {
     app = mock(WorkflowApplication.class);
     registry = mock(FlowExecutionRegistry.class);
+    @SuppressWarnings("unchecked")
+    jakarta.enterprise.inject.Instance<
+            io.casehub.engine.common.spi.recovery.TriageModificationProvider>
+        noProvider = mock(jakarta.enterprise.inject.Instance.class);
+    when(noProvider.isResolvable()).thenReturn(false);
     handler =
         new FlowWorkerFunctionHandler(
-            app, registry, java.util.concurrent.Executors.newSingleThreadExecutor());
+            app, registry, java.util.concurrent.Executors.newSingleThreadExecutor(), noProvider);
   }
 
   @Test
