@@ -19,11 +19,11 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import io.serverlessworkflow.api.types.DoTask;
 import io.serverlessworkflow.api.types.Document;
+import io.serverlessworkflow.api.types.ForTask;
+import io.serverlessworkflow.api.types.ForTaskConfiguration;
 import io.serverlessworkflow.api.types.SetTask;
 import io.serverlessworkflow.api.types.Task;
 import io.serverlessworkflow.api.types.TaskItem;
-import io.serverlessworkflow.api.types.ForTask;
-import io.serverlessworkflow.api.types.ForTaskConfiguration;
 import io.serverlessworkflow.api.types.TryTask;
 import io.serverlessworkflow.api.types.TryTaskCatch;
 import io.serverlessworkflow.api.types.Workflow;
@@ -111,15 +111,14 @@ class PlaybookTriageModificationApplicatorTest {
   void skipStepInForTask() {
     var forConfig = new ForTaskConfiguration();
     forConfig.setEach("item");
-    forConfig.setIn(".items");
+    forConfig.setIn(new io.serverlessworkflow.api.types.ForIn().withForInExpression(".items"));
     var forTask =
         new ForTask()
             .withFor(forConfig)
             .withDo(new ArrayList<>(List.of(setTask("loop-step-1"), setTask("loop-step-2"))));
     Workflow wf = workflow(new TaskItem("loop", new Task().withForTask(forTask)));
     var mods =
-        List.<PlaybookTriageModification>of(
-            new PlaybookTriageModification.SkipStep("loop-step-1"));
+        List.<PlaybookTriageModification>of(new PlaybookTriageModification.SkipStep("loop-step-1"));
 
     var result = PlaybookTriageModificationApplicator.apply(wf, mods);
 
