@@ -355,7 +355,8 @@ public class RuntimeManualConfig {
       io.casehub.engine.runtime.stigmergy.TeamDetector teamDetector,
       io.casehub.engine.runtime.stigmergy.SwarmProgressTracker progressTracker,
       DispatchBudget dispatchBudget,
-      ObjectProvider<io.casehub.api.spi.stigmergy.SwarmProvisioningAdvisor> advisorProvider) {
+      ObjectProvider<io.casehub.api.spi.stigmergy.SwarmProvisioningAdvisor> advisorProvider,
+      ObjectProvider<io.casehub.api.spi.stigmergy.SwarmCoordinationListener> listenerProvider) {
     return new io.casehub.engine.runtime.stigmergy.SwarmProvisioner(
         workerProvisioner,
         coordinator,
@@ -365,7 +366,8 @@ public class RuntimeManualConfig {
         teamDetector,
         progressTracker,
         dispatchBudget,
-        advisorProvider.getIfAvailable());
+        advisorProvider.getIfAvailable(),
+        listenerProvider.stream().toList());
   }
 
   @Bean

@@ -1448,6 +1448,8 @@ public class CaseContextChangedEventHandler {
           var rt = roleTrackerInstance.get();
           var td = teamDetectorInstance.get();
           var spt = swarmProgressTrackerInstance.get();
+          var provisioner =
+              swarmProvisionerInstance.isPresent() ? swarmProvisionerInstance.get() : null;
           var stigConfig = caseDefinition.getStigmergyConfig();
           var swarmConfig = stigConfig != null ? stigConfig.swarm() : null;
           if (swarmConfig != null) {
@@ -1457,15 +1459,26 @@ public class CaseContextChangedEventHandler {
               for (var e : roleEvents) {
                 LOG.debugf("Swarm event for caseId=%s type=%s", caseInstance.getUuid(), e.type());
               }
+              if (!roleEvents.isEmpty() && provisioner != null) {
+                provisioner.notifyRolesChanged(
+                    caseInstance.getUuid(), rt.getDetectedRoles(caseInstance.getUuid()));
+              }
               var teamEvents = td.detect(caseInstance.getUuid(), swarmConfig);
               for (var e : teamEvents) {
                 LOG.debugf("Swarm event for caseId=%s type=%s", caseInstance.getUuid(), e.type());
               }
+              if (!teamEvents.isEmpty() && provisioner != null) {
+                provisioner.notifyTeamsChanged(
+                    caseInstance.getUuid(), td.getDetectedTeams(caseInstance.getUuid()));
+              }
             }
-            spt.evaluate(caseInstance.getUuid(), stigConfig);
+            var progressEvents = spt.evaluate(caseInstance.getUuid(), stigConfig);
+            if (!progressEvents.isEmpty() && provisioner != null) {
+              provisioner.notifyProgressUpdated(
+                  caseInstance.getUuid(), spt.getProgress(caseInstance.getUuid()));
+            }
 
-            if (swarmProvisionerInstance.isPresent()) {
-              var provisioner = swarmProvisionerInstance.get();
+            if (provisioner != null) {
               provisioner.incrementCycleCount(caseInstance.getUuid());
               var consensus = signalRegistry.consensusSignals(caseInstance.getUuid(), 2, 0.01);
               boolean hasProvisioningConsensus =

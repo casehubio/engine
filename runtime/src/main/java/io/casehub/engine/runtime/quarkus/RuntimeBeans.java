@@ -1362,7 +1362,8 @@ public class RuntimeBeans {
       Instance<io.casehub.engine.runtime.stigmergy.TeamDetector> teamDetector,
       Instance<io.casehub.engine.runtime.stigmergy.SwarmProgressTracker> progressTracker,
       io.casehub.api.spi.DispatchBudget dispatchBudget,
-      Instance<io.casehub.api.spi.stigmergy.SwarmProvisioningAdvisor> advisorInstance) {
+      Instance<io.casehub.api.spi.stigmergy.SwarmProvisioningAdvisor> advisorInstance,
+      Instance<io.casehub.api.spi.stigmergy.SwarmCoordinationListener> listenerInstances) {
     if (!coordinator.isResolvable()) {
       return new io.casehub.engine.runtime.stigmergy.SwarmProvisioner();
     }
@@ -1375,7 +1376,8 @@ public class RuntimeBeans {
         teamDetector.get(),
         progressTracker.get(),
         dispatchBudget,
-        advisorInstance.isResolvable() ? advisorInstance.get() : null);
+        advisorInstance.isResolvable() ? advisorInstance.get() : null,
+        listenerInstances.stream().toList());
   }
 
   @Produces

@@ -72,7 +72,8 @@ class IntegrationDelayTest {
             teamDetector,
             progressTracker,
             q -> Integer.MAX_VALUE,
-            null);
+            null,
+            java.util.List.of());
     roleTracker.setSwarmProvisioner(swarmProvisioner);
     caseId = UUID.randomUUID();
   }

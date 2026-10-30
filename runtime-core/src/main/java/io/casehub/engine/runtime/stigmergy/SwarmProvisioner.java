@@ -30,6 +30,7 @@ import io.casehub.api.spi.DispatchBudget;
 import io.casehub.api.spi.DispatchBudgetQuery;
 import io.casehub.api.spi.ProvisioningException;
 import io.casehub.api.spi.WorkerProvisioner;
+import io.casehub.api.spi.stigmergy.SwarmCoordinationListener;
 import io.casehub.api.spi.stigmergy.SwarmProvisioningAdvisor;
 import io.casehub.engine.common.internal.convergence.ActivityTracker;
 import io.casehub.engine.common.internal.signal.SignalRegistry;
@@ -58,6 +59,8 @@ public class SwarmProvisioner implements Resettable {
   private final SwarmProgressTracker progressTracker;
   private final DispatchBudget dispatchBudget;
   private final SwarmProvisioningAdvisor advisor;
+  private final List<SwarmCoordinationListener> listeners;
+  private final Set<UUID> initialisedCases = ConcurrentHashMap.newKeySet();
 
   private final ConcurrentHashMap<UUID, CaseProvisionState> cases = new ConcurrentHashMap<>();
 
@@ -70,7 +73,8 @@ public class SwarmProvisioner implements Resettable {
       TeamDetector teamDetector,
       SwarmProgressTracker progressTracker,
       DispatchBudget dispatchBudget,
-      SwarmProvisioningAdvisor advisor) {
+      SwarmProvisioningAdvisor advisor,
+      List<SwarmCoordinationListener> listeners) {
     this.active = true;
     this.workerProvisioner = workerProvisioner;
     this.coordinator = coordinator;
@@ -81,6 +85,7 @@ public class SwarmProvisioner implements Resettable {
     this.progressTracker = progressTracker;
     this.dispatchBudget = dispatchBudget;
     this.advisor = advisor;
+    this.listeners = listeners != null ? List.copyOf(listeners) : List.of();
   }
 
   public SwarmProvisioner() {
@@ -94,6 +99,7 @@ public class SwarmProvisioner implements Resettable {
     this.progressTracker = null;
     this.dispatchBudget = null;
     this.advisor = null;
+    this.listeners = List.of();
   }
 
   public List<SwarmEvent> evaluateAndProvision(
@@ -251,6 +257,19 @@ public class SwarmProvisioner implements Resettable {
                   "agentId", agentId,
                   "bindingName", bindingName,
                   "integrationDelay", policy.effectiveIntegrationDelay())));
+
+      if (!listeners.isEmpty()) {
+        int newSize = coordinator.activeAgents(caseId).size();
+        if (initialisedCases.add(caseId)) {
+          SwarmProgress progress = progressTracker.getProgress(caseId);
+          for (var listener : listeners) {
+            listener.onSwarmInitialised(caseId, progress);
+          }
+        }
+        for (var listener : listeners) {
+          listener.onProvisioningChanged(caseId, newSize, swarmConfig.effectiveMaxSwarmSize());
+        }
+      }
     } catch (ProvisioningException e) {
       events.add(
           new SwarmEvent(
@@ -328,6 +347,14 @@ public class SwarmProvisioner implements Resettable {
     for (String id : toRemove) {
       state.provisionedAgents.remove(id);
     }
+
+    if (!toRemove.isEmpty() && !listeners.isEmpty()) {
+      int currentSize = coordinator.activeAgents(caseId).size();
+      for (var listener : listeners) {
+        listener.onProvisioningChanged(caseId, currentSize, config.effectiveMaxSwarmSize());
+      }
+    }
+
     return events;
   }
 
@@ -423,13 +450,44 @@ public class SwarmProvisioner implements Resettable {
     return coordinator.activeAgents(caseId).stream().anyMatch(a -> a.agentId().equals(agentId));
   }
 
+  public void notifyRolesChanged(UUID caseId, List<DetectedRole> roles) {
+    if (!active || listeners.isEmpty()) {
+      return;
+    }
+    SwarmProgress progress = progressTracker.getProgress(caseId);
+    for (var listener : listeners) {
+      listener.onRoleChanged(caseId, roles, progress);
+    }
+  }
+
+  public void notifyTeamsChanged(UUID caseId, List<DetectedTeam> teams) {
+    if (!active || listeners.isEmpty()) {
+      return;
+    }
+    SwarmProgress progress = progressTracker.getProgress(caseId);
+    for (var listener : listeners) {
+      listener.onTeamChanged(caseId, teams, progress);
+    }
+  }
+
+  public void notifyProgressUpdated(UUID caseId, SwarmProgress progress) {
+    if (!active || listeners.isEmpty()) {
+      return;
+    }
+    for (var listener : listeners) {
+      listener.onProgressUpdated(caseId, progress);
+    }
+  }
+
   public void evictByCase(UUID caseId) {
     cases.remove(caseId);
+    initialisedCases.remove(caseId);
   }
 
   @Override
   public void reset() {
     cases.clear();
+    initialisedCases.clear();
   }
 
   record ProvisionedAgentMeta(
