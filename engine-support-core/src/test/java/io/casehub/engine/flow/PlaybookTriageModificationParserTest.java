@@ -71,4 +71,80 @@ class PlaybookTriageModificationParserTest {
   void emptyMapReturnsEmptyList() {
     assertThat(PlaybookTriageModificationParser.parse(Map.of())).isEmpty();
   }
+
+  @Test
+  void mergeAll_emptyListReturnsEmpty() {
+    assertThat(PlaybookTriageModificationParser.mergeAll(List.of())).isEmpty();
+  }
+
+  @Test
+  void mergeAll_singleRoundSameAsParse() {
+    Map<String, Object> round = Map.of("playbook.skipSteps", List.of("s1"));
+    List<PlaybookTriageModification> merged =
+        PlaybookTriageModificationParser.mergeAll(List.of(round));
+    assertThat(merged).hasSize(1);
+    assertThat(merged.getFirst()).isInstanceOf(PlaybookTriageModification.SkipStep.class);
+  }
+
+  @Test
+  void mergeAll_cumulativeSkipSteps() {
+    var round1 = Map.<String, Object>of("playbook.skipSteps", List.of("step-a"));
+    var round2 = Map.<String, Object>of("playbook.skipSteps", List.of("step-b"));
+    List<PlaybookTriageModification> merged =
+        PlaybookTriageModificationParser.mergeAll(List.of(round1, round2));
+
+    List<String> skipped =
+        merged.stream()
+            .filter(m -> m instanceof PlaybookTriageModification.SkipStep)
+            .map(m -> ((PlaybookTriageModification.SkipStep) m).stepId())
+            .toList();
+    assertThat(skipped).containsExactlyInAnyOrder("step-a", "step-b");
+  }
+
+  @Test
+  void mergeAll_duplicateSkipStepDeduplicates() {
+    var round1 = Map.<String, Object>of("playbook.skipSteps", List.of("step-a"));
+    var round2 = Map.<String, Object>of("playbook.skipSteps", List.of("step-a", "step-b"));
+    List<PlaybookTriageModification> merged =
+        PlaybookTriageModificationParser.mergeAll(List.of(round1, round2));
+
+    List<String> skipped =
+        merged.stream()
+            .filter(m -> m instanceof PlaybookTriageModification.SkipStep)
+            .map(m -> ((PlaybookTriageModification.SkipStep) m).stepId())
+            .toList();
+    assertThat(skipped).containsExactlyInAnyOrder("step-a", "step-b");
+  }
+
+  @Test
+  void mergeAll_replaceStepInputLastWriterWins() {
+    var round1 = Map.<String, Object>of("playbook.replaceInput.fetch", Map.of("url", "/v1"));
+    var round2 = Map.<String, Object>of("playbook.replaceInput.fetch", Map.of("url", "/v2"));
+    List<PlaybookTriageModification> merged =
+        PlaybookTriageModificationParser.mergeAll(List.of(round1, round2));
+
+    var replace =
+        merged.stream()
+            .filter(m -> m instanceof PlaybookTriageModification.ReplaceStepInput)
+            .map(m -> (PlaybookTriageModification.ReplaceStepInput) m)
+            .findFirst()
+            .orElseThrow();
+    assertThat(replace.newInput()).containsEntry("url", "/v2");
+  }
+
+  @Test
+  void mergeAll_updateParameterLastWriterWins() {
+    var round1 = Map.<String, Object>of("playbook.updateParams.timeout", 1000);
+    var round2 = Map.<String, Object>of("playbook.updateParams.timeout", 5000);
+    List<PlaybookTriageModification> merged =
+        PlaybookTriageModificationParser.mergeAll(List.of(round1, round2));
+
+    var update =
+        merged.stream()
+            .filter(m -> m instanceof PlaybookTriageModification.UpdateParameter)
+            .map(m -> (PlaybookTriageModification.UpdateParameter) m)
+            .findFirst()
+            .orElseThrow();
+    assertThat(update.value()).isEqualTo(5000);
+  }
 }
