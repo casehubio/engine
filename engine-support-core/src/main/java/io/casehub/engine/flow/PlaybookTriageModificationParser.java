@@ -16,8 +16,11 @@
 package io.casehub.engine.flow;
 
 import java.util.ArrayList;
+import java.util.LinkedHashMap;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 public final class PlaybookTriageModificationParser {
 
@@ -59,9 +62,9 @@ public final class PlaybookTriageModificationParser {
       return List.of();
     }
 
-    java.util.Set<String> skippedSteps = new java.util.LinkedHashSet<>();
-    java.util.Map<String, Map<String, Object>> replacedInputs = new java.util.LinkedHashMap<>();
-    java.util.Map<String, Object> updatedParams = new java.util.LinkedHashMap<>();
+    Set<String> skippedSteps = new LinkedHashSet<>();
+    Map<String, Map<String, Object>> replacedInputs = new LinkedHashMap<>();
+    Map<String, Object> updatedParams = new LinkedHashMap<>();
 
     for (Map<String, Object> round : rounds) {
       for (PlaybookTriageModification mod : parse(round)) {

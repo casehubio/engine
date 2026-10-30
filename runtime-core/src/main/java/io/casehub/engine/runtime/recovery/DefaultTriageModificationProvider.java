@@ -36,7 +36,10 @@ public class DefaultTriageModificationProvider implements TriageModificationProv
 
   @Override
   public List<Map<String, Object>> getModifications(UUID caseId, String bindingName) {
-    CaseRecoveryState caseState = stateRegistry.getOrCreate(caseId);
+    CaseRecoveryState caseState = stateRegistry.find(caseId);
+    if (caseState == null) {
+      return List.of();
+    }
     BindingRecoveryState bindingState = caseState.find(bindingName);
     if (bindingState == null) {
       return List.of();

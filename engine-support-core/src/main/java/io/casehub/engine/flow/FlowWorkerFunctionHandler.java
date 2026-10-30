@@ -21,12 +21,16 @@ import io.casehub.api.model.WorkerContext;
 import io.casehub.engine.common.internal.executor.ExecutionMetadata;
 import io.casehub.engine.common.internal.executor.HandlerResult;
 import io.casehub.engine.common.internal.executor.WorkerFunctionHandler;
+import io.casehub.engine.common.spi.recovery.TriageModificationProvider;
 import io.casehub.worker.api.PlannedAction;
 import io.casehub.worker.api.WorkerFunction;
 import io.casehub.worker.api.WorkerResult;
+import io.serverlessworkflow.api.types.Workflow;
 import io.serverlessworkflow.impl.WorkflowApplication;
 import io.serverlessworkflow.impl.WorkflowInstance;
 import io.serverlessworkflow.impl.WorkflowModel;
+import jakarta.enterprise.inject.Instance;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
@@ -48,14 +52,24 @@ public class FlowWorkerFunctionHandler implements WorkerFunctionHandler {
   private final WorkflowApplication app;
   private final FlowExecutionRegistry registry;
   private final ExecutorService virtualThreads;
+  private final Instance<TriageModificationProvider> triageModProvider;
+
+  public FlowWorkerFunctionHandler(
+      final WorkflowApplication app,
+      final FlowExecutionRegistry registry,
+      final ExecutorService virtualThreads,
+      final Instance<TriageModificationProvider> triageModProvider) {
+    this.app = app;
+    this.registry = registry;
+    this.virtualThreads = virtualThreads;
+    this.triageModProvider = triageModProvider;
+  }
 
   public FlowWorkerFunctionHandler(
       final WorkflowApplication app,
       final FlowExecutionRegistry registry,
       final ExecutorService virtualThreads) {
-    this.app = app;
-    this.registry = registry;
-    this.virtualThreads = virtualThreads;
+    this(app, registry, virtualThreads, null);
   }
 
   @Override
@@ -74,7 +88,30 @@ public class FlowWorkerFunctionHandler implements WorkerFunctionHandler {
     final SWFWorkerFunction swf = (SWFWorkerFunction) function;
     final Map<String, Object> mapInput = (Map<String, Object>) inputData;
 
-    final WorkflowInstance wfInstance = app.workflowDefinition(swf.workflow()).instance(mapInput);
+    Workflow effectiveWorkflow = swf.workflow();
+    Map<String, Object> effectiveInput = mapInput;
+
+    if (swf instanceof PlaybookWorkerFunction
+        && triageModProvider != null
+        && triageModProvider.isResolvable()
+        && metadata.bindingName() != null) {
+      List<Map<String, Object>> rawMods =
+          triageModProvider.get().getModifications(context.caseId(), metadata.bindingName());
+      if (!rawMods.isEmpty()) {
+        List<PlaybookTriageModification> merged =
+            PlaybookTriageModificationParser.mergeAll(rawMods);
+        PlaybookTriageModificationApplicator.ModificationResult modResult =
+            PlaybookTriageModificationApplicator.apply(effectiveWorkflow, merged);
+        effectiveWorkflow = modResult.workflow();
+        if (!modResult.parameterOverrides().isEmpty()) {
+          effectiveInput = new LinkedHashMap<>(mapInput);
+          effectiveInput.putAll(modResult.parameterOverrides());
+        }
+      }
+    }
+
+    final WorkflowInstance wfInstance =
+        app.workflowDefinition(effectiveWorkflow).instance(effectiveInput);
     final String instanceId = wfInstance.id();
 
     registry.register(
