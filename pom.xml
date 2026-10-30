@@ -175,11 +175,6 @@
                 <scope>import</scope>
             </dependency>
             <dependency>
-                <groupId>io.serverlessworkflow</groupId>
-                <artifactId>serverlessworkflow-experimental-types</artifactId>
-                <version>${serverlessworkflow.version}</version>
-            </dependency>
-            <dependency>
                 <groupId>org.antlr</groupId>
                 <artifactId>antlr-runtime</artifactId>
                 <version>3.5.3</version>
