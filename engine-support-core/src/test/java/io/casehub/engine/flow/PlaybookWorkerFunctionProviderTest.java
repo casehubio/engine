@@ -51,12 +51,6 @@ class PlaybookWorkerFunctionProviderTest {
 
   @Test
   void creates_playbook_worker_function_from_steps() {
-    try {
-      new io.serverlessworkflow.api.types.UriTemplate().withLiteralUriTemplate("https://example.test/probe");
-    } catch (Exception e) {
-      org.junit.jupiter.api.Assumptions.assumeTrue(false,
-          "UriTemplate validation incompatible in reactor classpath: " + e.getMessage());
-    }
     var provider = new PlaybookWorkerFunctionProvider();
     ObjectNode node = MAPPER.createObjectNode();
     ObjectNode step = MAPPER.createObjectNode();
