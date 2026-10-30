@@ -170,6 +170,10 @@
 
 ### `SIGNAL_RECEIVED` (`io.casehub.api.model.event.CaseHubEventType`)
 
+### `STALL_DETECTED` (`io.casehub.api.model.event.CaseHubEventType`)
+
+### `STALL_RECOVERY_INITIATED` (`io.casehub.api.model.event.CaseHubEventType`)
+
 ### `STIGMERGY_AGENT_ACTIVATED` (`io.casehub.api.model.event.CaseHubEventType`)
 
 ### `STIGMERGY_AGENT_DEPARTED` (`io.casehub.api.model.event.CaseHubEventType`)

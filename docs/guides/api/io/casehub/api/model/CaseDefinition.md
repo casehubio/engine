@@ -118,6 +118,8 @@
 
 ### `signals` (`java.util.List<io.casehub.api.model.SignalType<?>>`)
 
+### `stallRecoveryPolicy` (`io.casehub.api.model.StallRecoveryPolicy`)
+
 ### `stigmergyConfig` (`io.casehub.api.model.stigmergy.StigmergyConfig`)
 
 ### `summary` (`java.lang.String`)
@@ -281,6 +283,8 @@
 ### `public io.casehub.api.model.signal.SignalConfig getSignalConfig()`
 
 ### `public java.util.List<io.casehub.api.model.SignalType<?>> getSignals()`
+
+### `public io.casehub.api.model.StallRecoveryPolicy getStallRecoveryPolicy()`
 
 ### `public io.casehub.api.model.stigmergy.StigmergyConfig getStigmergyConfig()`
 
@@ -607,6 +611,12 @@
 #### Parameters
 
 - `signals` (`java.util.List<io.casehub.api.model.SignalType<?>>`)
+
+### `public void setStallRecoveryPolicy(io.casehub.api.model.StallRecoveryPolicy stallRecoveryPolicy)`
+
+#### Parameters
+
+- `stallRecoveryPolicy` (`io.casehub.api.model.StallRecoveryPolicy`)
 
 ### `public void setStigmergyConfig(io.casehub.api.model.stigmergy.StigmergyConfig stigmergyConfig)`
 
