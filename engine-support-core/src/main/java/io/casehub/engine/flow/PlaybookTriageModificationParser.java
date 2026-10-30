@@ -53,4 +53,34 @@ public final class PlaybookTriageModificationParser {
 
     return List.copyOf(result);
   }
+
+  public static List<PlaybookTriageModification> mergeAll(List<Map<String, Object>> rounds) {
+    if (rounds.isEmpty()) {
+      return List.of();
+    }
+
+    java.util.Set<String> skippedSteps = new java.util.LinkedHashSet<>();
+    java.util.Map<String, Map<String, Object>> replacedInputs = new java.util.LinkedHashMap<>();
+    java.util.Map<String, Object> updatedParams = new java.util.LinkedHashMap<>();
+
+    for (Map<String, Object> round : rounds) {
+      for (PlaybookTriageModification mod : parse(round)) {
+        switch (mod) {
+          case PlaybookTriageModification.SkipStep s -> skippedSteps.add(s.stepId());
+          case PlaybookTriageModification.ReplaceStepInput r ->
+              replacedInputs.put(r.stepId(), r.newInput());
+          case PlaybookTriageModification.UpdateParameter u ->
+              updatedParams.put(u.key(), u.value());
+        }
+      }
+    }
+
+    List<PlaybookTriageModification> merged = new ArrayList<>();
+    skippedSteps.forEach(id -> merged.add(new PlaybookTriageModification.SkipStep(id)));
+    replacedInputs.forEach(
+        (id, input) -> merged.add(new PlaybookTriageModification.ReplaceStepInput(id, input)));
+    updatedParams.forEach(
+        (k, v) -> merged.add(new PlaybookTriageModification.UpdateParameter(k, v)));
+    return List.copyOf(merged);
+  }
 }
