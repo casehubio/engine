@@ -20,19 +20,24 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import io.casehub.api.model.event.CaseHubEventType;
+import io.casehub.api.model.stigmergy.DetectedRole;
+import io.casehub.api.model.stigmergy.DetectedTeam;
 import io.casehub.api.model.stigmergy.IntegrationPolicy;
 import io.casehub.api.model.stigmergy.ProvisionBudget;
 import io.casehub.api.model.stigmergy.StigmergyConfig;
 import io.casehub.api.model.stigmergy.SwarmConfig;
+import io.casehub.api.model.stigmergy.SwarmProgress;
 import io.casehub.api.spi.DispatchBudget;
 import io.casehub.api.spi.DispatchBudgetQuery;
 import io.casehub.api.spi.ProvisionResult;
 import io.casehub.api.spi.WorkerProvisioner;
+import io.casehub.api.spi.stigmergy.SwarmCoordinationListener;
 import io.casehub.engine.common.internal.convergence.ActivityTracker;
 import io.casehub.engine.common.internal.observation.ObservationRegistry;
 import io.casehub.engine.common.internal.observation.RuleRegistry;
 import io.casehub.engine.common.internal.signal.SignalRegistry;
 import java.time.Duration;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
 import java.util.UUID;
@@ -50,6 +55,8 @@ class SwarmProvisionerTest {
   private TeamDetector teamDetector;
   private SwarmProgressTracker progressTracker;
   private RecordingWorkerProvisioner workerProvisioner;
+  private RecordingCoordinationListener listener;
+
   private UUID caseId;
 
   @BeforeEach
@@ -63,6 +70,7 @@ class SwarmProvisionerTest {
     teamDetector = new TeamDetector(observationRegistry, signalRegistry, roleTracker, coordinator);
     progressTracker = new SwarmProgressTracker(signalRegistry, roleTracker, coordinator);
     workerProvisioner = new RecordingWorkerProvisioner();
+    listener = new RecordingCoordinationListener();
     swarmProvisioner =
         new SwarmProvisioner(
             workerProvisioner,
@@ -73,7 +81,8 @@ class SwarmProvisionerTest {
             teamDetector,
             progressTracker,
             new NoOpDispatchBudget(),
-            null);
+            null,
+            List.<SwarmCoordinationListener>of(listener));
     caseId = UUID.randomUUID();
   }
 
@@ -204,6 +213,124 @@ class SwarmProvisionerTest {
     assertFalse(swarmProvisioner.isInIntegrationDelay(caseId, "any"));
   }
 
+  @Test
+  void provisionEmitsInitialisedAndProvisioningChanged() {
+    var budget = new ProvisionBudget(50, 10, 0, null, null);
+    var policy = IntegrationPolicy.BALANCED;
+    var swarmConfig =
+        new SwarmConfig(20, null, null, null, null, null, null, null, null, budget, policy);
+    var config = new StigmergyConfig(null, null, swarmConfig);
+    coordinator.initializeCase(caseId, List.of("a1", "a2"), config);
+    for (String id : List.of("a1", "a2")) {
+      coordinator.agentJoined(caseId, id, "b-" + id);
+      coordinator.agentActivated(caseId, id);
+    }
+
+    signalRegistry.deposit(caseId, "swarm:need-capacity", 0.8, Duration.ofMinutes(5), "a1", 100);
+    signalRegistry.deposit(caseId, "swarm:need-capacity", 0.8, Duration.ofMinutes(5), "a2", 100);
+
+    swarmProvisioner.evaluateAndProvision(caseId, swarmConfig, config);
+
+    assertTrue(listener.events.contains("initialised"));
+    assertTrue(listener.events.contains("provisioningChanged"));
+    assertEquals(1, listener.initCount);
+    assertEquals(3, listener.lastCurrentSize);
+    assertEquals(20, listener.lastMaxSize);
+  }
+
+  @Test
+  void secondProvisionDoesNotReEmitInitialised() {
+    var budget = new ProvisionBudget(50, 10, 0, null, null);
+    var policy = IntegrationPolicy.BALANCED;
+    var swarmConfig =
+        new SwarmConfig(20, null, null, null, null, null, null, null, null, budget, policy);
+    var config = new StigmergyConfig(null, null, swarmConfig);
+    coordinator.initializeCase(caseId, List.of("a1", "a2"), config);
+    for (String id : List.of("a1", "a2")) {
+      coordinator.agentJoined(caseId, id, "b-" + id);
+      coordinator.agentActivated(caseId, id);
+    }
+
+    signalRegistry.deposit(caseId, "swarm:need-capacity", 0.8, Duration.ofMinutes(5), "a1", 100);
+    signalRegistry.deposit(caseId, "swarm:need-capacity", 0.8, Duration.ofMinutes(5), "a2", 100);
+
+    swarmProvisioner.evaluateAndProvision(caseId, swarmConfig, config);
+    assertEquals(1, listener.initCount);
+
+    for (int i = 0; i < 5; i++) {
+      swarmProvisioner.incrementCycleCount(caseId);
+    }
+    signalRegistry.deposit(caseId, "swarm:need-capacity", 0.9, Duration.ofMinutes(5), "a1", 100);
+    swarmProvisioner.evaluateAndProvision(caseId, swarmConfig, config);
+
+    assertEquals(1, listener.initCount);
+    assertEquals(2, listener.provisioningChangedCount);
+  }
+
+  @Test
+  void deprovisioningEmitsProvisioningChanged() {
+    var budget = new ProvisionBudget(50, 10, 0, 0.5, 1);
+    var policy = new IntegrationPolicy(0.7, 0, 0.5);
+    var swarmConfig =
+        new SwarmConfig(20, null, null, null, null, null, null, null, null, budget, policy);
+    var config = new StigmergyConfig(null, null, swarmConfig);
+    coordinator.initializeCase(caseId, List.of("a1", "a2"), config);
+    for (String id : List.of("a1", "a2")) {
+      coordinator.agentJoined(caseId, id, "b-" + id);
+      coordinator.agentActivated(caseId, id);
+    }
+
+    signalRegistry.deposit(caseId, "swarm:need-capacity", 0.8, Duration.ofMinutes(5), "a1", 100);
+    signalRegistry.deposit(caseId, "swarm:need-capacity", 0.8, Duration.ofMinutes(5), "a2", 100);
+    swarmProvisioner.evaluateAndProvision(caseId, swarmConfig, config);
+    int provCountAfterProvision = listener.provisioningChangedCount;
+
+    signalRegistry.evictByCase(caseId);
+    swarmProvisioner.evaluateDeprovisioning(caseId, swarmConfig);
+
+    assertTrue(
+        listener.provisioningChangedCount > provCountAfterProvision,
+        "Deprovisioning should emit onProvisioningChanged");
+  }
+
+  @Test
+  void notifyRolesChangedForwardsToListeners() {
+    var roles = List.of(new DetectedRole("role-1", Set.of("a1", "a2"), null, List.of(), 1, 0.0));
+    swarmProvisioner.notifyRolesChanged(caseId, roles);
+
+    assertTrue(listener.events.contains("roleChanged"));
+    assertEquals(roles, listener.lastRoles);
+  }
+
+  @Test
+  void notifyTeamsChangedForwardsToListeners() {
+    var teams = List.of(new DetectedTeam("team-1", Set.of("a1", "a2"), Set.of(), 0.8, 1));
+    swarmProvisioner.notifyTeamsChanged(caseId, teams);
+
+    assertTrue(listener.events.contains("teamChanged"));
+    assertEquals(teams, listener.lastTeams);
+  }
+
+  @Test
+  void notifyProgressUpdatedForwardsToListeners() {
+    var progress = new SwarmProgress(0.5, 0.7, 0.9, java.time.Instant.now());
+    swarmProvisioner.notifyProgressUpdated(caseId, progress);
+
+    assertTrue(listener.events.contains("progressUpdated"));
+    assertEquals(progress, listener.lastProgress);
+  }
+
+  @Test
+  void inactiveProvisionerDoesNotNotify() {
+    var inactive = new SwarmProvisioner();
+    var inactiveListener = new RecordingCoordinationListener();
+    inactive.notifyRolesChanged(caseId, List.of());
+    inactive.notifyTeamsChanged(caseId, List.of());
+    inactive.notifyProgressUpdated(caseId, SwarmProgress.EMPTY);
+
+    assertTrue(inactiveListener.events.isEmpty());
+  }
+
   static class RecordingWorkerProvisioner implements WorkerProvisioner {
     private int count;
     private String lastId;
@@ -237,6 +364,52 @@ class SwarmProvisionerTest {
     @Override
     public int availableCapacity(DispatchBudgetQuery query) {
       return Integer.MAX_VALUE;
+    }
+  }
+
+  static class RecordingCoordinationListener implements SwarmCoordinationListener {
+    final List<String> events = new ArrayList<>();
+    int initCount;
+    int provisioningChangedCount;
+    int lastCurrentSize;
+    int lastMaxSize;
+    List<DetectedRole> lastRoles;
+    List<DetectedTeam> lastTeams;
+    SwarmProgress lastProgress;
+
+    @Override
+    public void onSwarmInitialised(UUID caseId, SwarmProgress progress) {
+      events.add("initialised");
+      initCount++;
+      lastProgress = progress;
+    }
+
+    @Override
+    public void onRoleChanged(UUID caseId, List<DetectedRole> roles, SwarmProgress progress) {
+      events.add("roleChanged");
+      lastRoles = roles;
+      lastProgress = progress;
+    }
+
+    @Override
+    public void onTeamChanged(UUID caseId, List<DetectedTeam> teams, SwarmProgress progress) {
+      events.add("teamChanged");
+      lastTeams = teams;
+      lastProgress = progress;
+    }
+
+    @Override
+    public void onProgressUpdated(UUID caseId, SwarmProgress progress) {
+      events.add("progressUpdated");
+      lastProgress = progress;
+    }
+
+    @Override
+    public void onProvisioningChanged(UUID caseId, int currentSize, int maxSize) {
+      events.add("provisioningChanged");
+      provisioningChangedCount++;
+      lastCurrentSize = currentSize;
+      lastMaxSize = maxSize;
     }
   }
 }
