@@ -190,6 +190,20 @@ class CaseScopeExtractorTest {
 
     @Override
     public void setSecurityContext(jakarta.ws.rs.core.SecurityContext context) {}
+
+    @Override
+    public boolean containsHeaderString(
+        String name,
+        String valueSeparatorRegex,
+        java.util.function.Predicate<String> valuePredicate) {
+      return false;
+    }
+
+    @Override
+    public boolean containsHeaderString(
+        String name, java.util.function.Predicate<String> valuePredicate) {
+      return false;
+    }
   }
 
   static class StubUriInfo implements UriInfo {
@@ -291,6 +305,11 @@ class CaseScopeExtractorTest {
 
     @Override
     public java.net.URI relativize(java.net.URI uri) {
+      return null;
+    }
+
+    @Override
+    public String getMatchedResourceTemplate() {
       return null;
     }
   }
