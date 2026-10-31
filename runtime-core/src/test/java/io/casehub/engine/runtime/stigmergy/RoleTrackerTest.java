@@ -96,7 +96,7 @@ class RoleTrackerTest {
     var config =
         new StigmergyConfig(
             null, null, new SwarmConfig(null, null, null, null, null, null, null, null, null));
-    coordinator.initializeCase(caseId, List.of("agent-1"), config);
+    coordinator.initializeCase(caseId, List.of("agent-1"), config, "test-tenant");
     coordinator.agentJoined(caseId, "agent-1", "binding-1");
     coordinator.agentActivated(caseId, "agent-1");
 
@@ -120,7 +120,7 @@ class RoleTrackerTest {
     var config =
         new StigmergyConfig(
             null, null, new SwarmConfig(null, null, null, null, null, null, null, null, null));
-    coordinator.initializeCase(caseId, List.of("agent-1"), config);
+    coordinator.initializeCase(caseId, List.of("agent-1"), config, "test-tenant");
     coordinator.agentJoined(caseId, "agent-1", "binding-1");
     coordinator.agentActivated(caseId, "agent-1");
 
@@ -140,7 +140,7 @@ class RoleTrackerTest {
     var weights = new RoleDomainWeights(0.8, 0.1, 0.05, 0.05);
     var swarmConfig = new SwarmConfig(null, 0.5, 2, 20, 1, weights, null, null, null);
     var config = new StigmergyConfig(null, null, swarmConfig);
-    coordinator.initializeCase(caseId, List.of("a1", "a2", "a3"), config);
+    coordinator.initializeCase(caseId, List.of("a1", "a2", "a3"), config, "test-tenant");
     for (String id : List.of("a1", "a2", "a3")) {
       coordinator.agentJoined(caseId, id, "b-" + id);
       coordinator.agentActivated(caseId, id);
@@ -166,7 +166,7 @@ class RoleTrackerTest {
   void detectsRoleEmergenceEvent() {
     var swarmConfig = new SwarmConfig(null, 0.5, 2, 20, 1, null, null, null, null);
     var config = new StigmergyConfig(null, null, swarmConfig);
-    coordinator.initializeCase(caseId, List.of("a1", "a2"), config);
+    coordinator.initializeCase(caseId, List.of("a1", "a2"), config, "test-tenant");
     for (String id : List.of("a1", "a2")) {
       coordinator.agentJoined(caseId, id, "b-" + id);
       coordinator.agentActivated(caseId, id);
@@ -187,7 +187,7 @@ class RoleTrackerTest {
   void detectsRoleDissolutionWhenAgentsDepart() {
     var swarmConfig = new SwarmConfig(null, 0.5, 2, 20, 1, null, null, null, null);
     var config = new StigmergyConfig(null, null, swarmConfig);
-    coordinator.initializeCase(caseId, List.of("a1", "a2"), config);
+    coordinator.initializeCase(caseId, List.of("a1", "a2"), config, "test-tenant");
     for (String id : List.of("a1", "a2")) {
       coordinator.agentJoined(caseId, id, "b-" + id);
       coordinator.agentActivated(caseId, id);
@@ -235,7 +235,7 @@ class RoleTrackerTest {
     var config =
         new StigmergyConfig(
             null, null, new SwarmConfig(null, null, null, null, null, null, null, null, null));
-    coordinator.initializeCase(caseId, List.of("a1"), config);
+    coordinator.initializeCase(caseId, List.of("a1"), config, "test-tenant");
     coordinator.agentJoined(caseId, "a1", "b-a1");
     coordinator.agentActivated(caseId, "a1");
     observationRegistry.registerObserver(

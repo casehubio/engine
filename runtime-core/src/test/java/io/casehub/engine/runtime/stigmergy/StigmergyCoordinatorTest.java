@@ -58,13 +58,13 @@ class StigmergyCoordinatorTest {
 
   @Test
   void isStigmergyCaseAfterInit() {
-    coordinator.initializeCase(caseId, List.of("agent-1"), config);
+    coordinator.initializeCase(caseId, List.of("agent-1"), config, "test-tenant");
     assertTrue(coordinator.isStigmergyCase(caseId));
   }
 
   @Test
   void agentJoinedTransitionsToJoining() {
-    coordinator.initializeCase(caseId, List.of("agent-1"), config);
+    coordinator.initializeCase(caseId, List.of("agent-1"), config, "test-tenant");
     coordinator.agentJoined(caseId, "agent-1", "binding-1");
     var agents = coordinator.activeAgents(caseId);
     assertTrue(agents.isEmpty());
@@ -75,7 +75,7 @@ class StigmergyCoordinatorTest {
 
   @Test
   void agentActivatedTransitionsToActive() {
-    coordinator.initializeCase(caseId, List.of("agent-1"), config);
+    coordinator.initializeCase(caseId, List.of("agent-1"), config, "test-tenant");
     coordinator.agentJoined(caseId, "agent-1", "binding-1");
     coordinator.agentActivated(caseId, "agent-1");
     var agents = coordinator.activeAgents(caseId);
@@ -85,7 +85,7 @@ class StigmergyCoordinatorTest {
 
   @Test
   void agentDepartedTransitionsToDeparted() {
-    coordinator.initializeCase(caseId, List.of("agent-1"), config);
+    coordinator.initializeCase(caseId, List.of("agent-1"), config, "test-tenant");
     coordinator.agentJoined(caseId, "agent-1", "binding-1");
     coordinator.agentActivated(caseId, "agent-1");
     coordinator.agentDeparted(caseId, "agent-1");
@@ -97,7 +97,7 @@ class StigmergyCoordinatorTest {
 
   @Test
   void allActiveReturnsTrueWhenAllPastJoining() {
-    coordinator.initializeCase(caseId, List.of("a1", "a2"), config);
+    coordinator.initializeCase(caseId, List.of("a1", "a2"), config, "test-tenant");
     coordinator.agentJoined(caseId, "a1", "b1");
     coordinator.agentJoined(caseId, "a2", "b2");
     assertFalse(coordinator.allActive(caseId));
@@ -109,7 +109,7 @@ class StigmergyCoordinatorTest {
 
   @Test
   void evictByCaseClearsAll() {
-    coordinator.initializeCase(caseId, List.of("agent-1"), config);
+    coordinator.initializeCase(caseId, List.of("agent-1"), config, "test-tenant");
     coordinator.agentJoined(caseId, "agent-1", "binding-1");
     coordinator.evictByCase(caseId);
     assertFalse(coordinator.isStigmergyCase(caseId));
@@ -117,14 +117,14 @@ class StigmergyCoordinatorTest {
 
   @Test
   void resetClearsAll() {
-    coordinator.initializeCase(caseId, List.of("agent-1"), config);
+    coordinator.initializeCase(caseId, List.of("agent-1"), config, "test-tenant");
     coordinator.reset();
     assertFalse(coordinator.isStigmergyCase(caseId));
   }
 
   @Test
   void detectsSignalConsensus() {
-    coordinator.initializeCase(caseId, List.of("a1", "a2"), config);
+    coordinator.initializeCase(caseId, List.of("a1", "a2"), config, "test-tenant");
     coordinator.agentJoined(caseId, "a1", "b1");
     coordinator.agentJoined(caseId, "a2", "b2");
     coordinator.agentActivated(caseId, "a1");
@@ -139,7 +139,7 @@ class StigmergyCoordinatorTest {
 
   @Test
   void consensusDeduplicates() {
-    coordinator.initializeCase(caseId, List.of("a1", "a2"), config);
+    coordinator.initializeCase(caseId, List.of("a1", "a2"), config, "test-tenant");
     signalRegistry.deposit(caseId, "trail", 0.8, Duration.ofMinutes(5), "a1", 100);
     signalRegistry.deposit(caseId, "trail", 0.9, Duration.ofMinutes(5), "a2", 100);
     var first = coordinator.detectPatterns(caseId, config);

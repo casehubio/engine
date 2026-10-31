@@ -20,6 +20,7 @@ import io.casehub.api.model.stigmergy.AgentLifecycleState;
 import io.casehub.api.model.stigmergy.AgentState;
 import io.casehub.api.model.stigmergy.CoordinationConfig;
 import io.casehub.api.model.stigmergy.StigmergyConfig;
+import io.casehub.eidos.api.AgentGraphQuery;
 import io.casehub.engine.common.internal.convergence.ActivityTracker;
 import io.casehub.engine.common.internal.observation.ObservationRegistry;
 import io.casehub.engine.common.internal.signal.SignalRegistry;
@@ -36,30 +37,48 @@ import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 
 public class StigmergyCoordinator implements Resettable {
+  private static final org.jboss.logging.Logger LOG =
+      org.jboss.logging.Logger.getLogger(StigmergyCoordinator.class);
 
   private static final Duration DEFAULT_RATE_WINDOW = Duration.ofSeconds(60);
 
   private final SignalRegistry signalRegistry;
   private final ObservationRegistry observationRegistry;
   private final ActivityTracker activityTracker;
+  private final AgentGraphQuery agentGraphQuery;
 
   private final ConcurrentHashMap<UUID, CaseCoordinationState> cases = new ConcurrentHashMap<>();
 
   public StigmergyCoordinator(
       SignalRegistry signalRegistry,
       ObservationRegistry observationRegistry,
-      ActivityTracker activityTracker) {
+      ActivityTracker activityTracker,
+      AgentGraphQuery agentGraphQuery) {
     this.signalRegistry = signalRegistry;
     this.observationRegistry = observationRegistry;
     this.activityTracker = activityTracker;
+    this.agentGraphQuery = agentGraphQuery;
   }
 
-  public void initializeCase(UUID caseId, List<String> agentIds, StigmergyConfig config) {
-    cases.put(caseId, new CaseCoordinationState(config, agentIds));
+  public StigmergyCoordinator(
+      SignalRegistry signalRegistry,
+      ObservationRegistry observationRegistry,
+      ActivityTracker activityTracker) {
+    this(signalRegistry, observationRegistry, activityTracker, null);
+  }
+
+  public void initializeCase(
+      UUID caseId, List<String> agentIds, StigmergyConfig config, String tenancyId) {
+    cases.put(caseId, new CaseCoordinationState(config, agentIds, tenancyId));
   }
 
   public boolean isStigmergyCase(UUID caseId) {
     return cases.containsKey(caseId);
+  }
+
+  public String getTenancyId(UUID caseId) {
+    var state = cases.get(caseId);
+    return state != null ? state.tenancyId : null;
   }
 
   public void agentJoined(UUID caseId, String agentId, String bindingName) {
@@ -73,9 +92,13 @@ public class StigmergyCoordinator implements Resettable {
 
   public void agentActivated(UUID caseId, String agentId) {
     var state = cases.get(caseId);
-    if (state == null) return;
+    if (state == null) {
+      return;
+    }
     var current = state.agents.get(agentId);
-    if (current == null || current.state() != AgentLifecycleState.JOINING) return;
+    if (current == null || current.state() != AgentLifecycleState.JOINING) {
+      return;
+    }
     var now = Instant.now();
     state.agents.put(
         agentId,
@@ -87,6 +110,17 @@ public class StigmergyCoordinator implements Resettable {
             now,
             null,
             now));
+
+    if (agentGraphQuery != null && state.tenancyId != null) {
+      try {
+        List<String> neighbors = agentGraphQuery.coActiveAgents(agentId, state.tenancyId);
+        if (!neighbors.isEmpty()) {
+          LOG.debugf("Eidos neighbors for agent %s in case %s: %s", agentId, caseId, neighbors);
+        }
+      } catch (Exception e) {
+        LOG.warnf(e, "AgentGraphQuery.coActiveAgents failed for agent %s", agentId);
+      }
+    }
   }
 
   public void agentDeparted(UUID caseId, String agentId) {
@@ -281,10 +315,12 @@ public class StigmergyCoordinator implements Resettable {
     final Set<String> consensusFired = ConcurrentHashMap.newKeySet();
     volatile boolean stormActive = false;
     final Set<String> interestHotspotFired = ConcurrentHashMap.newKeySet();
+    final String tenancyId;
 
-    CaseCoordinationState(StigmergyConfig config, List<String> agentIds) {
+    CaseCoordinationState(StigmergyConfig config, List<String> agentIds, String tenancyId) {
       this.config = config;
       this.declaredAgentIds = List.copyOf(agentIds);
+      this.tenancyId = tenancyId;
     }
   }
 

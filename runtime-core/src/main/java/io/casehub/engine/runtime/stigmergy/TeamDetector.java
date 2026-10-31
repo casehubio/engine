@@ -20,6 +20,8 @@ import io.casehub.api.model.stigmergy.AgentState;
 import io.casehub.api.model.stigmergy.DetectedTeam;
 import io.casehub.api.model.stigmergy.SwarmConfig;
 import io.casehub.api.spi.observation.NeighborRelation;
+import io.casehub.eidos.api.Collaborator;
+import io.casehub.eidos.api.RuntimeCollaborationQuery;
 import io.casehub.engine.common.internal.observation.ObservationRegistry;
 import io.casehub.engine.common.internal.signal.SignalRegistry;
 import io.casehub.engine.common.spi.Resettable;
@@ -40,11 +42,14 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
 
 public class TeamDetector implements Resettable {
+  private static final org.jboss.logging.Logger LOG =
+      org.jboss.logging.Logger.getLogger(TeamDetector.class);
 
   private final ObservationRegistry observationRegistry;
   private final SignalRegistry signalRegistry;
   private final RoleTracker roleTracker;
   private final StigmergyCoordinator coordinator;
+  private final RuntimeCollaborationQuery collaborationQuery;
 
   private final ConcurrentHashMap<UUID, CaseTeamState> cases = new ConcurrentHashMap<>();
 
@@ -52,11 +57,21 @@ public class TeamDetector implements Resettable {
       ObservationRegistry observationRegistry,
       SignalRegistry signalRegistry,
       RoleTracker roleTracker,
-      StigmergyCoordinator coordinator) {
+      StigmergyCoordinator coordinator,
+      RuntimeCollaborationQuery collaborationQuery) {
     this.observationRegistry = observationRegistry;
     this.signalRegistry = signalRegistry;
     this.roleTracker = roleTracker;
     this.coordinator = coordinator;
+    this.collaborationQuery = collaborationQuery;
+  }
+
+  public TeamDetector(
+      ObservationRegistry observationRegistry,
+      SignalRegistry signalRegistry,
+      RoleTracker roleTracker,
+      StigmergyCoordinator coordinator) {
+    this(observationRegistry, signalRegistry, roleTracker, coordinator, null);
   }
 
   public List<SwarmEvent> detect(UUID caseId, SwarmConfig config) {
@@ -97,6 +112,38 @@ public class TeamDetector implements Resettable {
                 jaccard(effectKeyMap.get(aj), interestKeys.get(ai)));
         affinity[i][j] = (sharedInterest + sharedSignal + comp) / 3.0;
         affinity[j][i] = affinity[i][j];
+      }
+    }
+
+    if (collaborationQuery != null) {
+      String tenancyId = coordinator.getTenancyId(caseId);
+      if (tenancyId != null) {
+        Map<String, Map<String, Double>> collabAffinity = new HashMap<>();
+        for (String agentId : agentIds) {
+          try {
+            List<Collaborator> collaborators = collaborationQuery.collaborators(agentId, tenancyId);
+            for (Collaborator c : collaborators) {
+              collabAffinity
+                  .computeIfAbsent(agentId, k -> new HashMap<>())
+                  .put(c.agentId(), c.affinity());
+            }
+          } catch (Exception e) {
+            LOG.warnf(e, "RuntimeCollaborationQuery.collaborators failed for agent %s", agentId);
+          }
+        }
+        for (int i = 0; i < n; i++) {
+          for (int j = i + 1; j < n; j++) {
+            String ai = agentIds.get(i);
+            String aj = agentIds.get(j);
+            double ca = collabAffinity.getOrDefault(ai, Map.of()).getOrDefault(aj, 0.0);
+            double cb = collabAffinity.getOrDefault(aj, Map.of()).getOrDefault(ai, 0.0);
+            double eidosAffinity = Math.max(ca, cb);
+            if (eidosAffinity > 0.0) {
+              affinity[i][j] = (affinity[i][j] * 3.0 + eidosAffinity) / 4.0;
+              affinity[j][i] = affinity[i][j];
+            }
+          }
+        }
       }
     }
 
