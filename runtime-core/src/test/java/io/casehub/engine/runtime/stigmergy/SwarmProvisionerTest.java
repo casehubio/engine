@@ -294,6 +294,33 @@ class SwarmProvisionerTest {
   }
 
   @Test
+  void deprovisioningEmitsMemberCompleted() {
+    var budget = new ProvisionBudget(50, 10, 0, 0.5, 1);
+    var policy = new IntegrationPolicy(0.7, 0, 0.5);
+    var swarmConfig =
+        new SwarmConfig(20, null, null, null, null, null, null, null, null, budget, policy);
+    var config = new StigmergyConfig(null, null, swarmConfig);
+    coordinator.initializeCase(caseId, List.of("a1", "a2"), config);
+    for (String id : List.of("a1", "a2")) {
+      coordinator.agentJoined(caseId, id, "b-" + id);
+      coordinator.agentActivated(caseId, id);
+    }
+
+    signalRegistry.deposit(caseId, "swarm:need-capacity", 0.8, Duration.ofMinutes(5), "a1", 100);
+    signalRegistry.deposit(caseId, "swarm:need-capacity", 0.8, Duration.ofMinutes(5), "a2", 100);
+    swarmProvisioner.evaluateAndProvision(caseId, swarmConfig, config);
+    assertTrue(listener.memberCompletedAgentIds.isEmpty(), "no departures yet");
+
+    signalRegistry.evictByCase(caseId);
+    swarmProvisioner.evaluateDeprovisioning(caseId, swarmConfig);
+
+    assertFalse(
+        listener.memberCompletedAgentIds.isEmpty(),
+        "onMemberCompleted should fire when agents are deprovisioned");
+    assertTrue(listener.events.contains("memberCompleted"));
+  }
+
+  @Test
   void notifyRolesChangedForwardsToListeners() {
     var roles = List.of(new DetectedRole("role-1", Set.of("a1", "a2"), null, List.of(), 1, 0.0));
     swarmProvisioner.notifyRolesChanged(caseId, roles);
@@ -439,6 +466,7 @@ class SwarmProvisionerTest {
     List<DetectedRole> lastRoles;
     List<DetectedTeam> lastTeams;
     SwarmProgress lastProgress;
+    final List<String> memberCompletedAgentIds = new ArrayList<>();
 
     @Override
     public void onSwarmInitialised(UUID caseId, SwarmProgress progress) {
@@ -473,6 +501,12 @@ class SwarmProvisionerTest {
       provisioningChangedCount++;
       lastCurrentSize = currentSize;
       lastMaxSize = maxSize;
+    }
+
+    @Override
+    public void onMemberCompleted(UUID caseId, String agentId) {
+      events.add("memberCompleted");
+      memberCompletedAgentIds.add(agentId);
     }
   }
 }
