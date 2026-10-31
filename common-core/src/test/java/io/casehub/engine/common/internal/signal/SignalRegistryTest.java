@@ -212,4 +212,48 @@ class SignalRegistryTest {
         caseId, "trail", 0.9, Duration.ofMinutes(5), "ant-3", 100, now.plusMillis(100));
     assertThat(registry.getAllSignals(caseId).get("trail").sources()).isEqualTo(Set.of("ant-3"));
   }
+
+  @Test
+  void concurrentDeposit_reinforcementCountIsCorrect() throws Exception {
+    int threadCount = 10;
+    var latch = new java.util.concurrent.CountDownLatch(threadCount);
+    var start = new java.util.concurrent.CountDownLatch(1);
+    var errors = new java.util.concurrent.atomic.AtomicInteger();
+
+    for (int i = 0; i < threadCount; i++) {
+      final String source = "agent-" + i;
+      new Thread(
+              () -> {
+                try {
+                  start.await();
+                  registry.deposit(
+                      caseId, "shared-signal", 0.8, Duration.ofMinutes(5), source, 100);
+                } catch (Exception e) {
+                  errors.incrementAndGet();
+                } finally {
+                  latch.countDown();
+                }
+              })
+          .start();
+    }
+
+    start.countDown();
+    latch.await();
+
+    assertThat(errors.get()).isZero();
+    Map<String, Signal> allSignals = registry.getAllSignals(caseId);
+    Signal signal = allSignals.get("shared-signal");
+    assertThat(signal).isNotNull();
+    assertThat(signal.reinforcementCount()).isEqualTo(threadCount);
+    assertThat(signal.sources()).hasSize(threadCount);
+  }
+
+  @Test
+  void markExpired_purgesSignalFromMap() {
+    registry.deposit(caseId, "trail", 0.8, Duration.ofMinutes(5), "agent-a", 100);
+    assertThat(registry.signalCount(caseId)).isEqualTo(1);
+
+    registry.markExpired(caseId, "trail");
+    assertThat(registry.signalCount(caseId)).isZero();
+  }
 }

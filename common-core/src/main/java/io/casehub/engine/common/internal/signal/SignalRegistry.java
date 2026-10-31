@@ -75,48 +75,59 @@ public class SignalRegistry implements Resettable {
     ConcurrentHashMap<String, Signal> caseSignals =
         signals.computeIfAbsent(caseId, k -> new ConcurrentHashMap<>());
 
-    Signal existing = caseSignals.get(name);
+    boolean[] deposited = {false};
+    double[] recordStrength = {0};
+    int[] recordReinforcement = {0};
 
-    if (existing != null && !existing.expired()) {
-      double currentEffective =
-          SignalDecay.effectiveStrength(
-              existing.strength(), existing.lastReinforced(), existing.halfLife(), now);
-      double newStrength = Math.max(currentEffective, strength);
-      Set<String> mergedSources = new HashSet<>(existing.sources());
-      mergedSources.add(source);
-      caseSignals.put(
-          name,
-          new Signal(
-              name,
-              newStrength,
-              existing.firstDeposited(),
-              now,
-              halfLife,
-              source,
-              existing.reinforcementCount() + 1,
-              false,
-              Set.copyOf(mergedSources)));
-      recordSignalDeposit(caseId, name, newStrength, existing.reinforcementCount() + 1, source);
-      return true;
+    caseSignals.compute(
+        name,
+        (k, existing) -> {
+          if (existing != null && !existing.expired()) {
+            double currentEffective =
+                SignalDecay.effectiveStrength(
+                    existing.strength(), existing.lastReinforced(), existing.halfLife(), now);
+            double newStrength = Math.max(currentEffective, strength);
+            Set<String> mergedSources = new HashSet<>(existing.sources());
+            mergedSources.add(source);
+            deposited[0] = true;
+            recordStrength[0] = newStrength;
+            recordReinforcement[0] = existing.reinforcementCount() + 1;
+            return new Signal(
+                name,
+                newStrength,
+                existing.firstDeposited(),
+                now,
+                halfLife,
+                source,
+                existing.reinforcementCount() + 1,
+                false,
+                Set.copyOf(mergedSources));
+          }
+
+          if (existing != null && existing.expired()) {
+            deposited[0] = true;
+            recordStrength[0] = strength;
+            recordReinforcement[0] = 1;
+            return new Signal(name, strength, now, now, halfLife, source, 1, false, Set.of(source));
+          }
+
+          if (caseSignals.size() >= maxPerCase) {
+            LOG.warnf(
+                "Signal cap reached for case=%s (max=%d), dropping signal=%s",
+                caseId, maxPerCase, name);
+            return null;
+          }
+
+          deposited[0] = true;
+          recordStrength[0] = strength;
+          recordReinforcement[0] = 1;
+          return new Signal(name, strength, now, now, halfLife, source, 1, false, Set.of(source));
+        });
+
+    if (deposited[0]) {
+      recordSignalDeposit(caseId, name, recordStrength[0], recordReinforcement[0], source);
     }
-
-    if (existing != null && existing.expired()) {
-      caseSignals.put(
-          name, new Signal(name, strength, now, now, halfLife, source, 1, false, Set.of(source)));
-      recordSignalDeposit(caseId, name, strength, 1, source);
-      return true;
-    }
-
-    if (caseSignals.size() >= maxPerCase) {
-      LOG.warnf(
-          "Signal cap reached for case=%s (max=%d), dropping signal=%s", caseId, maxPerCase, name);
-      return false;
-    }
-
-    caseSignals.put(
-        name, new Signal(name, strength, now, now, halfLife, source, 1, false, Set.of(source)));
-    recordSignalDeposit(caseId, name, strength, 1, source);
-    return true;
+    return deposited[0];
   }
 
   private void recordSignalDeposit(
@@ -185,21 +196,13 @@ public class SignalRegistry implements Resettable {
 
   public void markExpired(UUID caseId, String name) {
     ConcurrentHashMap<String, Signal> caseSignals = signals.get(caseId);
-    if (caseSignals == null) return;
-    Signal existing = caseSignals.get(name);
-    if (existing == null) return;
-    caseSignals.put(
-        name,
-        new Signal(
-            existing.name(),
-            existing.strength(),
-            existing.firstDeposited(),
-            existing.lastReinforced(),
-            existing.halfLife(),
-            existing.lastSource(),
-            existing.reinforcementCount(),
-            true,
-            existing.sources()));
+    if (caseSignals == null) {
+      return;
+    }
+    Signal existing = caseSignals.remove(name);
+    if (existing == null) {
+      return;
+    }
     if (pheromoneEventConsumer != null) {
       pheromoneEventConsumer.accept(
           new io.casehub.engine.common.spi.event.PheromoneStateChangedEvent(
