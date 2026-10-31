@@ -167,7 +167,7 @@ public class SwarmProgressTracker implements Resettable {
   }
 
   private static class CaseProgressState {
-    SwarmProgress lastProgress = SwarmProgress.EMPTY;
+    volatile SwarmProgress lastProgress = SwarmProgress.EMPTY;
     int evaluationCount;
     final Deque<Integer> explorationHistory = new ArrayDeque<>();
     Map<String, String> previousRoleAssignment = new HashMap<>();
