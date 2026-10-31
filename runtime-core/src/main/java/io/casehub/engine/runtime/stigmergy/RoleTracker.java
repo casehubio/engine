@@ -96,12 +96,14 @@ public class RoleTracker implements Resettable {
         }
       }
     }
-    agentState.decisionWindow.addLast(cycleFirings);
-    agentState.effectWindow.addLast(cycleWriteKeys);
+    synchronized (agentState) {
+      agentState.decisionWindow.addLast(cycleFirings);
+      agentState.effectWindow.addLast(cycleWriteKeys);
 
-    int window = 20;
-    while (agentState.decisionWindow.size() > window) agentState.decisionWindow.removeFirst();
-    while (agentState.effectWindow.size() > window) agentState.effectWindow.removeFirst();
+      int window = 20;
+      while (agentState.decisionWindow.size() > window) agentState.decisionWindow.removeFirst();
+      while (agentState.effectWindow.size() > window) agentState.effectWindow.removeFirst();
+    }
   }
 
   public BehavioralFingerprint getFingerprint(UUID caseId, String agentId) {
@@ -113,8 +115,10 @@ public class RoleTracker implements Resettable {
     if (state != null) {
       var acc = state.agentAccumulators.get(agentId);
       if (acc != null) {
-        decision = normalizeWindow(acc.decisionWindow);
-        effect = normalizeWindow(acc.effectWindow);
+        synchronized (acc) {
+          decision = normalizeWindow(acc.decisionWindow);
+          effect = normalizeWindow(acc.effectWindow);
+        }
       }
     }
     return new BehavioralFingerprint(perception, communication, decision, effect);
@@ -458,8 +462,8 @@ public class RoleTracker implements Resettable {
     volatile boolean dirty;
     final AtomicInteger roleCounter = new AtomicInteger();
     final ConcurrentHashMap<String, AgentAccumulator> agentAccumulators = new ConcurrentHashMap<>();
-    List<DetectedRole> currentRoles = List.of();
-    List<DetectedRole> previousRoles = List.of();
+    volatile List<DetectedRole> currentRoles = List.of();
+    volatile List<DetectedRole> previousRoles = List.of();
     final ConcurrentHashMap<String, BehavioralFingerprint> originalCentroids =
         new ConcurrentHashMap<>();
     final Set<String> agentsInDelay = ConcurrentHashMap.newKeySet();

@@ -335,7 +335,7 @@ public class TeamDetector implements Resettable {
 
   private static class CaseTeamState {
     final AtomicInteger teamCounter = new AtomicInteger();
-    List<DetectedTeam> currentTeams = List.of();
-    List<DetectedTeam> previousTeams = List.of();
+    volatile List<DetectedTeam> currentTeams = List.of();
+    volatile List<DetectedTeam> previousTeams = List.of();
   }
 }
