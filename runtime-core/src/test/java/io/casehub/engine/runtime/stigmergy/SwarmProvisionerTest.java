@@ -331,6 +331,42 @@ class SwarmProvisionerTest {
     assertTrue(inactiveListener.events.isEmpty());
   }
 
+  @Test
+  void throwingListenerDoesNotPreventSubsequentListeners() {
+    var throwing = new ThrowingCoordinationListener();
+    var recording = new RecordingCoordinationListener();
+    var provisioner =
+        new SwarmProvisioner(
+            workerProvisioner,
+            coordinator,
+            signalRegistry,
+            activityTracker,
+            roleTracker,
+            teamDetector,
+            progressTracker,
+            new NoOpDispatchBudget(),
+            null,
+            List.<SwarmCoordinationListener>of(throwing, recording));
+
+    var roles = List.of(new DetectedRole("role-1", Set.of("a1"), null, List.of(), 1, 0.0));
+    provisioner.notifyRolesChanged(caseId, roles);
+    assertTrue(
+        recording.events.contains("roleChanged"),
+        "recording listener should fire after throwing listener");
+
+    var teams = List.of(new DetectedTeam("team-1", Set.of("a1"), Set.of(), 0.8, 1));
+    provisioner.notifyTeamsChanged(caseId, teams);
+    assertTrue(
+        recording.events.contains("teamChanged"),
+        "recording listener should fire after throwing listener");
+
+    var progress = new SwarmProgress(0.5, 0.7, 0.9, java.time.Instant.now());
+    provisioner.notifyProgressUpdated(caseId, progress);
+    assertTrue(
+        recording.events.contains("progressUpdated"),
+        "recording listener should fire after throwing listener");
+  }
+
   static class RecordingWorkerProvisioner implements WorkerProvisioner {
     private int count;
     private String lastId;
@@ -364,6 +400,33 @@ class SwarmProvisionerTest {
     @Override
     public int availableCapacity(DispatchBudgetQuery query) {
       return Integer.MAX_VALUE;
+    }
+  }
+
+  static class ThrowingCoordinationListener implements SwarmCoordinationListener {
+    @Override
+    public void onSwarmInitialised(UUID caseId, SwarmProgress progress) {
+      throw new RuntimeException("test: onSwarmInitialised");
+    }
+
+    @Override
+    public void onRoleChanged(UUID caseId, List<DetectedRole> roles, SwarmProgress progress) {
+      throw new RuntimeException("test: onRoleChanged");
+    }
+
+    @Override
+    public void onTeamChanged(UUID caseId, List<DetectedTeam> teams, SwarmProgress progress) {
+      throw new RuntimeException("test: onTeamChanged");
+    }
+
+    @Override
+    public void onProgressUpdated(UUID caseId, SwarmProgress progress) {
+      throw new RuntimeException("test: onProgressUpdated");
+    }
+
+    @Override
+    public void onProvisioningChanged(UUID caseId, int currentSize, int maxSize) {
+      throw new RuntimeException("test: onProvisioningChanged");
     }
   }
 
