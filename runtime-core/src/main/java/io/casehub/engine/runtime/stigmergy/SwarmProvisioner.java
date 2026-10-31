@@ -49,6 +49,8 @@ import java.util.concurrent.locks.ReentrantLock;
 
 public class SwarmProvisioner implements Resettable {
 
+  private static final org.jboss.logging.Logger LOG =
+      org.jboss.logging.Logger.getLogger(SwarmProvisioner.class);
   private final boolean active;
   private final WorkerProvisioner workerProvisioner;
   private final StigmergyCoordinator coordinator;
@@ -263,11 +265,21 @@ public class SwarmProvisioner implements Resettable {
         if (initialisedCases.add(caseId)) {
           SwarmProgress progress = progressTracker.getProgress(caseId);
           for (var listener : listeners) {
-            listener.onSwarmInitialised(caseId, progress);
+            try {
+              listener.onSwarmInitialised(caseId, progress);
+            } catch (Exception e) {
+              LOG.warnf(
+                  e, "SwarmCoordinationListener.onSwarmInitialised failed for case %s", caseId);
+            }
           }
         }
         for (var listener : listeners) {
-          listener.onProvisioningChanged(caseId, newSize, swarmConfig.effectiveMaxSwarmSize());
+          try {
+            listener.onProvisioningChanged(caseId, newSize, swarmConfig.effectiveMaxSwarmSize());
+          } catch (Exception e) {
+            LOG.warnf(
+                e, "SwarmCoordinationListener.onProvisioningChanged failed for case %s", caseId);
+          }
         }
       }
     } catch (ProvisioningException e) {
@@ -351,7 +363,12 @@ public class SwarmProvisioner implements Resettable {
     if (!toRemove.isEmpty() && !listeners.isEmpty()) {
       int currentSize = coordinator.activeAgents(caseId).size();
       for (var listener : listeners) {
-        listener.onProvisioningChanged(caseId, currentSize, config.effectiveMaxSwarmSize());
+        try {
+          listener.onProvisioningChanged(caseId, currentSize, config.effectiveMaxSwarmSize());
+        } catch (Exception e) {
+          LOG.warnf(
+              e, "SwarmCoordinationListener.onProvisioningChanged failed for case %s", caseId);
+        }
       }
     }
 
@@ -456,7 +473,11 @@ public class SwarmProvisioner implements Resettable {
     }
     SwarmProgress progress = progressTracker.getProgress(caseId);
     for (var listener : listeners) {
-      listener.onRoleChanged(caseId, roles, progress);
+      try {
+        listener.onRoleChanged(caseId, roles, progress);
+      } catch (Exception e) {
+        LOG.warnf(e, "SwarmCoordinationListener.onRoleChanged failed for case %s", caseId);
+      }
     }
   }
 
@@ -466,7 +487,11 @@ public class SwarmProvisioner implements Resettable {
     }
     SwarmProgress progress = progressTracker.getProgress(caseId);
     for (var listener : listeners) {
-      listener.onTeamChanged(caseId, teams, progress);
+      try {
+        listener.onTeamChanged(caseId, teams, progress);
+      } catch (Exception e) {
+        LOG.warnf(e, "SwarmCoordinationListener.onTeamChanged failed for case %s", caseId);
+      }
     }
   }
 
@@ -475,7 +500,11 @@ public class SwarmProvisioner implements Resettable {
       return;
     }
     for (var listener : listeners) {
-      listener.onProgressUpdated(caseId, progress);
+      try {
+        listener.onProgressUpdated(caseId, progress);
+      } catch (Exception e) {
+        LOG.warnf(e, "SwarmCoordinationListener.onProgressUpdated failed for case %s", caseId);
+      }
     }
   }
 
