@@ -369,12 +369,6 @@ public class RuntimeBeans {
 
   @Produces
   @ApplicationScoped
-  CaseRecoveryStateRegistry caseRecoveryStateRegistry() {
-    return new CaseRecoveryStateRegistry();
-  }
-
-  @Produces
-  @ApplicationScoped
   io.casehub.engine.runtime.recovery.CaseRecoveryService caseRecoveryService(
       io.casehub.engine.common.spi.cache.CaseInstanceCache caseInstanceCache,
       io.casehub.engine.common.spi.CrossTenantCaseInstanceRepository crossTenantRepository,

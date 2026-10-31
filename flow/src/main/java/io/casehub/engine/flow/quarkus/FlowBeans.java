@@ -44,12 +44,6 @@ public class FlowBeans {
 
   @Produces
   @ApplicationScoped
-  FlowExecutionRegistry flowExecutionRegistry() {
-    return new FlowExecutionRegistry();
-  }
-
-  @Produces
-  @ApplicationScoped
   PlaybookExecutionListener playbookExecutionListener(FlowExecutionRegistry registry) {
     return new PlaybookExecutionListener(registry);
   }
