@@ -32,6 +32,7 @@ import io.casehub.api.spi.ProvisioningException;
 import io.casehub.api.spi.WorkerProvisioner;
 import io.casehub.api.spi.stigmergy.SwarmCoordinationListener;
 import io.casehub.api.spi.stigmergy.SwarmProvisioningAdvisor;
+import io.casehub.eidos.api.AgentGraphQuery;
 import io.casehub.engine.common.internal.convergence.ActivityTracker;
 import io.casehub.engine.common.internal.signal.SignalRegistry;
 import io.casehub.engine.common.spi.Resettable;
@@ -62,6 +63,8 @@ public class SwarmProvisioner implements Resettable {
   private final DispatchBudget dispatchBudget;
   private final SwarmProvisioningAdvisor advisor;
   private final List<SwarmCoordinationListener> listeners;
+  private final AgentGraphQuery agentGraphQuery;
+
   private final Set<UUID> initialisedCases = ConcurrentHashMap.newKeySet();
 
   private final ConcurrentHashMap<UUID, CaseProvisionState> cases = new ConcurrentHashMap<>();
@@ -76,7 +79,8 @@ public class SwarmProvisioner implements Resettable {
       SwarmProgressTracker progressTracker,
       DispatchBudget dispatchBudget,
       SwarmProvisioningAdvisor advisor,
-      List<SwarmCoordinationListener> listeners) {
+      List<SwarmCoordinationListener> listeners,
+      AgentGraphQuery agentGraphQuery) {
     this.active = true;
     this.workerProvisioner = workerProvisioner;
     this.coordinator = coordinator;
@@ -88,6 +92,7 @@ public class SwarmProvisioner implements Resettable {
     this.dispatchBudget = dispatchBudget;
     this.advisor = advisor;
     this.listeners = listeners != null ? List.copyOf(listeners) : List.of();
+    this.agentGraphQuery = agentGraphQuery;
   }
 
   public SwarmProvisioner() {
@@ -102,6 +107,7 @@ public class SwarmProvisioner implements Resettable {
     this.dispatchBudget = null;
     this.advisor = null;
     this.listeners = List.of();
+    this.agentGraphQuery = null;
   }
 
   public List<SwarmEvent> evaluateAndProvision(
@@ -214,6 +220,37 @@ public class SwarmProvisioner implements Resettable {
                 CaseHubEventType.SWARM_PROVISION_VETOED,
                 Map.of("reasoning", advice.reasoning() != null ? advice.reasoning() : "")));
         return events;
+      }
+    }
+
+    if (agentGraphQuery != null) {
+      String tenancyId = coordinator.getTenancyId(caseId);
+      if (tenancyId != null) {
+        try {
+          List<String> coActive = agentGraphQuery.coActiveAgents(caseId.toString(), tenancyId);
+          if (!coActive.isEmpty()) {
+            LOG.debugf("Eidos co-active agents for caseId=%s: %d agents", caseId, coActive.size());
+          }
+
+          var consensusSignals = signalRegistry.consensusSignals(caseId, 2, 0.01);
+          for (String signalName : consensusSignals.keySet()) {
+            if (signalName.startsWith("swarm:need-capacity:")) {
+              String[] parts = signalName.split(":");
+              if (parts.length >= 4) {
+                String capabilityTag = parts[2];
+                String taskDomain = parts[3];
+                List<String> topAgents =
+                    agentGraphQuery.topAgentsByOutcome(capabilityTag, taskDomain, tenancyId, 5);
+                if (!topAgents.isEmpty()) {
+                  LOG.debugf(
+                      "Eidos top agents for %s/%s: %s", capabilityTag, taskDomain, topAgents);
+                }
+              }
+            }
+          }
+        } catch (Exception e) {
+          LOG.warnf(e, "AgentGraphQuery failed for caseId=%s", caseId);
+        }
       }
     }
 

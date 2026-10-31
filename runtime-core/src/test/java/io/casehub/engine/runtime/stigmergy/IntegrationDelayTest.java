@@ -73,7 +73,8 @@ class IntegrationDelayTest {
             progressTracker,
             q -> Integer.MAX_VALUE,
             null,
-            java.util.List.of());
+            java.util.List.of(),
+            null);
     roleTracker.setSwarmProvisioner(swarmProvisioner);
     caseId = UUID.randomUUID();
   }
@@ -84,7 +85,7 @@ class IntegrationDelayTest {
     var policy = new IntegrationPolicy(0.7, 5, 0.5);
     var swarmConfig = new SwarmConfig(20, 0.5, 2, 20, 1, null, null, null, null, budget, policy);
     var config = new StigmergyConfig(null, null, swarmConfig);
-    coordinator.initializeCase(caseId, List.of("a1", "a2"), config);
+    coordinator.initializeCase(caseId, List.of("a1", "a2"), config, "test-tenant");
     for (String id : List.of("a1", "a2")) {
       coordinator.agentJoined(caseId, id, "b-" + id);
       coordinator.agentActivated(caseId, id);
@@ -124,7 +125,7 @@ class IntegrationDelayTest {
     var swarmConfig =
         new SwarmConfig(20, null, null, null, null, null, null, null, null, budget, policy);
     var config = new StigmergyConfig(null, null, swarmConfig);
-    coordinator.initializeCase(caseId, List.of("a1", "a2"), config);
+    coordinator.initializeCase(caseId, List.of("a1", "a2"), config, "test-tenant");
     for (String id : List.of("a1", "a2")) {
       coordinator.agentJoined(caseId, id, "b-" + id);
       coordinator.agentActivated(caseId, id);

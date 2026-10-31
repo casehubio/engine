@@ -17,6 +17,7 @@ package io.casehub.engine.runtime.stigmergy;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import io.casehub.api.model.event.CaseHubEventType;
@@ -63,7 +64,7 @@ class TeamDetectorTest {
   void detectsTeamFromSharedInterests() {
     var swarmConfig = new SwarmConfig(null, null, null, null, null, null, 0.3, 2, null);
     var config = new StigmergyConfig(null, null, swarmConfig);
-    coordinator.initializeCase(caseId, List.of("a1", "a2", "a3"), config);
+    coordinator.initializeCase(caseId, List.of("a1", "a2", "a3"), config, "test-tenant");
     for (String id : List.of("a1", "a2", "a3")) {
       coordinator.agentJoined(caseId, id, "b-" + id);
       coordinator.agentActivated(caseId, id);
@@ -89,7 +90,7 @@ class TeamDetectorTest {
   void detectsTeamFromSharedSignals() {
     var swarmConfig = new SwarmConfig(null, null, null, null, null, null, 0.3, 2, null);
     var config = new StigmergyConfig(null, null, swarmConfig);
-    coordinator.initializeCase(caseId, List.of("a1", "a2"), config);
+    coordinator.initializeCase(caseId, List.of("a1", "a2"), config, "test-tenant");
     for (String id : List.of("a1", "a2")) {
       coordinator.agentJoined(caseId, id, "b-" + id);
       coordinator.agentActivated(caseId, id);
@@ -106,7 +107,7 @@ class TeamDetectorTest {
   void noTeamWhenBelowMinSize() {
     var swarmConfig = new SwarmConfig(null, null, null, null, null, null, 0.3, 3, null);
     var config = new StigmergyConfig(null, null, swarmConfig);
-    coordinator.initializeCase(caseId, List.of("a1", "a2"), config);
+    coordinator.initializeCase(caseId, List.of("a1", "a2"), config, "test-tenant");
     for (String id : List.of("a1", "a2")) {
       coordinator.agentJoined(caseId, id, "b-" + id);
       coordinator.agentActivated(caseId, id);
@@ -125,7 +126,7 @@ class TeamDetectorTest {
   void teamDissolutionEventOnAgentDeparture() {
     var swarmConfig = new SwarmConfig(null, null, null, null, null, null, 0.3, 2, null);
     var config = new StigmergyConfig(null, null, swarmConfig);
-    coordinator.initializeCase(caseId, List.of("a1", "a2"), config);
+    coordinator.initializeCase(caseId, List.of("a1", "a2"), config, "test-tenant");
     for (String id : List.of("a1", "a2")) {
       coordinator.agentJoined(caseId, id, "b-" + id);
       coordinator.agentActivated(caseId, id);
@@ -149,7 +150,7 @@ class TeamDetectorTest {
   void evictRemovesState() {
     var swarmConfig = new SwarmConfig(null, null, null, null, null, null, 0.3, 2, null);
     var config = new StigmergyConfig(null, null, swarmConfig);
-    coordinator.initializeCase(caseId, List.of("a1", "a2"), config);
+    coordinator.initializeCase(caseId, List.of("a1", "a2"), config, "test-tenant");
     for (String id : List.of("a1", "a2")) {
       coordinator.agentJoined(caseId, id, "b-" + id);
       coordinator.agentActivated(caseId, id);
@@ -168,7 +169,7 @@ class TeamDetectorTest {
   void teamStabilityIncrementsOnConsecutiveDetection() {
     var swarmConfig = new SwarmConfig(null, null, null, null, null, null, 0.3, 2, null);
     var config = new StigmergyConfig(null, null, swarmConfig);
-    coordinator.initializeCase(caseId, List.of("a1", "a2"), config);
+    coordinator.initializeCase(caseId, List.of("a1", "a2"), config, "test-tenant");
     for (String id : List.of("a1", "a2")) {
       coordinator.agentJoined(caseId, id, "b-" + id);
       coordinator.agentActivated(caseId, id);
@@ -183,6 +184,60 @@ class TeamDetectorTest {
 
     teamDetector.detect(caseId, swarmConfig);
     assertEquals(2, teamDetector.getDetectedTeams(caseId).get(0).stabilityCount());
+  }
+
+  @Test
+  void detectEnrichesAffinityWithCollaborationData() {
+    var collabQuery =
+        org.mockito.Mockito.mock(io.casehub.eidos.api.RuntimeCollaborationQuery.class);
+    org.mockito.Mockito.when(collabQuery.collaborators("a1", "test-tenant"))
+        .thenReturn(
+            List.of(
+                new io.casehub.eidos.api.Collaborator(
+                    "a2",
+                    "test-tenant",
+                    Set.of(io.casehub.eidos.api.NeighborRelation.COACTIVE),
+                    0.9)));
+    org.mockito.Mockito.when(collabQuery.collaborators("a2", "test-tenant"))
+        .thenReturn(
+            List.of(
+                new io.casehub.eidos.api.Collaborator(
+                    "a1",
+                    "test-tenant",
+                    Set.of(io.casehub.eidos.api.NeighborRelation.COACTIVE),
+                    0.9)));
+    org.mockito.Mockito.when(collabQuery.collaborators("a3", "test-tenant")).thenReturn(List.of());
+
+    var enrichedDetector =
+        new TeamDetector(
+            observationRegistry, signalRegistry, roleTracker, coordinator, collabQuery);
+
+    var swarmCfg = new SwarmConfig(null, null, null, null, null, null, 0.3, 2, null, null, null);
+    var config = new StigmergyConfig(null, null, swarmCfg);
+    coordinator.initializeCase(caseId, List.of("a1", "a2", "a3"), config, "test-tenant");
+    for (String id : List.of("a1", "a2", "a3")) {
+      coordinator.agentJoined(caseId, id, "b-" + id);
+      coordinator.agentActivated(caseId, id);
+    }
+
+    enrichedDetector.detect(caseId, swarmCfg);
+
+    org.mockito.Mockito.verify(collabQuery).collaborators("a1", "test-tenant");
+    org.mockito.Mockito.verify(collabQuery).collaborators("a2", "test-tenant");
+  }
+
+  @Test
+  void detectSucceedsWithoutCollaborationQuery() {
+    var swarmCfg = new SwarmConfig(null, null, null, null, null, null, 0.3, 2, null, null, null);
+    var config = new StigmergyConfig(null, null, swarmCfg);
+    coordinator.initializeCase(caseId, List.of("a1", "a2", "a3"), config, "test-tenant");
+    for (String id : List.of("a1", "a2", "a3")) {
+      coordinator.agentJoined(caseId, id, "b-" + id);
+      coordinator.agentActivated(caseId, id);
+    }
+
+    var events = teamDetector.detect(caseId, swarmCfg);
+    assertNotNull(events);
   }
 
   static class TestObserver implements EnvironmentObserver {

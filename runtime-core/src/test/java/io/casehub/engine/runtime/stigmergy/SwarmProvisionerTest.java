@@ -18,6 +18,9 @@ package io.casehub.engine.runtime.stigmergy;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
 
 import io.casehub.api.model.event.CaseHubEventType;
 import io.casehub.api.model.stigmergy.DetectedRole;
@@ -32,6 +35,7 @@ import io.casehub.api.spi.DispatchBudgetQuery;
 import io.casehub.api.spi.ProvisionResult;
 import io.casehub.api.spi.WorkerProvisioner;
 import io.casehub.api.spi.stigmergy.SwarmCoordinationListener;
+import io.casehub.eidos.api.AgentGraphQuery;
 import io.casehub.engine.common.internal.convergence.ActivityTracker;
 import io.casehub.engine.common.internal.observation.ObservationRegistry;
 import io.casehub.engine.common.internal.observation.RuleRegistry;
@@ -82,7 +86,8 @@ class SwarmProvisionerTest {
             progressTracker,
             new NoOpDispatchBudget(),
             null,
-            List.<SwarmCoordinationListener>of(listener));
+            List.<SwarmCoordinationListener>of(listener),
+            null);
     caseId = UUID.randomUUID();
   }
 
@@ -93,7 +98,7 @@ class SwarmProvisionerTest {
     var swarmConfig =
         new SwarmConfig(2, null, null, null, null, null, null, null, null, budget, policy);
     var config = new StigmergyConfig(null, null, swarmConfig);
-    coordinator.initializeCase(caseId, List.of("a1", "a2"), config);
+    coordinator.initializeCase(caseId, List.of("a1", "a2"), config, "test-tenant");
     for (String id : List.of("a1", "a2")) {
       coordinator.agentJoined(caseId, id, "b-" + id);
       coordinator.agentActivated(caseId, id);
@@ -117,7 +122,7 @@ class SwarmProvisionerTest {
     var swarmConfig =
         new SwarmConfig(20, null, null, null, null, null, null, null, null, budget, policy);
     var config = new StigmergyConfig(null, null, swarmConfig);
-    coordinator.initializeCase(caseId, List.of("a1", "a2"), config);
+    coordinator.initializeCase(caseId, List.of("a1", "a2"), config, "test-tenant");
     for (String id : List.of("a1", "a2")) {
       coordinator.agentJoined(caseId, id, "b-" + id);
       coordinator.agentActivated(caseId, id);
@@ -146,7 +151,7 @@ class SwarmProvisionerTest {
     var swarmConfig =
         new SwarmConfig(20, null, null, null, null, null, null, null, null, budget, policy);
     var config = new StigmergyConfig(null, null, swarmConfig);
-    coordinator.initializeCase(caseId, List.of("a1", "a2"), config);
+    coordinator.initializeCase(caseId, List.of("a1", "a2"), config, "test-tenant");
     for (String id : List.of("a1", "a2")) {
       coordinator.agentJoined(caseId, id, "b-" + id);
       coordinator.agentActivated(caseId, id);
@@ -170,7 +175,7 @@ class SwarmProvisionerTest {
     var swarmConfig =
         new SwarmConfig(20, null, null, null, null, null, null, null, null, budget, policy);
     var config = new StigmergyConfig(null, null, swarmConfig);
-    coordinator.initializeCase(caseId, List.of("a1", "a2"), config);
+    coordinator.initializeCase(caseId, List.of("a1", "a2"), config, "test-tenant");
     for (String id : List.of("a1", "a2")) {
       coordinator.agentJoined(caseId, id, "b-" + id);
       coordinator.agentActivated(caseId, id);
@@ -199,7 +204,7 @@ class SwarmProvisionerTest {
     var swarmConfig =
         new SwarmConfig(20, null, null, null, null, null, null, null, null, budget, policy);
     var config = new StigmergyConfig(null, null, swarmConfig);
-    coordinator.initializeCase(caseId, List.of("a1", "a2"), config);
+    coordinator.initializeCase(caseId, List.of("a1", "a2"), config, "test-tenant");
     for (String id : List.of("a1", "a2")) {
       coordinator.agentJoined(caseId, id, "b-" + id);
       coordinator.agentActivated(caseId, id);
@@ -220,7 +225,7 @@ class SwarmProvisionerTest {
     var swarmConfig =
         new SwarmConfig(20, null, null, null, null, null, null, null, null, budget, policy);
     var config = new StigmergyConfig(null, null, swarmConfig);
-    coordinator.initializeCase(caseId, List.of("a1", "a2"), config);
+    coordinator.initializeCase(caseId, List.of("a1", "a2"), config, "test-tenant");
     for (String id : List.of("a1", "a2")) {
       coordinator.agentJoined(caseId, id, "b-" + id);
       coordinator.agentActivated(caseId, id);
@@ -245,7 +250,7 @@ class SwarmProvisionerTest {
     var swarmConfig =
         new SwarmConfig(20, null, null, null, null, null, null, null, null, budget, policy);
     var config = new StigmergyConfig(null, null, swarmConfig);
-    coordinator.initializeCase(caseId, List.of("a1", "a2"), config);
+    coordinator.initializeCase(caseId, List.of("a1", "a2"), config, "test-tenant");
     for (String id : List.of("a1", "a2")) {
       coordinator.agentJoined(caseId, id, "b-" + id);
       coordinator.agentActivated(caseId, id);
@@ -274,7 +279,7 @@ class SwarmProvisionerTest {
     var swarmConfig =
         new SwarmConfig(20, null, null, null, null, null, null, null, null, budget, policy);
     var config = new StigmergyConfig(null, null, swarmConfig);
-    coordinator.initializeCase(caseId, List.of("a1", "a2"), config);
+    coordinator.initializeCase(caseId, List.of("a1", "a2"), config, "test-tenant");
     for (String id : List.of("a1", "a2")) {
       coordinator.agentJoined(caseId, id, "b-" + id);
       coordinator.agentActivated(caseId, id);
@@ -300,7 +305,7 @@ class SwarmProvisionerTest {
     var swarmConfig =
         new SwarmConfig(20, null, null, null, null, null, null, null, null, budget, policy);
     var config = new StigmergyConfig(null, null, swarmConfig);
-    coordinator.initializeCase(caseId, List.of("a1", "a2"), config);
+    coordinator.initializeCase(caseId, List.of("a1", "a2"), config, "test-tenant");
     for (String id : List.of("a1", "a2")) {
       coordinator.agentJoined(caseId, id, "b-" + id);
       coordinator.agentActivated(caseId, id);
@@ -373,7 +378,8 @@ class SwarmProvisionerTest {
             progressTracker,
             new NoOpDispatchBudget(),
             null,
-            List.<SwarmCoordinationListener>of(throwing, recording));
+            List.<SwarmCoordinationListener>of(throwing, recording),
+            null);
 
     var roles = List.of(new DetectedRole("role-1", Set.of("a1"), null, List.of(), 1, 0.0));
     provisioner.notifyRolesChanged(caseId, roles);
@@ -392,6 +398,112 @@ class SwarmProvisionerTest {
     assertTrue(
         recording.events.contains("progressUpdated"),
         "recording listener should fire after throwing listener");
+  }
+
+  private SwarmProvisioner createProvisioner(AgentGraphQuery graphQuery) {
+    return new SwarmProvisioner(
+        workerProvisioner,
+        coordinator,
+        signalRegistry,
+        activityTracker,
+        roleTracker,
+        teamDetector,
+        progressTracker,
+        new NoOpDispatchBudget(),
+        null,
+        List.<SwarmCoordinationListener>of(listener),
+        graphQuery);
+  }
+
+  @Test
+  void coordinatorStoresTenancyId() {
+    var swarmConfig =
+        new SwarmConfig(5, null, null, null, null, null, null, null, null, null, null);
+    var config = new StigmergyConfig(null, null, swarmConfig);
+    coordinator.initializeCase(caseId, List.of("a1"), config, "tenant-1");
+    assertEquals("tenant-1", coordinator.getTenancyId(caseId));
+  }
+
+  @Test
+  void provisionQueriesCoActiveAgentsWhenAvailable() {
+    var graphQuery = mock(AgentGraphQuery.class);
+    when(graphQuery.coActiveAgents(caseId.toString(), "test-tenant"))
+        .thenReturn(List.of("existing-1"));
+
+    swarmProvisioner = createProvisioner(graphQuery);
+
+    var budget = new ProvisionBudget(50, 10, 0, null, null);
+    var policy = IntegrationPolicy.BALANCED;
+    var swarmConfig =
+        new SwarmConfig(5, null, null, null, null, null, null, null, null, budget, policy);
+    var config = new StigmergyConfig(null, null, swarmConfig);
+    coordinator.initializeCase(caseId, List.of(), config, "test-tenant");
+    signalRegistry.deposit(
+        caseId, "swarm:need-capacity", 0.8, Duration.ofMinutes(5), "agent-x", 100);
+    signalRegistry.deposit(
+        caseId, "swarm:need-capacity", 0.8, Duration.ofMinutes(5), "agent-y", 100);
+
+    var events = swarmProvisioner.evaluateAndProvision(caseId, swarmConfig, config);
+
+    verify(graphQuery).coActiveAgents(caseId.toString(), "test-tenant");
+    assertTrue(
+        events.stream().anyMatch(e -> e.type() == CaseHubEventType.SWARM_PROVISION_COMPLETED));
+  }
+
+  @Test
+  void provisionSucceedsWithoutAgentGraphQuery() {
+    swarmProvisioner = createProvisioner(null);
+
+    var budget = new ProvisionBudget(50, 10, 0, null, null);
+    var policy = IntegrationPolicy.BALANCED;
+    var swarmConfig =
+        new SwarmConfig(5, null, null, null, null, null, null, null, null, budget, policy);
+    var config = new StigmergyConfig(null, null, swarmConfig);
+    coordinator.initializeCase(caseId, List.of(), config, "test-tenant");
+    signalRegistry.deposit(
+        caseId, "swarm:need-capacity", 0.8, Duration.ofMinutes(5), "agent-x", 100);
+    signalRegistry.deposit(
+        caseId, "swarm:need-capacity", 0.8, Duration.ofMinutes(5), "agent-y", 100);
+
+    var events = swarmProvisioner.evaluateAndProvision(caseId, swarmConfig, config);
+
+    assertTrue(
+        events.stream().anyMatch(e -> e.type() == CaseHubEventType.SWARM_PROVISION_COMPLETED));
+  }
+
+  @Test
+  void provisionQueriesTopAgentsByOutcomeWhenCapabilitiesPresent() {
+    var graphQuery = mock(AgentGraphQuery.class);
+    when(graphQuery.coActiveAgents(caseId.toString(), "test-tenant")).thenReturn(List.of());
+    when(graphQuery.topAgentsByOutcome("nlp", "case-processing", "test-tenant", 5))
+        .thenReturn(List.of("top-agent-1"));
+
+    swarmProvisioner = createProvisioner(graphQuery);
+
+    var budget = new ProvisionBudget(50, 10, 0, null, null);
+    var policy = IntegrationPolicy.BALANCED;
+    var swarmConfig =
+        new SwarmConfig(5, null, null, null, null, null, null, null, null, budget, policy);
+    var config = new StigmergyConfig(null, null, swarmConfig);
+    coordinator.initializeCase(caseId, List.of(), config, "test-tenant");
+    signalRegistry.deposit(
+        caseId,
+        "swarm:need-capacity:nlp:case-processing",
+        0.8,
+        Duration.ofMinutes(5),
+        "agent-x",
+        100);
+    signalRegistry.deposit(
+        caseId,
+        "swarm:need-capacity:nlp:case-processing",
+        0.8,
+        Duration.ofMinutes(5),
+        "agent-y",
+        100);
+
+    var events = swarmProvisioner.evaluateAndProvision(caseId, swarmConfig, config);
+
+    verify(graphQuery).topAgentsByOutcome("nlp", "case-processing", "test-tenant", 5);
   }
 
   static class RecordingWorkerProvisioner implements WorkerProvisioner {

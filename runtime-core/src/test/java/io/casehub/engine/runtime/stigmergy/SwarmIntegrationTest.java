@@ -76,7 +76,8 @@ class SwarmIntegrationTest {
 
   @Test
   void fullSwarmLifecycle() {
-    coordinator.initializeCase(caseId, List.of("monitor-1", "monitor-2", "controller-1"), config);
+    coordinator.initializeCase(
+        caseId, List.of("monitor-1", "monitor-2", "controller-1"), config, "test-tenant");
     for (String id : List.of("monitor-1", "monitor-2", "controller-1")) {
       coordinator.agentJoined(caseId, id, "b-" + id);
       coordinator.agentActivated(caseId, id);
@@ -126,7 +127,7 @@ class SwarmIntegrationTest {
 
   @Test
   void metricsSpaceExposesAllData() {
-    coordinator.initializeCase(caseId, List.of("a1", "a2"), config);
+    coordinator.initializeCase(caseId, List.of("a1", "a2"), config, "test-tenant");
     for (String id : List.of("a1", "a2")) {
       coordinator.agentJoined(caseId, id, "b-" + id);
       coordinator.agentActivated(caseId, id);
@@ -153,7 +154,7 @@ class SwarmIntegrationTest {
 
   @Test
   void evictionCleansAllTrackers() {
-    coordinator.initializeCase(caseId, List.of("a1"), config);
+    coordinator.initializeCase(caseId, List.of("a1"), config, "test-tenant");
     coordinator.agentJoined(caseId, "a1", "b-a1");
     coordinator.agentActivated(caseId, "a1");
     roleTracker.accumulate(caseId);
@@ -169,6 +170,37 @@ class SwarmIntegrationTest {
     assertTrue(roleTracker.getDetectedRoles(caseId).isEmpty());
     assertTrue(teamDetector.getDetectedTeams(caseId).isEmpty());
     assertEquals(SwarmProgress.EMPTY, progressTracker.getProgress(caseId));
+  }
+
+  @Test
+  void agentActivatedQueriesCoActiveAgents() {
+    var graphQuery = org.mockito.Mockito.mock(io.casehub.eidos.api.AgentGraphQuery.class);
+    org.mockito.Mockito.when(graphQuery.coActiveAgents("a1", "test-tenant"))
+        .thenReturn(List.of("a2", "a3"));
+
+    var coord =
+        new StigmergyCoordinator(signalRegistry, observationRegistry, activityTracker, graphQuery);
+    coord.initializeCase(caseId, List.of("a1", "a2", "a3"), config, "test-tenant");
+    coord.agentJoined(caseId, "a1", "b-a1");
+
+    coord.agentActivated(caseId, "a1");
+
+    org.mockito.Mockito.verify(graphQuery).coActiveAgents("a1", "test-tenant");
+    assertEquals(
+        io.casehub.api.model.stigmergy.AgentLifecycleState.ACTIVE,
+        coord.getAgent(caseId, "a1").state());
+  }
+
+  @Test
+  void agentActivatedSucceedsWithoutAgentGraphQuery() {
+    coordinator.initializeCase(caseId, List.of("a1"), config, "test-tenant");
+    coordinator.agentJoined(caseId, "a1", "b-a1");
+
+    coordinator.agentActivated(caseId, "a1");
+
+    assertEquals(
+        io.casehub.api.model.stigmergy.AgentLifecycleState.ACTIVE,
+        coordinator.getAgent(caseId, "a1").state());
   }
 
   static class TestObserver implements EnvironmentObserver {

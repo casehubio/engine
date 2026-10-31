@@ -79,7 +79,8 @@ class SelfProvisioningIntegrationTest {
             progressTracker,
             q -> Integer.MAX_VALUE,
             null,
-            java.util.List.of());
+            java.util.List.of(),
+            null);
     roleTracker.setSwarmProvisioner(swarmProvisioner);
 
     caseId = UUID.randomUUID();
@@ -95,7 +96,7 @@ class SelfProvisioningIntegrationTest {
 
   @Test
   void fullProvisioningLifecycle() {
-    coordinator.initializeCase(caseId, List.of("monitor-1", "monitor-2"), config);
+    coordinator.initializeCase(caseId, List.of("monitor-1", "monitor-2"), config, "test-tenant");
     for (String id : List.of("monitor-1", "monitor-2")) {
       coordinator.agentJoined(caseId, id, "b-" + id);
       coordinator.agentActivated(caseId, id);
@@ -126,7 +127,7 @@ class SelfProvisioningIntegrationTest {
 
   @Test
   void bootstrapContextReflectsRichnessAxis() {
-    coordinator.initializeCase(caseId, List.of("a1"), config);
+    coordinator.initializeCase(caseId, List.of("a1"), config, "test-tenant");
     coordinator.agentJoined(caseId, "a1", "b-a1");
     coordinator.agentActivated(caseId, "a1");
 
@@ -167,7 +168,7 @@ class SelfProvisioningIntegrationTest {
 
   @Test
   void evictionCleansAllProvisioningState() {
-    coordinator.initializeCase(caseId, List.of("a1", "a2"), config);
+    coordinator.initializeCase(caseId, List.of("a1", "a2"), config, "test-tenant");
     for (String id : List.of("a1", "a2")) {
       coordinator.agentJoined(caseId, id, "b-" + id);
       coordinator.agentActivated(caseId, id);

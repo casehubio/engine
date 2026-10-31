@@ -75,7 +75,7 @@ class SwarmProgressTrackerTest {
             new StigmergyDefaults(null, 0.01, null, null, null, null, null, null, null),
             new CoordinationConfig(2, null, null),
             new SwarmConfig(null, null, null, null, null, null, null, null, 0.05));
-    coordinator.initializeCase(caseId, List.of("a1", "a2"), config);
+    coordinator.initializeCase(caseId, List.of("a1", "a2"), config, "test-tenant");
     for (String id : List.of("a1", "a2")) {
       coordinator.agentJoined(caseId, id, "b-" + id);
       coordinator.agentActivated(caseId, id);
@@ -100,7 +100,7 @@ class SwarmProgressTrackerTest {
             null,
             new CoordinationConfig(2, null, null),
             new SwarmConfig(null, null, null, null, null, null, null, null, 0.5));
-    coordinator.initializeCase(caseId, List.of("a1"), config);
+    coordinator.initializeCase(caseId, List.of("a1"), config, "test-tenant");
     coordinator.agentJoined(caseId, "a1", "b-a1");
     coordinator.agentActivated(caseId, "a1");
 
@@ -114,7 +114,7 @@ class SwarmProgressTrackerTest {
   void stabilityScoreReflectsRoleConsistency() {
     var swarmConfig = new SwarmConfig(null, 0.5, 2, 20, 1, null, null, null, 0.05);
     var config = new StigmergyConfig(null, new CoordinationConfig(2, null, null), swarmConfig);
-    coordinator.initializeCase(caseId, List.of("a1", "a2"), config);
+    coordinator.initializeCase(caseId, List.of("a1", "a2"), config, "test-tenant");
     for (String id : List.of("a1", "a2")) {
       coordinator.agentJoined(caseId, id, "b-" + id);
       coordinator.agentActivated(caseId, id);
@@ -145,7 +145,7 @@ class SwarmProgressTrackerTest {
             null,
             new CoordinationConfig(2, null, null),
             new SwarmConfig(null, null, null, null, null, null, null, null, null));
-    coordinator.initializeCase(caseId, List.of("a1"), config);
+    coordinator.initializeCase(caseId, List.of("a1"), config, "test-tenant");
     coordinator.agentJoined(caseId, "a1", "b");
     coordinator.agentActivated(caseId, "a1");
 

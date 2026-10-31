@@ -42,7 +42,8 @@ class StigmergyIntegrationTest {
     var caseId = UUID.randomUUID();
     var config = new StigmergyConfig(null, new CoordinationConfig(2, 10.0, 0.6), null);
 
-    coordinator.initializeCase(caseId, List.of("temp-monitor", "pressure-monitor"), config);
+    coordinator.initializeCase(
+        caseId, List.of("temp-monitor", "pressure-monitor"), config, "test-tenant");
     assertTrue(coordinator.isStigmergyCase(caseId));
 
     coordinator.agentJoined(caseId, "temp-monitor", "run-temp-monitor");
