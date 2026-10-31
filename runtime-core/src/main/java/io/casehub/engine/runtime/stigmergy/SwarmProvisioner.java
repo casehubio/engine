@@ -358,6 +358,7 @@ public class SwarmProvisioner implements Resettable {
 
     for (String id : toRemove) {
       state.provisionedAgents.remove(id);
+      notifyMemberCompleted(caseId, id);
     }
 
     if (!toRemove.isEmpty() && !listeners.isEmpty()) {
@@ -504,6 +505,19 @@ public class SwarmProvisioner implements Resettable {
         listener.onProgressUpdated(caseId, progress);
       } catch (Exception e) {
         LOG.warnf(e, "SwarmCoordinationListener.onProgressUpdated failed for case %s", caseId);
+      }
+    }
+  }
+
+  public void notifyMemberCompleted(UUID caseId, String agentId) {
+    if (!active || listeners.isEmpty()) {
+      return;
+    }
+    for (var listener : listeners) {
+      try {
+        listener.onMemberCompleted(caseId, agentId);
+      } catch (Exception e) {
+        LOG.warnf(e, "SwarmCoordinationListener.onMemberCompleted failed for case %s", caseId);
       }
     }
   }
