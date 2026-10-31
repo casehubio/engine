@@ -329,7 +329,9 @@ class EventLogReplayRecoveryStrategyTest {
           CaseHubEventType.COMPENSATION_COMPLETED,
           CaseHubEventType.COMPENSATION_FAULTED,
           CaseHubEventType.COMPENSATION_STEP_STARTED,
-          CaseHubEventType.COMPENSATION_STEP_COMPLETED);
+          CaseHubEventType.COMPENSATION_STEP_COMPLETED,
+          CaseHubEventType.STALL_DETECTED,
+          CaseHubEventType.STALL_RECOVERY_INITIATED);
 
   @Test
   void allEventTypes_eitherReplayedOrExplicitlyNonMutating() {

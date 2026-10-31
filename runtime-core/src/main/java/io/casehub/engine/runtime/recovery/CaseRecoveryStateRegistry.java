@@ -16,9 +16,11 @@
 package io.casehub.engine.runtime.recovery;
 
 import io.casehub.engine.common.spi.recovery.CaseRecoveryState;
+import jakarta.enterprise.context.ApplicationScoped;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 
+@ApplicationScoped
 public class CaseRecoveryStateRegistry {
 
   private final ConcurrentHashMap<UUID, CaseRecoveryState> states = new ConcurrentHashMap<>();
