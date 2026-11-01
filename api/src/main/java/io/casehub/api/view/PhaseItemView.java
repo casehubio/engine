@@ -32,4 +32,7 @@ public record PhaseItemView(
     String description,
     Integer required,
     Integer of,
-    Map<String, List<CoordinationStepView>> lanes) {}
+    Map<String, List<CoordinationStepView>> lanes,
+    MatchRoutingView routing,
+    String icon,
+    String iconColor) {}

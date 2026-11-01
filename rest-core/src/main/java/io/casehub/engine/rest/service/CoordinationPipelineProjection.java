@@ -103,6 +103,9 @@ public class CoordinationPipelineProjection {
         null,
         required,
         of,
+        null,
+        null,
+        null,
         null);
   }
 
@@ -119,19 +122,36 @@ public class CoordinationPipelineProjection {
         m.getDescription(),
         null,
         null,
+        null,
+        null,
+        null,
         null);
   }
 
   private PhaseItemView parallelPhase(Map<String, List<CoordinationStepView>> lanes) {
     return new PhaseItemView(
-        "parallel", null, null, null, null, null, null, null, null, null, null, lanes);
+        "parallel",
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        lanes,
+        null,
+        null,
+        null);
   }
 
   private CoordinationStepView bindingToStep(Binding b) {
     String action = targetAction(b);
     String target = targetName(b);
     String channel = b.getProduces();
-    return new CoordinationStepView(action, target, null, null, channel, null);
+    return new CoordinationStepView(action, target, null, null, channel, null, null, null, null);
   }
 
   private String targetAction(Binding b) {

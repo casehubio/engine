@@ -15,12 +15,17 @@
  */
 package io.casehub.api.view;
 
+import com.fasterxml.jackson.annotation.JsonInclude;
 import java.util.Map;
 
+@JsonInclude(JsonInclude.Include.NON_NULL)
 public record CoordinationStepView(
     String action,
     String target,
     String model,
     String outputFormat,
     String channel,
-    Map<String, String> params) {}
+    Map<String, String> params,
+    Boolean drillDown,
+    String icon,
+    String iconColor) {}
