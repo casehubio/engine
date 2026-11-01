@@ -10,6 +10,12 @@
 
 ### `channel` (`java.lang.String`)
 
+### `drillDown` (`java.lang.Boolean`)
+
+### `icon` (`java.lang.String`)
+
+### `iconColor` (`java.lang.String`)
+
 ### `model` (`java.lang.String`)
 
 ### `outputFormat` (`java.lang.String`)
@@ -24,6 +30,12 @@
 
 ### `channel` (`java.lang.String`)
 
+### `drillDown` (`java.lang.Boolean`)
+
+### `icon` (`java.lang.String`)
+
+### `iconColor` (`java.lang.String`)
+
 ### `model` (`java.lang.String`)
 
 ### `outputFormat` (`java.lang.String`)
@@ -34,7 +46,7 @@
 
 ## Constructors
 
-### `public CoordinationStepView(java.lang.String action, java.lang.String target, java.lang.String model, java.lang.String outputFormat, java.lang.String channel, java.util.Map<java.lang.String,java.lang.String> params)`
+### `public CoordinationStepView(java.lang.String action, java.lang.String target, java.lang.String model, java.lang.String outputFormat, java.lang.String channel, java.util.Map<java.lang.String,java.lang.String> params, java.lang.Boolean drillDown, java.lang.String icon, java.lang.String iconColor)`
 
 #### Parameters
 
@@ -44,12 +56,17 @@
 - `outputFormat` (`java.lang.String`)
 - `channel` (`java.lang.String`)
 - `params` (`java.util.Map<java.lang.String,java.lang.String>`)
+- `drillDown` (`java.lang.Boolean`)
+- `icon` (`java.lang.String`)
+- `iconColor` (`java.lang.String`)
 
 ## Methods
 
 ### `public java.lang.String action()`
 
 ### `public java.lang.String channel()`
+
+### `public java.lang.Boolean drillDown()`
 
 ### `public final boolean equals(java.lang.Object o)`
 
@@ -58,6 +75,10 @@
 - `o` (`java.lang.Object`)
 
 ### `public final int hashCode()`
+
+### `public java.lang.String icon()`
+
+### `public java.lang.String iconColor()`
 
 ### `public java.lang.String model()`
 
