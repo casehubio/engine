@@ -55,3 +55,10 @@ Spring `ObjectProvider`. Do not use `@DefaultBean` on implementations.
 - `caseId` (`java.util.UUID`)
 - `teams` (`java.util.List<io.casehub.api.model.stigmergy.DetectedTeam>`)
 - `progress` (`io.casehub.api.model.stigmergy.SwarmProgress`)
+
+### `public default void onTelemetrySnapshot(java.util.UUID caseId, java.util.List<io.casehub.api.model.stigmergy.SwarmTelemetry> telemetry)`
+
+#### Parameters
+
+- `caseId` (`java.util.UUID`)
+- `telemetry` (`java.util.List<io.casehub.api.model.stigmergy.SwarmTelemetry>`)
