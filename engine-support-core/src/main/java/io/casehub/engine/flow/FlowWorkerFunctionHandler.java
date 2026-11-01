@@ -17,6 +17,7 @@ package io.casehub.engine.flow;
 
 import io.casehub.api.model.PlaybookExecutionResult;
 import io.casehub.api.model.StepResult;
+import io.casehub.api.model.StepStatus;
 import io.casehub.api.model.WorkerContext;
 import io.casehub.engine.common.internal.executor.ExecutionMetadata;
 import io.casehub.engine.common.internal.executor.HandlerResult;
@@ -156,6 +157,14 @@ public class FlowWorkerFunctionHandler implements WorkerFunctionHandler {
                       new RuntimeException(
                           "Workflow produced non-serializable model for worker: "
                               + metadata.workerName()));
+
+      boolean hasFailedSteps = steps.stream().anyMatch(s -> s.status() == StepStatus.FAILED);
+      if (hasFailedSteps) {
+        throw new PlaybookExecutionException(
+            "Partial success: some steps failed",
+            null,
+            new PlaybookExecutionResult.PartialSuccess(outputMap, steps));
+      }
 
       Function<Map<String, Object>, PlannedAction> plannedActionFn = null;
       if (swf instanceof FlowWorkerFunction flow) {

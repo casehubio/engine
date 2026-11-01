@@ -23,6 +23,9 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import io.casehub.api.context.PropagationContext;
+import io.casehub.api.model.PlaybookExecutionResult;
+import io.casehub.api.model.StepResult;
+import io.casehub.api.model.StepStatus;
 import io.casehub.api.model.WorkerContext;
 import io.casehub.engine.common.internal.executor.ExecutionMetadata;
 import io.casehub.engine.common.spi.recovery.TriageModificationProvider;
@@ -40,6 +43,7 @@ import io.serverlessworkflow.impl.WorkflowDefinition;
 import io.serverlessworkflow.impl.WorkflowInstance;
 import io.serverlessworkflow.impl.WorkflowModel;
 import jakarta.enterprise.inject.Instance;
+import java.time.Duration;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -161,6 +165,42 @@ class FlowWorkerFunctionHandlerTest {
     assertThat(result.executionResult()).isNotNull();
     assertThat(result.executionResult())
         .isInstanceOf(io.casehub.api.model.PlaybookExecutionResult.Success.class);
+  }
+
+  @Test
+  void execute_throws_partial_success_when_steps_have_failures() {
+    final String instanceId = "wf-partial";
+    final UUID caseId = UUID.randomUUID();
+    final WorkflowModel model = mock(WorkflowModel.class);
+    when(model.asMap()).thenReturn(Optional.of(Map.of("out", "val")));
+
+    final WorkflowInstance wfInstance = mockWorkflowInstance(instanceId);
+    when(wfInstance.start()).thenReturn(CompletableFuture.completedFuture(model));
+
+    stubApp(wfInstance);
+
+    List<StepResult> mixedSteps =
+        List.of(
+            new StepResult("s1", "step-1", StepStatus.SUCCEEDED, Duration.ofMillis(100), null),
+            new StepResult(
+                "s2", "step-2", StepStatus.FAILED, Duration.ofMillis(200), "something broke"));
+    when(registry.getSteps(instanceId)).thenReturn(mixedSteps);
+
+    final WorkerContext context =
+        new WorkerContext("w", caseId, null, null, PropagationContext.createRoot(), null);
+    final ExecutionMetadata metadata = new ExecutionMetadata("w", "h");
+
+    try {
+      handler.execute(
+          new FlowWorkerFunction(mock(Workflow.class)), Map.of(), context, 60000, metadata);
+      throw new AssertionError("Should have thrown PlaybookExecutionException");
+    } catch (PlaybookExecutionException e) {
+      assertThat(e.getExecutionResult()).isInstanceOf(PlaybookExecutionResult.PartialSuccess.class);
+      PlaybookExecutionResult.PartialSuccess partial =
+          (PlaybookExecutionResult.PartialSuccess) e.getExecutionResult();
+      assertThat(partial.steps()).hasSize(2);
+      assertThat(partial.partialOutput()).isEqualTo(Map.of("out", "val"));
+    }
   }
 
   @Test
