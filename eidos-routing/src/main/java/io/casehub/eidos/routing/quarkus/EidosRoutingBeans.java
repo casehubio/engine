@@ -18,6 +18,7 @@ package io.casehub.eidos.routing.quarkus;
 import io.casehub.api.spi.routing.AgentRoutingStrategy;
 import io.casehub.eidos.api.AgentSelector;
 import io.casehub.eidos.api.CapabilityHealth;
+import io.casehub.eidos.api.OrgAwareDispatch;
 import io.casehub.eidos.routing.EngineAwareAgentSelector;
 import io.casehub.ledger.api.spi.TrustScoreSource;
 import jakarta.enterprise.context.ApplicationScoped;
@@ -33,12 +34,16 @@ public class EidosRoutingBeans {
   AgentSelector engineAwareAgentSelector(
       CapabilityHealth capabilityHealth,
       AgentRoutingStrategy routingStrategy,
-      Instance<TrustScoreSource> trustSourceInstance) {
+      Instance<TrustScoreSource> trustSourceInstance,
+      Instance<OrgAwareDispatch> orgDispatchInstance) {
     return new EngineAwareAgentSelector(
         capabilityHealth,
         routingStrategy,
         trustSourceInstance.isResolvable()
             ? Optional.of(trustSourceInstance.get())
+            : Optional.empty(),
+        orgDispatchInstance.isResolvable()
+            ? Optional.of(orgDispatchInstance.get())
             : Optional.empty());
   }
 }

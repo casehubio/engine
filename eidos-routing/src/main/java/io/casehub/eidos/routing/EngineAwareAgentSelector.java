@@ -29,6 +29,7 @@ import io.casehub.eidos.api.CapabilityHealth;
 import io.casehub.eidos.api.CapabilityHealth.CapabilityStatus;
 import io.casehub.eidos.api.CapabilityHealth.ProbeContext;
 import io.casehub.eidos.api.EscalationKind;
+import io.casehub.eidos.api.OrgAwareDispatch;
 import io.casehub.eidos.api.SelectionContext;
 import io.casehub.ledger.api.spi.TrustScoreSource;
 import java.util.ArrayList;
@@ -43,14 +44,17 @@ public class EngineAwareAgentSelector implements AgentSelector {
   private final CapabilityHealth capabilityHealth;
   private final AgentRoutingStrategy routingStrategy;
   private final Optional<TrustScoreSource> trustSource;
+  private final Optional<OrgAwareDispatch> orgDispatch;
 
   public EngineAwareAgentSelector(
       CapabilityHealth capabilityHealth,
       AgentRoutingStrategy routingStrategy,
-      Optional<TrustScoreSource> trustSource) {
+      Optional<TrustScoreSource> trustSource,
+      Optional<OrgAwareDispatch> orgDispatch) {
     this.capabilityHealth = capabilityHealth;
     this.routingStrategy = routingStrategy;
     this.trustSource = trustSource;
+    this.orgDispatch = orgDispatch;
   }
 
   @Override
@@ -145,12 +149,16 @@ public class EngineAwareAgentSelector implements AgentSelector {
             trustScore,
             assignment.reason() != null ? assignment.reason() : "engine selected");
       }
-      case RoutingResult.Unresolvable u -> new AgentSelection.NoneQualified(u.reason());
+      case RoutingResult.Unresolvable u ->
+          tryEscalation(mappings, context, new AgentSelection.NoneQualified(u.reason()));
       case RoutingResult.Escalated e ->
-          new AgentSelection.Escalated(
-              e.capabilityName() != null ? e.capabilityName() : context.capabilityName(),
-              mapEscalationKind(e.escalationReason()),
-              e.reason());
+          tryEscalation(
+              mappings,
+              context,
+              new AgentSelection.Escalated(
+                  e.capabilityName() != null ? e.capabilityName() : context.capabilityName(),
+                  mapEscalationKind(e.escalationReason()),
+                  e.reason()));
     };
   }
 
@@ -159,6 +167,26 @@ public class EngineAwareAgentSelector implements AgentSelector {
       case BORDERLINE_STALEMATE -> EscalationKind.BORDERLINE_STALEMATE;
       case NO_QUALIFIED_AGENT -> EscalationKind.NO_QUALIFIED_AGENT;
     };
+  }
+
+  private AgentSelection tryEscalation(
+      List<CandidateMapping> mappings, SelectionContext context, AgentSelection fallback) {
+    if (orgDispatch.isEmpty() || mappings.isEmpty()) {
+      return fallback;
+    }
+    String agentId = mappings.getFirst().candidate().workerId();
+    return orgDispatch
+        .get()
+        .escalate(agentId, context.capabilityName(), context.tenancyId())
+        .map(
+            match ->
+                (AgentSelection)
+                    new AgentSelection.Selected(
+                        match.descriptor(),
+                        match.resolvedCapability(),
+                        lookupTrustScore(match.descriptor().agentId(), context.capabilityName()),
+                        "org escalation from " + agentId))
+        .orElse(fallback);
   }
 
   private double lookupTrustScore(String agentId, String capabilityName) {
