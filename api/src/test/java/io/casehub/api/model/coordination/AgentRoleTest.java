@@ -26,22 +26,22 @@ class AgentRoleTest {
 
   @Test
   void platform_coordinator_has_initiator_archetype() {
-    assertThat(AgentRole.COORDINATOR.archetype()).isEqualTo(RoleArchetype.INITIATOR);
+    assertThat(AgentRole.COORDINATOR.structuralRole()).isEqualTo(StructuralRole.INITIATOR);
   }
 
   @Test
   void platform_supervisor_has_initiator_archetype() {
-    assertThat(AgentRole.SUPERVISOR.archetype()).isEqualTo(RoleArchetype.INITIATOR);
+    assertThat(AgentRole.SUPERVISOR.structuralRole()).isEqualTo(StructuralRole.INITIATOR);
   }
 
   @Test
   void platform_judge_has_peer_archetype() {
-    assertThat(AgentRole.JUDGE.archetype()).isEqualTo(RoleArchetype.PEER);
+    assertThat(AgentRole.JUDGE.structuralRole()).isEqualTo(StructuralRole.PEER);
   }
 
   @Test
   void platform_moderator_has_peer_archetype() {
-    assertThat(AgentRole.MODERATOR.archetype()).isEqualTo(RoleArchetype.PEER);
+    assertThat(AgentRole.MODERATOR.structuralRole()).isEqualTo(StructuralRole.PEER);
   }
 
   @Test
@@ -54,19 +54,21 @@ class AgentRoleTest {
 
   @Test
   void platform_role_required_archetype_enforced_by_enum() {
-    assertThat(PlatformRole.COORDINATOR.requiredArchetype()).isEqualTo(RoleArchetype.INITIATOR);
-    assertThat(PlatformRole.SUPERVISOR.requiredArchetype()).isEqualTo(RoleArchetype.INITIATOR);
-    assertThat(PlatformRole.JUDGE.requiredArchetype()).isEqualTo(RoleArchetype.PEER);
-    assertThat(PlatformRole.MODERATOR.requiredArchetype()).isEqualTo(RoleArchetype.PEER);
+    assertThat(PlatformRole.COORDINATOR.requiredStructuralRole())
+        .isEqualTo(StructuralRole.INITIATOR);
+    assertThat(PlatformRole.SUPERVISOR.requiredStructuralRole())
+        .isEqualTo(StructuralRole.INITIATOR);
+    assertThat(PlatformRole.JUDGE.requiredStructuralRole()).isEqualTo(StructuralRole.PEER);
+    assertThat(PlatformRole.MODERATOR.requiredStructuralRole()).isEqualTo(StructuralRole.PEER);
   }
 
   // ── Factory methods ───────────────────────────────────────────────────
 
   @Test
   void of_with_archetype_creates_domain_role() {
-    AgentRole role = AgentRole.of("reviewer/code", RoleArchetype.CONTRACTOR);
+    AgentRole role = AgentRole.of("reviewer/code", StructuralRole.CONTRACTOR);
     assertThat(role.name()).isEqualTo(Path.parse("reviewer/code"));
-    assertThat(role.archetype()).isEqualTo(RoleArchetype.CONTRACTOR);
+    assertThat(role.structuralRole()).isEqualTo(StructuralRole.CONTRACTOR);
     assertThat(role.platformRole()).isNull();
   }
 
@@ -74,7 +76,7 @@ class AgentRoleTest {
   void of_symbolic_creates_name_only_role() {
     AgentRole role = AgentRole.of("medic");
     assertThat(role.name()).isEqualTo(Path.parse("medic"));
-    assertThat(role.archetype()).isNull();
+    assertThat(role.structuralRole()).isNull();
     assertThat(role.platformRole()).isNull();
   }
 
@@ -119,7 +121,7 @@ class AgentRoleTest {
   @Test
   void null_name_rejected() {
     assertThatNullPointerException()
-        .isThrownBy(() -> new AgentRole(null, RoleArchetype.PEER, null));
+        .isThrownBy(() -> new AgentRole(null, StructuralRole.PEER, null));
   }
 
   @Test
@@ -134,35 +136,35 @@ class AgentRoleTest {
         .isThrownBy(
             () ->
                 new AgentRole(
-                    Path.parse("custom"), RoleArchetype.CONTRACTOR, PlatformRole.COORDINATOR));
+                    Path.parse("custom"), StructuralRole.CONTRACTOR, PlatformRole.COORDINATOR));
   }
 
   @Test
   void platform_role_with_correct_archetype_accepted() {
     AgentRole role =
         new AgentRole(
-            Path.parse("custom-coordinator"), RoleArchetype.INITIATOR, PlatformRole.COORDINATOR);
+            Path.parse("custom-coordinator"), StructuralRole.INITIATOR, PlatformRole.COORDINATOR);
     assertThat(role.platformRole()).isEqualTo(PlatformRole.COORDINATOR);
-    assertThat(role.archetype()).isEqualTo(RoleArchetype.INITIATOR);
+    assertThat(role.structuralRole()).isEqualTo(StructuralRole.INITIATOR);
   }
 
   @Test
   void path_with_unresolved_delimiter_rejected() {
     assertThatIllegalArgumentException()
-        .isThrownBy(() -> new AgentRole(Path.of("reviewer/code"), RoleArchetype.CONTRACTOR, null));
+        .isThrownBy(() -> new AgentRole(Path.of("reviewer/code"), StructuralRole.CONTRACTOR, null));
   }
 
   @Test
   void archetype_without_platform_role_accepted() {
-    AgentRole role = new AgentRole(Path.parse("analyst"), RoleArchetype.CONTRACTOR, null);
-    assertThat(role.archetype()).isEqualTo(RoleArchetype.CONTRACTOR);
+    AgentRole role = new AgentRole(Path.parse("analyst"), StructuralRole.CONTRACTOR, null);
+    assertThat(role.structuralRole()).isEqualTo(StructuralRole.CONTRACTOR);
     assertThat(role.platformRole()).isNull();
   }
 
   @Test
   void symbolic_role_with_null_archetype_and_null_platform_role_accepted() {
     AgentRole role = new AgentRole(Path.parse("observer"), null, null);
-    assertThat(role.archetype()).isNull();
+    assertThat(role.structuralRole()).isNull();
     assertThat(role.platformRole()).isNull();
   }
 
@@ -170,16 +172,16 @@ class AgentRoleTest {
 
   @Test
   void equal_roles_are_equal() {
-    AgentRole a = AgentRole.of("reviewer/code", RoleArchetype.CONTRACTOR);
-    AgentRole b = AgentRole.of("reviewer/code", RoleArchetype.CONTRACTOR);
+    AgentRole a = AgentRole.of("reviewer/code", StructuralRole.CONTRACTOR);
+    AgentRole b = AgentRole.of("reviewer/code", StructuralRole.CONTRACTOR);
     assertThat(a).isEqualTo(b);
     assertThat(a.hashCode()).isEqualTo(b.hashCode());
   }
 
   @Test
   void different_archetypes_are_not_equal() {
-    AgentRole a = AgentRole.of("agent", RoleArchetype.INITIATOR);
-    AgentRole b = AgentRole.of("agent", RoleArchetype.CONTRACTOR);
+    AgentRole a = AgentRole.of("agent", StructuralRole.INITIATOR);
+    AgentRole b = AgentRole.of("agent", StructuralRole.CONTRACTOR);
     assertThat(a).isNotEqualTo(b);
   }
 }

@@ -16,18 +16,18 @@
 package io.casehub.api.model.coordination;
 
 public enum PlatformRole {
-  COORDINATOR(RoleArchetype.INITIATOR),
-  SUPERVISOR(RoleArchetype.INITIATOR),
-  JUDGE(RoleArchetype.PEER),
-  MODERATOR(RoleArchetype.PEER);
+  COORDINATOR(StructuralRole.INITIATOR),
+  SUPERVISOR(StructuralRole.INITIATOR),
+  JUDGE(StructuralRole.PEER),
+  MODERATOR(StructuralRole.PEER);
 
-  private final RoleArchetype requiredArchetype;
+  private final StructuralRole requiredStructuralRole;
 
-  PlatformRole(final RoleArchetype requiredArchetype) {
-    this.requiredArchetype = requiredArchetype;
+  PlatformRole(final StructuralRole requiredStructuralRole) {
+    this.requiredStructuralRole = requiredStructuralRole;
   }
 
-  public RoleArchetype requiredArchetype() {
-    return requiredArchetype;
+  public StructuralRole requiredStructuralRole() {
+    return requiredStructuralRole;
   }
 }
