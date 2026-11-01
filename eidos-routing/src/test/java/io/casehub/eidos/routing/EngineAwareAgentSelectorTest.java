@@ -37,6 +37,7 @@ import io.casehub.eidos.api.CapabilityHealth.CapabilityStatus;
 import io.casehub.eidos.api.DegradationReason;
 import io.casehub.eidos.api.EscalationKind;
 import io.casehub.eidos.api.MatchDegree;
+import io.casehub.eidos.api.OrgAwareDispatch;
 import io.casehub.eidos.api.ResolvedCapability;
 import io.casehub.eidos.api.SelectionContext;
 import io.casehub.ledger.api.spi.TrustScoreSource;
@@ -58,7 +59,9 @@ class EngineAwareAgentSelectorTest {
     healthMock = mock(CapabilityHealth.class);
     strategyMock = mock(AgentRoutingStrategy.class);
     trustSourceMock = mock(TrustScoreSource.class);
-    selector = new EngineAwareAgentSelector(healthMock, strategyMock, Optional.of(trustSourceMock));
+    selector =
+        new EngineAwareAgentSelector(
+            healthMock, strategyMock, Optional.of(trustSourceMock), Optional.empty());
   }
 
   @Test
@@ -200,7 +203,8 @@ class EngineAwareAgentSelectorTest {
 
   @Test
   void noTrustSourceReturnsZero() {
-    var noTrustSelector = new EngineAwareAgentSelector(healthMock, strategyMock, Optional.empty());
+    var noTrustSelector =
+        new EngineAwareAgentSelector(healthMock, strategyMock, Optional.empty(), Optional.empty());
     var match = matchWith("agent-1", "code-review", new MatchDegree.Exact());
     when(healthMock.probe(any(), any(), any())).thenReturn(new CapabilityStatus.Ready());
     when(strategyMock.select(any(), anyList()))
@@ -210,6 +214,91 @@ class EngineAwareAgentSelectorTest {
 
     var selected = (AgentSelection.Selected) result;
     assertEquals(0.0, selected.trustScore());
+  }
+
+  @Test
+  void escalationOnUnresolvableReturnsSelectedWhenOrgMatchFound() {
+    var dispatch = mock(OrgAwareDispatch.class);
+    var escalationSelector =
+        new EngineAwareAgentSelector(
+            healthMock, strategyMock, Optional.of(trustSourceMock), Optional.of(dispatch));
+
+    var match = matchWith("agent-1", "code-review", new MatchDegree.Exact());
+    when(healthMock.probe(any(), any(), any())).thenReturn(new CapabilityStatus.Ready());
+    when(strategyMock.select(any(), anyList()))
+        .thenReturn(RoutingResult.unresolvable("no viable candidates"));
+
+    var escalatedMatch = matchWith("supervisor-1", "code-review", new MatchDegree.Exact());
+    when(dispatch.escalate("agent-1", "code-review", "t1")).thenReturn(Optional.of(escalatedMatch));
+    when(trustSourceMock.capabilityScore("supervisor-1", "code-review"))
+        .thenReturn(OptionalDouble.of(0.85));
+
+    var result =
+        escalationSelector.select(List.of(match), SelectionContext.of("t1", "code-review"));
+
+    assertInstanceOf(AgentSelection.Selected.class, result);
+    var selected = (AgentSelection.Selected) result;
+    assertEquals("supervisor-1", selected.agent().agentId());
+    assertEquals(0.85, selected.trustScore());
+    assertEquals("org escalation from agent-1", selected.reason());
+  }
+
+  @Test
+  void escalationOnEscalatedReturnsSelectedWhenOrgMatchFound() {
+    var dispatch = mock(OrgAwareDispatch.class);
+    var escalationSelector =
+        new EngineAwareAgentSelector(
+            healthMock, strategyMock, Optional.of(trustSourceMock), Optional.of(dispatch));
+
+    var match = matchWith("agent-1", "code-review", new MatchDegree.Exact());
+    when(healthMock.probe(any(), any(), any())).thenReturn(new CapabilityStatus.Ready());
+    when(strategyMock.select(any(), anyList()))
+        .thenReturn(
+            RoutingResult.escalate(
+                "code-review", EscalationReason.BORDERLINE_STALEMATE, "all borderline"));
+
+    var escalatedMatch = matchWith("supervisor-1", "code-review", new MatchDegree.Exact());
+    when(dispatch.escalate("agent-1", "code-review", "t1")).thenReturn(Optional.of(escalatedMatch));
+    when(trustSourceMock.capabilityScore("supervisor-1", "code-review"))
+        .thenReturn(OptionalDouble.of(0.9));
+
+    var result =
+        escalationSelector.select(List.of(match), SelectionContext.of("t1", "code-review"));
+
+    assertInstanceOf(AgentSelection.Selected.class, result);
+    assertEquals("supervisor-1", ((AgentSelection.Selected) result).agent().agentId());
+  }
+
+  @Test
+  void escalationFallsBackToUnresolvableWhenNoOrgMatch() {
+    var dispatch = mock(OrgAwareDispatch.class);
+    var escalationSelector =
+        new EngineAwareAgentSelector(
+            healthMock, strategyMock, Optional.of(trustSourceMock), Optional.of(dispatch));
+
+    var match = matchWith("agent-1", "code-review", new MatchDegree.Exact());
+    when(healthMock.probe(any(), any(), any())).thenReturn(new CapabilityStatus.Ready());
+    when(strategyMock.select(any(), anyList()))
+        .thenReturn(RoutingResult.unresolvable("no viable candidates"));
+    when(dispatch.escalate("agent-1", "code-review", "t1")).thenReturn(Optional.empty());
+
+    var result =
+        escalationSelector.select(List.of(match), SelectionContext.of("t1", "code-review"));
+
+    assertInstanceOf(AgentSelection.NoneQualified.class, result);
+    assertEquals("no viable candidates", ((AgentSelection.NoneQualified) result).reason());
+  }
+
+  @Test
+  void noEscalationWhenDispatchAbsent() {
+    var match = matchWith("agent-1", "code-review", new MatchDegree.Exact());
+    when(healthMock.probe(any(), any(), any())).thenReturn(new CapabilityStatus.Ready());
+    when(strategyMock.select(any(), anyList()))
+        .thenReturn(RoutingResult.unresolvable("no viable candidates"));
+
+    var result = selector.select(List.of(match), SelectionContext.of("t1", "code-review"));
+
+    assertInstanceOf(AgentSelection.NoneQualified.class, result);
   }
 
   private AgentMatch matchWith(String agentId, String capName, MatchDegree degree) {
