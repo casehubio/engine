@@ -12,6 +12,10 @@
 
 ### `description` (`java.lang.String`)
 
+### `icon` (`java.lang.String`)
+
+### `iconColor` (`java.lang.String`)
+
 ### `lanes` (`java.util.Map<java.lang.String,java.util.List<io.casehub.api.view.CoordinationStepView>>`)
 
 ### `model` (`java.lang.String`)
@@ -25,6 +29,8 @@
 ### `params` (`java.util.Map<java.lang.String,java.lang.String>`)
 
 ### `required` (`java.lang.Integer`)
+
+### `routing` (`io.casehub.api.view.MatchRoutingView`)
 
 ### `target` (`java.lang.String`)
 
@@ -38,6 +44,10 @@
 
 ### `description` (`java.lang.String`)
 
+### `icon` (`java.lang.String`)
+
+### `iconColor` (`java.lang.String`)
+
 ### `lanes` (`java.util.Map<java.lang.String,java.util.List<io.casehub.api.view.CoordinationStepView>>`)
 
 ### `model` (`java.lang.String`)
@@ -52,13 +62,15 @@
 
 ### `required` (`java.lang.Integer`)
 
+### `routing` (`io.casehub.api.view.MatchRoutingView`)
+
 ### `target` (`java.lang.String`)
 
 ### `type` (`java.lang.String`)
 
 ## Constructors
 
-### `public PhaseItemView(java.lang.String type, java.lang.String action, java.lang.String target, java.lang.String model, java.lang.String outputFormat, java.lang.String channel, java.util.Map<java.lang.String,java.lang.String> params, java.lang.String name, java.lang.String description, java.lang.Integer required, java.lang.Integer of, java.util.Map<java.lang.String,java.util.List<io.casehub.api.view.CoordinationStepView>> lanes)`
+### `public PhaseItemView(java.lang.String type, java.lang.String action, java.lang.String target, java.lang.String model, java.lang.String outputFormat, java.lang.String channel, java.util.Map<java.lang.String,java.lang.String> params, java.lang.String name, java.lang.String description, java.lang.Integer required, java.lang.Integer of, java.util.Map<java.lang.String,java.util.List<io.casehub.api.view.CoordinationStepView>> lanes, io.casehub.api.view.MatchRoutingView routing, java.lang.String icon, java.lang.String iconColor)`
 
 #### Parameters
 
@@ -74,6 +86,9 @@
 - `required` (`java.lang.Integer`)
 - `of` (`java.lang.Integer`)
 - `lanes` (`java.util.Map<java.lang.String,java.util.List<io.casehub.api.view.CoordinationStepView>>`)
+- `routing` (`io.casehub.api.view.MatchRoutingView`)
+- `icon` (`java.lang.String`)
+- `iconColor` (`java.lang.String`)
 
 ## Methods
 
@@ -91,6 +106,10 @@
 
 ### `public final int hashCode()`
 
+### `public java.lang.String icon()`
+
+### `public java.lang.String iconColor()`
+
 ### `public java.util.Map<java.lang.String,java.util.List<io.casehub.api.view.CoordinationStepView>> lanes()`
 
 ### `public java.lang.String model()`
@@ -104,6 +123,8 @@
 ### `public java.util.Map<java.lang.String,java.lang.String> params()`
 
 ### `public java.lang.Integer required()`
+
+### `public io.casehub.api.view.MatchRoutingView routing()`
 
 ### `public java.lang.String target()`
 
