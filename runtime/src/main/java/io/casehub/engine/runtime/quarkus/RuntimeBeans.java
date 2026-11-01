@@ -1347,6 +1347,22 @@ public class RuntimeBeans {
 
   @Produces
   @ApplicationScoped
+  io.casehub.engine.runtime.stigmergy.StigmergyCoordinator stigmergyCoordinator(
+      io.casehub.engine.common.internal.signal.SignalRegistry signalRegistry,
+      io.casehub.engine.common.internal.observation.ObservationRegistry observationRegistry,
+      io.casehub.engine.common.internal.convergence.ActivityTracker activityTracker,
+      Instance<io.casehub.eidos.api.AgentGraphQuery> agentGraphQuery,
+      Instance<io.casehub.api.spi.CaseChannelProvider> channelProvider) {
+    return new io.casehub.engine.runtime.stigmergy.StigmergyCoordinator(
+        signalRegistry,
+        observationRegistry,
+        activityTracker,
+        agentGraphQuery.isResolvable() ? agentGraphQuery.get() : null,
+        channelProvider.isResolvable() ? channelProvider.get() : null);
+  }
+
+  @Produces
+  @ApplicationScoped
   io.casehub.engine.runtime.stigmergy.SwarmProvisioner swarmProvisioner(
       io.casehub.api.spi.WorkerProvisioner workerProvisioner,
       Instance<io.casehub.engine.runtime.stigmergy.StigmergyCoordinator> coordinator,
@@ -1357,7 +1373,9 @@ public class RuntimeBeans {
       Instance<io.casehub.engine.runtime.stigmergy.SwarmProgressTracker> progressTracker,
       io.casehub.api.spi.DispatchBudget dispatchBudget,
       Instance<io.casehub.api.spi.stigmergy.SwarmProvisioningAdvisor> advisorInstance,
-      Instance<io.casehub.api.spi.stigmergy.SwarmCoordinationListener> listenerInstances) {
+      Instance<io.casehub.api.spi.stigmergy.SwarmCoordinationListener> listenerInstances,
+      Instance<io.casehub.eidos.api.AgentGraphQuery> agentGraphQuery,
+      Instance<io.casehub.api.spi.CaseChannelProvider> channelProvider) {
     if (!coordinator.isResolvable()) {
       return new io.casehub.engine.runtime.stigmergy.SwarmProvisioner();
     }
@@ -1371,7 +1389,9 @@ public class RuntimeBeans {
         progressTracker.get(),
         dispatchBudget,
         advisorInstance.isResolvable() ? advisorInstance.get() : null,
-        listenerInstances.stream().toList());
+        listenerInstances.stream().toList(),
+        agentGraphQuery.isResolvable() ? agentGraphQuery.get() : null,
+        channelProvider.isResolvable() ? channelProvider.get() : null);
   }
 
   @Produces

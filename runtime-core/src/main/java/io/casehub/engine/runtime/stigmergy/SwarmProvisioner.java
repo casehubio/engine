@@ -26,8 +26,10 @@ import io.casehub.api.model.stigmergy.StigmergyConfig;
 import io.casehub.api.model.stigmergy.SwarmBootstrapContext;
 import io.casehub.api.model.stigmergy.SwarmConfig;
 import io.casehub.api.model.stigmergy.SwarmProgress;
+import io.casehub.api.spi.CaseChannelProvider;
 import io.casehub.api.spi.DispatchBudget;
 import io.casehub.api.spi.DispatchBudgetQuery;
+import io.casehub.api.spi.PostRequest;
 import io.casehub.api.spi.ProvisioningException;
 import io.casehub.api.spi.WorkerProvisioner;
 import io.casehub.api.spi.stigmergy.SwarmCoordinationListener;
@@ -36,6 +38,7 @@ import io.casehub.eidos.api.AgentGraphQuery;
 import io.casehub.engine.common.internal.convergence.ActivityTracker;
 import io.casehub.engine.common.internal.signal.SignalRegistry;
 import io.casehub.engine.common.spi.Resettable;
+import io.casehub.qhorus.api.message.MessageType;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.ArrayList;
@@ -52,6 +55,9 @@ public class SwarmProvisioner implements Resettable {
 
   private static final org.jboss.logging.Logger LOG =
       org.jboss.logging.Logger.getLogger(SwarmProvisioner.class);
+  private static final com.fasterxml.jackson.databind.ObjectMapper MAPPER =
+      new com.fasterxml.jackson.databind.ObjectMapper();
+
   private final boolean active;
   private final WorkerProvisioner workerProvisioner;
   private final StigmergyCoordinator coordinator;
@@ -64,6 +70,7 @@ public class SwarmProvisioner implements Resettable {
   private final SwarmProvisioningAdvisor advisor;
   private final List<SwarmCoordinationListener> listeners;
   private final AgentGraphQuery agentGraphQuery;
+  private final CaseChannelProvider channelProvider;
 
   private final Set<UUID> initialisedCases = ConcurrentHashMap.newKeySet();
 
@@ -80,7 +87,8 @@ public class SwarmProvisioner implements Resettable {
       DispatchBudget dispatchBudget,
       SwarmProvisioningAdvisor advisor,
       List<SwarmCoordinationListener> listeners,
-      AgentGraphQuery agentGraphQuery) {
+      AgentGraphQuery agentGraphQuery,
+      CaseChannelProvider channelProvider) {
     this.active = true;
     this.workerProvisioner = workerProvisioner;
     this.coordinator = coordinator;
@@ -93,6 +101,7 @@ public class SwarmProvisioner implements Resettable {
     this.advisor = advisor;
     this.listeners = listeners != null ? List.copyOf(listeners) : List.of();
     this.agentGraphQuery = agentGraphQuery;
+    this.channelProvider = channelProvider;
   }
 
   public SwarmProvisioner() {
@@ -108,6 +117,21 @@ public class SwarmProvisioner implements Resettable {
     this.advisor = null;
     this.listeners = List.of();
     this.agentGraphQuery = null;
+    this.channelProvider = null;
+  }
+
+  private void postCoordinationEvent(UUID caseId, String eventType, Map<String, Object> payload) {
+    if (channelProvider == null) {
+      return;
+    }
+    try {
+      var channel = channelProvider.openChannel(caseId, "coordination");
+      var content = MAPPER.writeValueAsString(Map.of("event", eventType, "data", payload));
+      channelProvider.postToChannel(
+          channel, PostRequest.builder(content, MessageType.STATUS).from("engine:swarm").build());
+    } catch (Exception e) {
+      LOG.warnf(e, "Failed to post coordination event %s for case %s", eventType, caseId);
+    }
   }
 
   public List<SwarmEvent> evaluateAndProvision(
@@ -297,6 +321,13 @@ public class SwarmProvisioner implements Resettable {
                   "bindingName", bindingName,
                   "integrationDelay", policy.effectiveIntegrationDelay())));
 
+      postCoordinationEvent(
+          caseId,
+          "SWARM_PROVISION_COMPLETED",
+          Map.of(
+              "agentId", agentId,
+              "bindingName", bindingName));
+
       if (!listeners.isEmpty()) {
         int newSize = coordinator.activeAgents(caseId).size();
         if (initialisedCases.add(caseId)) {
@@ -377,6 +408,10 @@ public class SwarmProvisioner implements Resettable {
                     CaseHubEventType.SWARM_AGENT_TERMINATED,
                     Map.of(
                         "agentId", meta.agentId(), "reason", "idle", "idleCycles", newIdleCycles)));
+            postCoordinationEvent(
+                caseId,
+                "SWARM_AGENT_TERMINATED",
+                Map.of("agentId", meta.agentId(), "reason", "idle", "idleCycles", newIdleCycles));
           }
         }
       } else {
@@ -395,6 +430,7 @@ public class SwarmProvisioner implements Resettable {
 
     for (String id : toRemove) {
       state.provisionedAgents.remove(id);
+      postCoordinationEvent(caseId, "SWARM_MEMBER_COMPLETED", Map.of("agentId", id));
       notifyMemberCompleted(caseId, id);
     }
 
@@ -506,7 +542,18 @@ public class SwarmProvisioner implements Resettable {
   }
 
   public void notifyRolesChanged(UUID caseId, List<DetectedRole> roles) {
-    if (!active || listeners.isEmpty()) {
+    if (!active) {
+      return;
+    }
+    for (var role : roles) {
+      postCoordinationEvent(
+          caseId,
+          role.memberAgents().isEmpty() ? "ROLE_DISSOLVED" : "ROLE_EMERGED",
+          Map.of(
+              "roleId", role.roleId(),
+              "memberAgents", role.memberAgents()));
+    }
+    if (listeners.isEmpty()) {
       return;
     }
     SwarmProgress progress = progressTracker.getProgress(caseId);
@@ -520,9 +567,18 @@ public class SwarmProvisioner implements Resettable {
   }
 
   public void notifyTeamsChanged(UUID caseId, List<DetectedTeam> teams) {
-    if (!active || listeners.isEmpty()) {
+    if (!active) {
       return;
     }
+    for (var team : teams) {
+      postCoordinationEvent(
+          caseId,
+          team.memberAgents().isEmpty() ? "TEAM_DISSOLVED" : "TEAM_EMERGED",
+          Map.of(
+              "teamId", team.teamId(),
+              "memberAgents", team.memberAgents()));
+    }
+    if (listeners.isEmpty()) return;
     SwarmProgress progress = progressTracker.getProgress(caseId);
     for (var listener : listeners) {
       try {
@@ -534,9 +590,17 @@ public class SwarmProvisioner implements Resettable {
   }
 
   public void notifyProgressUpdated(UUID caseId, SwarmProgress progress) {
-    if (!active || listeners.isEmpty()) {
+    if (!active) {
       return;
     }
+    postCoordinationEvent(
+        caseId,
+        "PROGRESS_UPDATED",
+        Map.of(
+            "explorationPace", progress.explorationPace(),
+            "consensusScore", progress.consensusScore(),
+            "stabilityScore", progress.stabilityScore()));
+    if (listeners.isEmpty()) return;
     for (var listener : listeners) {
       try {
         listener.onProgressUpdated(caseId, progress);
@@ -547,9 +611,10 @@ public class SwarmProvisioner implements Resettable {
   }
 
   public void notifyMemberCompleted(UUID caseId, String agentId) {
-    if (!active || listeners.isEmpty()) {
+    if (!active) {
       return;
     }
+    if (listeners.isEmpty()) return;
     for (var listener : listeners) {
       try {
         listener.onMemberCompleted(caseId, agentId);

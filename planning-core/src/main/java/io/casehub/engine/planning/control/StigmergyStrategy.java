@@ -51,7 +51,7 @@ public class StigmergyStrategy implements PlanningStrategy {
     if (!coordinator.isStigmergyCase(caseId)) {
       var agentIds = eligible.stream().map(Binding::getName).toList();
       var stigmergyConfig = context.definition().getStigmergyConfig();
-      coordinator.initializeCase(caseId, agentIds, stigmergyConfig);
+      coordinator.initializeCase(caseId, agentIds, stigmergyConfig, context.tenancyId());
       LOG.infof("Stigmergy case initialized: caseId=%s, agents=%d", caseId, agentIds.size());
       return List.copyOf(eligible);
     }
