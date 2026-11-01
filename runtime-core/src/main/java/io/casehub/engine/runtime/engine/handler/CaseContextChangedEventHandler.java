@@ -1479,6 +1479,16 @@ public class CaseContextChangedEventHandler {
             }
 
             if (provisioner != null) {
+              var telemetryCollector =
+                  new io.casehub.engine.runtime.stigmergy.SwarmTelemetryCollector(
+                      coordinator, signalRegistry);
+              var telemetry = telemetryCollector.snapshot(caseInstance.getUuid());
+              if (!telemetry.isEmpty()) {
+                provisioner.notifyTelemetrySnapshot(caseInstance.getUuid(), telemetry);
+              }
+            }
+
+            if (provisioner != null) {
               provisioner.incrementCycleCount(caseInstance.getUuid());
               var consensus = signalRegistry.consensusSignals(caseInstance.getUuid(), 2, 0.01);
               boolean hasProvisioningConsensus =

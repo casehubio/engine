@@ -26,6 +26,7 @@ import io.casehub.api.model.stigmergy.StigmergyConfig;
 import io.casehub.api.model.stigmergy.SwarmBootstrapContext;
 import io.casehub.api.model.stigmergy.SwarmConfig;
 import io.casehub.api.model.stigmergy.SwarmProgress;
+import io.casehub.api.model.stigmergy.SwarmTelemetry;
 import io.casehub.api.spi.CaseChannelProvider;
 import io.casehub.api.spi.DispatchBudget;
 import io.casehub.api.spi.DispatchBudgetQuery;
@@ -620,6 +621,23 @@ public class SwarmProvisioner implements Resettable {
         listener.onMemberCompleted(caseId, agentId);
       } catch (Exception e) {
         LOG.warnf(e, "SwarmCoordinationListener.onMemberCompleted failed for case %s", caseId);
+      }
+    }
+  }
+
+  public void notifyTelemetrySnapshot(UUID caseId, List<SwarmTelemetry> telemetry) {
+
+    if (!active) {
+      return;
+    }
+    if (listeners.isEmpty()) {
+      return;
+    }
+    for (var listener : listeners) {
+      try {
+        listener.onTelemetrySnapshot(caseId, telemetry);
+      } catch (Exception e) {
+        LOG.warnf(e, "SwarmCoordinationListener.onTelemetrySnapshot failed for case %s", caseId);
       }
     }
   }

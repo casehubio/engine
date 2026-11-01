@@ -18,6 +18,7 @@ package io.casehub.engine.runtime.stigmergy;
 import io.casehub.api.model.signal.SignalDecay;
 import io.casehub.api.model.stigmergy.AgentLifecycleState;
 import io.casehub.api.model.stigmergy.AgentState;
+import io.casehub.api.model.stigmergy.AgentWorkState;
 import io.casehub.api.model.stigmergy.CoordinationConfig;
 import io.casehub.api.model.stigmergy.StigmergyConfig;
 import io.casehub.api.spi.CaseChannelProvider;
@@ -119,6 +120,7 @@ public class StigmergyCoordinator implements Resettable {
     state.agents.put(
         agentId,
         new AgentState(agentId, bindingName, AgentLifecycleState.JOINING, now, null, null, now));
+    state.agentCounters.computeIfAbsent(agentId, k -> new MutableAgentCounters());
   }
 
   public void agentActivated(UUID caseId, String agentId) {
@@ -352,6 +354,57 @@ public class StigmergyCoordinator implements Resettable {
     state.interestHotspotFired.retainAll(currentHotspots);
   }
 
+  public void recordAgentMessage(UUID caseId, String agentId) {
+    var state = cases.get(caseId);
+    if (state == null) {
+      return;
+    }
+    var counters = state.agentCounters.get(agentId);
+    if (counters != null) {
+      counters.messagesSent++;
+    }
+  }
+
+  public void recordAgentTaskCompleted(UUID caseId, String agentId) {
+    var state = cases.get(caseId);
+    if (state == null) {
+      return;
+    }
+    var counters = state.agentCounters.get(agentId);
+    if (counters != null) {
+      counters.tasksCompleted++;
+    }
+  }
+
+  public void updateAgentWorkState(UUID caseId, String agentId, AgentWorkState workState) {
+    var state = cases.get(caseId);
+    if (state == null) {
+      return;
+    }
+    var counters = state.agentCounters.get(agentId);
+    if (counters != null) {
+      counters.workState = workState;
+    }
+  }
+
+  public AgentCounters getAgentCounters(UUID caseId, String agentId) {
+    var state = cases.get(caseId);
+    if (state == null) {
+      return null;
+    }
+    var counters = state.agentCounters.get(agentId);
+    return counters != null ? counters.snapshot() : null;
+  }
+
+  public List<AgentState> allAgents(UUID caseId) {
+
+    var state = cases.get(caseId);
+    if (state == null) {
+      return List.of();
+    }
+    return List.copyOf(state.agents.values());
+  }
+
   public void evictByCase(UUID caseId) {
     cases.remove(caseId);
   }
@@ -368,12 +421,25 @@ public class StigmergyCoordinator implements Resettable {
     final Set<String> consensusFired = ConcurrentHashMap.newKeySet();
     volatile boolean stormActive = false;
     final Set<String> interestHotspotFired = ConcurrentHashMap.newKeySet();
+    final ConcurrentHashMap<String, MutableAgentCounters> agentCounters = new ConcurrentHashMap<>();
     final String tenancyId;
 
     CaseCoordinationState(StigmergyConfig config, List<String> agentIds, String tenancyId) {
       this.config = config;
       this.declaredAgentIds = List.copyOf(agentIds);
       this.tenancyId = tenancyId;
+    }
+  }
+
+  public record AgentCounters(int messagesSent, int tasksCompleted, AgentWorkState workState) {}
+
+  private static class MutableAgentCounters {
+    volatile int messagesSent;
+    volatile int tasksCompleted;
+    volatile AgentWorkState workState = AgentWorkState.IDLE;
+
+    AgentCounters snapshot() {
+      return new AgentCounters(messagesSent, tasksCompleted, workState);
     }
   }
 
