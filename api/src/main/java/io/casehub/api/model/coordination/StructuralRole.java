@@ -15,7 +15,7 @@
  */
 package io.casehub.api.model.coordination;
 
-public enum RoleArchetype {
+public enum StructuralRole {
   INITIATOR,
   PEER,
   CONTRACTOR

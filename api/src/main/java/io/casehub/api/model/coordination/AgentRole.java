@@ -20,19 +20,19 @@ import jakarta.annotation.Nullable;
 import java.util.Objects;
 
 public record AgentRole(
-    Path name, @Nullable RoleArchetype archetype, @Nullable PlatformRole platformRole) {
+    Path name, @Nullable StructuralRole structuralRole, @Nullable PlatformRole platformRole) {
 
   public static final AgentRole COORDINATOR =
-      new AgentRole(Path.parse("coordinator"), RoleArchetype.INITIATOR, PlatformRole.COORDINATOR);
+      new AgentRole(Path.parse("coordinator"), StructuralRole.INITIATOR, PlatformRole.COORDINATOR);
 
   public static final AgentRole SUPERVISOR =
-      new AgentRole(Path.parse("supervisor"), RoleArchetype.INITIATOR, PlatformRole.SUPERVISOR);
+      new AgentRole(Path.parse("supervisor"), StructuralRole.INITIATOR, PlatformRole.SUPERVISOR);
 
   public static final AgentRole JUDGE =
-      new AgentRole(Path.parse("judge"), RoleArchetype.PEER, PlatformRole.JUDGE);
+      new AgentRole(Path.parse("judge"), StructuralRole.PEER, PlatformRole.JUDGE);
 
   public static final AgentRole MODERATOR =
-      new AgentRole(Path.parse("moderator"), RoleArchetype.PEER, PlatformRole.MODERATOR);
+      new AgentRole(Path.parse("moderator"), StructuralRole.PEER, PlatformRole.MODERATOR);
 
   public AgentRole {
     Objects.requireNonNull(name, "name must not be null");
@@ -45,22 +45,22 @@ public record AgentRole(
                 + "\"");
       }
     }
-    if (platformRole != null && archetype == null) {
+    if (platformRole != null && structuralRole == null) {
       throw new IllegalArgumentException(
-          "platformRole requires archetype — a behavioral contract implies structural position");
+          "platformRole requires structuralRole — a behavioral contract implies structural position");
     }
-    if (platformRole != null && archetype != platformRole.requiredArchetype()) {
+    if (platformRole != null && structuralRole != platformRole.requiredStructuralRole()) {
       throw new IllegalArgumentException(
           platformRole
-              + " requires archetype "
-              + platformRole.requiredArchetype()
+              + " requires structuralRole "
+              + platformRole.requiredStructuralRole()
               + ", got "
-              + archetype);
+              + structuralRole);
     }
   }
 
-  public static AgentRole of(final String name, final RoleArchetype archetype) {
-    return new AgentRole(Path.parse(name), archetype, null);
+  public static AgentRole of(final String name, final StructuralRole structuralRole) {
+    return new AgentRole(Path.parse(name), structuralRole, null);
   }
 
   public static AgentRole of(final String name) {
