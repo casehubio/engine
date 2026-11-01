@@ -18,10 +18,12 @@ package io.casehub.engine.runtime.stigmergy;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import io.casehub.api.model.CaseChannel;
 import io.casehub.api.model.stigmergy.AgentLifecycleState;
+import io.casehub.api.model.stigmergy.AgentWorkState;
 import io.casehub.api.model.stigmergy.CoordinationConfig;
 import io.casehub.api.model.stigmergy.StigmergyConfig;
 import io.casehub.api.spi.PostRequest;
@@ -202,5 +204,69 @@ class StigmergyCoordinatorTest {
     public void postToChannel(CaseChannel channel, PostRequest request) {
       posts.add(request);
     }
+  }
+
+  @Test
+  void recordAgentMessage_incrementsCounter() {
+    coordinator.initializeCase(caseId, List.of("agent-1"), config, "test");
+    coordinator.agentJoined(caseId, "agent-1", "b-1");
+
+    coordinator.recordAgentMessage(caseId, "agent-1");
+    coordinator.recordAgentMessage(caseId, "agent-1");
+
+    var counters = coordinator.getAgentCounters(caseId, "agent-1");
+    assertNotNull(counters);
+    assertEquals(2, counters.messagesSent());
+  }
+
+  @Test
+  void recordAgentTaskCompleted_incrementsCounter() {
+    coordinator.initializeCase(caseId, List.of("agent-1"), config, "test");
+    coordinator.agentJoined(caseId, "agent-1", "b-1");
+
+    coordinator.recordAgentTaskCompleted(caseId, "agent-1");
+
+    var counters = coordinator.getAgentCounters(caseId, "agent-1");
+    assertEquals(1, counters.tasksCompleted());
+  }
+
+  @Test
+  void updateAgentWorkState_setsState() {
+    coordinator.initializeCase(caseId, List.of("agent-1"), config, "test");
+    coordinator.agentJoined(caseId, "agent-1", "b-1");
+
+    coordinator.updateAgentWorkState(caseId, "agent-1", AgentWorkState.EXECUTING);
+
+    var counters = coordinator.getAgentCounters(caseId, "agent-1");
+    assertEquals(AgentWorkState.EXECUTING, counters.workState());
+  }
+
+  @Test
+  void counters_resetOnEvict() {
+    coordinator.initializeCase(caseId, List.of("agent-1"), config, "test");
+    coordinator.agentJoined(caseId, "agent-1", "b-1");
+    coordinator.recordAgentMessage(caseId, "agent-1");
+
+    coordinator.evictByCase(caseId);
+
+    assertNull(coordinator.getAgentCounters(caseId, "agent-1"));
+  }
+
+  @Test
+  void counters_createdOnAgentJoined() {
+    coordinator.initializeCase(caseId, List.of("agent-1"), config, "test");
+    coordinator.agentJoined(caseId, "agent-1", "b-1");
+
+    var counters = coordinator.getAgentCounters(caseId, "agent-1");
+    assertNotNull(counters);
+    assertEquals(0, counters.messagesSent());
+    assertEquals(0, counters.tasksCompleted());
+    assertEquals(AgentWorkState.IDLE, counters.workState());
+  }
+
+  @Test
+  void counters_nullForUnknownAgent() {
+    coordinator.initializeCase(caseId, List.of("agent-1"), config, "test");
+    assertNull(coordinator.getAgentCounters(caseId, "unknown"));
   }
 }

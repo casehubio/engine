@@ -18,6 +18,7 @@ package io.casehub.api.spi.stigmergy;
 import io.casehub.api.model.stigmergy.DetectedRole;
 import io.casehub.api.model.stigmergy.DetectedTeam;
 import io.casehub.api.model.stigmergy.SwarmProgress;
+import io.casehub.api.model.stigmergy.SwarmTelemetry;
 import java.util.List;
 import java.util.UUID;
 
@@ -40,4 +41,6 @@ public interface SwarmCoordinationListener {
   default void onMemberCompleted(UUID caseId, String agentId) {}
 
   default void onProvisioningChanged(UUID caseId, int currentSize, int maxSize) {}
+
+  default void onTelemetrySnapshot(UUID caseId, List<SwarmTelemetry> telemetry) {}
 }

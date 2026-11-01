@@ -21,6 +21,7 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import io.casehub.api.model.event.CaseHubEventType;
+import io.casehub.api.model.stigmergy.AgentWorkState;
 import io.casehub.api.model.stigmergy.CoordinationConfig;
 import io.casehub.api.model.stigmergy.StigmergyConfig;
 import io.casehub.api.model.stigmergy.StigmergyDefaults;
@@ -50,6 +51,7 @@ class SwarmIntegrationTest {
   private RoleTracker roleTracker;
   private TeamDetector teamDetector;
   private SwarmProgressTracker progressTracker;
+  private SwarmTelemetryCollector telemetryCollector;
   private UUID caseId;
   private StigmergyConfig config;
   private SwarmConfig swarmConfig;
@@ -64,6 +66,7 @@ class SwarmIntegrationTest {
     roleTracker = new RoleTracker(observationRegistry, signalRegistry, ruleRegistry, coordinator);
     teamDetector = new TeamDetector(observationRegistry, signalRegistry, roleTracker, coordinator);
     progressTracker = new SwarmProgressTracker(signalRegistry, roleTracker, coordinator);
+    telemetryCollector = new SwarmTelemetryCollector(coordinator, signalRegistry);
 
     caseId = UUID.randomUUID();
     swarmConfig = new SwarmConfig(null, 0.5, 2, 20, 1, null, 0.3, 2, 0.05);
@@ -201,6 +204,38 @@ class SwarmIntegrationTest {
     assertEquals(
         io.casehub.api.model.stigmergy.AgentLifecycleState.ACTIVE,
         coordinator.getAgent(caseId, "a1").state());
+  }
+
+  @Test
+  void telemetrySnapshot_reflectsSwarmState() {
+    coordinator.initializeCase(caseId, List.of("monitor-1", "controller-1"), config, "test-tenant");
+    for (String id : List.of("monitor-1", "controller-1")) {
+      coordinator.agentJoined(caseId, id, "b-" + id);
+      coordinator.agentActivated(caseId, id);
+    }
+
+    signalRegistry.deposit(caseId, "overheating", 0.8, Duration.ofMinutes(5), "monitor-1", 100);
+    signalRegistry.deposit(caseId, "cooldown", 0.6, Duration.ofMinutes(5), "controller-1", 100);
+    coordinator.recordAgentTaskCompleted(caseId, "controller-1");
+    coordinator.updateAgentWorkState(caseId, "monitor-1", AgentWorkState.EXECUTING);
+
+    var telemetry = telemetryCollector.snapshot(caseId);
+
+    assertEquals(2, telemetry.size());
+
+    var monitor =
+        telemetry.stream().filter(t -> t.agentId().equals("monitor-1")).findFirst().orElseThrow();
+    assertEquals(1, monitor.signalsDeposited());
+    assertEquals(AgentWorkState.EXECUTING, monitor.workState());
+    assertTrue(monitor.activeTime().compareTo(Duration.ZERO) >= 0);
+
+    var controller =
+        telemetry.stream()
+            .filter(t -> t.agentId().equals("controller-1"))
+            .findFirst()
+            .orElseThrow();
+    assertEquals(1, controller.signalsDeposited());
+    assertEquals(1, controller.tasksCompleted());
   }
 
   static class TestObserver implements EnvironmentObserver {
