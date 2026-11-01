@@ -345,6 +345,21 @@ public class RuntimeManualConfig {
   }
 
   @Bean
+  public io.casehub.engine.runtime.stigmergy.StigmergyCoordinator stigmergyCoordinator(
+      io.casehub.engine.common.internal.signal.SignalRegistry signalRegistry,
+      io.casehub.engine.common.internal.observation.ObservationRegistry observationRegistry,
+      io.casehub.engine.common.internal.convergence.ActivityTracker activityTracker,
+      ObjectProvider<io.casehub.eidos.api.AgentGraphQuery> agentGraphQuery,
+      ObjectProvider<io.casehub.api.spi.CaseChannelProvider> channelProvider) {
+    return new io.casehub.engine.runtime.stigmergy.StigmergyCoordinator(
+        signalRegistry,
+        observationRegistry,
+        activityTracker,
+        agentGraphQuery.getIfAvailable(),
+        channelProvider.getIfAvailable());
+  }
+
+  @Bean
   @ConditionalOnBean(io.casehub.engine.runtime.stigmergy.StigmergyCoordinator.class)
   public io.casehub.engine.runtime.stigmergy.SwarmProvisioner swarmProvisioner(
       WorkerProvisioner workerProvisioner,
@@ -356,7 +371,9 @@ public class RuntimeManualConfig {
       io.casehub.engine.runtime.stigmergy.SwarmProgressTracker progressTracker,
       DispatchBudget dispatchBudget,
       ObjectProvider<io.casehub.api.spi.stigmergy.SwarmProvisioningAdvisor> advisorProvider,
-      ObjectProvider<io.casehub.api.spi.stigmergy.SwarmCoordinationListener> listenerProvider) {
+      ObjectProvider<io.casehub.api.spi.stigmergy.SwarmCoordinationListener> listenerProvider,
+      ObjectProvider<io.casehub.eidos.api.AgentGraphQuery> agentGraphQuery,
+      ObjectProvider<io.casehub.api.spi.CaseChannelProvider> channelProvider) {
     return new io.casehub.engine.runtime.stigmergy.SwarmProvisioner(
         workerProvisioner,
         coordinator,
@@ -367,7 +384,9 @@ public class RuntimeManualConfig {
         progressTracker,
         dispatchBudget,
         advisorProvider.getIfAvailable(),
-        listenerProvider.stream().toList());
+        listenerProvider.stream().toList(),
+        agentGraphQuery.getIfAvailable(),
+        channelProvider.getIfAvailable());
   }
 
   @Bean

@@ -20,11 +20,14 @@ import io.casehub.api.model.stigmergy.AgentLifecycleState;
 import io.casehub.api.model.stigmergy.AgentState;
 import io.casehub.api.model.stigmergy.CoordinationConfig;
 import io.casehub.api.model.stigmergy.StigmergyConfig;
+import io.casehub.api.spi.CaseChannelProvider;
+import io.casehub.api.spi.PostRequest;
 import io.casehub.eidos.api.AgentGraphQuery;
 import io.casehub.engine.common.internal.convergence.ActivityTracker;
 import io.casehub.engine.common.internal.observation.ObservationRegistry;
 import io.casehub.engine.common.internal.signal.SignalRegistry;
 import io.casehub.engine.common.spi.Resettable;
+import io.casehub.qhorus.api.message.MessageType;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.ArrayList;
@@ -46,6 +49,10 @@ public class StigmergyCoordinator implements Resettable {
   private final ObservationRegistry observationRegistry;
   private final ActivityTracker activityTracker;
   private final AgentGraphQuery agentGraphQuery;
+  private final CaseChannelProvider channelProvider;
+
+  private static final com.fasterxml.jackson.databind.ObjectMapper MAPPER =
+      new com.fasterxml.jackson.databind.ObjectMapper();
 
   private final ConcurrentHashMap<UUID, CaseCoordinationState> cases = new ConcurrentHashMap<>();
 
@@ -53,18 +60,42 @@ public class StigmergyCoordinator implements Resettable {
       SignalRegistry signalRegistry,
       ObservationRegistry observationRegistry,
       ActivityTracker activityTracker,
-      AgentGraphQuery agentGraphQuery) {
+      AgentGraphQuery agentGraphQuery,
+      CaseChannelProvider channelProvider) {
     this.signalRegistry = signalRegistry;
     this.observationRegistry = observationRegistry;
     this.activityTracker = activityTracker;
     this.agentGraphQuery = agentGraphQuery;
+    this.channelProvider = channelProvider;
+  }
+
+  public StigmergyCoordinator(
+      SignalRegistry signalRegistry,
+      ObservationRegistry observationRegistry,
+      ActivityTracker activityTracker,
+      AgentGraphQuery agentGraphQuery) {
+    this(signalRegistry, observationRegistry, activityTracker, agentGraphQuery, null);
   }
 
   public StigmergyCoordinator(
       SignalRegistry signalRegistry,
       ObservationRegistry observationRegistry,
       ActivityTracker activityTracker) {
-    this(signalRegistry, observationRegistry, activityTracker, null);
+    this(signalRegistry, observationRegistry, activityTracker, null, null);
+  }
+
+  private void postCoordinationEvent(UUID caseId, String eventType, Map<String, Object> payload) {
+    if (channelProvider == null) {
+      return;
+    }
+    try {
+      var channel = channelProvider.openChannel(caseId, "coordination");
+      var content = MAPPER.writeValueAsString(Map.of("event", eventType, "data", payload));
+      channelProvider.postToChannel(
+          channel, PostRequest.builder(content, MessageType.STATUS).from("engine:swarm").build());
+    } catch (Exception e) {
+      LOG.warnf(e, "Failed to post coordination event %s for case %s", eventType, caseId);
+    }
   }
 
   public void initializeCase(
@@ -201,6 +232,12 @@ public class StigmergyCoordinator implements Resettable {
                     "reinforcementCount", signal.reinforcementCount(),
                     "sources", signal.sources(),
                     "effectiveStrength", effective)));
+        postCoordinationEvent(
+            caseId,
+            "SIGNAL_CONSENSUS_DETECTED",
+            Map.of(
+                "signalName", signal.name(),
+                "sourceCount", signal.reinforcementCount()));
       }
     }
     state.consensusFired.retainAll(consensus.keySet());
@@ -256,6 +293,15 @@ public class StigmergyCoordinator implements Resettable {
                       mutationRate,
                       "evaluationCycles",
                       evalRate))));
+      postCoordinationEvent(
+          caseId,
+          "COORDINATION_STORM_DETECTED",
+          Map.of(
+              "stormingMetrics", stormingMetrics,
+              "dispatchRate", dispatchRate,
+              "signalRate", signalRate,
+              "mutationRate", mutationRate,
+              "evalRate", evalRate));
     } else if (!storming && state.stormActive) {
       state.stormActive = false;
     }
@@ -293,6 +339,13 @@ public class StigmergyCoordinator implements Resettable {
                       "hotspotKey", entry.getKey(),
                       "watchingAgentCount", entry.getValue().size(),
                       "hotspotScore", score)));
+          postCoordinationEvent(
+              caseId,
+              "INTEREST_CONVERGENCE_DETECTED",
+              Map.of(
+                  "hotspotKey", entry.getKey(),
+                  "watchingAgentCount", entry.getValue().size(),
+                  "hotspotScore", score));
         }
       }
     }

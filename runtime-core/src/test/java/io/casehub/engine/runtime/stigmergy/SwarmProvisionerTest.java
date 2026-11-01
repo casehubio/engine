@@ -22,6 +22,7 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+import io.casehub.api.model.CaseChannel;
 import io.casehub.api.model.event.CaseHubEventType;
 import io.casehub.api.model.stigmergy.DetectedRole;
 import io.casehub.api.model.stigmergy.DetectedTeam;
@@ -30,8 +31,10 @@ import io.casehub.api.model.stigmergy.ProvisionBudget;
 import io.casehub.api.model.stigmergy.StigmergyConfig;
 import io.casehub.api.model.stigmergy.SwarmConfig;
 import io.casehub.api.model.stigmergy.SwarmProgress;
+import io.casehub.api.spi.CaseChannelProvider;
 import io.casehub.api.spi.DispatchBudget;
 import io.casehub.api.spi.DispatchBudgetQuery;
+import io.casehub.api.spi.PostRequest;
 import io.casehub.api.spi.ProvisionResult;
 import io.casehub.api.spi.WorkerProvisioner;
 import io.casehub.api.spi.stigmergy.SwarmCoordinationListener;
@@ -40,7 +43,10 @@ import io.casehub.engine.common.internal.convergence.ActivityTracker;
 import io.casehub.engine.common.internal.observation.ObservationRegistry;
 import io.casehub.engine.common.internal.observation.RuleRegistry;
 import io.casehub.engine.common.internal.signal.SignalRegistry;
+import io.casehub.engine.runtime.worker.NoOpCaseChannelProvider;
+import io.casehub.qhorus.api.message.MessageType;
 import java.time.Duration;
+import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
@@ -87,6 +93,7 @@ class SwarmProvisionerTest {
             new NoOpDispatchBudget(),
             null,
             List.<SwarmCoordinationListener>of(listener),
+            null,
             null);
     caseId = UUID.randomUUID();
   }
@@ -379,6 +386,7 @@ class SwarmProvisionerTest {
             new NoOpDispatchBudget(),
             null,
             List.<SwarmCoordinationListener>of(throwing, recording),
+            null,
             null);
 
     var roles = List.of(new DetectedRole("role-1", Set.of("a1"), null, List.of(), 1, 0.0));
@@ -401,6 +409,11 @@ class SwarmProvisionerTest {
   }
 
   private SwarmProvisioner createProvisioner(AgentGraphQuery graphQuery) {
+    return createProvisioner(graphQuery, null);
+  }
+
+  private SwarmProvisioner createProvisioner(
+      AgentGraphQuery graphQuery, CaseChannelProvider channelProvider) {
     return new SwarmProvisioner(
         workerProvisioner,
         coordinator,
@@ -412,7 +425,8 @@ class SwarmProvisionerTest {
         new NoOpDispatchBudget(),
         null,
         List.<SwarmCoordinationListener>of(listener),
-        graphQuery);
+        graphQuery,
+        channelProvider);
   }
 
   @Test
@@ -504,6 +518,130 @@ class SwarmProvisionerTest {
     var events = swarmProvisioner.evaluateAndProvision(caseId, swarmConfig, config);
 
     verify(graphQuery).topAgentsByOutcome("nlp", "case-processing", "test-tenant", 5);
+  }
+
+  @Test
+  void provisionPostsToCoordinationChannel() {
+    var channelProvider = new RecordingCaseChannelProvider();
+    var provisioner = createProvisioner(null, channelProvider);
+    var swarmConfig =
+        new SwarmConfig(5, null, null, null, null, null, null, null, null, null, null);
+    var config = new StigmergyConfig(null, null, swarmConfig);
+    coordinator.initializeCase(caseId, List.of("a1"), config, "test-tenant");
+    coordinator.agentJoined(caseId, "a1", "b1");
+    coordinator.agentActivated(caseId, "a1");
+    signalRegistry.deposit(caseId, "swarm:need-capacity", 0.8, Duration.ofMinutes(5), "a1", 100);
+    signalRegistry.deposit(caseId, "swarm:need-capacity", 0.8, Duration.ofMinutes(5), "a1", 100);
+
+    provisioner.evaluateAndProvision(caseId, swarmConfig, config);
+
+    assertFalse(channelProvider.posts.isEmpty());
+    var post = channelProvider.posts.get(0);
+    assertEquals(MessageType.STATUS, post.type());
+    assertEquals("engine:swarm", post.from());
+    assertTrue(post.content().contains("SWARM_PROVISION_COMPLETED"));
+  }
+
+  @Test
+  void provisionSucceedsWithoutChannelProvider() {
+    var provisioner = createProvisioner(null, null);
+    var swarmConfig =
+        new SwarmConfig(5, null, null, null, null, null, null, null, null, null, null);
+    var config = new StigmergyConfig(null, null, swarmConfig);
+    coordinator.initializeCase(caseId, List.of("a1"), config, "test-tenant");
+    coordinator.agentJoined(caseId, "a1", "b1");
+    coordinator.agentActivated(caseId, "a1");
+    signalRegistry.deposit(caseId, "swarm:need-capacity", 0.8, Duration.ofMinutes(5), "a1", 100);
+    signalRegistry.deposit(caseId, "swarm:need-capacity", 0.8, Duration.ofMinutes(5), "a1", 100);
+
+    var events = provisioner.evaluateAndProvision(caseId, swarmConfig, config);
+
+    assertTrue(
+        events.stream().anyMatch(e -> e.type() == CaseHubEventType.SWARM_PROVISION_COMPLETED));
+  }
+
+  @Test
+  void notifyRolesChangedPostsToCoordinationChannel() {
+    var channelProvider = new RecordingCaseChannelProvider();
+    var provisioner = createProvisioner(null, channelProvider);
+    var swarmConfig =
+        new SwarmConfig(5, null, null, null, null, null, null, null, null, null, null);
+    var config = new StigmergyConfig(null, null, swarmConfig);
+    coordinator.initializeCase(caseId, List.of("a1"), config, "test-tenant");
+
+    provisioner.notifyRolesChanged(
+        caseId, List.of(new DetectedRole("analyst", Set.of("a1"), null, List.of(), 1, 0.0)));
+
+    assertTrue(
+        channelProvider.posts.stream()
+            .anyMatch(
+                p -> p.content().contains("ROLE_EMERGED") && p.content().contains("analyst")));
+  }
+
+  @Test
+  void notifyTeamsChangedPostsToCoordinationChannel() {
+    var channelProvider = new RecordingCaseChannelProvider();
+    var provisioner = createProvisioner(null, channelProvider);
+    var swarmConfig =
+        new SwarmConfig(5, null, null, null, null, null, null, null, null, null, null);
+    var config = new StigmergyConfig(null, null, swarmConfig);
+    coordinator.initializeCase(caseId, List.of("a1", "a2"), config, "test-tenant");
+
+    provisioner.notifyTeamsChanged(
+        caseId, List.of(new DetectedTeam("research", Set.of("a1", "a2"), Set.of(), 0.8, 1)));
+
+    assertTrue(
+        channelProvider.posts.stream()
+            .anyMatch(
+                p -> p.content().contains("TEAM_EMERGED") && p.content().contains("research")));
+  }
+
+  @Test
+  void notifyProgressUpdatedPostsToCoordinationChannel() {
+    var channelProvider = new RecordingCaseChannelProvider();
+    var provisioner = createProvisioner(null, channelProvider);
+    var swarmConfig =
+        new SwarmConfig(5, null, null, null, null, null, null, null, null, null, null);
+    var config = new StigmergyConfig(null, null, swarmConfig);
+    coordinator.initializeCase(caseId, List.of("a1"), config, "test-tenant");
+
+    provisioner.notifyProgressUpdated(caseId, new SwarmProgress(0.5, 0.8, 0.3, Instant.now()));
+
+    assertTrue(
+        channelProvider.posts.stream().anyMatch(p -> p.content().contains("PROGRESS_UPDATED")));
+  }
+
+  @Test
+  void deprovisionPostsTerminatedAndMemberCompletedToCoordinationChannel() {
+    var channelProvider = new RecordingCaseChannelProvider();
+    var budget = new ProvisionBudget(50, 10, 0, 0.5, 1);
+    var policy = new IntegrationPolicy(0.7, 0, 0.5);
+    var swarmConfig =
+        new SwarmConfig(20, null, null, null, null, null, null, null, null, budget, policy);
+    var config = new StigmergyConfig(null, null, swarmConfig);
+    var provisioner = createProvisioner(null, channelProvider);
+    coordinator.initializeCase(caseId, List.of("a1", "a2"), config, "test-tenant");
+    for (String id : List.of("a1", "a2")) {
+      coordinator.agentJoined(caseId, id, "b-" + id);
+      coordinator.agentActivated(caseId, id);
+    }
+
+    signalRegistry.deposit(caseId, "swarm:need-capacity", 0.8, Duration.ofMinutes(5), "a1", 100);
+    signalRegistry.deposit(caseId, "swarm:need-capacity", 0.8, Duration.ofMinutes(5), "a2", 100);
+    provisioner.evaluateAndProvision(caseId, swarmConfig, config);
+    channelProvider.posts.clear();
+
+    signalRegistry.evictByCase(caseId);
+    provisioner.evaluateDeprovisioning(caseId, swarmConfig);
+
+    assertTrue(
+        channelProvider.posts.stream()
+            .anyMatch(p -> p.content().contains("SWARM_AGENT_TERMINATED")),
+        "Expected SWARM_AGENT_TERMINATED coordination post");
+    assertTrue(
+        channelProvider.posts.stream()
+            .anyMatch(p -> p.content().contains("SWARM_MEMBER_COMPLETED")),
+        "Expected SWARM_MEMBER_COMPLETED coordination post");
   }
 
   static class RecordingWorkerProvisioner implements WorkerProvisioner {
@@ -619,6 +757,15 @@ class SwarmProvisionerTest {
     public void onMemberCompleted(UUID caseId, String agentId) {
       events.add("memberCompleted");
       memberCompletedAgentIds.add(agentId);
+    }
+  }
+
+  static class RecordingCaseChannelProvider extends NoOpCaseChannelProvider {
+    final List<PostRequest> posts = new ArrayList<>();
+
+    @Override
+    public void postToChannel(CaseChannel channel, PostRequest request) {
+      posts.add(request);
     }
   }
 }

@@ -20,13 +20,18 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+import io.casehub.api.model.CaseChannel;
 import io.casehub.api.model.stigmergy.AgentLifecycleState;
 import io.casehub.api.model.stigmergy.CoordinationConfig;
 import io.casehub.api.model.stigmergy.StigmergyConfig;
+import io.casehub.api.spi.PostRequest;
 import io.casehub.engine.common.internal.convergence.ActivityTracker;
 import io.casehub.engine.common.internal.observation.ObservationRegistry;
 import io.casehub.engine.common.internal.signal.SignalRegistry;
+import io.casehub.engine.runtime.worker.NoOpCaseChannelProvider;
+import io.casehub.qhorus.api.message.MessageType;
 import java.time.Duration;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
 import org.junit.jupiter.api.BeforeEach;
@@ -146,5 +151,56 @@ class StigmergyCoordinatorTest {
     assertEquals(1, first.size());
     var second = coordinator.detectPatterns(caseId, config);
     assertTrue(second.isEmpty());
+  }
+
+  @Test
+  void detectPatternsPostsConsensusToCoordinationChannel() {
+    var channelProvider = new RecordingCaseChannelProvider();
+    coordinator =
+        new StigmergyCoordinator(
+            signalRegistry, observationRegistry, activityTracker, null, channelProvider);
+    coordinator.initializeCase(caseId, List.of("a1", "a2"), config, "test-tenant");
+    coordinator.agentJoined(caseId, "a1", "b1");
+    coordinator.agentJoined(caseId, "a2", "b2");
+    coordinator.agentActivated(caseId, "a1");
+    coordinator.agentActivated(caseId, "a2");
+    signalRegistry.deposit(caseId, "trail", 0.8, Duration.ofMinutes(5), "a1", 100);
+    signalRegistry.deposit(caseId, "trail", 0.9, Duration.ofMinutes(5), "a2", 100);
+
+    coordinator.detectPatterns(caseId, config);
+
+    assertTrue(
+        channelProvider.posts.stream()
+            .anyMatch(
+                p ->
+                    p.content().contains("SIGNAL_CONSENSUS_DETECTED")
+                        && p.type() == MessageType.STATUS
+                        && "engine:swarm".equals(p.from())));
+  }
+
+  @Test
+  void detectPatternsWorksWithoutChannelProvider() {
+    coordinator.initializeCase(caseId, List.of("a1", "a2"), config, "test-tenant");
+    coordinator.agentJoined(caseId, "a1", "b1");
+    coordinator.agentJoined(caseId, "a2", "b2");
+    coordinator.agentActivated(caseId, "a1");
+    coordinator.agentActivated(caseId, "a2");
+    signalRegistry.deposit(caseId, "trail", 0.8, Duration.ofMinutes(5), "a1", 100);
+    signalRegistry.deposit(caseId, "trail", 0.9, Duration.ofMinutes(5), "a2", 100);
+
+    var events = coordinator.detectPatterns(caseId, config);
+
+    assertEquals(1, events.size());
+    assertEquals(
+        StigmergyCoordinator.CoordinationEvent.Type.SIGNAL_CONSENSUS, events.get(0).type());
+  }
+
+  static class RecordingCaseChannelProvider extends NoOpCaseChannelProvider {
+    final List<PostRequest> posts = new ArrayList<>();
+
+    @Override
+    public void postToChannel(CaseChannel channel, PostRequest request) {
+      posts.add(request);
+    }
   }
 }
