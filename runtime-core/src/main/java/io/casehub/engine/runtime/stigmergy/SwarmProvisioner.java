@@ -16,6 +16,7 @@
 package io.casehub.engine.runtime.stigmergy;
 
 import io.casehub.api.model.ProvisionContext;
+import io.casehub.api.model.coordination.TopologyType;
 import io.casehub.api.model.event.CaseHubEventType;
 import io.casehub.api.model.stigmergy.DetectedRole;
 import io.casehub.api.model.stigmergy.DetectedTeam;
@@ -33,6 +34,7 @@ import io.casehub.api.spi.DispatchBudgetQuery;
 import io.casehub.api.spi.PostRequest;
 import io.casehub.api.spi.ProvisioningException;
 import io.casehub.api.spi.WorkerProvisioner;
+import io.casehub.api.spi.coordination.SwarmTopologyProvider;
 import io.casehub.api.spi.stigmergy.SwarmCoordinationListener;
 import io.casehub.api.spi.stigmergy.SwarmProvisioningAdvisor;
 import io.casehub.eidos.api.AgentGraphQuery;
@@ -72,6 +74,7 @@ public class SwarmProvisioner implements Resettable {
   private final List<SwarmCoordinationListener> listeners;
   private final AgentGraphQuery agentGraphQuery;
   private final CaseChannelProvider channelProvider;
+  private final SwarmTopologyProvider topologyProvider;
 
   private final Set<UUID> initialisedCases = ConcurrentHashMap.newKeySet();
 
@@ -89,7 +92,8 @@ public class SwarmProvisioner implements Resettable {
       SwarmProvisioningAdvisor advisor,
       List<SwarmCoordinationListener> listeners,
       AgentGraphQuery agentGraphQuery,
-      CaseChannelProvider channelProvider) {
+      CaseChannelProvider channelProvider,
+      SwarmTopologyProvider topologyProvider) {
     this.active = true;
     this.workerProvisioner = workerProvisioner;
     this.coordinator = coordinator;
@@ -103,6 +107,7 @@ public class SwarmProvisioner implements Resettable {
     this.listeners = listeners != null ? List.copyOf(listeners) : List.of();
     this.agentGraphQuery = agentGraphQuery;
     this.channelProvider = channelProvider;
+    this.topologyProvider = topologyProvider;
   }
 
   public SwarmProvisioner() {
@@ -119,6 +124,7 @@ public class SwarmProvisioner implements Resettable {
     this.listeners = List.of();
     this.agentGraphQuery = null;
     this.channelProvider = null;
+    this.topologyProvider = null;
   }
 
   private void postCoordinationEvent(UUID caseId, String eventType, Map<String, Object> payload) {
@@ -139,6 +145,12 @@ public class SwarmProvisioner implements Resettable {
       UUID caseId, SwarmConfig swarmConfig, StigmergyConfig stigConfig) {
     if (!active) {
       return List.of();
+    }
+    if (topologyProvider != null) {
+      var descriptor = topologyProvider.describeTopology(caseId);
+      if (descriptor.topologyType() == TopologyType.DISTRIBUTED) {
+        return List.of();
+      }
     }
     var state = cases.computeIfAbsent(caseId, k -> new CaseProvisionState());
 
@@ -362,6 +374,12 @@ public class SwarmProvisioner implements Resettable {
 
   public List<SwarmEvent> evaluateDeprovisioning(UUID caseId, SwarmConfig config) {
     if (!active) return List.of();
+    if (topologyProvider != null) {
+      var descriptor = topologyProvider.describeTopology(caseId);
+      if (descriptor.topologyType() == TopologyType.DISTRIBUTED) {
+        return List.of();
+      }
+    }
     var state = cases.get(caseId);
     if (state == null) return List.of();
 

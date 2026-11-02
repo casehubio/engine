@@ -23,6 +23,8 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import io.casehub.api.model.CaseChannel;
+import io.casehub.api.model.coordination.TopologyDescriptor;
+import io.casehub.api.model.coordination.TopologyType;
 import io.casehub.api.model.event.CaseHubEventType;
 import io.casehub.api.model.stigmergy.DetectedRole;
 import io.casehub.api.model.stigmergy.DetectedTeam;
@@ -37,18 +39,21 @@ import io.casehub.api.spi.DispatchBudgetQuery;
 import io.casehub.api.spi.PostRequest;
 import io.casehub.api.spi.ProvisionResult;
 import io.casehub.api.spi.WorkerProvisioner;
+import io.casehub.api.spi.coordination.SwarmTopologyProvider;
 import io.casehub.api.spi.stigmergy.SwarmCoordinationListener;
 import io.casehub.eidos.api.AgentGraphQuery;
 import io.casehub.engine.common.internal.convergence.ActivityTracker;
 import io.casehub.engine.common.internal.observation.ObservationRegistry;
 import io.casehub.engine.common.internal.observation.RuleRegistry;
 import io.casehub.engine.common.internal.signal.SignalRegistry;
+import io.casehub.engine.runtime.coordination.CentralisedTopologyProvider;
 import io.casehub.engine.runtime.worker.NoOpCaseChannelProvider;
 import io.casehub.qhorus.api.message.MessageType;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
 import org.junit.jupiter.api.BeforeEach;
@@ -94,7 +99,8 @@ class SwarmProvisionerTest {
             null,
             List.<SwarmCoordinationListener>of(listener),
             null,
-            null);
+            null,
+            new CentralisedTopologyProvider());
     caseId = UUID.randomUUID();
   }
 
@@ -387,7 +393,8 @@ class SwarmProvisionerTest {
             null,
             List.<SwarmCoordinationListener>of(throwing, recording),
             null,
-            null);
+            null,
+            new CentralisedTopologyProvider());
 
     var roles = List.of(new DetectedRole("role-1", Set.of("a1"), null, List.of(), 1, 0.0));
     provisioner.notifyRolesChanged(caseId, roles);
@@ -426,7 +433,8 @@ class SwarmProvisionerTest {
         null,
         List.<SwarmCoordinationListener>of(listener),
         graphQuery,
-        channelProvider);
+        channelProvider,
+        new CentralisedTopologyProvider());
   }
 
   @Test
@@ -642,6 +650,88 @@ class SwarmProvisionerTest {
         channelProvider.posts.stream()
             .anyMatch(p -> p.content().contains("SWARM_MEMBER_COMPLETED")),
         "Expected SWARM_MEMBER_COMPLETED coordination post");
+  }
+
+  @Test
+  void distributed_topology_skips_central_provisioning() {
+    var distributedProvider =
+        new SwarmTopologyProvider() {
+          @Override
+          public TopologyDescriptor describeTopology(UUID id) {
+            return new TopologyDescriptor(TopologyType.DISTRIBUTED, Map.of());
+          }
+        };
+    var distributedProvisioner =
+        new SwarmProvisioner(
+            workerProvisioner,
+            coordinator,
+            signalRegistry,
+            activityTracker,
+            roleTracker,
+            teamDetector,
+            progressTracker,
+            new NoOpDispatchBudget(),
+            null,
+            List.<SwarmCoordinationListener>of(listener),
+            null,
+            null,
+            distributedProvider);
+    var budget = new ProvisionBudget(50, 10, 0, null, null);
+    var policy = IntegrationPolicy.BALANCED;
+    var swarmConfig =
+        new SwarmConfig(10, null, null, null, null, null, null, null, null, budget, policy);
+    var config = new StigmergyConfig(null, null, swarmConfig);
+    coordinator.initializeCase(caseId, List.of("a1"), config, "test-tenant");
+    coordinator.agentJoined(caseId, "a1", "b-a1");
+    coordinator.agentActivated(caseId, "a1");
+
+    var events = distributedProvisioner.evaluateAndProvision(caseId, swarmConfig, config);
+    assertTrue(events.isEmpty(), "DISTRIBUTED topology should skip central provisioning");
+  }
+
+  @Test
+  void centralised_topology_allows_provisioning() {
+    var budget = new ProvisionBudget(50, 10, 0, null, null);
+    var policy = IntegrationPolicy.BALANCED;
+    var swarmConfig =
+        new SwarmConfig(10, null, null, null, null, null, null, null, null, budget, policy);
+    var config = new StigmergyConfig(null, null, swarmConfig);
+    coordinator.initializeCase(caseId, List.of("a1"), config, "test-tenant");
+    coordinator.agentJoined(caseId, "a1", "b-a1");
+    coordinator.agentActivated(caseId, "a1");
+
+    var events = swarmProvisioner.evaluateAndProvision(caseId, swarmConfig, config);
+    assertFalse(events.isEmpty(), "CENTRALISED topology should allow provisioning");
+  }
+
+  @Test
+  void distributed_topology_skips_deprovisioning() {
+    var distributedProvider =
+        new SwarmTopologyProvider() {
+          @Override
+          public TopologyDescriptor describeTopology(UUID id) {
+            return new TopologyDescriptor(TopologyType.DISTRIBUTED, Map.of());
+          }
+        };
+    var distributedProvisioner =
+        new SwarmProvisioner(
+            workerProvisioner,
+            coordinator,
+            signalRegistry,
+            activityTracker,
+            roleTracker,
+            teamDetector,
+            progressTracker,
+            new NoOpDispatchBudget(),
+            null,
+            List.<SwarmCoordinationListener>of(listener),
+            null,
+            null,
+            distributedProvider);
+    var swarmConfig =
+        new SwarmConfig(10, null, null, null, null, null, null, null, null, null, null);
+    var events = distributedProvisioner.evaluateDeprovisioning(caseId, swarmConfig);
+    assertTrue(events.isEmpty(), "DISTRIBUTED topology should skip deprovisioning");
   }
 
   static class RecordingWorkerProvisioner implements WorkerProvisioner {

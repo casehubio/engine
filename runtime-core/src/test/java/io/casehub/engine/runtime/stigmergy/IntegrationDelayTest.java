@@ -75,7 +75,8 @@ class IntegrationDelayTest {
             null,
             java.util.List.of(),
             null,
-            null);
+            null,
+            new io.casehub.engine.runtime.coordination.CentralisedTopologyProvider());
     roleTracker.setSwarmProvisioner(swarmProvisioner);
     caseId = UUID.randomUUID();
   }
