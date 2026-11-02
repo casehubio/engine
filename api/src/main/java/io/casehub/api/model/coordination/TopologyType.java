@@ -16,7 +16,45 @@
 package io.casehub.api.model.coordination;
 
 public enum TopologyType {
-  CENTRALISED,
-  DISTRIBUTED,
-  HYBRID
+  CENTRALISED {
+    @Override
+    public DecisionAuthority deriveAuthority(StructuralRole role) {
+      return switch (role) {
+        case INITIATOR -> DecisionAuthority.CENTRAL;
+        case CONTRACTOR -> DecisionAuthority.LOCAL;
+        case PEER ->
+            throw new IllegalArgumentException(
+                "CENTRALISED topology does not support PEER"
+                    + " — centralised structure requires coordinator/subordinate relationships");
+      };
+    }
+  },
+  DISTRIBUTED {
+    @Override
+    public DecisionAuthority deriveAuthority(StructuralRole role) {
+      return switch (role) {
+        case PEER -> DecisionAuthority.COORDINATED;
+        case INITIATOR ->
+            throw new IllegalArgumentException(
+                "DISTRIBUTED topology does not support INITIATOR"
+                    + " — peer-to-peer structure has no central coordinator");
+        case CONTRACTOR ->
+            throw new IllegalArgumentException(
+                "DISTRIBUTED topology does not support CONTRACTOR"
+                    + " — peer-to-peer structure has no delegation hierarchy");
+      };
+    }
+  },
+  HYBRID {
+    @Override
+    public DecisionAuthority deriveAuthority(StructuralRole role) {
+      return switch (role) {
+        case INITIATOR -> DecisionAuthority.CENTRAL;
+        case PEER -> DecisionAuthority.COORDINATED;
+        case CONTRACTOR -> DecisionAuthority.LOCAL;
+      };
+    }
+  };
+
+  public abstract DecisionAuthority deriveAuthority(StructuralRole role);
 }
