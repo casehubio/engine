@@ -27,6 +27,7 @@ import io.casehub.api.spi.RiskClassifier;
 import io.casehub.api.spi.WorkerContextProvider;
 import io.casehub.api.spi.WorkerProvisioner;
 import io.casehub.api.spi.WorkerStatusListener;
+import io.casehub.api.spi.coordination.SwarmTopologyProvider;
 import io.casehub.api.spi.judgment.JudgmentEscalator;
 import io.casehub.api.spi.recovery.ErrorClassifier;
 import io.casehub.api.spi.routing.AgentRoutingStrategy;
@@ -46,6 +47,7 @@ import io.casehub.engine.common.spi.recovery.CompoundLockRegistry;
 import io.casehub.engine.common.spi.recovery.RecoveryCoordinator;
 import io.casehub.engine.common.spi.scheduler.WorkerExecutionRoutingStrategy;
 import io.casehub.engine.runtime.context.InMemoryCaseContextStoreFactory;
+import io.casehub.engine.runtime.coordination.CentralisedTopologyProvider;
 import io.casehub.engine.runtime.coordination.NoOpAgentCapabilityGuard;
 import io.casehub.engine.runtime.engine.ChoreographyLoopControl;
 import io.casehub.engine.runtime.routing.FirstSupportedRoutingStrategy;
@@ -287,5 +289,12 @@ public class SpiDefaultBeans {
   @ApplicationScoped
   AgentCapabilityGuard noOpAgentCapabilityGuard() {
     return new NoOpAgentCapabilityGuard();
+  }
+
+  @Produces
+  @DefaultBean
+  @ApplicationScoped
+  SwarmTopologyProvider centralisedTopologyProvider() {
+    return new CentralisedTopologyProvider();
   }
 }
