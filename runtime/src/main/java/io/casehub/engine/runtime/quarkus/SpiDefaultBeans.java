@@ -37,6 +37,7 @@ import io.casehub.api.spi.routing.ImplementationRoutingStrategy;
 import io.casehub.api.spi.routing.RoutingSignalAssembler;
 import io.casehub.api.spi.routing.RoutingSignalProvider;
 import io.casehub.api.spi.routing.WorkloadDataProvider;
+import io.casehub.api.spi.stigmergy.AgentWorkStateNotifier;
 import io.casehub.eidos.api.AgentRegistry;
 import io.casehub.eidos.api.CapabilityHealth;
 import io.casehub.eidos.api.VocabularyRegistry;
@@ -49,6 +50,7 @@ import io.casehub.engine.common.spi.scheduler.WorkerExecutionRoutingStrategy;
 import io.casehub.engine.runtime.context.InMemoryCaseContextStoreFactory;
 import io.casehub.engine.runtime.coordination.CentralisedTopologyProvider;
 import io.casehub.engine.runtime.coordination.NoOpAgentCapabilityGuard;
+import io.casehub.engine.runtime.coordination.NoOpAgentWorkStateNotifier;
 import io.casehub.engine.runtime.engine.ChoreographyLoopControl;
 import io.casehub.engine.runtime.routing.FirstSupportedRoutingStrategy;
 import io.casehub.engine.runtime.routing.NoOpHumanTaskRoutingStrategy;
@@ -296,5 +298,12 @@ public class SpiDefaultBeans {
   @ApplicationScoped
   SwarmTopologyProvider centralisedTopologyProvider() {
     return new CentralisedTopologyProvider();
+  }
+
+  @Produces
+  @DefaultBean
+  @ApplicationScoped
+  AgentWorkStateNotifier noOpAgentWorkStateNotifier() {
+    return new NoOpAgentWorkStateNotifier();
   }
 }
