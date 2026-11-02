@@ -157,6 +157,13 @@ class CbrPlanToStepConverterTest {
     }
 
     @Override
+    public Optional<Definition> unregister(String actionName) {
+      var definition = resolve(actionName);
+      registered.remove(actionName);
+      return definition;
+    }
+
+    @Override
     public Optional<Definition> resolve(String actionName) {
       if (registered.contains(actionName)) {
         return Optional.of(Definition.of(actionName).execute((in, sr) -> null).build());
