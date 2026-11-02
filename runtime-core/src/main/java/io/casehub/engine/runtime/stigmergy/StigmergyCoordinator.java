@@ -23,6 +23,8 @@ import io.casehub.api.model.stigmergy.CoordinationConfig;
 import io.casehub.api.model.stigmergy.StigmergyConfig;
 import io.casehub.api.spi.CaseChannelProvider;
 import io.casehub.api.spi.PostRequest;
+import io.casehub.api.spi.stigmergy.AgentWorkLifecycleListener;
+import io.casehub.api.spi.stigmergy.AgentWorkStateNotifier;
 import io.casehub.eidos.api.AgentGraphQuery;
 import io.casehub.engine.common.internal.convergence.ActivityTracker;
 import io.casehub.engine.common.internal.observation.ObservationRegistry;
@@ -40,7 +42,7 @@ import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 
-public class StigmergyCoordinator implements Resettable {
+public class StigmergyCoordinator implements AgentWorkStateNotifier, Resettable {
   private static final org.jboss.logging.Logger LOG =
       org.jboss.logging.Logger.getLogger(StigmergyCoordinator.class);
 
@@ -56,6 +58,26 @@ public class StigmergyCoordinator implements Resettable {
       new com.fasterxml.jackson.databind.ObjectMapper();
 
   private final ConcurrentHashMap<UUID, CaseCoordinationState> cases = new ConcurrentHashMap<>();
+  private final List<AgentWorkLifecycleListener> workLifecycleListeners = new ArrayList<>();
+
+  private static final Map<AgentWorkState, Set<AgentWorkState>> VALID_WORK_TRANSITIONS =
+      Map.of(
+          AgentWorkState.IDLE,
+          Set.of(AgentWorkState.ASSIGNED),
+          AgentWorkState.ASSIGNED,
+          Set.of(AgentWorkState.EXECUTING, AgentWorkState.IDLE),
+          AgentWorkState.EXECUTING,
+          Set.of(
+              AgentWorkState.IDLE,
+              AgentWorkState.ADAPTING,
+              AgentWorkState.SIGNALING,
+              AgentWorkState.WAITING),
+          AgentWorkState.ADAPTING,
+          Set.of(AgentWorkState.EXECUTING),
+          AgentWorkState.SIGNALING,
+          Set.of(AgentWorkState.EXECUTING),
+          AgentWorkState.WAITING,
+          Set.of(AgentWorkState.EXECUTING));
 
   public StigmergyCoordinator(
       SignalRegistry signalRegistry,
@@ -407,12 +429,67 @@ public class StigmergyCoordinator implements Resettable {
   }
 
   public List<AgentState> allAgents(UUID caseId) {
-
     var state = cases.get(caseId);
     if (state == null) {
       return List.of();
     }
     return List.copyOf(state.agents.values());
+  }
+
+  public void addWorkLifecycleListener(AgentWorkLifecycleListener listener) {
+    workLifecycleListeners.add(listener);
+  }
+
+  @Override
+  public void transitionWorkState(UUID caseId, String agentId, AgentWorkState targetState) {
+    var caseState = cases.get(caseId);
+    if (caseState == null) {
+      return;
+    }
+    var current = caseState.agents.get(agentId);
+    if (current == null) {
+      return;
+    }
+
+    AgentWorkState from = current.workState();
+    Set<AgentWorkState> allowed = VALID_WORK_TRANSITIONS.getOrDefault(from, Set.of());
+    if (!allowed.contains(targetState)) {
+      throw new IllegalStateException(
+          "Invalid work state transition for agent " + agentId + ": " + from + " → " + targetState);
+    }
+
+    caseState.agents.put(
+        agentId,
+        new AgentState(
+            agentId,
+            current.bindingName(),
+            current.state(),
+            targetState,
+            current.joinedAt(),
+            current.activatedAt(),
+            current.departedAt(),
+            Instant.now()));
+
+    for (var listener : workLifecycleListeners) {
+      try {
+        listener.onWorkStateChanged(caseId, agentId, from, targetState);
+      } catch (Exception e) {
+        LOG.warnf(e, "AgentWorkLifecycleListener.onWorkStateChanged failed for agent %s", agentId);
+      }
+    }
+  }
+
+  @Override
+  public void taskAssigned(
+      UUID caseId, String agentId, String taskId, Map<String, Object> context) {
+    transitionWorkState(caseId, agentId, AgentWorkState.ASSIGNED);
+    for (var listener : workLifecycleListeners) {
+      try {
+        listener.onTaskAssigned(caseId, agentId, taskId, context);
+      } catch (Exception e) {
+        LOG.warnf(e, "AgentWorkLifecycleListener.onTaskAssigned failed for agent %s", agentId);
+      }
+    }
   }
 
   public void evictByCase(UUID caseId) {
