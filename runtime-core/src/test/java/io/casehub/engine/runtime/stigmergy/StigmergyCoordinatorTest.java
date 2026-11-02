@@ -289,6 +289,72 @@ class StigmergyCoordinatorTest {
     assertEquals(AgentWorkState.IDLE, coordinator.getAgent(caseId, "agent-1").workState());
   }
 
+  @Test
+  void multipleListenersAllReceiveEvents() {
+    var listener1 = new RecordingWorkLifecycleListener();
+    var listener2 = new RecordingWorkLifecycleListener();
+    coordinator.addWorkLifecycleListener(listener1);
+    coordinator.addWorkLifecycleListener(listener2);
+    coordinator.initializeCase(caseId, List.of("agent-1"), config, "test-tenant");
+    coordinator.agentJoined(caseId, "agent-1", "binding-1");
+    coordinator.agentActivated(caseId, "agent-1");
+
+    coordinator.transitionWorkState(caseId, "agent-1", AgentWorkState.ASSIGNED);
+
+    assertEquals(1, listener1.stateChanges.size());
+    assertEquals(1, listener2.stateChanges.size());
+    assertEquals(AgentWorkState.ASSIGNED, listener1.stateChanges.get(0).to);
+    assertEquals(AgentWorkState.ASSIGNED, listener2.stateChanges.get(0).to);
+  }
+
+  @Test
+  void fullWorkCycleSimulatesOrchestratorFlow() {
+    var listener = new RecordingWorkLifecycleListener();
+    coordinator.addWorkLifecycleListener(listener);
+    coordinator.initializeCase(caseId, List.of("agent-1"), config, "test-tenant");
+    coordinator.agentJoined(caseId, "agent-1", "binding-1");
+    coordinator.agentActivated(caseId, "agent-1");
+
+    // Simulate WorkerExecutionOrchestrator call pattern:
+    // 1. taskAssigned (IDLE → ASSIGNED + onTaskAssigned)
+    coordinator.taskAssigned(caseId, "agent-1", "worker-1", Map.of("key", "val"));
+    assertEquals(AgentWorkState.ASSIGNED, coordinator.getAgent(caseId, "agent-1").workState());
+
+    // 2. transitionWorkState EXECUTING (ASSIGNED → EXECUTING)
+    coordinator.transitionWorkState(caseId, "agent-1", AgentWorkState.EXECUTING);
+    assertEquals(AgentWorkState.EXECUTING, coordinator.getAgent(caseId, "agent-1").workState());
+
+    // 3. transitionWorkState IDLE in finally (EXECUTING → IDLE)
+    coordinator.transitionWorkState(caseId, "agent-1", AgentWorkState.IDLE);
+    assertEquals(AgentWorkState.IDLE, coordinator.getAgent(caseId, "agent-1").workState());
+
+    assertEquals(3, listener.stateChanges.size());
+    assertEquals(AgentWorkState.ASSIGNED, listener.stateChanges.get(0).to);
+    assertEquals(AgentWorkState.EXECUTING, listener.stateChanges.get(1).to);
+    assertEquals(AgentWorkState.IDLE, listener.stateChanges.get(2).to);
+
+    assertEquals(1, listener.taskAssignments.size());
+    assertEquals("worker-1", listener.taskAssignments.get(0).taskId);
+  }
+
+  @Test
+  void failedResolutionCycleAssignedToIdle() {
+    var listener = new RecordingWorkLifecycleListener();
+    coordinator.addWorkLifecycleListener(listener);
+    coordinator.initializeCase(caseId, List.of("agent-1"), config, "test-tenant");
+    coordinator.agentJoined(caseId, "agent-1", "binding-1");
+    coordinator.agentActivated(caseId, "agent-1");
+
+    // Simulate orchestrator: task assigned, then resolution fails, finally resets to IDLE
+    coordinator.taskAssigned(caseId, "agent-1", "worker-1", Map.of());
+    coordinator.transitionWorkState(caseId, "agent-1", AgentWorkState.IDLE);
+
+    assertEquals(AgentWorkState.IDLE, coordinator.getAgent(caseId, "agent-1").workState());
+    assertEquals(2, listener.stateChanges.size());
+    assertEquals(AgentWorkState.ASSIGNED, listener.stateChanges.get(0).to);
+    assertEquals(AgentWorkState.IDLE, listener.stateChanges.get(1).to);
+  }
+
   static class RecordingCaseChannelProvider extends NoOpCaseChannelProvider {
     final List<PostRequest> posts = new ArrayList<>();
 
