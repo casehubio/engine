@@ -197,6 +197,24 @@ class StigmergyCoordinatorTest {
         StigmergyCoordinator.CoordinationEvent.Type.SIGNAL_CONSENSUS, events.get(0).type());
   }
 
+  @Test
+  void agentJoinedSetsWorkStateToIdle() {
+    coordinator.initializeCase(caseId, List.of("agent-1"), config, "test-tenant");
+    coordinator.agentJoined(caseId, "agent-1", "binding-1");
+    var agent = coordinator.getAgent(caseId, "agent-1");
+    assertEquals(AgentWorkState.IDLE, agent.workState());
+  }
+
+  @Test
+  void agentDepartedResetsWorkStateToIdle() {
+    coordinator.initializeCase(caseId, List.of("agent-1"), config, "test-tenant");
+    coordinator.agentJoined(caseId, "agent-1", "binding-1");
+    coordinator.agentActivated(caseId, "agent-1");
+    coordinator.agentDeparted(caseId, "agent-1");
+    var agent = coordinator.getAgent(caseId, "agent-1");
+    assertEquals(AgentWorkState.IDLE, agent.workState());
+  }
+
   static class RecordingCaseChannelProvider extends NoOpCaseChannelProvider {
     final List<PostRequest> posts = new ArrayList<>();
 

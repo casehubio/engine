@@ -17,7 +17,11 @@ package io.casehub.api.model.stigmergy;
 
 public enum AgentWorkState {
   IDLE,
+  ASSIGNED,
   EXECUTING,
+  ADAPTING,
+  SIGNALING,
+  WAITING,
   BLOCKED,
   COMPLETED
 }
