@@ -19,6 +19,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import io.casehub.api.model.CaseChannel;
@@ -27,6 +28,7 @@ import io.casehub.api.model.stigmergy.AgentWorkState;
 import io.casehub.api.model.stigmergy.CoordinationConfig;
 import io.casehub.api.model.stigmergy.StigmergyConfig;
 import io.casehub.api.spi.PostRequest;
+import io.casehub.api.spi.stigmergy.AgentWorkLifecycleListener;
 import io.casehub.engine.common.internal.convergence.ActivityTracker;
 import io.casehub.engine.common.internal.observation.ObservationRegistry;
 import io.casehub.engine.common.internal.signal.SignalRegistry;
@@ -35,6 +37,7 @@ import io.casehub.qhorus.api.message.MessageType;
 import java.time.Duration;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -215,6 +218,77 @@ class StigmergyCoordinatorTest {
     assertEquals(AgentWorkState.IDLE, agent.workState());
   }
 
+  @Test
+  void transitionWorkStateChangesState() {
+    coordinator.initializeCase(caseId, List.of("agent-1"), config, "test-tenant");
+    coordinator.agentJoined(caseId, "agent-1", "binding-1");
+    coordinator.agentActivated(caseId, "agent-1");
+
+    coordinator.transitionWorkState(caseId, "agent-1", AgentWorkState.ASSIGNED);
+    assertEquals(AgentWorkState.ASSIGNED, coordinator.getAgent(caseId, "agent-1").workState());
+
+    coordinator.transitionWorkState(caseId, "agent-1", AgentWorkState.EXECUTING);
+    assertEquals(AgentWorkState.EXECUTING, coordinator.getAgent(caseId, "agent-1").workState());
+
+    coordinator.transitionWorkState(caseId, "agent-1", AgentWorkState.IDLE);
+    assertEquals(AgentWorkState.IDLE, coordinator.getAgent(caseId, "agent-1").workState());
+  }
+
+  @Test
+  void transitionWorkStateRejectsInvalidTransition() {
+    coordinator.initializeCase(caseId, List.of("agent-1"), config, "test-tenant");
+    coordinator.agentJoined(caseId, "agent-1", "binding-1");
+    coordinator.agentActivated(caseId, "agent-1");
+
+    assertThrows(
+        IllegalStateException.class,
+        () -> coordinator.transitionWorkState(caseId, "agent-1", AgentWorkState.EXECUTING));
+  }
+
+  @Test
+  void transitionWorkStateFiresListener() {
+    var listener = new RecordingWorkLifecycleListener();
+    coordinator.addWorkLifecycleListener(listener);
+    coordinator.initializeCase(caseId, List.of("agent-1"), config, "test-tenant");
+    coordinator.agentJoined(caseId, "agent-1", "binding-1");
+    coordinator.agentActivated(caseId, "agent-1");
+
+    coordinator.transitionWorkState(caseId, "agent-1", AgentWorkState.ASSIGNED);
+
+    assertEquals(1, listener.stateChanges.size());
+    var change = listener.stateChanges.get(0);
+    assertEquals(AgentWorkState.IDLE, change.from);
+    assertEquals(AgentWorkState.ASSIGNED, change.to);
+    assertEquals("agent-1", change.agentId);
+  }
+
+  @Test
+  void taskAssignedTransitionsAndFiresListener() {
+    var listener = new RecordingWorkLifecycleListener();
+    coordinator.addWorkLifecycleListener(listener);
+    coordinator.initializeCase(caseId, List.of("agent-1"), config, "test-tenant");
+    coordinator.agentJoined(caseId, "agent-1", "binding-1");
+    coordinator.agentActivated(caseId, "agent-1");
+
+    coordinator.taskAssigned(caseId, "agent-1", "worker-1", Map.of("key", "value"));
+
+    assertEquals(AgentWorkState.ASSIGNED, coordinator.getAgent(caseId, "agent-1").workState());
+    assertEquals(1, listener.stateChanges.size());
+    assertEquals(1, listener.taskAssignments.size());
+    assertEquals("worker-1", listener.taskAssignments.get(0).taskId);
+  }
+
+  @Test
+  void assignedToIdleIsValidForFailedResolution() {
+    coordinator.initializeCase(caseId, List.of("agent-1"), config, "test-tenant");
+    coordinator.agentJoined(caseId, "agent-1", "binding-1");
+    coordinator.agentActivated(caseId, "agent-1");
+
+    coordinator.transitionWorkState(caseId, "agent-1", AgentWorkState.ASSIGNED);
+    coordinator.transitionWorkState(caseId, "agent-1", AgentWorkState.IDLE);
+    assertEquals(AgentWorkState.IDLE, coordinator.getAgent(caseId, "agent-1").workState());
+  }
+
   static class RecordingCaseChannelProvider extends NoOpCaseChannelProvider {
     final List<PostRequest> posts = new ArrayList<>();
 
@@ -286,5 +360,27 @@ class StigmergyCoordinatorTest {
   void counters_nullForUnknownAgent() {
     coordinator.initializeCase(caseId, List.of("agent-1"), config, "test");
     assertNull(coordinator.getAgentCounters(caseId, "unknown"));
+  }
+
+  static class RecordingWorkLifecycleListener implements AgentWorkLifecycleListener {
+    record StateChange(UUID caseId, String agentId, AgentWorkState from, AgentWorkState to) {}
+
+    record TaskAssignment(
+        UUID caseId, String agentId, String taskId, Map<String, Object> context) {}
+
+    final List<StateChange> stateChanges = new ArrayList<>();
+    final List<TaskAssignment> taskAssignments = new ArrayList<>();
+
+    @Override
+    public void onWorkStateChanged(
+        UUID caseId, String agentId, AgentWorkState from, AgentWorkState to) {
+      stateChanges.add(new StateChange(caseId, agentId, from, to));
+    }
+
+    @Override
+    public void onTaskAssigned(
+        UUID caseId, String agentId, String taskId, Map<String, Object> context) {
+      taskAssignments.add(new TaskAssignment(caseId, agentId, taskId, context));
+    }
   }
 }
