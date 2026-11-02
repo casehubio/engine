@@ -18,6 +18,7 @@ package io.casehub.engine.runtime.quarkus;
 import io.casehub.api.context.CaseContextStoreFactory;
 import io.casehub.api.engine.LoopControl;
 import io.casehub.api.spi.ActionRiskClassifier;
+import io.casehub.api.spi.AgentCapabilityGuard;
 import io.casehub.api.spi.CaseChannelProvider;
 import io.casehub.api.spi.ChainedActionRiskClassifier;
 import io.casehub.api.spi.DispatchBudget;
@@ -45,6 +46,7 @@ import io.casehub.engine.common.spi.recovery.CompoundLockRegistry;
 import io.casehub.engine.common.spi.recovery.RecoveryCoordinator;
 import io.casehub.engine.common.spi.scheduler.WorkerExecutionRoutingStrategy;
 import io.casehub.engine.runtime.context.InMemoryCaseContextStoreFactory;
+import io.casehub.engine.runtime.coordination.NoOpAgentCapabilityGuard;
 import io.casehub.engine.runtime.engine.ChoreographyLoopControl;
 import io.casehub.engine.runtime.routing.FirstSupportedRoutingStrategy;
 import io.casehub.engine.runtime.routing.NoOpHumanTaskRoutingStrategy;
@@ -276,5 +278,14 @@ public class SpiDefaultBeans {
   @ApplicationScoped
   io.casehub.api.spi.improvement.EngineEvolutionApi noOpEngineEvolutionApi() {
     return new io.casehub.engine.runtime.worker.NoOpEngineEvolutionApi();
+  }
+
+  // --- Coordination SPIs ---
+
+  @Produces
+  @DefaultBean
+  @ApplicationScoped
+  AgentCapabilityGuard noOpAgentCapabilityGuard() {
+    return new NoOpAgentCapabilityGuard();
   }
 }
