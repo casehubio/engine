@@ -133,7 +133,8 @@ public class CompensationSubscriptionBootstrap {
                   null,
                   "workitem",
                   "workItemId",
-                  "actor"),
+                  "actor",
+                  null),
               true,
               SubscriptionScope.SYSTEM));
       LOG.infof("Registered compensation subscription for %s", eventType);
@@ -171,7 +172,8 @@ public class CompensationSubscriptionBootstrap {
                   null,
                   "case",
                   "caseId",
-                  "actorId"),
+                  "actorId",
+                  null),
               true,
               SubscriptionScope.SYSTEM));
       LOG.infof("Registered compensation subscription for %s", eventType);
