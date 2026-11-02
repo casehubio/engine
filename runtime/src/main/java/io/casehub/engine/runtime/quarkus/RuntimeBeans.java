@@ -24,6 +24,7 @@ import io.casehub.api.spi.WorkerExecutionGuard;
 import io.casehub.api.spi.WorkerStatusListener;
 import io.casehub.api.spi.event.EventDispatcher;
 import io.casehub.api.spi.routing.RoutingOutcomeRecorder;
+import io.casehub.api.spi.stigmergy.AgentWorkStateNotifier;
 import io.casehub.engine.common.internal.channel.DataChannelRegistry;
 import io.casehub.engine.common.internal.context.BridgeResolver;
 import io.casehub.engine.common.internal.executor.MilestoneSLAOrchestrator;
@@ -1289,7 +1290,8 @@ public class RuntimeBeans {
       BridgeResolver bridgeResolver,
       WorkerStatusListener workerStatusListener,
       Event<CaseLifecycleEvent> lifecycleEvents,
-      LedgerTraceIdProvider traceIdProvider) {
+      LedgerTraceIdProvider traceIdProvider,
+      AgentWorkStateNotifier workStateNotifier) {
     return new WorkerExecutionOrchestrator(
         workerExecutor,
         caseDefinitionRegistry,
@@ -1302,7 +1304,8 @@ public class RuntimeBeans {
         bridgeResolver,
         workerStatusListener,
         e -> lifecycleEvents.fireAsync(e),
-        traceIdProvider);
+        traceIdProvider,
+        workStateNotifier);
   }
 
   @Produces
