@@ -75,6 +75,7 @@ public class WorkerExecutionOrchestrator {
   private final WorkerStatusListener workerStatusListener;
   private final Consumer<CaseLifecycleEvent> lifecycleEventConsumer;
   private final io.casehub.ledger.api.spi.LedgerTraceIdProvider traceIdProvider;
+  private final io.casehub.api.spi.stigmergy.AgentWorkStateNotifier workStateNotifier;
 
   public WorkerExecutionOrchestrator(
       WorkerExecutor workerExecutor,
@@ -88,7 +89,8 @@ public class WorkerExecutionOrchestrator {
       BridgeResolver bridgeResolver,
       WorkerStatusListener workerStatusListener,
       Consumer<CaseLifecycleEvent> lifecycleEventConsumer,
-      io.casehub.ledger.api.spi.LedgerTraceIdProvider traceIdProvider) {
+      io.casehub.ledger.api.spi.LedgerTraceIdProvider traceIdProvider,
+      io.casehub.api.spi.stigmergy.AgentWorkStateNotifier workStateNotifier) {
     this.workerExecutor = workerExecutor;
     this.caseDefinitionRegistry = caseDefinitionRegistry;
     this.workerContextProvider = workerContextProvider;
@@ -101,6 +103,7 @@ public class WorkerExecutionOrchestrator {
     this.workerStatusListener = workerStatusListener;
     this.lifecycleEventConsumer = lifecycleEventConsumer;
     this.traceIdProvider = traceIdProvider;
+    this.workStateNotifier = workStateNotifier;
   }
 
   public void execute(WorkerTaskData taskData, RetryHandler retryHandler) {
@@ -198,115 +201,150 @@ public class WorkerExecutionOrchestrator {
 
     WorkerTaskData effectiveTaskData = taskData.withBindingName(bindingName).withSignalId(signalId);
 
-    Worker worker =
-        definition.getWorkers().stream()
-            .filter(w -> w.name().equals(workerId))
-            .findFirst()
-            .orElse(null);
-    if (worker == null) {
-      retryHandler.handleFailure(
-          effectiveTaskData,
-          new RuntimeException("Worker not found: " + workerId),
-          "Worker not found");
-      return;
+    if (bindingName != null && workStateNotifier != null) {
+      try {
+        workStateNotifier.taskAssigned(taskData.caseId(), bindingName, workerId, Map.of());
+      } catch (Exception e) {
+        LOG.warnf(e, "Work state transition ASSIGNED failed for agent %s", bindingName);
+      }
     }
 
-    String effectiveCapability =
-        capabilityName != null
-            ? capabilityName
-            : worker.capabilities().isEmpty() ? workerId : worker.capabilities().iterator().next();
-    Capability capability =
-        definition.getCapabilities().stream()
-            .filter(c -> c.name().equals(effectiveCapability))
-            .findFirst()
-            .orElse(null);
-    if (capability == null) {
-      retryHandler.handleFailure(
-          effectiveTaskData,
-          new RuntimeException("Capability not found: " + effectiveCapability),
-          "Capability not found");
-      return;
+    try {
+
+      Worker worker =
+          definition.getWorkers().stream()
+              .filter(w -> w.name().equals(workerId))
+              .findFirst()
+              .orElse(null);
+      if (worker == null) {
+        retryHandler.handleFailure(
+            effectiveTaskData,
+            new RuntimeException("Worker not found: " + workerId),
+            "Worker not found");
+        return;
+      }
+
+      String effectiveCapability =
+          capabilityName != null
+              ? capabilityName
+              : worker.capabilities().isEmpty()
+                  ? workerId
+                  : worker.capabilities().iterator().next();
+      Capability capability =
+          definition.getCapabilities().stream()
+              .filter(c -> c.name().equals(effectiveCapability))
+              .findFirst()
+              .orElse(null);
+      if (capability == null) {
+        retryHandler.handleFailure(
+            effectiveTaskData,
+            new RuntimeException("Capability not found: " + effectiveCapability),
+            "Capability not found");
+        return;
+      }
+
+      String bridgeTypeName =
+          eventLog.getMetadata().has("contextBridgeType")
+              ? eventLog.getMetadata().get("contextBridgeType").asText(null)
+              : null;
+      boolean isExchangeAware = worker.function() instanceof ExchangeAwareFunction<?, ?>;
+      if (isExchangeAware) {
+        bridgeTypeName =
+            ((ExchangeAwareFunction<?, ?>) worker.function()).bodyInputType().getName();
+      }
+      io.casehub.api.context.ContextBridge<?> bridge =
+          bridgeResolver.resolveByTypeName(bridgeTypeName);
+
+      Object typedInput;
+      if (bridge.isLiveView()) {
+        typedInput =
+            bridgeResolver.initialise(bridge, instance.getCaseContext(), eventLog.getPayload());
+      } else {
+        typedInput = bridgeResolver.deserialise(bridge, eventLog.getPayload());
+      }
+
+      if (isExchangeAware) {
+        typedInput = Exchange.of(typedInput, instance.getExchangeHeaders());
+      }
+
+      Map<String, Object> inputDataForContext =
+          OBJECT_MAPPER.convertValue(eventLog.getPayload(), Map.class);
+      int timeoutMs = executionConfig.getEffectiveTimeout(worker.executionPolicy().timeoutMs());
+
+      WorkerContext baseContext =
+          workerContextProvider.buildContext(
+              workerId,
+              eventLog.getCaseId(),
+              WorkRequest.of(capabilityName, inputDataForContext),
+              instance.getPropagationContext());
+
+      List<RetrievedExperience> experiences = deserializeExperiences(eventLog);
+      List<RetrievedMemory> memories = deserializeMemories(eventLog);
+      WorkerContext workerContext =
+          new WorkerContext(
+              baseContext.taskDescription(),
+              baseContext.caseId(),
+              baseContext.channels(),
+              baseContext.priorWorkers(),
+              baseContext.propagationContext(),
+              baseContext.properties(),
+              experiences,
+              memories);
+
+      ExecutionMetadata metadata =
+          new ExecutionMetadata(
+              workerId, taskData.inputDataHash(), bindingName, executionMode, instance.tenancyId);
+
+      if (bindingName != null && workStateNotifier != null) {
+        try {
+          workStateNotifier.transitionWorkState(
+              taskData.caseId(),
+              bindingName,
+              io.casehub.api.model.stigmergy.AgentWorkState.EXECUTING);
+        } catch (Exception e) {
+          LOG.warnf(e, "Work state transition EXECUTING failed for agent %s", bindingName);
+        }
+      }
+
+      HandlerResult handlerResult =
+          workerExecutor.execute(
+              worker.function(),
+              typedInput,
+              workerContext,
+              timeoutMs,
+              capability.outputProjection(),
+              metadata);
+
+      WorkerResult<?> workerResult = handlerResult.result();
+      Map<String, Object> output = toMap(workerResult.output());
+      if ((output == null || output.isEmpty()) && bridge.isLiveView()) {
+        output = bridgeResolver.extractOutput(bridge, typedInput);
+      }
+      if (output != null && !output.equals(workerResult.output())) {
+        var replaced = new WorkerResult(output, workerResult.outcome(), workerResult.reasoning());
+        workerResult = replaced;
+      }
+
+      publishOutcome(
+          instance,
+          worker,
+          taskData.inputDataHash(),
+          workerResult,
+          bindingName,
+          signalId,
+          executionMode,
+          handlerResult.protocolMetadata());
+
+    } finally {
+      if (bindingName != null && workStateNotifier != null) {
+        try {
+          workStateNotifier.transitionWorkState(
+              taskData.caseId(), bindingName, io.casehub.api.model.stigmergy.AgentWorkState.IDLE);
+        } catch (Exception e) {
+          LOG.warnf(e, "Work state transition IDLE failed for agent %s", bindingName);
+        }
+      }
     }
-
-    String bridgeTypeName =
-        eventLog.getMetadata().has("contextBridgeType")
-            ? eventLog.getMetadata().get("contextBridgeType").asText(null)
-            : null;
-    boolean isExchangeAware = worker.function() instanceof ExchangeAwareFunction<?, ?>;
-    if (isExchangeAware) {
-      bridgeTypeName = ((ExchangeAwareFunction<?, ?>) worker.function()).bodyInputType().getName();
-    }
-    io.casehub.api.context.ContextBridge<?> bridge =
-        bridgeResolver.resolveByTypeName(bridgeTypeName);
-
-    Object typedInput;
-    if (bridge.isLiveView()) {
-      typedInput =
-          bridgeResolver.initialise(bridge, instance.getCaseContext(), eventLog.getPayload());
-    } else {
-      typedInput = bridgeResolver.deserialise(bridge, eventLog.getPayload());
-    }
-
-    if (isExchangeAware) {
-      typedInput = Exchange.of(typedInput, instance.getExchangeHeaders());
-    }
-
-    Map<String, Object> inputDataForContext =
-        OBJECT_MAPPER.convertValue(eventLog.getPayload(), Map.class);
-    int timeoutMs = executionConfig.getEffectiveTimeout(worker.executionPolicy().timeoutMs());
-
-    WorkerContext baseContext =
-        workerContextProvider.buildContext(
-            workerId,
-            eventLog.getCaseId(),
-            WorkRequest.of(capabilityName, inputDataForContext),
-            instance.getPropagationContext());
-
-    List<RetrievedExperience> experiences = deserializeExperiences(eventLog);
-    List<RetrievedMemory> memories = deserializeMemories(eventLog);
-    WorkerContext workerContext =
-        new WorkerContext(
-            baseContext.taskDescription(),
-            baseContext.caseId(),
-            baseContext.channels(),
-            baseContext.priorWorkers(),
-            baseContext.propagationContext(),
-            baseContext.properties(),
-            experiences,
-            memories);
-
-    ExecutionMetadata metadata =
-        new ExecutionMetadata(
-            workerId, taskData.inputDataHash(), bindingName, executionMode, instance.tenancyId);
-
-    HandlerResult handlerResult =
-        workerExecutor.execute(
-            worker.function(),
-            typedInput,
-            workerContext,
-            timeoutMs,
-            capability.outputProjection(),
-            metadata);
-
-    WorkerResult<?> workerResult = handlerResult.result();
-    Map<String, Object> output = toMap(workerResult.output());
-    if ((output == null || output.isEmpty()) && bridge.isLiveView()) {
-      output = bridgeResolver.extractOutput(bridge, typedInput);
-    }
-    if (output != null && !output.equals(workerResult.output())) {
-      var replaced = new WorkerResult(output, workerResult.outcome(), workerResult.reasoning());
-      workerResult = replaced;
-    }
-
-    publishOutcome(
-        instance,
-        worker,
-        taskData.inputDataHash(),
-        workerResult,
-        bindingName,
-        signalId,
-        executionMode,
-        handlerResult.protocolMetadata());
   }
 
   private void publishOutcome(
