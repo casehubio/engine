@@ -1376,7 +1376,10 @@ public class RuntimeBeans {
       Instance<io.casehub.api.spi.stigmergy.SwarmCoordinationListener> listenerInstances,
       Instance<io.casehub.eidos.api.AgentGraphQuery> agentGraphQuery,
       Instance<io.casehub.api.spi.CaseChannelProvider> channelProvider) {
-    if (!coordinator.isResolvable()) {
+    if (!coordinator.isResolvable()
+        || !roleTracker.isResolvable()
+        || !teamDetector.isResolvable()
+        || !progressTracker.isResolvable()) {
       return new io.casehub.engine.runtime.stigmergy.SwarmProvisioner();
     }
     return new io.casehub.engine.runtime.stigmergy.SwarmProvisioner(
