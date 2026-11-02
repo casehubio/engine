@@ -15,6 +15,7 @@
  */
 package io.casehub.api.model.coordination;
 
+/** Position within a coordination topology — not what the agent does (Worker), but where it sits relative to others. */
 public enum StructuralRole {
   INITIATOR,
   PEER,
