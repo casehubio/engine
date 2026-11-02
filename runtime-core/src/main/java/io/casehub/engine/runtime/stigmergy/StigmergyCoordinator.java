@@ -119,7 +119,15 @@ public class StigmergyCoordinator implements Resettable {
     var now = Instant.now();
     state.agents.put(
         agentId,
-        new AgentState(agentId, bindingName, AgentLifecycleState.JOINING, now, null, null, now));
+        new AgentState(
+            agentId,
+            bindingName,
+            AgentLifecycleState.JOINING,
+            AgentWorkState.IDLE,
+            now,
+            null,
+            null,
+            now));
     state.agentCounters.computeIfAbsent(agentId, k -> new MutableAgentCounters());
   }
 
@@ -139,6 +147,7 @@ public class StigmergyCoordinator implements Resettable {
             agentId,
             current.bindingName(),
             AgentLifecycleState.ACTIVE,
+            current.workState(),
             current.joinedAt(),
             now,
             null,
@@ -168,6 +177,7 @@ public class StigmergyCoordinator implements Resettable {
             agentId,
             current.bindingName(),
             AgentLifecycleState.DEPARTED,
+            AgentWorkState.IDLE,
             current.joinedAt(),
             current.activatedAt(),
             now,

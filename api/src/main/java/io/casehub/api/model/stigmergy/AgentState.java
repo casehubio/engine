@@ -22,6 +22,7 @@ public record AgentState(
     String agentId,
     String bindingName,
     AgentLifecycleState state,
+    AgentWorkState workState,
     Instant joinedAt,
     @Nullable Instant activatedAt,
     @Nullable Instant departedAt,
