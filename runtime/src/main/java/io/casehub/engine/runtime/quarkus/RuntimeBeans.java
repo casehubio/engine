@@ -1375,7 +1375,8 @@ public class RuntimeBeans {
       Instance<io.casehub.api.spi.stigmergy.SwarmProvisioningAdvisor> advisorInstance,
       Instance<io.casehub.api.spi.stigmergy.SwarmCoordinationListener> listenerInstances,
       Instance<io.casehub.eidos.api.AgentGraphQuery> agentGraphQuery,
-      Instance<io.casehub.api.spi.CaseChannelProvider> channelProvider) {
+      Instance<io.casehub.api.spi.CaseChannelProvider> channelProvider,
+      io.casehub.api.spi.coordination.TopologyProvider topologyProvider) {
     if (!coordinator.isResolvable()
         || !roleTracker.isResolvable()
         || !teamDetector.isResolvable()
@@ -1394,7 +1395,8 @@ public class RuntimeBeans {
         advisorInstance.isResolvable() ? advisorInstance.get() : null,
         listenerInstances.stream().toList(),
         agentGraphQuery.isResolvable() ? agentGraphQuery.get() : null,
-        channelProvider.isResolvable() ? channelProvider.get() : null);
+        channelProvider.isResolvable() ? channelProvider.get() : null,
+        topologyProvider);
   }
 
   @Produces
