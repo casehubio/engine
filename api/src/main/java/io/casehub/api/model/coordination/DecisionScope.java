@@ -16,7 +16,32 @@
 package io.casehub.api.model.coordination;
 
 public enum DecisionScope {
-  STIMULUS_DRIVEN,
-  TASK_ADAPTATION,
-  FULL_AUTONOMY
+  STIMULUS_DRIVEN {
+    @Override
+    public boolean isPermitted(DecisionType type) {
+      return switch (type) {
+        case SIGNALING -> true;
+        case TASK_SELECTION, COLLABORATION, PROVISIONING, CONTEXT_MUTATION -> false;
+      };
+    }
+  },
+  TASK_ADAPTATION {
+    @Override
+    public boolean isPermitted(DecisionType type) {
+      return switch (type) {
+        case COLLABORATION, SIGNALING, CONTEXT_MUTATION -> true;
+        case TASK_SELECTION, PROVISIONING -> false;
+      };
+    }
+  },
+  FULL_AUTONOMY {
+    @Override
+    public boolean isPermitted(DecisionType type) {
+      return switch (type) {
+        case TASK_SELECTION, COLLABORATION, SIGNALING, PROVISIONING, CONTEXT_MUTATION -> true;
+      };
+    }
+  };
+
+  public abstract boolean isPermitted(DecisionType type);
 }
