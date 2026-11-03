@@ -27,7 +27,7 @@ import io.casehub.api.spi.RiskClassifier;
 import io.casehub.api.spi.WorkerContextProvider;
 import io.casehub.api.spi.WorkerProvisioner;
 import io.casehub.api.spi.WorkerStatusListener;
-import io.casehub.api.spi.coordination.SwarmTopologyProvider;
+import io.casehub.api.spi.coordination.TopologyProvider;
 import io.casehub.api.spi.judgment.JudgmentEscalator;
 import io.casehub.api.spi.recovery.ErrorClassifier;
 import io.casehub.api.spi.routing.AgentRoutingStrategy;
@@ -296,7 +296,7 @@ public class SpiDefaultBeans {
   @Produces
   @DefaultBean
   @ApplicationScoped
-  SwarmTopologyProvider centralisedTopologyProvider() {
+  TopologyProvider centralisedTopologyProvider() {
     return new CentralisedTopologyProvider();
   }
 

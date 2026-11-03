@@ -34,7 +34,7 @@ import io.casehub.api.spi.DispatchBudgetQuery;
 import io.casehub.api.spi.PostRequest;
 import io.casehub.api.spi.ProvisioningException;
 import io.casehub.api.spi.WorkerProvisioner;
-import io.casehub.api.spi.coordination.SwarmTopologyProvider;
+import io.casehub.api.spi.coordination.TopologyProvider;
 import io.casehub.api.spi.stigmergy.SwarmCoordinationListener;
 import io.casehub.api.spi.stigmergy.SwarmProvisioningAdvisor;
 import io.casehub.eidos.api.AgentGraphQuery;
@@ -74,7 +74,7 @@ public class SwarmProvisioner implements Resettable {
   private final List<SwarmCoordinationListener> listeners;
   private final AgentGraphQuery agentGraphQuery;
   private final CaseChannelProvider channelProvider;
-  private final SwarmTopologyProvider topologyProvider;
+  private final TopologyProvider topologyProvider;
 
   private final Set<UUID> initialisedCases = ConcurrentHashMap.newKeySet();
 
@@ -93,7 +93,7 @@ public class SwarmProvisioner implements Resettable {
       List<SwarmCoordinationListener> listeners,
       AgentGraphQuery agentGraphQuery,
       CaseChannelProvider channelProvider,
-      SwarmTopologyProvider topologyProvider) {
+      TopologyProvider topologyProvider) {
     this.active = true;
     this.workerProvisioner = workerProvisioner;
     this.coordinator = coordinator;

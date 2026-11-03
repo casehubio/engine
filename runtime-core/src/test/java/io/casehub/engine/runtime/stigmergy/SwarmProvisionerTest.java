@@ -39,7 +39,7 @@ import io.casehub.api.spi.DispatchBudgetQuery;
 import io.casehub.api.spi.PostRequest;
 import io.casehub.api.spi.ProvisionResult;
 import io.casehub.api.spi.WorkerProvisioner;
-import io.casehub.api.spi.coordination.SwarmTopologyProvider;
+import io.casehub.api.spi.coordination.TopologyProvider;
 import io.casehub.api.spi.stigmergy.SwarmCoordinationListener;
 import io.casehub.eidos.api.AgentGraphQuery;
 import io.casehub.engine.common.internal.convergence.ActivityTracker;
@@ -655,7 +655,7 @@ class SwarmProvisionerTest {
   @Test
   void distributed_topology_skips_central_provisioning() {
     var distributedProvider =
-        new SwarmTopologyProvider() {
+        new TopologyProvider() {
           @Override
           public TopologyDescriptor describeTopology(UUID id) {
             return new TopologyDescriptor(TopologyType.DISTRIBUTED, Map.of());
@@ -707,7 +707,7 @@ class SwarmProvisionerTest {
   @Test
   void distributed_topology_skips_deprovisioning() {
     var distributedProvider =
-        new SwarmTopologyProvider() {
+        new TopologyProvider() {
           @Override
           public TopologyDescriptor describeTopology(UUID id) {
             return new TopologyDescriptor(TopologyType.DISTRIBUTED, Map.of());
