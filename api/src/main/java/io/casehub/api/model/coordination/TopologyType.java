@@ -54,6 +54,29 @@ public enum TopologyType {
         case CONTRACTOR -> DecisionAuthority.LOCAL;
       };
     }
+  },
+  HIERARCHICAL {
+    @Override
+    public DecisionAuthority deriveAuthority(StructuralRole role) {
+      return switch (role) {
+        case INITIATOR -> DecisionAuthority.CENTRAL;
+        case CONTRACTOR -> DecisionAuthority.LOCAL;
+        case PEER ->
+            throw new IllegalArgumentException(
+                "HIERARCHICAL topology does not support PEER"
+                    + " — tree structure requires parent/child relationships");
+      };
+    }
+  },
+  GRADUATED {
+    @Override
+    public DecisionAuthority deriveAuthority(StructuralRole role) {
+      return switch (role) {
+        case INITIATOR -> DecisionAuthority.CENTRAL;
+        case PEER -> DecisionAuthority.COORDINATED;
+        case CONTRACTOR -> DecisionAuthority.LOCAL;
+      };
+    }
   };
 
   public abstract DecisionAuthority deriveAuthority(StructuralRole role);

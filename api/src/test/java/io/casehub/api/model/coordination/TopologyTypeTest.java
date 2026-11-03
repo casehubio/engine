@@ -78,4 +78,41 @@ class TopologyTypeTest {
     assertThat(TopologyType.HYBRID.deriveAuthority(StructuralRole.CONTRACTOR))
         .isEqualTo(DecisionAuthority.LOCAL);
   }
+
+  @Test
+  void hierarchical_initiator_derives_central() {
+    assertThat(TopologyType.HIERARCHICAL.deriveAuthority(StructuralRole.INITIATOR))
+        .isEqualTo(DecisionAuthority.CENTRAL);
+  }
+
+  @Test
+  void hierarchical_contractor_derives_local() {
+    assertThat(TopologyType.HIERARCHICAL.deriveAuthority(StructuralRole.CONTRACTOR))
+        .isEqualTo(DecisionAuthority.LOCAL);
+  }
+
+  @Test
+  void hierarchical_peer_is_invalid() {
+    assertThatIllegalArgumentException()
+        .isThrownBy(() -> TopologyType.HIERARCHICAL.deriveAuthority(StructuralRole.PEER))
+        .withMessageContaining("HIERARCHICAL");
+  }
+
+  @Test
+  void graduated_initiator_derives_central() {
+    assertThat(TopologyType.GRADUATED.deriveAuthority(StructuralRole.INITIATOR))
+        .isEqualTo(DecisionAuthority.CENTRAL);
+  }
+
+  @Test
+  void graduated_peer_derives_coordinated() {
+    assertThat(TopologyType.GRADUATED.deriveAuthority(StructuralRole.PEER))
+        .isEqualTo(DecisionAuthority.COORDINATED);
+  }
+
+  @Test
+  void graduated_contractor_derives_local() {
+    assertThat(TopologyType.GRADUATED.deriveAuthority(StructuralRole.CONTRACTOR))
+        .isEqualTo(DecisionAuthority.LOCAL);
+  }
 }

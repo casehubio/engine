@@ -17,11 +17,11 @@ package io.casehub.engine.runtime.coordination;
 
 import io.casehub.api.model.coordination.TopologyDescriptor;
 import io.casehub.api.model.coordination.TopologyType;
-import io.casehub.api.spi.coordination.SwarmTopologyProvider;
+import io.casehub.api.spi.coordination.TopologyProvider;
 import java.util.Map;
 import java.util.UUID;
 
-public class CentralisedTopologyProvider implements SwarmTopologyProvider {
+public class CentralisedTopologyProvider implements TopologyProvider {
 
   @Override
   public TopologyDescriptor describeTopology(UUID caseId) {

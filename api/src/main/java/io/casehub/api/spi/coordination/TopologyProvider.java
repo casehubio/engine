@@ -18,6 +18,6 @@ package io.casehub.api.spi.coordination;
 import io.casehub.api.model.coordination.TopologyDescriptor;
 import java.util.UUID;
 
-public interface SwarmTopologyProvider {
+public interface TopologyProvider {
   TopologyDescriptor describeTopology(UUID caseId);
 }
