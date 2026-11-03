@@ -6,6 +6,10 @@
 
 ## Enum Constants
 
+### `ADAPTING` (`io.casehub.api.model.stigmergy.AgentWorkState`)
+
+### `ASSIGNED` (`io.casehub.api.model.stigmergy.AgentWorkState`)
+
 ### `BLOCKED` (`io.casehub.api.model.stigmergy.AgentWorkState`)
 
 ### `COMPLETED` (`io.casehub.api.model.stigmergy.AgentWorkState`)
@@ -13,6 +17,10 @@
 ### `EXECUTING` (`io.casehub.api.model.stigmergy.AgentWorkState`)
 
 ### `IDLE` (`io.casehub.api.model.stigmergy.AgentWorkState`)
+
+### `SIGNALING` (`io.casehub.api.model.stigmergy.AgentWorkState`)
+
+### `WAITING` (`io.casehub.api.model.stigmergy.AgentWorkState`)
 
 ## Constructors
 

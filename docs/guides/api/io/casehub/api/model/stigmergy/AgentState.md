@@ -20,6 +20,8 @@
 
 ### `state` (`io.casehub.api.model.stigmergy.AgentLifecycleState`)
 
+### `workState` (`io.casehub.api.model.stigmergy.AgentWorkState`)
+
 ## Record Components
 
 ### `activatedAt` (`java.time.Instant`)
@@ -36,15 +38,18 @@
 
 ### `state` (`io.casehub.api.model.stigmergy.AgentLifecycleState`)
 
+### `workState` (`io.casehub.api.model.stigmergy.AgentWorkState`)
+
 ## Constructors
 
-### `public AgentState(java.lang.String agentId, java.lang.String bindingName, io.casehub.api.model.stigmergy.AgentLifecycleState state, java.time.Instant joinedAt, java.time.Instant activatedAt, java.time.Instant departedAt, java.time.Instant lastActivity)`
+### `public AgentState(java.lang.String agentId, java.lang.String bindingName, io.casehub.api.model.stigmergy.AgentLifecycleState state, io.casehub.api.model.stigmergy.AgentWorkState workState, java.time.Instant joinedAt, java.time.Instant activatedAt, java.time.Instant departedAt, java.time.Instant lastActivity)`
 
 #### Parameters
 
 - `agentId` (`java.lang.String`)
 - `bindingName` (`java.lang.String`)
 - `state` (`io.casehub.api.model.stigmergy.AgentLifecycleState`)
+- `workState` (`io.casehub.api.model.stigmergy.AgentWorkState`)
 - `joinedAt` (`java.time.Instant`)
 - `activatedAt` (`java.time.Instant`)
 - `departedAt` (`java.time.Instant`)
@@ -75,3 +80,5 @@
 ### `public io.casehub.api.model.stigmergy.AgentLifecycleState state()`
 
 ### `public final java.lang.String toString()`
+
+### `public io.casehub.api.model.stigmergy.AgentWorkState workState()`
