@@ -22,7 +22,6 @@ import io.casehub.api.spi.ContextDiffStrategy;
 import io.casehub.api.spi.WorkerContextProvider;
 import io.casehub.api.spi.WorkerExecutionGuard;
 import io.casehub.api.spi.WorkerStatusListener;
-import io.casehub.api.spi.coordination.TopologyProvider;
 import io.casehub.api.spi.event.EventDispatcher;
 import io.casehub.api.spi.routing.RoutingOutcomeRecorder;
 import io.casehub.api.spi.stigmergy.AgentWorkStateNotifier;
