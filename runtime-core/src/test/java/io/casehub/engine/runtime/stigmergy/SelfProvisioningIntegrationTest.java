@@ -66,7 +66,9 @@ class SelfProvisioningIntegrationTest {
     coordinator = new StigmergyCoordinator(signalRegistry, observationRegistry, activityTracker);
     roleTracker = new RoleTracker(observationRegistry, signalRegistry, ruleRegistry, coordinator);
     teamDetector = new TeamDetector(observationRegistry, signalRegistry, roleTracker, coordinator);
-    progressTracker = new SwarmProgressTracker(signalRegistry, roleTracker, coordinator);
+    progressTracker =
+        new SwarmProgressTracker(
+            signalRegistry, roleTracker, coordinator, new ThresholdConvergenceEvaluator());
     workerProvisioner = new RecordingProvisioner();
     swarmProvisioner =
         new SwarmProvisioner(

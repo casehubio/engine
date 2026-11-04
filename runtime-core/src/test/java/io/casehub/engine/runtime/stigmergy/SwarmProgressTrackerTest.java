@@ -58,7 +58,9 @@ class SwarmProgressTrackerTest {
     activityTracker = new ActivityTracker();
     coordinator = new StigmergyCoordinator(signalRegistry, observationRegistry, activityTracker);
     roleTracker = new RoleTracker(observationRegistry, signalRegistry, ruleRegistry, coordinator);
-    progressTracker = new SwarmProgressTracker(signalRegistry, roleTracker, coordinator);
+    progressTracker =
+        new SwarmProgressTracker(
+            signalRegistry, roleTracker, coordinator, new ThresholdConvergenceEvaluator());
     caseId = UUID.randomUUID();
   }
 

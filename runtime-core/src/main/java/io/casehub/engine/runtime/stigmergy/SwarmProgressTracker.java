@@ -18,6 +18,8 @@ package io.casehub.engine.runtime.stigmergy;
 import io.casehub.api.model.event.CaseHubEventType;
 import io.casehub.api.model.stigmergy.StigmergyConfig;
 import io.casehub.api.model.stigmergy.SwarmProgress;
+import io.casehub.api.spi.stigmergy.ConvergenceSignal;
+import io.casehub.api.spi.stigmergy.SwarmConvergenceEvaluator;
 import io.casehub.engine.common.internal.signal.SignalRegistry;
 import io.casehub.engine.common.spi.Resettable;
 import java.time.Instant;
@@ -36,14 +38,19 @@ public class SwarmProgressTracker implements Resettable {
   private final SignalRegistry signalRegistry;
   private final RoleTracker roleTracker;
   private final StigmergyCoordinator coordinator;
+  private final SwarmConvergenceEvaluator convergenceEvaluator;
 
   private final ConcurrentHashMap<UUID, CaseProgressState> cases = new ConcurrentHashMap<>();
 
   public SwarmProgressTracker(
-      SignalRegistry signalRegistry, RoleTracker roleTracker, StigmergyCoordinator coordinator) {
+      SignalRegistry signalRegistry,
+      RoleTracker roleTracker,
+      StigmergyCoordinator coordinator,
+      SwarmConvergenceEvaluator convergenceEvaluator) {
     this.signalRegistry = signalRegistry;
     this.roleTracker = roleTracker;
     this.coordinator = coordinator;
+    this.convergenceEvaluator = convergenceEvaluator;
   }
 
   public List<SwarmEvent> evaluate(UUID caseId, StigmergyConfig config) {
@@ -65,7 +72,14 @@ public class SwarmProgressTracker implements Resettable {
             || Math.abs(newProgress.stabilityScore() - state.lastProgress.stabilityScore())
                 > threshold;
 
+    var agents = coordinator.activeAgents(caseId);
+    var convergenceContext =
+        new SwarmConvergenceEvaluator.ConvergenceContext(
+            state.evaluationCount, state.lastProgress, agents.size());
+    var signal = convergenceEvaluator.evaluate(caseId, newProgress, convergenceContext);
+
     state.lastProgress = newProgress;
+    state.lastSignal = signal;
     state.evaluationCount++;
 
     if (changed) {
@@ -73,10 +87,18 @@ public class SwarmProgressTracker implements Resettable {
           new SwarmEvent(
               CaseHubEventType.SWARM_PROGRESS,
               Map.of(
-                  "explorationPace", exploration,
-                  "consensusScore", consensus,
-                  "stabilityScore", stability,
-                  "cycle", state.evaluationCount)));
+                  "explorationPace",
+                  exploration,
+                  "consensusScore",
+                  consensus,
+                  "stabilityScore",
+                  stability,
+                  "convergenceState",
+                  signal.state().name(),
+                  "convergenceConfidence",
+                  signal.confidence(),
+                  "cycle",
+                  state.evaluationCount)));
     }
     return List.of();
   }
@@ -157,6 +179,11 @@ public class SwarmProgressTracker implements Resettable {
     return state != null ? state.lastProgress : SwarmProgress.EMPTY;
   }
 
+  public ConvergenceSignal getLastSignal(UUID caseId) {
+    var state = cases.get(caseId);
+    return state != null ? state.lastSignal : ConvergenceSignal.PROGRESSING;
+  }
+
   public void evictByCase(UUID caseId) {
     cases.remove(caseId);
   }
@@ -168,6 +195,7 @@ public class SwarmProgressTracker implements Resettable {
 
   private static class CaseProgressState {
     volatile SwarmProgress lastProgress = SwarmProgress.EMPTY;
+    volatile ConvergenceSignal lastSignal = ConvergenceSignal.PROGRESSING;
     int evaluationCount;
     final Deque<Integer> explorationHistory = new ArrayDeque<>();
     Map<String, String> previousRoleAssignment = new HashMap<>();
