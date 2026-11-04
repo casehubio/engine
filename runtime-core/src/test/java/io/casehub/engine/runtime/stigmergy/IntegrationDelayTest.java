@@ -60,7 +60,9 @@ class IntegrationDelayTest {
     roleTracker = new RoleTracker(observationRegistry, signalRegistry, ruleRegistry, coordinator);
     var teamDetector =
         new TeamDetector(observationRegistry, signalRegistry, roleTracker, coordinator);
-    var progressTracker = new SwarmProgressTracker(signalRegistry, roleTracker, coordinator);
+    var progressTracker =
+        new SwarmProgressTracker(
+            signalRegistry, roleTracker, coordinator, new ThresholdConvergenceEvaluator());
     workerProvisioner = new RecordingProvisioner();
     swarmProvisioner =
         new SwarmProvisioner(

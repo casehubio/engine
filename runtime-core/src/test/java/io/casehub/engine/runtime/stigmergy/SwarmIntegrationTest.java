@@ -65,7 +65,9 @@ class SwarmIntegrationTest {
     coordinator = new StigmergyCoordinator(signalRegistry, observationRegistry, activityTracker);
     roleTracker = new RoleTracker(observationRegistry, signalRegistry, ruleRegistry, coordinator);
     teamDetector = new TeamDetector(observationRegistry, signalRegistry, roleTracker, coordinator);
-    progressTracker = new SwarmProgressTracker(signalRegistry, roleTracker, coordinator);
+    progressTracker =
+        new SwarmProgressTracker(
+            signalRegistry, roleTracker, coordinator, new ThresholdConvergenceEvaluator());
     telemetryCollector = new SwarmTelemetryCollector(coordinator, signalRegistry);
 
     caseId = UUID.randomUUID();
