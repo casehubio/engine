@@ -47,6 +47,15 @@ Spring `ObjectProvider`. Do not use `@DefaultBean` on implementations.
 - `taskId` (`java.lang.String`)
 - `context` (`java.util.Map<java.lang.String,java.lang.Object>`)
 
+### `public default void onTopologyChanged(java.lang.String unitId, java.lang.String fromTopology, java.lang.String toTopology, java.lang.String tenancyId)`
+
+#### Parameters
+
+- `unitId` (`java.lang.String`)
+- `fromTopology` (`java.lang.String`)
+- `toTopology` (`java.lang.String`)
+- `tenancyId` (`java.lang.String`)
+
 ### `public default void onWorkStateChanged(java.util.UUID caseId, java.lang.String agentId, io.casehub.api.model.stigmergy.AgentWorkState from, io.casehub.api.model.stigmergy.AgentWorkState to)`
 
 #### Parameters

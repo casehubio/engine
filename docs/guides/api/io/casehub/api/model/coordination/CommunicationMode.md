@@ -13,6 +13,8 @@ How agents exchange information within a coordination topology. Independent of t
 
 ### `DIRECT_MESSAGING` (`io.casehub.api.model.coordination.CommunicationMode`)
 
+### `GROUP_CHANNEL` (`io.casehub.api.model.coordination.CommunicationMode`)
+
 ### `STIGMERGY` (`io.casehub.api.model.coordination.CommunicationMode`)
 
 ## Constructors
