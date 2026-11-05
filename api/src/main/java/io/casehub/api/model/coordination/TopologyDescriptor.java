@@ -19,7 +19,15 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 
-public record TopologyDescriptor(TopologyType topologyType, Map<String, AgentRole> agentRoles) {
+public record TopologyDescriptor(
+    TopologyType topologyType,
+    CoordinationPattern coordinationPattern,
+    String groupId,
+    Map<String, AgentRole> agentRoles) {
+
+  public TopologyDescriptor(TopologyType topologyType, Map<String, AgentRole> agentRoles) {
+    this(topologyType, null, null, agentRoles);
+  }
 
   public TopologyDescriptor {
     Objects.requireNonNull(topologyType, "topologyType must not be null");
