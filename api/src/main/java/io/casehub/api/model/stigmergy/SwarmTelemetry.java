@@ -25,4 +25,7 @@ public record SwarmTelemetry(
     int signalsDeposited,
     int messagesSent,
     int tasksCompleted,
-    Duration activeTime) {}
+    Duration activeTime,
+    int invocationCount,
+    long tokensConsumed,
+    Duration totalLatency) {}
