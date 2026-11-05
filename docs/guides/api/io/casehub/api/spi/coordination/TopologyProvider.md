@@ -6,8 +6,16 @@
 
 ## Methods
 
-### `public abstract io.casehub.api.model.coordination.TopologyDescriptor describeTopology(java.util.UUID caseId)`
+### `public default java.util.OptionalDouble effectiveSelfDetermination(java.lang.String agentId, java.lang.String tenancyId)`
 
 #### Parameters
 
-- `caseId` (`java.util.UUID`)
+- `agentId` (`java.lang.String`)
+- `tenancyId` (`java.lang.String`)
+
+### `public abstract io.casehub.api.model.coordination.TopologyDescriptor topologyFor(java.lang.String agentId, java.lang.String tenancyId)`
+
+#### Parameters
+
+- `agentId` (`java.lang.String`)
+- `tenancyId` (`java.lang.String`)
