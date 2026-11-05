@@ -16,7 +16,6 @@
 package io.casehub.engine.runtime.stigmergy;
 
 import io.casehub.api.model.ProvisionContext;
-import io.casehub.api.model.coordination.TopologyType;
 import io.casehub.api.model.event.CaseHubEventType;
 import io.casehub.api.model.stigmergy.DetectedRole;
 import io.casehub.api.model.stigmergy.DetectedTeam;
@@ -34,7 +33,6 @@ import io.casehub.api.spi.DispatchBudgetQuery;
 import io.casehub.api.spi.PostRequest;
 import io.casehub.api.spi.ProvisioningException;
 import io.casehub.api.spi.WorkerProvisioner;
-import io.casehub.api.spi.coordination.TopologyProvider;
 import io.casehub.api.spi.stigmergy.SwarmCoordinationListener;
 import io.casehub.api.spi.stigmergy.SwarmProvisioningAdvisor;
 import io.casehub.eidos.api.AgentGraphQuery;
@@ -42,6 +40,7 @@ import io.casehub.engine.common.internal.convergence.ActivityTracker;
 import io.casehub.engine.common.internal.signal.SignalRegistry;
 import io.casehub.engine.common.spi.Resettable;
 import io.casehub.qhorus.api.message.MessageType;
+
 import java.time.Duration;
 import java.time.Instant;
 import java.util.ArrayList;
@@ -74,57 +73,53 @@ public class SwarmProvisioner implements Resettable {
   private final List<SwarmCoordinationListener> listeners;
   private final AgentGraphQuery agentGraphQuery;
   private final CaseChannelProvider channelProvider;
-  private final TopologyProvider topologyProvider;
 
   private final Set<UUID> initialisedCases = ConcurrentHashMap.newKeySet();
 
   private final ConcurrentHashMap<UUID, CaseProvisionState> cases = new ConcurrentHashMap<>();
 
-  public SwarmProvisioner(
-      WorkerProvisioner workerProvisioner,
-      StigmergyCoordinator coordinator,
-      SignalRegistry signalRegistry,
-      ActivityTracker activityTracker,
-      RoleTracker roleTracker,
-      TeamDetector teamDetector,
-      SwarmProgressTracker progressTracker,
-      DispatchBudget dispatchBudget,
-      SwarmProvisioningAdvisor advisor,
-      List<SwarmCoordinationListener> listeners,
-      AgentGraphQuery agentGraphQuery,
-      CaseChannelProvider channelProvider,
-      TopologyProvider topologyProvider) {
-    this.active = true;
-    this.workerProvisioner = workerProvisioner;
-    this.coordinator = coordinator;
-    this.signalRegistry = signalRegistry;
-    this.activityTracker = activityTracker;
-    this.roleTracker = roleTracker;
-    this.teamDetector = teamDetector;
-    this.progressTracker = progressTracker;
-    this.dispatchBudget = dispatchBudget;
-    this.advisor = advisor;
-    this.listeners = listeners != null ? List.copyOf(listeners) : List.of();
-    this.agentGraphQuery = agentGraphQuery;
-    this.channelProvider = channelProvider;
-    this.topologyProvider = topologyProvider;
-  }
+    public SwarmProvisioner(
+            WorkerProvisioner workerProvisioner,
+            StigmergyCoordinator coordinator,
+            SignalRegistry signalRegistry,
+            ActivityTracker activityTracker,
+            RoleTracker roleTracker,
+            TeamDetector teamDetector,
+            SwarmProgressTracker progressTracker,
+            DispatchBudget dispatchBudget,
+            SwarmProvisioningAdvisor advisor,
+            List<SwarmCoordinationListener> listeners,
+            AgentGraphQuery agentGraphQuery,
+            CaseChannelProvider channelProvider) {
+        this.active            = true;
+        this.workerProvisioner = workerProvisioner;
+        this.coordinator       = coordinator;
+        this.signalRegistry    = signalRegistry;
+        this.activityTracker   = activityTracker;
+        this.roleTracker       = roleTracker;
+        this.teamDetector      = teamDetector;
+        this.progressTracker   = progressTracker;
+        this.dispatchBudget    = dispatchBudget;
+        this.advisor           = advisor;
+        this.listeners         = listeners != null ? List.copyOf(listeners) : List.of();
+        this.agentGraphQuery   = agentGraphQuery;
+        this.channelProvider   = channelProvider;
+    }
 
   public SwarmProvisioner() {
-    this.active = false;
+    this.active            = false;
     this.workerProvisioner = null;
-    this.coordinator = null;
-    this.signalRegistry = null;
-    this.activityTracker = null;
-    this.roleTracker = null;
-    this.teamDetector = null;
-    this.progressTracker = null;
-    this.dispatchBudget = null;
-    this.advisor = null;
-    this.listeners = List.of();
-    this.agentGraphQuery = null;
-    this.channelProvider = null;
-    this.topologyProvider = null;
+    this.coordinator       = null;
+    this.signalRegistry    = null;
+    this.activityTracker   = null;
+    this.roleTracker       = null;
+    this.teamDetector      = null;
+    this.progressTracker   = null;
+    this.dispatchBudget    = null;
+    this.advisor           = null;
+    this.listeners         = List.of();
+    this.agentGraphQuery   = null;
+    this.channelProvider   = null;
   }
 
   private void postCoordinationEvent(UUID caseId, String eventType, Map<String, Object> payload) {
@@ -145,12 +140,6 @@ public class SwarmProvisioner implements Resettable {
       UUID caseId, SwarmConfig swarmConfig, StigmergyConfig stigConfig) {
     if (!active) {
       return List.of();
-    }
-    if (topologyProvider != null) {
-      var descriptor = topologyProvider.describeTopology(caseId);
-      if (descriptor.topologyType() == TopologyType.DISTRIBUTED) {
-        return List.of();
-      }
     }
     var state = cases.computeIfAbsent(caseId, k -> new CaseProvisionState());
 
@@ -374,12 +363,6 @@ public class SwarmProvisioner implements Resettable {
 
   public List<SwarmEvent> evaluateDeprovisioning(UUID caseId, SwarmConfig config) {
     if (!active) return List.of();
-    if (topologyProvider != null) {
-      var descriptor = topologyProvider.describeTopology(caseId);
-      if (descriptor.topologyType() == TopologyType.DISTRIBUTED) {
-        return List.of();
-      }
-    }
     var state = cases.get(caseId);
     if (state == null) return List.of();
 

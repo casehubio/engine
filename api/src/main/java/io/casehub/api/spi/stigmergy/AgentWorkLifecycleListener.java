@@ -38,4 +38,7 @@ public interface AgentWorkLifecycleListener {
   default void onRoleAdopted(UUID caseId, String agentId, String groupId, String role) {}
 
   default void onRoleReleased(UUID caseId, String agentId, String groupId, String role) {}
+
+  default void onTopologyChanged(
+      String unitId, String fromTopology, String toTopology, String tenancyId) {}
 }

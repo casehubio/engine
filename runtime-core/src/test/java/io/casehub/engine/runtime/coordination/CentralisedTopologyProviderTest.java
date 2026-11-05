@@ -15,32 +15,31 @@
  */
 package io.casehub.engine.runtime.coordination;
 
-import static org.assertj.core.api.Assertions.assertThat;
-
 import io.casehub.api.model.coordination.TopologyType;
-import java.util.UUID;
 import org.junit.jupiter.api.Test;
+
+import static org.assertj.core.api.Assertions.assertThat;
 
 class CentralisedTopologyProviderTest {
 
   private final CentralisedTopologyProvider provider = new CentralisedTopologyProvider();
 
-  @Test
-  void returns_centralised_topology() {
-    var descriptor = provider.describeTopology(UUID.randomUUID());
-    assertThat(descriptor.topologyType()).isEqualTo(TopologyType.CENTRALISED);
-  }
+    @Test
+    void returns_centralised_topology() {
+        var descriptor = provider.topologyFor("agent-1", "tenant-1");
+        assertThat(descriptor.topologyType()).isEqualTo(TopologyType.CENTRALISED);
+    }
 
   @Test
   void returns_empty_role_map() {
-    var descriptor = provider.describeTopology(UUID.randomUUID());
+    var descriptor = provider.topologyFor("agent-1", "tenant-1");
     assertThat(descriptor.agentRoles()).isEmpty();
   }
 
   @Test
-  void returns_same_shape_for_different_cases() {
-    var d1 = provider.describeTopology(UUID.randomUUID());
-    var d2 = provider.describeTopology(UUID.randomUUID());
+  void returns_same_shape_for_different_agents() {
+    var d1 = provider.topologyFor("agent-1", "tenant-1");
+    var d2 = provider.topologyFor("agent-2", "tenant-1");
     assertThat(d1.topologyType()).isEqualTo(d2.topologyType());
     assertThat(d1.agentRoles()).isEqualTo(d2.agentRoles());
   }

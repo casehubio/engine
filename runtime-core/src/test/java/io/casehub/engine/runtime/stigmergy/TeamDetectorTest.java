@@ -15,11 +15,6 @@
  */
 package io.casehub.engine.runtime.stigmergy;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.junit.jupiter.api.Assertions.assertTrue;
-
 import io.casehub.api.model.event.CaseHubEventType;
 import io.casehub.api.model.stigmergy.StigmergyConfig;
 import io.casehub.api.model.stigmergy.SwarmConfig;
@@ -30,12 +25,18 @@ import io.casehub.engine.common.internal.convergence.ActivityTracker;
 import io.casehub.engine.common.internal.observation.ObservationRegistry;
 import io.casehub.engine.common.internal.observation.RuleRegistry;
 import io.casehub.engine.common.internal.signal.SignalRegistry;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+
 import java.time.Duration;
 import java.util.List;
 import java.util.Set;
 import java.util.UUID;
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Test;
+
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 class TeamDetectorTest {
 
@@ -239,6 +240,83 @@ class TeamDetectorTest {
     var events = teamDetector.detect(caseId, swarmCfg);
     assertNotNull(events);
   }
+
+    @Test
+    void detectSuppressesAgentsInPromotedGroups() {
+        var groupQuery = org.mockito.Mockito.mock(io.casehub.api.spi.coordination.GroupMembershipQuery.class);
+        org.mockito.Mockito.when(groupQuery.unitsFor("a1", "test-tenant"))
+                           .thenReturn(List.of(new io.casehub.api.model.coordination.GroupMembership(
+                                   "group-1",
+                                   io.casehub.api.model.coordination.TopologyType.CENTRALISED,
+                                   io.casehub.api.model.coordination.GroupLifecycleState.ACTIVE,
+                                   null)));
+        org.mockito.Mockito.when(groupQuery.unitsFor("a2", "test-tenant"))
+                           .thenReturn(List.of());
+        org.mockito.Mockito.when(groupQuery.unitsFor("a3", "test-tenant"))
+                           .thenReturn(List.of());
+
+        var suppressingDetector = new TeamDetector(
+                observationRegistry, signalRegistry, roleTracker, coordinator, null, groupQuery);
+
+        var swarmConfig = new SwarmConfig(null, null, null, null, null, null, 0.3, 2, null);
+        var config      = new StigmergyConfig(null, null, swarmConfig);
+        coordinator.initializeCase(caseId, List.of("a1", "a2", "a3"), config, "test-tenant");
+        for (String id : List.of("a1", "a2", "a3")) {
+            coordinator.agentJoined(caseId, id, "b-" + id);
+            coordinator.agentActivated(caseId, id);
+        }
+
+        observationRegistry.registerObserver(
+                caseId, "a1", "b-a1", new TestObserver("obs", Set.of("temp", "pressure")), 20);
+        observationRegistry.registerObserver(
+                caseId, "a2", "b-a2", new TestObserver("obs", Set.of("temp", "pressure")), 20);
+        observationRegistry.registerObserver(
+                caseId, "a3", "b-a3", new TestObserver("obs", Set.of("temp", "pressure")), 20);
+
+        suppressingDetector.detect(caseId, swarmConfig);
+        var teams = suppressingDetector.getDetectedTeams(caseId);
+
+        assertEquals(1, teams.size());
+        assertFalse(teams.get(0).memberAgents().contains("a1"),
+                    "Agent in promoted group should be suppressed from team detection");
+        assertTrue(teams.get(0).memberAgents().containsAll(Set.of("a2", "a3")));
+    }
+
+  @Test
+  void detectDoesNotSuppressAgentsInDissolvedGroups() {
+    var groupQuery = org.mockito.Mockito.mock(io.casehub.api.spi.coordination.GroupMembershipQuery.class);
+    org.mockito.Mockito.when(groupQuery.unitsFor("a1", "test-tenant"))
+                       .thenReturn(List.of(new io.casehub.api.model.coordination.GroupMembership(
+                               "group-1",
+                               io.casehub.api.model.coordination.TopologyType.CENTRALISED,
+                               io.casehub.api.model.coordination.GroupLifecycleState.DISSOLVED,
+                               null)));
+    org.mockito.Mockito.when(groupQuery.unitsFor("a2", "test-tenant"))
+                       .thenReturn(List.of());
+
+    var detector = new TeamDetector(
+            observationRegistry, signalRegistry, roleTracker, coordinator, null, groupQuery);
+
+    var swarmConfig = new SwarmConfig(null, null, null, null, null, null, 0.3, 2, null);
+    var config      = new StigmergyConfig(null, null, swarmConfig);
+    coordinator.initializeCase(caseId, List.of("a1", "a2"), config, "test-tenant");
+    for (String id : List.of("a1", "a2")) {
+      coordinator.agentJoined(caseId, id, "b-" + id);
+      coordinator.agentActivated(caseId, id);
+    }
+
+    observationRegistry.registerObserver(
+            caseId, "a1", "b-a1", new TestObserver("obs", Set.of("temp")), 20);
+    observationRegistry.registerObserver(
+            caseId, "a2", "b-a2", new TestObserver("obs", Set.of("temp")), 20);
+
+    detector.detect(caseId, swarmConfig);
+    var teams = detector.getDetectedTeams(caseId);
+
+    assertFalse(teams.isEmpty(), "Agents in DISSOLVED groups should still be included");
+    assertTrue(teams.get(0).memberAgents().contains("a1"));
+  }
+
 
   static class TestObserver implements EnvironmentObserver {
     private final String type;

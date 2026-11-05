@@ -16,8 +16,12 @@
 package io.casehub.api.spi.coordination;
 
 import io.casehub.api.model.coordination.TopologyDescriptor;
-import java.util.UUID;
+import java.util.OptionalDouble;
 
 public interface TopologyProvider {
-  TopologyDescriptor describeTopology(UUID caseId);
+    TopologyDescriptor topologyFor(String agentId, String tenancyId);
+
+    default OptionalDouble effectiveSelfDetermination(String agentId, String tenancyId) {
+        return OptionalDouble.empty();
+    }
 }
