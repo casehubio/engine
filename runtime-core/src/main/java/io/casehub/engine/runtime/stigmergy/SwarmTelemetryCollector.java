@@ -66,7 +66,10 @@ public class SwarmTelemetryCollector {
               signalsDeposited,
               messagesSent,
               tasksCompleted,
-              activeTime));
+              activeTime,
+              0,
+              0L,
+              Duration.ZERO));
     }
     return List.copyOf(result);
   }
