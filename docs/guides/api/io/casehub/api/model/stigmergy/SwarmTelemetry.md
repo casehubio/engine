@@ -12,11 +12,17 @@
 
 ### `caseId` (`java.util.UUID`)
 
+### `invocationCount` (`int`)
+
 ### `messagesSent` (`int`)
 
 ### `signalsDeposited` (`int`)
 
 ### `tasksCompleted` (`int`)
+
+### `tokensConsumed` (`long`)
+
+### `totalLatency` (`java.time.Duration`)
 
 ### `workState` (`io.casehub.api.model.stigmergy.AgentWorkState`)
 
@@ -28,17 +34,23 @@
 
 ### `caseId` (`java.util.UUID`)
 
+### `invocationCount` (`int`)
+
 ### `messagesSent` (`int`)
 
 ### `signalsDeposited` (`int`)
 
 ### `tasksCompleted` (`int`)
 
+### `tokensConsumed` (`long`)
+
+### `totalLatency` (`java.time.Duration`)
+
 ### `workState` (`io.casehub.api.model.stigmergy.AgentWorkState`)
 
 ## Constructors
 
-### `public SwarmTelemetry(java.util.UUID caseId, java.lang.String agentId, io.casehub.api.model.stigmergy.AgentWorkState workState, int signalsDeposited, int messagesSent, int tasksCompleted, java.time.Duration activeTime)`
+### `public SwarmTelemetry(java.util.UUID caseId, java.lang.String agentId, io.casehub.api.model.stigmergy.AgentWorkState workState, int signalsDeposited, int messagesSent, int tasksCompleted, java.time.Duration activeTime, int invocationCount, long tokensConsumed, java.time.Duration totalLatency)`
 
 #### Parameters
 
@@ -49,6 +61,9 @@
 - `messagesSent` (`int`)
 - `tasksCompleted` (`int`)
 - `activeTime` (`java.time.Duration`)
+- `invocationCount` (`int`)
+- `tokensConsumed` (`long`)
+- `totalLatency` (`java.time.Duration`)
 
 ## Methods
 
@@ -66,6 +81,8 @@
 
 ### `public final int hashCode()`
 
+### `public int invocationCount()`
+
 ### `public int messagesSent()`
 
 ### `public int signalsDeposited()`
@@ -73,5 +90,9 @@
 ### `public int tasksCompleted()`
 
 ### `public final java.lang.String toString()`
+
+### `public long tokensConsumed()`
+
+### `public java.time.Duration totalLatency()`
 
 ### `public io.casehub.api.model.stigmergy.AgentWorkState workState()`
