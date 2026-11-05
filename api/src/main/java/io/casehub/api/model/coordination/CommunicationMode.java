@@ -22,5 +22,6 @@ package io.casehub.api.model.coordination;
 public enum CommunicationMode {
   STIGMERGY,
   DIRECT_MESSAGING,
-  BROADCAST
+  BROADCAST,
+  GROUP_CHANNEL
 }

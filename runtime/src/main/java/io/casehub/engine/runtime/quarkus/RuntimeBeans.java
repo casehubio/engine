@@ -90,8 +90,9 @@ import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.enterprise.event.Event;
 import jakarta.enterprise.inject.Instance;
 import jakarta.enterprise.inject.Produces;
-import java.util.stream.StreamSupport;
 import org.jboss.logging.Logger;
+
+import java.util.stream.StreamSupport;
 
 @ApplicationScoped
 public class RuntimeBeans {
@@ -1364,43 +1365,41 @@ public class RuntimeBeans {
         channelProvider.isResolvable() ? channelProvider.get() : null);
   }
 
-  @Produces
-  @ApplicationScoped
-  io.casehub.engine.runtime.stigmergy.SwarmProvisioner swarmProvisioner(
-      io.casehub.api.spi.WorkerProvisioner workerProvisioner,
-      Instance<io.casehub.engine.runtime.stigmergy.StigmergyCoordinator> coordinator,
-      io.casehub.engine.common.internal.signal.SignalRegistry signalRegistry,
-      io.casehub.engine.common.internal.convergence.ActivityTracker activityTracker,
-      Instance<io.casehub.engine.runtime.stigmergy.RoleTracker> roleTracker,
-      Instance<io.casehub.engine.runtime.stigmergy.TeamDetector> teamDetector,
-      Instance<io.casehub.engine.runtime.stigmergy.SwarmProgressTracker> progressTracker,
-      io.casehub.api.spi.DispatchBudget dispatchBudget,
-      Instance<io.casehub.api.spi.stigmergy.SwarmProvisioningAdvisor> advisorInstance,
-      Instance<io.casehub.api.spi.stigmergy.SwarmCoordinationListener> listenerInstances,
-      Instance<io.casehub.eidos.api.AgentGraphQuery> agentGraphQuery,
-      Instance<io.casehub.api.spi.CaseChannelProvider> channelProvider,
-      io.casehub.api.spi.coordination.TopologyProvider topologyProvider) {
-    if (!coordinator.isResolvable()
-        || !roleTracker.isResolvable()
-        || !teamDetector.isResolvable()
-        || !progressTracker.isResolvable()) {
-      return new io.casehub.engine.runtime.stigmergy.SwarmProvisioner();
+    @Produces
+    @ApplicationScoped
+    io.casehub.engine.runtime.stigmergy.SwarmProvisioner swarmProvisioner(
+            io.casehub.api.spi.WorkerProvisioner workerProvisioner,
+            Instance<io.casehub.engine.runtime.stigmergy.StigmergyCoordinator> coordinator,
+            io.casehub.engine.common.internal.signal.SignalRegistry signalRegistry,
+            io.casehub.engine.common.internal.convergence.ActivityTracker activityTracker,
+            Instance<io.casehub.engine.runtime.stigmergy.RoleTracker> roleTracker,
+            Instance<io.casehub.engine.runtime.stigmergy.TeamDetector> teamDetector,
+            Instance<io.casehub.engine.runtime.stigmergy.SwarmProgressTracker> progressTracker,
+            io.casehub.api.spi.DispatchBudget dispatchBudget,
+            Instance<io.casehub.api.spi.stigmergy.SwarmProvisioningAdvisor> advisorInstance,
+            Instance<io.casehub.api.spi.stigmergy.SwarmCoordinationListener> listenerInstances,
+            Instance<io.casehub.eidos.api.AgentGraphQuery> agentGraphQuery,
+            Instance<io.casehub.api.spi.CaseChannelProvider> channelProvider) {
+        if (!coordinator.isResolvable()
+            || !roleTracker.isResolvable()
+            || !teamDetector.isResolvable()
+            || !progressTracker.isResolvable()) {
+            return new io.casehub.engine.runtime.stigmergy.SwarmProvisioner();
+        }
+        return new io.casehub.engine.runtime.stigmergy.SwarmProvisioner(
+                workerProvisioner,
+                coordinator.get(),
+                signalRegistry,
+                activityTracker,
+                roleTracker.get(),
+                teamDetector.get(),
+                progressTracker.get(),
+                dispatchBudget,
+                advisorInstance.isResolvable() ? advisorInstance.get() : null,
+                listenerInstances.stream().toList(),
+                agentGraphQuery.isResolvable() ? agentGraphQuery.get() : null,
+                channelProvider.isResolvable() ? channelProvider.get() : null);
     }
-    return new io.casehub.engine.runtime.stigmergy.SwarmProvisioner(
-        workerProvisioner,
-        coordinator.get(),
-        signalRegistry,
-        activityTracker,
-        roleTracker.get(),
-        teamDetector.get(),
-        progressTracker.get(),
-        dispatchBudget,
-        advisorInstance.isResolvable() ? advisorInstance.get() : null,
-        listenerInstances.stream().toList(),
-        agentGraphQuery.isResolvable() ? agentGraphQuery.get() : null,
-        channelProvider.isResolvable() ? channelProvider.get() : null,
-        topologyProvider);
-  }
 
   @Produces
   @ApplicationScoped

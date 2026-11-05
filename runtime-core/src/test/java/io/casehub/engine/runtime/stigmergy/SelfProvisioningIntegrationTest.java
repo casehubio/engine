@@ -83,8 +83,7 @@ class SelfProvisioningIntegrationTest {
             null,
             java.util.List.of(),
             null,
-            null,
-            new io.casehub.engine.runtime.coordination.CentralisedTopologyProvider());
+            null);
     roleTracker.setSwarmProvisioner(swarmProvisioner);
 
     caseId = UUID.randomUUID();

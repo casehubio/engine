@@ -373,8 +373,7 @@ public class RuntimeManualConfig {
       ObjectProvider<io.casehub.api.spi.stigmergy.SwarmProvisioningAdvisor> advisorProvider,
       ObjectProvider<io.casehub.api.spi.stigmergy.SwarmCoordinationListener> listenerProvider,
       ObjectProvider<io.casehub.eidos.api.AgentGraphQuery> agentGraphQuery,
-      ObjectProvider<io.casehub.api.spi.CaseChannelProvider> channelProvider,
-      io.casehub.api.spi.coordination.TopologyProvider topologyProvider) {
+      ObjectProvider<io.casehub.api.spi.CaseChannelProvider> channelProvider) {
     return new io.casehub.engine.runtime.stigmergy.SwarmProvisioner(
         workerProvisioner,
         coordinator,
@@ -387,8 +386,7 @@ public class RuntimeManualConfig {
         advisorProvider.getIfAvailable(),
         listenerProvider.stream().toList(),
         agentGraphQuery.getIfAvailable(),
-        channelProvider.getIfAvailable(),
-        topologyProvider);
+        channelProvider.getIfAvailable());
   }
 
   @Bean

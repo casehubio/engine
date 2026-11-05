@@ -15,10 +15,12 @@
  */
 package io.casehub.engine.runtime.stigmergy;
 
+import io.casehub.api.model.coordination.GroupLifecycleState;
 import io.casehub.api.model.event.CaseHubEventType;
 import io.casehub.api.model.stigmergy.AgentState;
 import io.casehub.api.model.stigmergy.DetectedTeam;
 import io.casehub.api.model.stigmergy.SwarmConfig;
+import io.casehub.api.spi.coordination.GroupMembershipQuery;
 import io.casehub.api.spi.observation.NeighborRelation;
 import io.casehub.eidos.api.Collaborator;
 import io.casehub.eidos.api.RuntimeCollaborationQuery;
@@ -50,6 +52,7 @@ public class TeamDetector implements Resettable {
   private final RoleTracker roleTracker;
   private final StigmergyCoordinator coordinator;
   private final RuntimeCollaborationQuery collaborationQuery;
+  private final GroupMembershipQuery groupMembershipQuery;
 
   private final ConcurrentHashMap<UUID, CaseTeamState> cases = new ConcurrentHashMap<>();
 
@@ -59,11 +62,22 @@ public class TeamDetector implements Resettable {
       RoleTracker roleTracker,
       StigmergyCoordinator coordinator,
       RuntimeCollaborationQuery collaborationQuery) {
+    this(observationRegistry, signalRegistry, roleTracker, coordinator, collaborationQuery, null);
+  }
+
+  public TeamDetector(
+      ObservationRegistry observationRegistry,
+      SignalRegistry signalRegistry,
+      RoleTracker roleTracker,
+      StigmergyCoordinator coordinator,
+      RuntimeCollaborationQuery collaborationQuery,
+      GroupMembershipQuery groupMembershipQuery) {
     this.observationRegistry = observationRegistry;
     this.signalRegistry = signalRegistry;
     this.roleTracker = roleTracker;
     this.coordinator = coordinator;
     this.collaborationQuery = collaborationQuery;
+    this.groupMembershipQuery = groupMembershipQuery;
   }
 
   public TeamDetector(
@@ -87,6 +101,20 @@ public class TeamDetector implements Resettable {
     }
 
     List<String> agentIds = agents.stream().map(AgentState::agentId).toList();
+    if (groupMembershipQuery != null) {
+      String tenancyId = coordinator.getTenancyId(caseId);
+      if (tenancyId != null) {
+        agentIds = agentIds.stream().filter(id -> !isInPromotedGroup(id, tenancyId)).toList();
+      }
+    }
+    if (agentIds.size() < config.effectiveTeamMinSize()) {
+      if (!state.currentTeams.isEmpty()) {
+        var events = dissolveAll(state);
+        state.currentTeams = List.of();
+        return events;
+      }
+      return List.of();
+    }
     int n = agentIds.size();
 
     Map<String, Set<String>> interestKeys = new HashMap<>();
@@ -378,6 +406,16 @@ public class TeamDetector implements Resettable {
   @Override
   public void reset() {
     cases.clear();
+  }
+
+  private boolean isInPromotedGroup(String agentId, String tenancyId) {
+    try {
+      var units = groupMembershipQuery.unitsFor(agentId, tenancyId);
+      return units.stream().anyMatch(u -> u.lifecycleState() != GroupLifecycleState.DISSOLVED);
+    } catch (Exception e) {
+      LOG.warnf(e, "GroupMembershipQuery.unitsFor failed for agent %s", agentId);
+      return false;
+    }
   }
 
   private static class CaseTeamState {
