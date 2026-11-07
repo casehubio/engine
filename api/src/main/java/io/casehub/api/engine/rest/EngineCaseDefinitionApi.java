@@ -20,11 +20,11 @@ import io.casehub.api.acl.EngineResourceTypes;
 import io.casehub.api.view.CaseDefinitionPage;
 import io.casehub.api.view.CaseDefinitionView;
 import io.casehub.platform.api.acl.AclAction;
+import io.casehub.platform.api.mcp.ContextParam;
 import io.casehub.platform.api.mcp.McpDomain;
 import io.casehub.platform.api.mcp.PaginatedResponse;
 import io.casehub.platform.api.mcp.PathParam;
 import io.casehub.platform.api.mcp.PlatformQuery;
-import io.casehub.platform.api.mcp.ContextParam;
 import java.util.List;
 
 @McpDomain(
@@ -37,12 +37,15 @@ public interface EngineCaseDefinitionApi {
   @AclCheck(resourceType = EngineResourceTypes.CASE_DEFINITION, action = AclAction.READ)
   @PlatformQuery("List registered case definitions")
   @PaginatedResponse
-  CaseDefinitionPage listDefinitions(@ContextParam("tenancyId") String tenancyId, Integer offset, Integer limit);
+  CaseDefinitionPage listDefinitions(
+      @ContextParam("tenancyId") String tenancyId, Integer offset, Integer limit);
 
   @AclCheck(resourceType = EngineResourceTypes.CASE_DEFINITION, action = AclAction.READ)
   @PlatformQuery("Get definitions by namespace and name")
   List<CaseDefinitionView> getDefinitionsByName(
-      @PathParam String namespace, @PathParam String name, @ContextParam("tenancyId") String tenancyId);
+      @PathParam String namespace,
+      @PathParam String name,
+      @ContextParam("tenancyId") String tenancyId);
 
   @AclCheck(resourceType = EngineResourceTypes.CASE_DEFINITION, action = AclAction.READ)
   @PlatformQuery("Get a specific definition by namespace, name, and version")

@@ -37,21 +37,18 @@ import io.casehub.api.spi.DispatchBudgetQuery;
 import io.casehub.api.spi.PostRequest;
 import io.casehub.api.spi.ProvisionResult;
 import io.casehub.api.spi.WorkerProvisioner;
-
 import io.casehub.api.spi.stigmergy.SwarmCoordinationListener;
 import io.casehub.eidos.api.AgentGraphQuery;
 import io.casehub.engine.common.internal.convergence.ActivityTracker;
 import io.casehub.engine.common.internal.observation.ObservationRegistry;
 import io.casehub.engine.common.internal.observation.RuleRegistry;
 import io.casehub.engine.common.internal.signal.SignalRegistry;
-
 import io.casehub.engine.runtime.worker.NoOpCaseChannelProvider;
 import io.casehub.qhorus.api.message.MessageType;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
 import org.junit.jupiter.api.BeforeEach;
