@@ -21,6 +21,11 @@ import io.casehub.worker.api.PlannedAction;
  * Classifies a worker's planned action to determine whether it may proceed autonomously or must be
  * gated for human approval.
  *
+ * <p>This is the classification step in the {@link
+ * io.casehub.api.model.coordination.PlatformRole#SUPERVISOR} pipeline — it decides <em>whether</em>
+ * gating is needed. The gate itself is managed by {@link OversightGateService}, which implements
+ * {@link io.casehub.api.model.coordination.SupervisorGateBehavior}.
+ *
  * <p>Implementations must be annotated {@link RiskClassifier} and {@code @ApplicationScoped}. The
  * engine chains all registered implementations — the most restrictive result wins. Multiple
  * consumer repos can provide classifiers simultaneously without conflict.
