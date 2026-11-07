@@ -34,6 +34,7 @@ import io.casehub.platform.api.mcp.PlatformMutation;
 import io.casehub.platform.api.mcp.PlatformQuery;
 import io.casehub.platform.api.mcp.PlatformStream;
 import io.casehub.platform.api.mcp.RestStatus;
+import io.casehub.platform.api.mcp.ContextParam;
 import java.util.List;
 import java.util.UUID;
 import java.util.concurrent.Flow;
@@ -51,7 +52,7 @@ public interface EngineCaseApi {
       CaseStatus status,
       String namespace,
       String name,
-      String tenancyId,
+      @ContextParam("tenancyId") String tenancyId,
       Integer offset,
       Integer limit);
 
@@ -60,40 +61,40 @@ public interface EngineCaseApi {
       action = AclAction.READ,
       resourceIdParam = "caseId")
   @PlatformQuery("Get a case instance by ID")
-  CaseInstanceView getCaseById(@PathParam UUID caseId, String tenancyId);
+  CaseInstanceView getCaseById(@PathParam UUID caseId, @ContextParam("tenancyId") String tenancyId);
 
   @AclCheck(resourceType = EngineResourceTypes.CASE_DEFINITION, action = AclAction.WRITE)
   @PlatformMutation("Start a new case instance")
   @RestStatus(201)
-  CaseInstanceView startCase(StartCaseRequest request, String tenancyId);
+  CaseInstanceView startCase(StartCaseRequest request, @ContextParam("tenancyId") String tenancyId);
 
   @AclCheck(
       resourceType = EngineResourceTypes.CASE,
       action = AclAction.READ,
       resourceIdParam = "caseId")
   @PlatformQuery("Get full case context as JSON")
-  CaseContextView getCaseContext(@PathParam UUID caseId, String tenancyId);
+  CaseContextView getCaseContext(@PathParam UUID caseId, @ContextParam("tenancyId") String tenancyId);
 
   @AclCheck(
       resourceType = EngineResourceTypes.CASE,
       action = AclAction.READ,
       resourceIdParam = "caseId")
   @PlatformQuery("Get case context at a specific path")
-  CaseContextPathView getCaseContextPath(@PathParam UUID caseId, String path, String tenancyId);
+  CaseContextPathView getCaseContextPath(@PathParam UUID caseId, String path, @ContextParam("tenancyId") String tenancyId);
 
   @AclCheck(
       resourceType = EngineResourceTypes.CASE,
       action = AclAction.READ,
       resourceIdParam = "caseId")
   @PlatformQuery("Get plan items for a case")
-  List<PlanItemView> getPlanItems(@PathParam UUID caseId, String tenancyId);
+  List<PlanItemView> getPlanItems(@PathParam UUID caseId, @ContextParam("tenancyId") String tenancyId);
 
   @AclCheck(
       resourceType = EngineResourceTypes.CASE,
       action = AclAction.READ,
       resourceIdParam = "caseId")
   @PlatformQuery("Evaluate goals against live case context")
-  GoalEvaluationView getGoals(@PathParam UUID caseId, String tenancyId);
+  GoalEvaluationView getGoals(@PathParam UUID caseId, @ContextParam("tenancyId") String tenancyId);
 
   @AclCheck(
       resourceType = EngineResourceTypes.CASE,

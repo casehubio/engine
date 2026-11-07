@@ -24,6 +24,7 @@ import io.casehub.platform.api.mcp.McpDomain;
 import io.casehub.platform.api.mcp.PaginatedResponse;
 import io.casehub.platform.api.mcp.PathParam;
 import io.casehub.platform.api.mcp.PlatformQuery;
+import io.casehub.platform.api.mcp.ContextParam;
 import java.util.List;
 
 @McpDomain(
@@ -36,12 +37,12 @@ public interface EngineCaseDefinitionApi {
   @AclCheck(resourceType = EngineResourceTypes.CASE_DEFINITION, action = AclAction.READ)
   @PlatformQuery("List registered case definitions")
   @PaginatedResponse
-  CaseDefinitionPage listDefinitions(String tenancyId, Integer offset, Integer limit);
+  CaseDefinitionPage listDefinitions(@ContextParam("tenancyId") String tenancyId, Integer offset, Integer limit);
 
   @AclCheck(resourceType = EngineResourceTypes.CASE_DEFINITION, action = AclAction.READ)
   @PlatformQuery("Get definitions by namespace and name")
   List<CaseDefinitionView> getDefinitionsByName(
-      @PathParam String namespace, @PathParam String name, String tenancyId);
+      @PathParam String namespace, @PathParam String name, @ContextParam("tenancyId") String tenancyId);
 
   @AclCheck(resourceType = EngineResourceTypes.CASE_DEFINITION, action = AclAction.READ)
   @PlatformQuery("Get a specific definition by namespace, name, and version")
@@ -49,5 +50,5 @@ public interface EngineCaseDefinitionApi {
       @PathParam String namespace,
       @PathParam String name,
       @PathParam String version,
-      String tenancyId);
+      @ContextParam("tenancyId") String tenancyId);
 }

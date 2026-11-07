@@ -22,6 +22,7 @@ import io.casehub.eidos.api.AgentRegistry;
 import io.casehub.engine.common.spi.CaseDefinitionRegistry;
 import io.casehub.platform.api.mcp.McpDomain;
 import io.casehub.platform.api.mcp.PlatformQuery;
+import io.casehub.platform.api.mcp.ContextParam;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
 import java.util.List;
@@ -38,7 +39,7 @@ public class GalleryMcpAdapter {
 
   @PlatformQuery("Get agent descriptors for all workers in a case definition")
   public List<AgentDescriptor> getAgentDescriptors(
-      String namespace, String name, String version, String tenancyId) {
+      String namespace, String name, String version, @ContextParam("tenancyId") String tenancyId) {
     CaseDefinition def = resolveDefinition(namespace, name, version);
     return new AgentDescriptorProjection(agentRegistry).project(def, tenancyId);
   }
