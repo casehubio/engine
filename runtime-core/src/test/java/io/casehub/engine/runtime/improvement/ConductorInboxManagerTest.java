@@ -42,6 +42,12 @@ class ConductorInboxManagerTest {
   }
 
   @Test
+  void implements_supervisor_gate_behavior() {
+    assertThat(manager)
+        .isInstanceOf(io.casehub.api.model.coordination.SupervisorGateBehavior.class);
+  }
+
+  @Test
   void enqueueAndRetrievePending() {
     var entry = makeEntry(caseId, "e1", CodeEvolutionStages.RESEARCH_SCOPE);
     manager.enqueue(caseId, entry, TENANT);
