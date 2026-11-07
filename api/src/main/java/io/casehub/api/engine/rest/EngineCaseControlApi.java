@@ -25,6 +25,7 @@ import io.casehub.platform.api.acl.AclAction;
 import io.casehub.platform.api.mcp.McpDomain;
 import io.casehub.platform.api.mcp.PathParam;
 import io.casehub.platform.api.mcp.PlatformMutation;
+import io.casehub.platform.api.mcp.ContextParam;
 import java.util.UUID;
 
 @McpDomain(
@@ -38,26 +39,26 @@ public interface EngineCaseControlApi {
       action = AclAction.ADMIN,
       resourceIdParam = "caseId")
   @PlatformMutation("Suspend a running case")
-  CaseControlView suspendCase(@PathParam UUID caseId, CaseControlRequest request, String tenancyId);
+  CaseControlView suspendCase(@PathParam UUID caseId, CaseControlRequest request, @ContextParam("tenancyId") String tenancyId);
 
   @AclCheck(
       resourceType = EngineResourceTypes.CASE,
       action = AclAction.ADMIN,
       resourceIdParam = "caseId")
   @PlatformMutation("Resume a suspended case")
-  CaseControlView resumeCase(@PathParam UUID caseId, CaseControlRequest request, String tenancyId);
+  CaseControlView resumeCase(@PathParam UUID caseId, CaseControlRequest request, @ContextParam("tenancyId") String tenancyId);
 
   @AclCheck(
       resourceType = EngineResourceTypes.CASE,
       action = AclAction.ADMIN,
       resourceIdParam = "caseId")
   @PlatformMutation("Cancel a case")
-  CaseControlView cancelCase(@PathParam UUID caseId, CaseControlRequest request, String tenancyId);
+  CaseControlView cancelCase(@PathParam UUID caseId, CaseControlRequest request, @ContextParam("tenancyId") String tenancyId);
 
   @AclCheck(
       resourceType = EngineResourceTypes.CASE,
       action = AclAction.WRITE,
       resourceIdParam = "caseId")
   @PlatformMutation("Send a signal to a case")
-  SignalResultView sendSignal(@PathParam UUID caseId, SendSignalRequest request, String tenancyId);
+  SignalResultView sendSignal(@PathParam UUID caseId, SendSignalRequest request, @ContextParam("tenancyId") String tenancyId);
 }

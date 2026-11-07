@@ -37,6 +37,7 @@ import io.casehub.platform.api.mcp.McpDomain;
 import io.casehub.platform.api.mcp.PathParam;
 import io.casehub.platform.api.mcp.PlatformMutation;
 import io.casehub.platform.api.mcp.PlatformQuery;
+import io.casehub.platform.api.mcp.ContextParam;
 import jakarta.annotation.Nullable;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
@@ -65,7 +66,7 @@ public class EvolutionMcpAdapter {
       action = AclAction.READ,
       resourceIdParam = "caseId")
   @PlatformQuery("Get deny patterns for a case")
-  public DenyPatternView getDenyPatterns(@PathParam UUID caseId, String tenancyId) {
+  public DenyPatternView getDenyPatterns(@PathParam UUID caseId, @ContextParam("tenancyId") String tenancyId) {
     caseService.requireCaseAccess(caseId, AclAction.READ);
     return delegate.getDenyPatterns(caseId, tenancyId);
   }
@@ -77,7 +78,7 @@ public class EvolutionMcpAdapter {
   @PlatformQuery("Get evolution summary with optional scope filters")
   public EvolutionSummary getSummary(
       @PathParam UUID caseId,
-      String tenancyId,
+      @ContextParam("tenancyId") String tenancyId,
       @Nullable String areaId,
       @Nullable String category,
       @Nullable Integer timeWindowMinutes,
@@ -92,7 +93,7 @@ public class EvolutionMcpAdapter {
       action = AclAction.READ,
       resourceIdParam = "caseId")
   @PlatformQuery("Get conductor inbox entries for a case")
-  public List<ConductorInboxEntry> getInbox(@PathParam UUID caseId, String tenancyId) {
+  public List<ConductorInboxEntry> getInbox(@PathParam UUID caseId, @ContextParam("tenancyId") String tenancyId) {
     caseService.requireCaseAccess(caseId, AclAction.READ);
     return delegate.getInbox(caseId, tenancyId);
   }
@@ -104,7 +105,7 @@ public class EvolutionMcpAdapter {
   @PlatformQuery("Get evolution readiness report")
   public ReadinessReport getReadinessReport(
       @PathParam UUID caseId,
-      String tenancyId,
+      @ContextParam("tenancyId") String tenancyId,
       ComplianceLevel targetLevel,
       ImprovementConfig config) {
     caseService.requireCaseAccess(caseId, AclAction.READ);
@@ -117,7 +118,7 @@ public class EvolutionMcpAdapter {
       resourceIdParam = "caseId")
   @PlatformQuery("Get full evolution state snapshot")
   public EvolutionStateSnapshot getEvolutionState(
-      @PathParam UUID caseId, String tenancyId, ImprovementConfig config) {
+      @PathParam UUID caseId, @ContextParam("tenancyId") String tenancyId, ImprovementConfig config) {
     caseService.requireCaseAccess(caseId, AclAction.READ);
     return delegate.getEvolutionState(caseId, tenancyId, config);
   }
@@ -133,7 +134,7 @@ public class EvolutionMcpAdapter {
       resourceIdParam = "caseId")
   @PlatformQuery("Get artifact trail for an improvement case")
   public ArtifactManifest getArtifactTrail(
-      @PathParam UUID caseId, String tenancyId, @PathParam UUID improvementCaseId) {
+      @PathParam UUID caseId, @ContextParam("tenancyId") String tenancyId, @PathParam UUID improvementCaseId) {
     caseService.requireCaseAccess(caseId, AclAction.READ);
     return delegate.getArtifactTrail(caseId, tenancyId, improvementCaseId);
   }
@@ -144,7 +145,7 @@ public class EvolutionMcpAdapter {
       resourceIdParam = "caseId")
   @PlatformQuery("Get active improvement stream progress")
   public List<EvolutionStateSnapshot.ImprovementStreamView> getStreamProgress(
-      @PathParam UUID caseId, String tenancyId) {
+      @PathParam UUID caseId, @ContextParam("tenancyId") String tenancyId) {
     caseService.requireCaseAccess(caseId, AclAction.READ);
     return delegate.getStreamProgress(caseId, tenancyId);
   }
@@ -154,7 +155,7 @@ public class EvolutionMcpAdapter {
       action = AclAction.WRITE,
       resourceIdParam = "caseId")
   @PlatformMutation("Add a deny pattern to block improvement categories")
-  public void addDenyPattern(@PathParam UUID caseId, String tenancyId, String pattern) {
+  public void addDenyPattern(@PathParam UUID caseId, @ContextParam("tenancyId") String tenancyId, String pattern) {
     caseService.requireCaseAccess(caseId, AclAction.WRITE);
     delegate.addDenyPattern(caseId, tenancyId, pattern);
   }
@@ -164,7 +165,7 @@ public class EvolutionMcpAdapter {
       action = AclAction.WRITE,
       resourceIdParam = "caseId")
   @PlatformMutation("Remove a deny pattern")
-  public void removeDenyPattern(@PathParam UUID caseId, String tenancyId, String pattern) {
+  public void removeDenyPattern(@PathParam UUID caseId, @ContextParam("tenancyId") String tenancyId, String pattern) {
     caseService.requireCaseAccess(caseId, AclAction.WRITE);
     delegate.removeDenyPattern(caseId, tenancyId, pattern);
   }
@@ -176,7 +177,7 @@ public class EvolutionMcpAdapter {
   @PlatformMutation("Resolve a conductor gate decision")
   public void resolveGate(
       @PathParam UUID caseId,
-      String tenancyId,
+      @ContextParam("tenancyId") String tenancyId,
       String entryId,
       ConductorInboxEntry.Status outcome,
       @Nullable String reason,
@@ -192,7 +193,7 @@ public class EvolutionMcpAdapter {
   @PlatformMutation("Add an escalation watch pattern")
   public void addWatchPattern(
       @PathParam UUID caseId,
-      String tenancyId,
+      @ContextParam("tenancyId") String tenancyId,
       @Nullable String category,
       @Nullable String areaId,
       @Nullable String targetPattern,
@@ -206,7 +207,7 @@ public class EvolutionMcpAdapter {
       action = AclAction.WRITE,
       resourceIdParam = "caseId")
   @PlatformMutation("Remove an escalation watch pattern")
-  public void removeWatchPattern(@PathParam UUID caseId, String tenancyId, String patternId) {
+  public void removeWatchPattern(@PathParam UUID caseId, @ContextParam("tenancyId") String tenancyId, String patternId) {
     caseService.requireCaseAccess(caseId, AclAction.WRITE);
     delegate.removeWatchPattern(caseId, tenancyId, patternId);
   }
@@ -217,7 +218,7 @@ public class EvolutionMcpAdapter {
       resourceIdParam = "caseId")
   @PlatformMutation("Block an improvement stream")
   public void blockImprovement(
-      @PathParam UUID caseId, String tenancyId, @PathParam UUID improvementId, UUID blockedBy) {
+      @PathParam UUID caseId, @ContextParam("tenancyId") String tenancyId, @PathParam UUID improvementId, UUID blockedBy) {
     caseService.requireCaseAccess(caseId, AclAction.WRITE);
     delegate.blockImprovement(caseId, tenancyId, improvementId, blockedBy);
   }
@@ -228,7 +229,7 @@ public class EvolutionMcpAdapter {
       resourceIdParam = "caseId")
   @PlatformMutation("Unblock a previously blocked improvement stream")
   public void unblockImprovement(
-      @PathParam UUID caseId, String tenancyId, @PathParam UUID improvementId) {
+      @PathParam UUID caseId, @ContextParam("tenancyId") String tenancyId, @PathParam UUID improvementId) {
     caseService.requireCaseAccess(caseId, AclAction.WRITE);
     delegate.unblockImprovement(caseId, tenancyId, improvementId);
   }
@@ -239,7 +240,7 @@ public class EvolutionMcpAdapter {
       resourceIdParam = "caseId")
   @PlatformMutation("Pause a category from receiving improvements")
   public void pauseCategory(
-      @PathParam UUID caseId, String tenancyId, String category, int durationMinutes) {
+      @PathParam UUID caseId, @ContextParam("tenancyId") String tenancyId, String category, int durationMinutes) {
     caseService.requireCaseAccess(caseId, AclAction.WRITE);
     delegate.pauseCategory(caseId, tenancyId, category, durationMinutes);
   }
@@ -249,7 +250,7 @@ public class EvolutionMcpAdapter {
       action = AclAction.WRITE,
       resourceIdParam = "caseId")
   @PlatformMutation("Unpause a previously paused category")
-  public void unpauseCategory(@PathParam UUID caseId, String tenancyId, String category) {
+  public void unpauseCategory(@PathParam UUID caseId, @ContextParam("tenancyId") String tenancyId, String category) {
     caseService.requireCaseAccess(caseId, AclAction.WRITE);
     delegate.unpauseCategory(caseId, tenancyId, category);
   }
@@ -271,7 +272,7 @@ public class EvolutionMcpAdapter {
   @PlatformMutation("Trigger evolution readiness validation")
   public ReadinessReport triggerReadinessValidation(
       @PathParam UUID caseId,
-      String tenancyId,
+      @ContextParam("tenancyId") String tenancyId,
       ComplianceLevel targetLevel,
       ImprovementConfig config) {
     caseService.requireCaseAccess(caseId, AclAction.WRITE);
@@ -283,7 +284,7 @@ public class EvolutionMcpAdapter {
       action = AclAction.ADMIN,
       resourceIdParam = "caseId")
   @PlatformMutation("Set gate policy for evolution lifecycle gates")
-  public void setGatePolicy(@PathParam UUID caseId, String tenancyId, GatePolicy policy) {
+  public void setGatePolicy(@PathParam UUID caseId, @ContextParam("tenancyId") String tenancyId, GatePolicy policy) {
     caseService.requireCaseAccess(caseId, AclAction.ADMIN);
     delegate.setGatePolicy(caseId, tenancyId, policy);
   }
@@ -293,7 +294,7 @@ public class EvolutionMcpAdapter {
       action = AclAction.READ,
       resourceIdParam = "caseId")
   @PlatformQuery("Get active watch patterns for a case")
-  public List<WatchPattern> getWatchPatterns(@PathParam UUID caseId, String tenancyId) {
+  public List<WatchPattern> getWatchPatterns(@PathParam UUID caseId, @ContextParam("tenancyId") String tenancyId) {
     caseService.requireCaseAccess(caseId, AclAction.READ);
     return delegate.getWatchPatterns(caseId, tenancyId);
   }
@@ -303,7 +304,7 @@ public class EvolutionMcpAdapter {
       action = AclAction.READ,
       resourceIdParam = "caseId")
   @PlatformQuery("Get gate policy for a case")
-  public GatePolicy getGatePolicy(@PathParam UUID caseId, String tenancyId) {
+  public GatePolicy getGatePolicy(@PathParam UUID caseId, @ContextParam("tenancyId") String tenancyId) {
     caseService.requireCaseAccess(caseId, AclAction.READ);
     return delegate.getGatePolicy(caseId, tenancyId);
   }

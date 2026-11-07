@@ -24,6 +24,7 @@ import io.casehub.platform.api.mcp.PaginatedResponse;
 import io.casehub.platform.api.mcp.PathParam;
 import io.casehub.platform.api.mcp.PlatformQuery;
 import io.casehub.platform.api.mcp.QueryParam;
+import io.casehub.platform.api.mcp.ContextParam;
 import java.util.List;
 import java.util.UUID;
 
@@ -41,7 +42,7 @@ public interface EngineEventLogApi {
   @PaginatedResponse
   EventLogPage getEventLog(
       @PathParam UUID caseId,
-      String tenancyId,
+      @ContextParam("tenancyId") String tenancyId,
       Integer offset,
       Integer limit,
       @QueryParam("eventTypes") List<String> eventTypes,
