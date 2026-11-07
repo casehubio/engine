@@ -27,6 +27,7 @@ import io.casehub.api.view.GoalEvaluationView;
 import io.casehub.api.view.PlanItemView;
 import io.casehub.api.view.StartCaseRequest;
 import io.casehub.platform.api.acl.AclAction;
+import io.casehub.platform.api.mcp.ContextParam;
 import io.casehub.platform.api.mcp.McpDomain;
 import io.casehub.platform.api.mcp.PaginatedResponse;
 import io.casehub.platform.api.mcp.PathParam;
@@ -34,7 +35,6 @@ import io.casehub.platform.api.mcp.PlatformMutation;
 import io.casehub.platform.api.mcp.PlatformQuery;
 import io.casehub.platform.api.mcp.PlatformStream;
 import io.casehub.platform.api.mcp.RestStatus;
-import io.casehub.platform.api.mcp.ContextParam;
 import java.util.List;
 import java.util.UUID;
 import java.util.concurrent.Flow;
@@ -73,21 +73,24 @@ public interface EngineCaseApi {
       action = AclAction.READ,
       resourceIdParam = "caseId")
   @PlatformQuery("Get full case context as JSON")
-  CaseContextView getCaseContext(@PathParam UUID caseId, @ContextParam("tenancyId") String tenancyId);
+  CaseContextView getCaseContext(
+      @PathParam UUID caseId, @ContextParam("tenancyId") String tenancyId);
 
   @AclCheck(
       resourceType = EngineResourceTypes.CASE,
       action = AclAction.READ,
       resourceIdParam = "caseId")
   @PlatformQuery("Get case context at a specific path")
-  CaseContextPathView getCaseContextPath(@PathParam UUID caseId, String path, @ContextParam("tenancyId") String tenancyId);
+  CaseContextPathView getCaseContextPath(
+      @PathParam UUID caseId, String path, @ContextParam("tenancyId") String tenancyId);
 
   @AclCheck(
       resourceType = EngineResourceTypes.CASE,
       action = AclAction.READ,
       resourceIdParam = "caseId")
   @PlatformQuery("Get plan items for a case")
-  List<PlanItemView> getPlanItems(@PathParam UUID caseId, @ContextParam("tenancyId") String tenancyId);
+  List<PlanItemView> getPlanItems(
+      @PathParam UUID caseId, @ContextParam("tenancyId") String tenancyId);
 
   @AclCheck(
       resourceType = EngineResourceTypes.CASE,

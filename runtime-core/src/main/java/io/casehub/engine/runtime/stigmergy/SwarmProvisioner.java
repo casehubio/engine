@@ -40,7 +40,6 @@ import io.casehub.engine.common.internal.convergence.ActivityTracker;
 import io.casehub.engine.common.internal.signal.SignalRegistry;
 import io.casehub.engine.common.spi.Resettable;
 import io.casehub.qhorus.api.message.MessageType;
-
 import java.time.Duration;
 import java.time.Instant;
 import java.util.ArrayList;
@@ -78,48 +77,48 @@ public class SwarmProvisioner implements Resettable {
 
   private final ConcurrentHashMap<UUID, CaseProvisionState> cases = new ConcurrentHashMap<>();
 
-    public SwarmProvisioner(
-            WorkerProvisioner workerProvisioner,
-            StigmergyCoordinator coordinator,
-            SignalRegistry signalRegistry,
-            ActivityTracker activityTracker,
-            RoleTracker roleTracker,
-            TeamDetector teamDetector,
-            SwarmProgressTracker progressTracker,
-            DispatchBudget dispatchBudget,
-            SwarmProvisioningAdvisor advisor,
-            List<SwarmCoordinationListener> listeners,
-            AgentGraphQuery agentGraphQuery,
-            CaseChannelProvider channelProvider) {
-        this.active            = true;
-        this.workerProvisioner = workerProvisioner;
-        this.coordinator       = coordinator;
-        this.signalRegistry    = signalRegistry;
-        this.activityTracker   = activityTracker;
-        this.roleTracker       = roleTracker;
-        this.teamDetector      = teamDetector;
-        this.progressTracker   = progressTracker;
-        this.dispatchBudget    = dispatchBudget;
-        this.advisor           = advisor;
-        this.listeners         = listeners != null ? List.copyOf(listeners) : List.of();
-        this.agentGraphQuery   = agentGraphQuery;
-        this.channelProvider   = channelProvider;
-    }
+  public SwarmProvisioner(
+      WorkerProvisioner workerProvisioner,
+      StigmergyCoordinator coordinator,
+      SignalRegistry signalRegistry,
+      ActivityTracker activityTracker,
+      RoleTracker roleTracker,
+      TeamDetector teamDetector,
+      SwarmProgressTracker progressTracker,
+      DispatchBudget dispatchBudget,
+      SwarmProvisioningAdvisor advisor,
+      List<SwarmCoordinationListener> listeners,
+      AgentGraphQuery agentGraphQuery,
+      CaseChannelProvider channelProvider) {
+    this.active = true;
+    this.workerProvisioner = workerProvisioner;
+    this.coordinator = coordinator;
+    this.signalRegistry = signalRegistry;
+    this.activityTracker = activityTracker;
+    this.roleTracker = roleTracker;
+    this.teamDetector = teamDetector;
+    this.progressTracker = progressTracker;
+    this.dispatchBudget = dispatchBudget;
+    this.advisor = advisor;
+    this.listeners = listeners != null ? List.copyOf(listeners) : List.of();
+    this.agentGraphQuery = agentGraphQuery;
+    this.channelProvider = channelProvider;
+  }
 
   public SwarmProvisioner() {
-    this.active            = false;
+    this.active = false;
     this.workerProvisioner = null;
-    this.coordinator       = null;
-    this.signalRegistry    = null;
-    this.activityTracker   = null;
-    this.roleTracker       = null;
-    this.teamDetector      = null;
-    this.progressTracker   = null;
-    this.dispatchBudget    = null;
-    this.advisor           = null;
-    this.listeners         = List.of();
-    this.agentGraphQuery   = null;
-    this.channelProvider   = null;
+    this.coordinator = null;
+    this.signalRegistry = null;
+    this.activityTracker = null;
+    this.roleTracker = null;
+    this.teamDetector = null;
+    this.progressTracker = null;
+    this.dispatchBudget = null;
+    this.advisor = null;
+    this.listeners = List.of();
+    this.agentGraphQuery = null;
+    this.channelProvider = null;
   }
 
   private void postCoordinationEvent(UUID caseId, String eventType, Map<String, Object> payload) {
