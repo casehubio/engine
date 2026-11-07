@@ -15,9 +15,30 @@
  */
 package io.casehub.api.model.coordination;
 
+/**
+ * Intrinsic behavioral contracts — the platform implements specific behavior for these roles.
+ *
+ * @see AgentRole
+ * @see StructuralRole
+ */
 public enum PlatformRole {
   COORDINATOR(StructuralRole.INITIATOR),
+
+  /**
+   * Oversees, approves/rejects, gates progression. Implemented at two granularities via {@link
+   * SupervisorGateBehavior}:
+   *
+   * <ul>
+   *   <li>{@link io.casehub.api.spi.OversightGateService} — worker-action gates for {@code
+   *       PlannedAction} approval
+   *   <li>{@code ConductorInboxManager} — evolution-pipeline gates for research stage approval
+   * </ul>
+   *
+   * <p>Classification (deciding <em>whether</em> gating is needed) is handled by {@link
+   * io.casehub.api.spi.ActionRiskClassifier}, which precedes the gate.
+   */
   SUPERVISOR(StructuralRole.INITIATOR),
+
   JUDGE(StructuralRole.PEER),
   MODERATOR(StructuralRole.PEER);
 

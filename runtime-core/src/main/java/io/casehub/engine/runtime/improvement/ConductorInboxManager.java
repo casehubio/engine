@@ -15,6 +15,7 @@
  */
 package io.casehub.engine.runtime.improvement;
 
+import io.casehub.api.model.coordination.SupervisorGateBehavior;
 import io.casehub.api.model.stigmergy.ConductorDecision;
 import io.casehub.api.model.stigmergy.ConductorInboxEntry;
 import io.casehub.api.model.stigmergy.WatchPattern;
@@ -24,7 +25,20 @@ import java.time.Instant;
 import java.util.List;
 import java.util.UUID;
 
-public class ConductorInboxManager {
+/**
+ * Manages the evolution conductor's approval inbox — the {@link SupervisorGateBehavior}
+ * implementation for evolution-pipeline gates.
+ *
+ * <p>Operates at the pipeline-stage level (research scope, hypothesis approval, PR review) with
+ * evolution-specific context: escalation triggers, watch patterns, confidence scores, categories,
+ * and area IDs.
+ *
+ * <p>Complementary to {@link io.casehub.api.spi.OversightGateService}, which provides {@link
+ * SupervisorGateBehavior} at the worker-action level for individual {@code PlannedAction}s.
+ *
+ * @see io.casehub.api.model.coordination.PlatformRole#SUPERVISOR
+ */
+public class ConductorInboxManager implements SupervisorGateBehavior {
 
   private final ConductorInboxRepository inboxRepository;
   private final WatchPatternStore watchPatternStore;
