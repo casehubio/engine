@@ -15,20 +15,20 @@
  */
 package io.casehub.engine.runtime.coordination;
 
+import static org.assertj.core.api.Assertions.assertThat;
+
 import io.casehub.api.model.coordination.TopologyType;
 import org.junit.jupiter.api.Test;
-
-import static org.assertj.core.api.Assertions.assertThat;
 
 class CentralisedTopologyProviderTest {
 
   private final CentralisedTopologyProvider provider = new CentralisedTopologyProvider();
 
-    @Test
-    void returns_centralised_topology() {
-        var descriptor = provider.topologyFor("agent-1", "tenant-1");
-        assertThat(descriptor.topologyType()).isEqualTo(TopologyType.CENTRALISED);
-    }
+  @Test
+  void returns_centralised_topology() {
+    var descriptor = provider.topologyFor("agent-1", "tenant-1");
+    assertThat(descriptor.topologyType()).isEqualTo(TopologyType.CENTRALISED);
+  }
 
   @Test
   void returns_empty_role_map() {

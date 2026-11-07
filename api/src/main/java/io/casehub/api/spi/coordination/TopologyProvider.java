@@ -19,9 +19,9 @@ import io.casehub.api.model.coordination.TopologyDescriptor;
 import java.util.OptionalDouble;
 
 public interface TopologyProvider {
-    TopologyDescriptor topologyFor(String agentId, String tenancyId);
+  TopologyDescriptor topologyFor(String agentId, String tenancyId);
 
-    default OptionalDouble effectiveSelfDetermination(String agentId, String tenancyId) {
-        return OptionalDouble.empty();
-    }
+  default OptionalDouble effectiveSelfDetermination(String agentId, String tenancyId) {
+    return OptionalDouble.empty();
+  }
 }
