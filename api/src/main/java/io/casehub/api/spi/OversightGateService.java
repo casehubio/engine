@@ -15,9 +15,18 @@
  */
 package io.casehub.api.spi;
 
+import io.casehub.api.model.coordination.SupervisorGateBehavior;
 import java.util.UUID;
 
-public interface OversightGateService {
+/**
+ * Engine SPI for approval-gating agent actions. Implements {@link SupervisorGateBehavior} — the
+ * {@link io.casehub.api.model.coordination.PlatformRole#SUPERVISOR} gating contract at the
+ * worker-action level.
+ *
+ * <p>{@link ActionRiskClassifier} determines whether a {@link io.casehub.worker.api.PlannedAction}
+ * requires gating. When gating is required, this service manages the gate lifecycle.
+ */
+public interface OversightGateService extends SupervisorGateBehavior {
   GateOutcome openGate(String agentId, String commitmentId, String outcome, String tenancyId);
 
   void fulfill(UUID gateId, String rawOutput);
