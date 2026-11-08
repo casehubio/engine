@@ -449,4 +449,74 @@ class StigmergyCoordinatorTest {
       taskAssignments.add(new TaskAssignment(caseId, agentId, taskId, context));
     }
   }
+
+  @Test
+  @SuppressWarnings("unchecked")
+  void detectPatterns_interestConvergence_includesWatchingAgents() {
+    var coordConfig = new CoordinationConfig(null, null, 0.5);
+    var convConfig = new StigmergyConfig(null, coordConfig, null);
+    coordinator.initializeCase(caseId, List.of("agent-a", "agent-b"), convConfig, "test-tenant");
+    coordinator.agentJoined(caseId, "agent-a", "binding-a");
+    coordinator.agentActivated(caseId, "agent-a");
+    coordinator.agentJoined(caseId, "agent-b", "binding-b");
+    coordinator.agentActivated(caseId, "agent-b");
+
+    observationRegistry.registerObserver(
+        caseId,
+        "agent-a",
+        "binding-a",
+        new io.casehub.api.spi.observation.EnvironmentObserver() {
+          @Override
+          public String observerType() {
+            return "test";
+          }
+
+          @Override
+          public java.util.Set<String> watchedKeys() {
+            return java.util.Set.of("status");
+          }
+
+          @Override
+          public List<io.casehub.api.spi.observation.Observation> observe(
+              io.casehub.api.spi.observation.ObservationContext ctx) {
+            return List.of();
+          }
+        },
+        50);
+    observationRegistry.registerObserver(
+        caseId,
+        "agent-b",
+        "binding-b",
+        new io.casehub.api.spi.observation.EnvironmentObserver() {
+          @Override
+          public String observerType() {
+            return "test";
+          }
+
+          @Override
+          public java.util.Set<String> watchedKeys() {
+            return java.util.Set.of("status");
+          }
+
+          @Override
+          public List<io.casehub.api.spi.observation.Observation> observe(
+              io.casehub.api.spi.observation.ObservationContext ctx) {
+            return List.of();
+          }
+        },
+        50);
+
+    var events = coordinator.detectPatterns(caseId, convConfig);
+    var convergence =
+        events.stream()
+            .filter(
+                e -> e.type() == StigmergyCoordinator.CoordinationEvent.Type.INTEREST_CONVERGENCE)
+            .findFirst();
+
+    assertTrue(convergence.isPresent(), "Expected INTEREST_CONVERGENCE event");
+    var agents = (java.util.Set<String>) convergence.get().metadata().get("watchingAgents");
+    assertNotNull(agents, "Expected watchingAgents in metadata");
+    assertTrue(agents.contains("agent-a"));
+    assertTrue(agents.contains("agent-b"));
+  }
 }

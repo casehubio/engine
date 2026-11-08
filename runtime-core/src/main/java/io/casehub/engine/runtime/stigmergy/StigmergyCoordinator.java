@@ -372,6 +372,7 @@ public class StigmergyCoordinator implements AgentWorkStateNotifier, Resettable 
                   Map.of(
                       "hotspotKey", entry.getKey(),
                       "watchingAgentCount", entry.getValue().size(),
+                      "watchingAgents", Set.copyOf(entry.getValue()),
                       "hotspotScore", score)));
           postCoordinationEvent(
               caseId,

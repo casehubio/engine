@@ -152,15 +152,21 @@ public class SignalRegistry implements Resettable {
   public Map<String, PerceivedSignal> perceive(
       UUID caseId, double effectiveZeroThreshold, Instant now) {
     ConcurrentHashMap<String, Signal> caseSignals = signals.get(caseId);
-    if (caseSignals == null) return Map.of();
+    if (caseSignals == null) {
+      return Map.of();
+    }
 
     Map<String, PerceivedSignal> result = new LinkedHashMap<>();
     for (Signal signal : caseSignals.values()) {
-      if (signal.expired()) continue;
+      if (signal.expired()) {
+        continue;
+      }
       double effective =
           SignalDecay.effectiveStrength(
               signal.strength(), signal.lastReinforced(), signal.halfLife(), now);
-      if (effective < effectiveZeroThreshold) continue;
+      if (effective < effectiveZeroThreshold) {
+        continue;
+      }
       result.put(
           signal.name(),
           new PerceivedSignal(
@@ -168,7 +174,8 @@ public class SignalRegistry implements Resettable {
               effective,
               signal.reinforcementCount(),
               signal.lastSource(),
-              Duration.between(signal.lastReinforced(), now)));
+              Duration.between(signal.lastReinforced(), now),
+              signal.sources()));
     }
     return Collections.unmodifiableMap(result);
   }

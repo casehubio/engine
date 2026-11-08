@@ -50,7 +50,7 @@ class SignalStrengthObserverTest {
     SignalStrengthObserver observer =
         SignalStrengthObserver.of("trail", ThresholdObserver.Operator.GT, 0.5);
     PerceivedSignal signal =
-        new PerceivedSignal("trail", 0.8, 3, "agent-a", Duration.ofSeconds(30));
+        new PerceivedSignal("trail", 0.8, 3, "agent-a", Duration.ofSeconds(30), Set.of("agent-a"));
     ObservationContext ctx = contextWithSignals(Map.of("trail", signal));
 
     List<Observation> results = observer.observe(ctx);
@@ -64,7 +64,7 @@ class SignalStrengthObserverTest {
     SignalStrengthObserver observer =
         SignalStrengthObserver.of("trail", ThresholdObserver.Operator.GT, 0.5);
     PerceivedSignal signal =
-        new PerceivedSignal("trail", 0.3, 1, "agent-a", Duration.ofSeconds(30));
+        new PerceivedSignal("trail", 0.3, 1, "agent-a", Duration.ofSeconds(30), Set.of("agent-a"));
     ObservationContext ctx = contextWithSignals(Map.of("trail", signal));
 
     List<Observation> results = observer.observe(ctx);
@@ -86,7 +86,8 @@ class SignalStrengthObserverTest {
     SignalStrengthObserver observer =
         SignalStrengthObserver.of("weak-signal", ThresholdObserver.Operator.LT, 0.2);
     PerceivedSignal signal =
-        new PerceivedSignal("weak-signal", 0.1, 1, "agent-a", Duration.ofMinutes(1));
+        new PerceivedSignal(
+            "weak-signal", 0.1, 1, "agent-a", Duration.ofMinutes(1), Set.of("agent-a"));
     ObservationContext ctx = contextWithSignals(Map.of("weak-signal", signal));
 
     List<Observation> results = observer.observe(ctx);
