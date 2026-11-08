@@ -16,17 +16,21 @@
 package io.casehub.api.model.signal;
 
 import java.time.Duration;
+import java.util.Set;
 
 public record PerceivedSignal(
     String name,
     double effectiveStrength,
     int reinforcementCount,
     String lastSource,
-    Duration age) {
+    Duration age,
+    Set<String> sources) {
 
   public PerceivedSignal {
-    if (effectiveStrength < 0.0 || effectiveStrength > 1.0)
+    if (effectiveStrength < 0.0 || effectiveStrength > 1.0) {
       throw new IllegalArgumentException(
           "effectiveStrength must be in [0.0, 1.0], got: " + effectiveStrength);
+    }
+    sources = sources != null ? Set.copyOf(sources) : Set.of();
   }
 }
