@@ -20,6 +20,7 @@ import io.casehub.api.model.stigmergy.AgentLifecycleState;
 import io.casehub.api.model.stigmergy.AgentState;
 import io.casehub.api.model.stigmergy.AgentWorkState;
 import io.casehub.api.model.stigmergy.SwarmTelemetry;
+import io.casehub.api.spi.stigmergy.AgentLlmStatsProvider;
 import io.casehub.engine.common.internal.signal.SignalRegistry;
 import java.time.Duration;
 import java.time.Instant;
@@ -33,10 +34,19 @@ public class SwarmTelemetryCollector {
 
   private final StigmergyCoordinator coordinator;
   private final SignalRegistry signalRegistry;
+  private final AgentLlmStatsProvider llmStatsProvider;
 
   public SwarmTelemetryCollector(StigmergyCoordinator coordinator, SignalRegistry signalRegistry) {
+    this(coordinator, signalRegistry, null);
+  }
+
+  public SwarmTelemetryCollector(
+      StigmergyCoordinator coordinator,
+      SignalRegistry signalRegistry,
+      AgentLlmStatsProvider llmStatsProvider) {
     this.coordinator = coordinator;
     this.signalRegistry = signalRegistry;
+    this.llmStatsProvider = llmStatsProvider;
   }
 
   public List<SwarmTelemetry> snapshot(UUID caseId) {
@@ -58,6 +68,11 @@ public class SwarmTelemetryCollector {
       int tasksCompleted = counters != null ? counters.tasksCompleted() : 0;
       int signalsDeposited = signalCounts.getOrDefault(agent.agentId(), 0);
 
+      var llmStats =
+          llmStatsProvider != null
+              ? llmStatsProvider.getStats(caseId, agent.agentId())
+              : AgentLlmStatsProvider.AgentLlmStats.ZERO;
+
       result.add(
           new SwarmTelemetry(
               caseId,
@@ -67,9 +82,9 @@ public class SwarmTelemetryCollector {
               messagesSent,
               tasksCompleted,
               activeTime,
-              0,
-              0L,
-              Duration.ZERO));
+              llmStats.invocationCount(),
+              llmStats.tokensConsumed(),
+              llmStats.totalLatency()));
     }
     return List.copyOf(result);
   }

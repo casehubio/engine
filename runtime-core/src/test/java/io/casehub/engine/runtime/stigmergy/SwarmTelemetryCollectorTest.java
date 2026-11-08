@@ -24,6 +24,7 @@ import io.casehub.api.model.stigmergy.CoordinationConfig;
 import io.casehub.api.model.stigmergy.StigmergyConfig;
 import io.casehub.api.model.stigmergy.StigmergyDefaults;
 import io.casehub.api.model.stigmergy.SwarmConfig;
+import io.casehub.api.spi.stigmergy.AgentLlmStatsProvider;
 import io.casehub.engine.common.internal.convergence.ActivityTracker;
 import io.casehub.engine.common.internal.observation.ObservationRegistry;
 import io.casehub.engine.common.internal.signal.SignalRegistry;
@@ -158,5 +159,71 @@ class SwarmTelemetryCollectorTest {
     var telemetry = collector.snapshot(caseId);
 
     assertEquals(3, telemetry.size());
+  }
+
+  @Test
+  void snapshot_withLlmStatsProvider_populatesLlmFields() {
+    coordinator.initializeCase(caseId, List.of("agent-1"), config, "test");
+    coordinator.agentJoined(caseId, "agent-1", "b-1");
+    coordinator.agentActivated(caseId, "agent-1");
+
+    AgentLlmStatsProvider provider =
+        (cId, agentId) -> new AgentLlmStatsProvider.AgentLlmStats(3, 1500L, Duration.ofMillis(450));
+
+    var collectorWithProvider = new SwarmTelemetryCollector(coordinator, signalRegistry, provider);
+    var telemetry = collectorWithProvider.snapshot(caseId);
+
+    assertEquals(1, telemetry.size());
+    var t = telemetry.get(0);
+    assertEquals(3, t.invocationCount());
+    assertEquals(1500L, t.tokensConsumed());
+    assertEquals(Duration.ofMillis(450), t.totalLatency());
+  }
+
+  @Test
+  void snapshot_withNullProvider_returnsZeroLlmFields() {
+    coordinator.initializeCase(caseId, List.of("agent-1"), config, "test");
+    coordinator.agentJoined(caseId, "agent-1", "b-1");
+    coordinator.agentActivated(caseId, "agent-1");
+
+    var telemetry = collector.snapshot(caseId);
+
+    assertEquals(1, telemetry.size());
+    var t = telemetry.get(0);
+    assertEquals(0, t.invocationCount());
+    assertEquals(0L, t.tokensConsumed());
+    assertEquals(Duration.ZERO, t.totalLatency());
+  }
+
+  @Test
+  void snapshot_multipleAgents_providerReturnsPerAgentStats() {
+    coordinator.initializeCase(caseId, List.of("agent-1", "agent-2"), config, "test");
+    coordinator.agentJoined(caseId, "agent-1", "b-1");
+    coordinator.agentJoined(caseId, "agent-2", "b-2");
+    coordinator.agentActivated(caseId, "agent-1");
+    coordinator.agentActivated(caseId, "agent-2");
+
+    AgentLlmStatsProvider provider =
+        (cId, agentId) ->
+            switch (agentId) {
+              case "agent-1" ->
+                  new AgentLlmStatsProvider.AgentLlmStats(5, 3000L, Duration.ofMillis(800));
+              case "agent-2" ->
+                  new AgentLlmStatsProvider.AgentLlmStats(2, 500L, Duration.ofMillis(200));
+              default -> AgentLlmStatsProvider.AgentLlmStats.ZERO;
+            };
+
+    var collectorWithProvider = new SwarmTelemetryCollector(coordinator, signalRegistry, provider);
+    var telemetry = collectorWithProvider.snapshot(caseId);
+
+    assertEquals(2, telemetry.size());
+    var t1 =
+        telemetry.stream().filter(t -> t.agentId().equals("agent-1")).findFirst().orElseThrow();
+    var t2 =
+        telemetry.stream().filter(t -> t.agentId().equals("agent-2")).findFirst().orElseThrow();
+    assertEquals(5, t1.invocationCount());
+    assertEquals(3000L, t1.tokensConsumed());
+    assertEquals(2, t2.invocationCount());
+    assertEquals(500L, t2.tokensConsumed());
   }
 }
