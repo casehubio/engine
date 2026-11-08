@@ -68,14 +68,11 @@ public enum TopologyType {
       };
     }
   },
+  @Deprecated(forRemoval = true)
   GRADUATED {
     @Override
     public DecisionAuthority deriveAuthority(StructuralRole role) {
-      return switch (role) {
-        case INITIATOR -> DecisionAuthority.CENTRAL;
-        case PEER -> DecisionAuthority.COORDINATED;
-        case CONTRACTOR -> DecisionAuthority.LOCAL;
-      };
+      return HYBRID.deriveAuthority(role);
     }
   },
   MULTI_SWARM {

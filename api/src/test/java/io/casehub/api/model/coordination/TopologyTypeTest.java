@@ -98,21 +98,12 @@ class TopologyTypeTest {
         .withMessageContaining("HIERARCHICAL");
   }
 
+  @SuppressWarnings("removal")
   @Test
-  void graduated_initiator_derives_central() {
-    assertThat(TopologyType.GRADUATED.deriveAuthority(StructuralRole.INITIATOR))
-        .isEqualTo(DecisionAuthority.CENTRAL);
-  }
-
-  @Test
-  void graduated_peer_derives_coordinated() {
-    assertThat(TopologyType.GRADUATED.deriveAuthority(StructuralRole.PEER))
-        .isEqualTo(DecisionAuthority.COORDINATED);
-  }
-
-  @Test
-  void graduated_contractor_derives_local() {
-    assertThat(TopologyType.GRADUATED.deriveAuthority(StructuralRole.CONTRACTOR))
-        .isEqualTo(DecisionAuthority.LOCAL);
+  void graduated_delegates_to_hybrid() {
+    for (StructuralRole role : StructuralRole.values()) {
+      assertThat(TopologyType.GRADUATED.deriveAuthority(role))
+          .isEqualTo(TopologyType.HYBRID.deriveAuthority(role));
+    }
   }
 }

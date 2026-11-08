@@ -16,6 +16,9 @@
 package io.casehub.api.spi.coordination;
 
 import io.casehub.api.model.coordination.TopologyDescriptor;
+import io.casehub.api.model.coordination.TopologyType;
+import io.casehub.api.model.coordination.TransitionPolicy;
+import java.util.Optional;
 import java.util.OptionalDouble;
 
 public interface TopologyProvider {
@@ -23,5 +26,13 @@ public interface TopologyProvider {
 
   default OptionalDouble effectiveSelfDetermination(String agentId, String tenancyId) {
     return OptionalDouble.empty();
+  }
+
+  default Optional<TransitionPolicy> transitionPolicy(String agentId, String tenancyId) {
+    return Optional.empty();
+  }
+
+  default Optional<TopologyType> evaluateTransition(String agentId, String tenancyId) {
+    return Optional.empty();
   }
 }
