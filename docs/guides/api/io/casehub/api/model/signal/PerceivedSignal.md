@@ -16,6 +16,8 @@
 
 ### `reinforcementCount` (`int`)
 
+### `sources` (`java.util.Set<java.lang.String>`)
+
 ## Record Components
 
 ### `age` (`java.time.Duration`)
@@ -28,9 +30,11 @@
 
 ### `reinforcementCount` (`int`)
 
+### `sources` (`java.util.Set<java.lang.String>`)
+
 ## Constructors
 
-### `public PerceivedSignal(java.lang.String name, double effectiveStrength, int reinforcementCount, java.lang.String lastSource, java.time.Duration age)`
+### `public PerceivedSignal(java.lang.String name, double effectiveStrength, int reinforcementCount, java.lang.String lastSource, java.time.Duration age, java.util.Set<java.lang.String> sources)`
 
 #### Parameters
 
@@ -39,6 +43,7 @@
 - `reinforcementCount` (`int`)
 - `lastSource` (`java.lang.String`)
 - `age` (`java.time.Duration`)
+- `sources` (`java.util.Set<java.lang.String>`)
 
 ## Methods
 
@@ -59,5 +64,7 @@
 ### `public java.lang.String name()`
 
 ### `public int reinforcementCount()`
+
+### `public java.util.Set<java.lang.String> sources()`
 
 ### `public final java.lang.String toString()`

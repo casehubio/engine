@@ -34,6 +34,20 @@
 - `path` (`java.lang.String`)
 - `tenancyId` (`java.lang.String`)
 
+### `public abstract io.casehub.api.view.CaseOverviewView getCaseOverview(java.util.UUID caseId, java.lang.String tenancyId)`
+
+#### Parameters
+
+- `caseId` (`java.util.UUID`)
+- `tenancyId` (`java.lang.String`)
+
+### `public abstract io.casehub.api.view.CaseWithContextView getCaseWithContext(java.util.UUID caseId, java.lang.String tenancyId)`
+
+#### Parameters
+
+- `caseId` (`java.util.UUID`)
+- `tenancyId` (`java.lang.String`)
+
 ### `public abstract io.casehub.api.view.GoalEvaluationView getGoals(java.util.UUID caseId, java.lang.String tenancyId)`
 
 #### Parameters
