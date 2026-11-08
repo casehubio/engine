@@ -22,6 +22,12 @@ package io.casehub.api.model.coordination;
  * @see StructuralRole
  */
 public enum PlatformRole {
+  /**
+   * Orchestrates, delegates tasks, allocates agents, and aggregates results.
+   *
+   * @see CoordinatorBehavior
+   * @see io.casehub.api.spi.coordination.CoordinationDriver
+   */
   COORDINATOR(StructuralRole.INITIATOR),
 
   /**
