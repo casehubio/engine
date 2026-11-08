@@ -37,14 +37,16 @@ public class GalleryMcpAdapter {
   @Inject CaseDefinitionRegistry definitionRegistry;
   @Inject AgentRegistry agentRegistry;
 
-  @PlatformQuery("Get agent descriptors for all workers in a case definition")
+  @PlatformQuery(
+      "Get agent descriptors for all workers in a case definition. Use namespace, name, version from listDefinitions results.")
   public List<AgentDescriptor> getAgentDescriptors(
       String namespace, String name, String version, @ContextParam("tenancyId") String tenancyId) {
     CaseDefinition def = resolveDefinition(namespace, name, version);
     return new AgentDescriptorProjection(agentRegistry).project(def, tenancyId);
   }
 
-  @PlatformQuery("Get coordination pipeline projection for a case definition")
+  @PlatformQuery(
+      "Get coordination pipeline projection for a case definition. Use namespace, name, version from listDefinitions results.")
   public CoordinationPipelineView getCoordinationPipeline(
       String namespace, String name, String version) {
     CaseDefinition def = resolveDefinition(namespace, name, version);

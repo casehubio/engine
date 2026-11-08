@@ -26,6 +26,7 @@ import io.casehub.platform.api.mcp.PaginatedResponse;
 import io.casehub.platform.api.mcp.PathParam;
 import io.casehub.platform.api.mcp.PlatformQuery;
 import java.util.List;
+import java.util.Optional;
 
 @McpDomain(
     value = "engine/definitions",
@@ -38,7 +39,9 @@ public interface EngineCaseDefinitionApi {
   @PlatformQuery("List registered case definitions")
   @PaginatedResponse
   CaseDefinitionPage listDefinitions(
-      @ContextParam("tenancyId") String tenancyId, Integer offset, Integer limit);
+      @ContextParam("tenancyId") String tenancyId,
+      Optional<Integer> offset,
+      Optional<Integer> limit);
 
   @AclCheck(resourceType = EngineResourceTypes.CASE_DEFINITION, action = AclAction.READ)
   @PlatformQuery("Get definitions by namespace and name")
