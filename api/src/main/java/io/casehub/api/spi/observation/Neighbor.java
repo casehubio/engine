@@ -16,6 +16,7 @@
 package io.casehub.api.spi.observation;
 
 import io.casehub.api.model.TaskStatus;
+import io.casehub.eidos.api.NeighborRelation;
 import java.util.Set;
 
 public record Neighbor(

@@ -21,7 +21,7 @@ import io.casehub.api.model.signal.Signal;
 import io.casehub.api.model.signal.SignalConfig;
 import io.casehub.api.spi.observation.EnvironmentObserver;
 import io.casehub.api.spi.observation.Neighbor;
-import io.casehub.api.spi.observation.NeighborRelation;
+import io.casehub.eidos.api.NeighborRelation;
 import io.casehub.engine.common.internal.model.PlanItemRecord;
 import io.casehub.engine.common.internal.observation.ObservationRegistry;
 import io.casehub.engine.common.internal.signal.SignalRegistry;
