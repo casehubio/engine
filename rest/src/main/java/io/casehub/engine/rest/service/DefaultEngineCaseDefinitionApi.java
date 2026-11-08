@@ -21,6 +21,7 @@ import io.casehub.api.view.CaseDefinitionView;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
 import java.util.List;
+import java.util.Optional;
 
 @ApplicationScoped
 public class DefaultEngineCaseDefinitionApi implements EngineCaseDefinitionApi {
@@ -28,8 +29,10 @@ public class DefaultEngineCaseDefinitionApi implements EngineCaseDefinitionApi {
   @Inject CaseDefinitionService caseDefinitionService;
 
   @Override
-  public CaseDefinitionPage listDefinitions(String tenancyId, Integer offset, Integer limit) {
-    return caseDefinitionService.listDefinitions(tenancyId, offset, limit);
+  public CaseDefinitionPage listDefinitions(
+      String tenancyId, Optional<Integer> offset, Optional<Integer> limit) {
+    return caseDefinitionService.listDefinitions(
+        tenancyId, offset.orElse(null), limit.orElse(null));
   }
 
   @Override
