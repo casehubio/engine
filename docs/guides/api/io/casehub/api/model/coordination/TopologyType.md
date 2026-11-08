@@ -16,6 +16,8 @@
 
 ### `HYBRID` (`io.casehub.api.model.coordination.TopologyType`)
 
+### `MULTI_SWARM` (`io.casehub.api.model.coordination.TopologyType`)
+
 ## Constructors
 
 ### `private TopologyType()`
