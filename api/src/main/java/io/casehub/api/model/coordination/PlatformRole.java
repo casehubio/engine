@@ -62,6 +62,22 @@ public enum PlatformRole {
    * @see io.casehub.api.spi.evaluation.EvaluationProtocol
    */
   JUDGE(StructuralRole.PEER),
+  /**
+   * Enforces protocol rules, manages turn-taking, and handles violations in agent interactions.
+   * Mode-aware — enforcement behavior adapts to the active {@link CommunicationMode}.
+   *
+   * <p>The behavioral contract is defined by {@link
+   * io.casehub.api.spi.enforcement.ProtocolEnforcement}, which provides:
+   *
+   * <ul>
+   *   <li>Turn-taking control (request/permit/deny)
+   *   <li>Protocol compliance checking
+   *   <li>Violation detection and response (warn/block/eject)
+   * </ul>
+   *
+   * @see ModeratorBehavior
+   * @see io.casehub.api.spi.enforcement.ProtocolEnforcement
+   */
   MODERATOR(StructuralRole.PEER);
 
   private final StructuralRole requiredStructuralRole;
