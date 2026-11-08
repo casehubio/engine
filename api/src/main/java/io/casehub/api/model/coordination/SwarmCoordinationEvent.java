@@ -27,13 +27,25 @@ public sealed interface SwarmCoordinationEvent {
 
   record SwarmInitialised(
       UUID swarmId, List<RetrievedExperience> experiences, SwarmProgress progress)
-      implements SwarmCoordinationEvent {}
+      implements SwarmCoordinationEvent {
+    public SwarmInitialised {
+      experiences = List.copyOf(experiences);
+    }
+  }
 
   record RoleChanged(UUID swarmId, List<DetectedRole> roles, SwarmProgress progress)
-      implements SwarmCoordinationEvent {}
+      implements SwarmCoordinationEvent {
+    public RoleChanged {
+      roles = List.copyOf(roles);
+    }
+  }
 
   record TeamChanged(UUID swarmId, List<DetectedTeam> teams, SwarmProgress progress)
-      implements SwarmCoordinationEvent {}
+      implements SwarmCoordinationEvent {
+    public TeamChanged {
+      teams = List.copyOf(teams);
+    }
+  }
 
   record ProgressUpdated(UUID swarmId, SwarmProgress progress) implements SwarmCoordinationEvent {}
 

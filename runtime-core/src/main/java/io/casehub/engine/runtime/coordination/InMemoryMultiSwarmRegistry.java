@@ -47,17 +47,20 @@ public class InMemoryMultiSwarmRegistry implements MultiSwarmRegistry {
 
   @Override
   public void updateInterests(UUID swarmId, Set<String> capabilities) {
-    swarms.computeIfPresent(
-        swarmId,
-        (id, old) ->
-            new SwarmDescriptor(
-                old.swarmId(),
-                old.caseId(),
-                old.topologyType(),
-                capabilities,
-                old.agentIds(),
-                old.parentSwarmId()));
-    listeners.forEach(l -> l.onInterestsUpdated(swarmId, capabilities));
+    var updated =
+        swarms.computeIfPresent(
+            swarmId,
+            (id, old) ->
+                new SwarmDescriptor(
+                    old.swarmId(),
+                    old.caseId(),
+                    old.topologyType(),
+                    capabilities,
+                    old.agentIds(),
+                    old.parentSwarmId()));
+    if (updated != null) {
+      listeners.forEach(l -> l.onInterestsUpdated(swarmId, capabilities));
+    }
   }
 
   @Override

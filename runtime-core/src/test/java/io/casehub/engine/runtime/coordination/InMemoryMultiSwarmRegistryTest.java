@@ -133,4 +133,28 @@ class InMemoryMultiSwarmRegistryTest {
             UUID.randomUUID(), caseId2, TopologyType.CENTRALISED, Set.of("b"), Set.of("b1"), null));
     assertThat(registry.allActive()).hasSize(2);
   }
+
+  @Test
+  void updateInterests_on_nonexistent_swarm_does_not_fire_listener() {
+    var events = new ArrayList<String>();
+    registry.addListener(
+        new RegistryListener() {
+          @Override
+          public void onRegistered(SwarmDescriptor d) {
+            events.add("reg");
+          }
+
+          @Override
+          public void onDeregistered(UUID id) {
+            events.add("dereg");
+          }
+
+          @Override
+          public void onInterestsUpdated(UUID id, Set<String> caps) {
+            events.add("update");
+          }
+        });
+    registry.updateInterests(UUID.randomUUID(), Set.of("x"));
+    assertThat(events).isEmpty();
+  }
 }
