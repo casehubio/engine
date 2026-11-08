@@ -37,4 +37,10 @@ public class DefaultEngineEventLogApi implements EngineEventLogApi {
       List<String> streamTypes) {
     return eventLogService.getEventLog(caseId, tenancyId, offset, limit, eventTypes, streamTypes);
   }
+
+    @Override
+    public EventLogPage getLatestEvents(UUID caseId, String tenancyId, Integer limit) {
+        return eventLogService.getEventLog(caseId, tenancyId, null, limit, null, null);
+    }
+
 }

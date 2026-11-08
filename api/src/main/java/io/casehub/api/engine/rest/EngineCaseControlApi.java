@@ -34,43 +34,43 @@ import java.util.UUID;
     summary = "Control — cancel, resume, send operations")
 public interface EngineCaseControlApi {
 
-  @AclCheck(
-      resourceType = EngineResourceTypes.CASE,
-      action = AclAction.ADMIN,
-      resourceIdParam = "caseId")
-  @PlatformMutation("Suspend a running case")
-  CaseControlView suspendCase(
-      @PathParam UUID caseId,
-      CaseControlRequest request,
-      @ContextParam("tenancyId") String tenancyId);
+    @AclCheck(
+            resourceType = EngineResourceTypes.CASE,
+            action = AclAction.ADMIN,
+            resourceIdParam = "caseId")
+    @PlatformMutation("Suspend a running case. Returns updated case control state. Request fields: reason (optional explanation)")
+    CaseControlView suspendCase(
+            @PathParam UUID caseId,
+            CaseControlRequest request,
+            @ContextParam("tenancyId") String tenancyId);
 
-  @AclCheck(
-      resourceType = EngineResourceTypes.CASE,
-      action = AclAction.ADMIN,
-      resourceIdParam = "caseId")
-  @PlatformMutation("Resume a suspended case")
-  CaseControlView resumeCase(
-      @PathParam UUID caseId,
-      CaseControlRequest request,
-      @ContextParam("tenancyId") String tenancyId);
+    @AclCheck(
+            resourceType = EngineResourceTypes.CASE,
+            action = AclAction.ADMIN,
+            resourceIdParam = "caseId")
+    @PlatformMutation("Resume a suspended case. Returns updated case control state. Request fields: reason (optional explanation)")
+    CaseControlView resumeCase(
+            @PathParam UUID caseId,
+            CaseControlRequest request,
+            @ContextParam("tenancyId") String tenancyId);
 
-  @AclCheck(
-      resourceType = EngineResourceTypes.CASE,
-      action = AclAction.ADMIN,
-      resourceIdParam = "caseId")
-  @PlatformMutation("Cancel a case")
-  CaseControlView cancelCase(
-      @PathParam UUID caseId,
-      CaseControlRequest request,
-      @ContextParam("tenancyId") String tenancyId);
+    @AclCheck(
+            resourceType = EngineResourceTypes.CASE,
+            action = AclAction.ADMIN,
+            resourceIdParam = "caseId")
+    @PlatformMutation("Cancel a case permanently. Returns updated case control state. Request fields: reason (optional explanation)")
+    CaseControlView cancelCase(
+            @PathParam UUID caseId,
+            CaseControlRequest request,
+            @ContextParam("tenancyId") String tenancyId);
 
-  @AclCheck(
-      resourceType = EngineResourceTypes.CASE,
-      action = AclAction.WRITE,
-      resourceIdParam = "caseId")
-  @PlatformMutation("Send a signal to a case")
-  SignalResultView sendSignal(
-      @PathParam UUID caseId,
-      SendSignalRequest request,
-      @ContextParam("tenancyId") String tenancyId);
+    @AclCheck(
+            resourceType = EngineResourceTypes.CASE,
+            action = AclAction.WRITE,
+            resourceIdParam = "caseId")
+    @PlatformMutation("Send a signal to a case. Request fields: path (context path to set), value (value to set at path)")
+    SignalResultView sendSignal(
+            @PathParam UUID caseId,
+            SendSignalRequest request,
+            @ContextParam("tenancyId") String tenancyId);
 }

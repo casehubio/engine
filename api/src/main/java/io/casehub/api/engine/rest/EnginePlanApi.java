@@ -15,67 +15,74 @@
  */
 package io.casehub.api.engine.rest;
 
-import com.fasterxml.jackson.databind.JsonNode;
 import io.casehub.api.acl.AclCheck;
 import io.casehub.api.acl.EngineResourceTypes;
+import io.casehub.engine.plan.snapshot.DagPlanSnapshot;
+import io.casehub.engine.plan.snapshot.DagResultView;
+import io.casehub.engine.plan.snapshot.DecompositionSnapshot;
+import io.casehub.engine.plan.snapshot.ExecutionStateView;
+import io.casehub.engine.plan.snapshot.PlanItemDefinitionSnapshot;
+import io.casehub.engine.plan.snapshot.PlanModelView;
 import io.casehub.platform.api.acl.AclAction;
 import io.casehub.platform.api.mcp.ContextParam;
 import io.casehub.platform.api.mcp.McpDomain;
 import io.casehub.platform.api.mcp.PathParam;
 import io.casehub.platform.api.mcp.PlatformQuery;
 import io.casehub.platform.api.mcp.PlatformStream;
+
+import java.util.List;
 import java.util.UUID;
 import java.util.concurrent.Flow;
 
 @McpDomain(value = "engine/plan", app = "engine", summary = "Plan — get, live operations")
 public interface EnginePlanApi {
 
-  @AclCheck(
-      resourceType = EngineResourceTypes.CASE,
-      action = AclAction.READ,
-      resourceIdParam = "caseId")
-  @PlatformQuery("Get live case plan model snapshot")
-  JsonNode getPlanModel(@PathParam UUID caseId, @ContextParam("tenancyId") String tenancyId);
+    @AclCheck(
+            resourceType = EngineResourceTypes.CASE,
+            action = AclAction.READ,
+            resourceIdParam = "caseId")
+    @PlatformQuery("Get live case plan model snapshot with agenda, focus, sub-cases, and compound status")
+    PlanModelView getPlanModel(@PathParam UUID caseId, @ContextParam("tenancyId") String tenancyId);
 
-  @AclCheck(
-      resourceType = EngineResourceTypes.CASE,
-      action = AclAction.READ,
-      resourceIdParam = "caseId")
-  @PlatformQuery("Get plan item definition hierarchy")
-  JsonNode getPlanDefinitions(@PathParam UUID caseId, @ContextParam("tenancyId") String tenancyId);
+    @AclCheck(
+            resourceType = EngineResourceTypes.CASE,
+            action = AclAction.READ,
+            resourceIdParam = "caseId")
+    @PlatformQuery("Get plan item definition hierarchy as a typed tree of primitive and compound items")
+    List<PlanItemDefinitionSnapshot> getPlanDefinitions(@PathParam UUID caseId, @ContextParam("tenancyId") String tenancyId);
 
-  @AclCheck(
-      resourceType = EngineResourceTypes.CASE,
-      action = AclAction.READ,
-      resourceIdParam = "caseId")
-  @PlatformQuery("Get HTN decomposition tree snapshot")
-  JsonNode getDecomposition(@PathParam UUID caseId, @ContextParam("tenancyId") String tenancyId);
+    @AclCheck(
+            resourceType = EngineResourceTypes.CASE,
+            action = AclAction.READ,
+            resourceIdParam = "caseId")
+    @PlatformQuery("Get HTN decomposition tree snapshot as a typed tree of leaf and compound tasks")
+    DecompositionSnapshot getDecomposition(@PathParam UUID caseId, @ContextParam("tenancyId") String tenancyId);
 
-  @AclCheck(
-      resourceType = EngineResourceTypes.CASE,
-      action = AclAction.READ,
-      resourceIdParam = "caseId")
-  @PlatformQuery("Get DAG plan snapshot")
-  JsonNode getDagPlan(@PathParam UUID caseId, @ContextParam("tenancyId") String tenancyId);
+    @AclCheck(
+            resourceType = EngineResourceTypes.CASE,
+            action = AclAction.READ,
+            resourceIdParam = "caseId")
+    @PlatformQuery("Get DAG plan snapshot as typed nodes with dependencies and join types")
+    DagPlanSnapshot getDagPlan(@PathParam UUID caseId, @ContextParam("tenancyId") String tenancyId);
 
-  @AclCheck(
-      resourceType = EngineResourceTypes.CASE,
-      action = AclAction.READ,
-      resourceIdParam = "caseId")
-  @PlatformQuery("Get DAG execution result snapshot")
-  JsonNode getDagResult(@PathParam UUID caseId, @ContextParam("tenancyId") String tenancyId);
+    @AclCheck(
+            resourceType = EngineResourceTypes.CASE,
+            action = AclAction.READ,
+            resourceIdParam = "caseId")
+    @PlatformQuery("Get DAG execution result snapshot with node states, completion status, and timing")
+    DagResultView getDagResult(@PathParam UUID caseId, @ContextParam("tenancyId") String tenancyId);
 
-  @AclCheck(
-      resourceType = EngineResourceTypes.CASE,
-      action = AclAction.READ,
-      resourceIdParam = "caseId")
-  @PlatformQuery("Get composed execution state snapshot")
-  JsonNode getExecutionState(@PathParam UUID caseId, @ContextParam("tenancyId") String tenancyId);
+    @AclCheck(
+            resourceType = EngineResourceTypes.CASE,
+            action = AclAction.READ,
+            resourceIdParam = "caseId")
+    @PlatformQuery("Get composed execution state: model, active/completed agents, iteration, timing")
+    ExecutionStateView getExecutionState(@PathParam UUID caseId, @ContextParam("tenancyId") String tenancyId);
 
-  @AclCheck(
-      resourceType = EngineResourceTypes.CASE,
-      action = AclAction.READ,
-      resourceIdParam = "caseId")
-  @PlatformStream("Live execution state updates")
-  Flow.Publisher<JsonNode> executionStateStream(@PathParam UUID caseId);
+    @AclCheck(
+            resourceType = EngineResourceTypes.CASE,
+            action = AclAction.READ,
+            resourceIdParam = "caseId")
+    @PlatformStream("Live execution state updates")
+    Flow.Publisher<ExecutionStateView> executionStateStream(@PathParam UUID caseId);
 }

@@ -156,131 +156,142 @@ public class EvolutionMcpAdapter {
     return delegate.getStreamProgress(caseId, tenancyId);
   }
 
-  @AclCheck(
-      resourceType = EngineResourceTypes.CASE,
-      action = AclAction.WRITE,
-      resourceIdParam = "caseId")
-  @PlatformMutation("Add a deny pattern to block improvement categories")
-  public void addDenyPattern(
-      @PathParam UUID caseId, @ContextParam("tenancyId") String tenancyId, String pattern) {
-    caseService.requireCaseAccess(caseId, AclAction.WRITE);
-    delegate.addDenyPattern(caseId, tenancyId, pattern);
-  }
+    @AclCheck(
+            resourceType = EngineResourceTypes.CASE,
+            action = AclAction.WRITE,
+            resourceIdParam = "caseId")
+    @PlatformMutation("Add a deny pattern to block improvement categories. Returns updated deny patterns")
+    public DenyPatternView addDenyPattern(
+            @PathParam UUID caseId, @ContextParam("tenancyId") String tenancyId, String pattern) {
+        caseService.requireCaseAccess(caseId, AclAction.WRITE);
+        delegate.addDenyPattern(caseId, tenancyId, pattern);
+        return delegate.getDenyPatterns(caseId, tenancyId);
+    }
 
   @AclCheck(
-      resourceType = EngineResourceTypes.CASE,
-      action = AclAction.WRITE,
-      resourceIdParam = "caseId")
-  @PlatformMutation("Remove a deny pattern")
-  public void removeDenyPattern(
-      @PathParam UUID caseId, @ContextParam("tenancyId") String tenancyId, String pattern) {
+          resourceType = EngineResourceTypes.CASE,
+          action = AclAction.WRITE,
+          resourceIdParam = "caseId")
+  @PlatformMutation("Remove a deny pattern. Returns updated deny patterns")
+  public DenyPatternView removeDenyPattern(
+          @PathParam UUID caseId, @ContextParam("tenancyId") String tenancyId, String pattern) {
     caseService.requireCaseAccess(caseId, AclAction.WRITE);
     delegate.removeDenyPattern(caseId, tenancyId, pattern);
+    return delegate.getDenyPatterns(caseId, tenancyId);
   }
 
-  @AclCheck(
-      resourceType = EngineResourceTypes.CASE,
-      action = AclAction.WRITE,
-      resourceIdParam = "caseId")
-  @PlatformMutation("Resolve a conductor gate decision")
-  public void resolveGate(
-      @PathParam UUID caseId,
-      @ContextParam("tenancyId") String tenancyId,
-      String entryId,
-      ConductorInboxEntry.Status outcome,
-      @Nullable String reason,
-      @Nullable String feedback) {
-    caseService.requireCaseAccess(caseId, AclAction.WRITE);
-    delegate.resolveGate(caseId, tenancyId, entryId, outcome, reason, feedback);
-  }
+    @AclCheck(
+            resourceType = EngineResourceTypes.CASE,
+            action = AclAction.WRITE,
+            resourceIdParam = "caseId")
+    @PlatformMutation("Resolve a conductor gate decision. outcome: APPROVED, REJECTED. Returns updated inbox")
+    public List<ConductorInboxEntry> resolveGate(
+            @PathParam UUID caseId,
+            @ContextParam("tenancyId") String tenancyId,
+            String entryId,
+            ConductorInboxEntry.Status outcome,
+            @Nullable String reason,
+            @Nullable String feedback) {
+        caseService.requireCaseAccess(caseId, AclAction.WRITE);
+        delegate.resolveGate(caseId, tenancyId, entryId, outcome, reason, feedback);
+        return delegate.getInbox(caseId, tenancyId);
+    }
 
   @AclCheck(
-      resourceType = EngineResourceTypes.CASE,
-      action = AclAction.WRITE,
-      resourceIdParam = "caseId")
-  @PlatformMutation("Add an escalation watch pattern")
-  public void addWatchPattern(
-      @PathParam UUID caseId,
-      @ContextParam("tenancyId") String tenancyId,
-      @Nullable String category,
-      @Nullable String areaId,
-      @Nullable String targetPattern,
-      @Nullable Integer minEstimatedSize) {
+          resourceType = EngineResourceTypes.CASE,
+          action = AclAction.WRITE,
+          resourceIdParam = "caseId")
+  @PlatformMutation("Add an escalation watch pattern. Returns updated watch patterns list")
+  public List<WatchPattern> addWatchPattern(
+          @PathParam UUID caseId,
+          @ContextParam("tenancyId") String tenancyId,
+          @Nullable String category,
+          @Nullable String areaId,
+          @Nullable String targetPattern,
+          @Nullable Integer minEstimatedSize) {
     caseService.requireCaseAccess(caseId, AclAction.WRITE);
     delegate.addWatchPattern(caseId, tenancyId, category, areaId, targetPattern, minEstimatedSize);
+    return delegate.getWatchPatterns(caseId, tenancyId);
   }
 
   @AclCheck(
-      resourceType = EngineResourceTypes.CASE,
-      action = AclAction.WRITE,
-      resourceIdParam = "caseId")
-  @PlatformMutation("Remove an escalation watch pattern")
-  public void removeWatchPattern(
-      @PathParam UUID caseId, @ContextParam("tenancyId") String tenancyId, String patternId) {
+          resourceType = EngineResourceTypes.CASE,
+          action = AclAction.WRITE,
+          resourceIdParam = "caseId")
+  @PlatformMutation("Remove an escalation watch pattern. Returns updated watch patterns list")
+  public List<WatchPattern> removeWatchPattern(
+          @PathParam UUID caseId, @ContextParam("tenancyId") String tenancyId, String patternId) {
     caseService.requireCaseAccess(caseId, AclAction.WRITE);
     delegate.removeWatchPattern(caseId, tenancyId, patternId);
+    return delegate.getWatchPatterns(caseId, tenancyId);
   }
 
   @AclCheck(
-      resourceType = EngineResourceTypes.CASE,
-      action = AclAction.WRITE,
-      resourceIdParam = "caseId")
-  @PlatformMutation("Block an improvement stream")
-  public void blockImprovement(
-      @PathParam UUID caseId,
-      @ContextParam("tenancyId") String tenancyId,
-      @PathParam UUID improvementId,
-      UUID blockedBy) {
+          resourceType = EngineResourceTypes.CASE,
+          action = AclAction.WRITE,
+          resourceIdParam = "caseId")
+  @PlatformMutation("Block an improvement stream. Returns updated stream progress")
+  public List<EvolutionStateSnapshot.ImprovementStreamView> blockImprovement(
+          @PathParam UUID caseId,
+          @ContextParam("tenancyId") String tenancyId,
+          @PathParam UUID improvementId,
+          UUID blockedBy) {
     caseService.requireCaseAccess(caseId, AclAction.WRITE);
     delegate.blockImprovement(caseId, tenancyId, improvementId, blockedBy);
+    return delegate.getStreamProgress(caseId, tenancyId);
   }
 
   @AclCheck(
-      resourceType = EngineResourceTypes.CASE,
-      action = AclAction.WRITE,
-      resourceIdParam = "caseId")
-  @PlatformMutation("Unblock a previously blocked improvement stream")
-  public void unblockImprovement(
-      @PathParam UUID caseId,
-      @ContextParam("tenancyId") String tenancyId,
-      @PathParam UUID improvementId) {
+          resourceType = EngineResourceTypes.CASE,
+          action = AclAction.WRITE,
+          resourceIdParam = "caseId")
+  @PlatformMutation("Unblock a previously blocked improvement stream. Returns updated stream progress")
+  public List<EvolutionStateSnapshot.ImprovementStreamView> unblockImprovement(
+          @PathParam UUID caseId,
+          @ContextParam("tenancyId") String tenancyId,
+          @PathParam UUID improvementId) {
     caseService.requireCaseAccess(caseId, AclAction.WRITE);
     delegate.unblockImprovement(caseId, tenancyId, improvementId);
+    return delegate.getStreamProgress(caseId, tenancyId);
   }
 
   @AclCheck(
-      resourceType = EngineResourceTypes.CASE,
-      action = AclAction.WRITE,
-      resourceIdParam = "caseId")
-  @PlatformMutation("Pause a category from receiving improvements")
-  public void pauseCategory(
-      @PathParam UUID caseId,
-      @ContextParam("tenancyId") String tenancyId,
-      String category,
-      int durationMinutes) {
+          resourceType = EngineResourceTypes.CASE,
+          action = AclAction.WRITE,
+          resourceIdParam = "caseId")
+  @PlatformMutation("Pause a category from receiving improvements for durationMinutes. Returns updated evolution summary")
+  public EvolutionSummary pauseCategory(
+          @PathParam UUID caseId,
+          @ContextParam("tenancyId") String tenancyId,
+          String category,
+          int durationMinutes) {
     caseService.requireCaseAccess(caseId, AclAction.WRITE);
     delegate.pauseCategory(caseId, tenancyId, category, durationMinutes);
+    return delegate.getSummary(caseId, tenancyId, null, category, null, null);
   }
 
   @AclCheck(
-      resourceType = EngineResourceTypes.CASE,
-      action = AclAction.WRITE,
-      resourceIdParam = "caseId")
-  @PlatformMutation("Unpause a previously paused category")
-  public void unpauseCategory(
-      @PathParam UUID caseId, @ContextParam("tenancyId") String tenancyId, String category) {
+          resourceType = EngineResourceTypes.CASE,
+          action = AclAction.WRITE,
+          resourceIdParam = "caseId")
+  @PlatformMutation("Unpause a previously paused category. Returns updated evolution summary")
+  public EvolutionSummary unpauseCategory(
+          @PathParam UUID caseId, @ContextParam("tenancyId") String tenancyId, String category) {
     caseService.requireCaseAccess(caseId, AclAction.WRITE);
     delegate.unpauseCategory(caseId, tenancyId, category);
+    return delegate.getSummary(caseId, tenancyId, null, category, null, null);
   }
 
   @AclCheck(
-      resourceType = EngineResourceTypes.CASE,
-      action = AclAction.ADMIN,
-      resourceIdParam = "caseId")
-  @PlatformMutation("Reset the health circuit breaker")
-  public void resetCircuitBreaker(@PathParam UUID caseId) {
+          resourceType = EngineResourceTypes.CASE,
+          action = AclAction.ADMIN,
+          resourceIdParam = "caseId")
+  @PlatformMutation("Reset the health circuit breaker. Returns updated evolution summary")
+  public EvolutionSummary resetCircuitBreaker(
+          @PathParam UUID caseId, @ContextParam("tenancyId") String tenancyId) {
     caseService.requireCaseAccess(caseId, AclAction.ADMIN);
     delegate.resetCircuitBreaker(caseId);
+    return delegate.getSummary(caseId, tenancyId, null, null, null, null);
   }
 
   @AclCheck(
@@ -298,14 +309,15 @@ public class EvolutionMcpAdapter {
   }
 
   @AclCheck(
-      resourceType = EngineResourceTypes.CASE,
-      action = AclAction.ADMIN,
-      resourceIdParam = "caseId")
-  @PlatformMutation("Set gate policy for evolution lifecycle gates")
-  public void setGatePolicy(
-      @PathParam UUID caseId, @ContextParam("tenancyId") String tenancyId, GatePolicy policy) {
+          resourceType = EngineResourceTypes.CASE,
+          action = AclAction.ADMIN,
+          resourceIdParam = "caseId")
+  @PlatformMutation("Set gate policy for evolution lifecycle gates. Returns confirmed policy")
+  public GatePolicy setGatePolicy(
+          @PathParam UUID caseId, @ContextParam("tenancyId") String tenancyId, GatePolicy policy) {
     caseService.requireCaseAccess(caseId, AclAction.ADMIN);
     delegate.setGatePolicy(caseId, tenancyId, policy);
+    return delegate.getGatePolicy(caseId, tenancyId);
   }
 
   @AclCheck(
