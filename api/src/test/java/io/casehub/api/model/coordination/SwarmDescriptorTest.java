@@ -15,7 +15,8 @@
  */
 package io.casehub.api.model.coordination;
 
-import static org.assertj.core.api.Assertions.*;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatNullPointerException;
 
 import java.util.HashSet;
 import java.util.Set;
