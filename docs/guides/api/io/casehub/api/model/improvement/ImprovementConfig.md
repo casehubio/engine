@@ -6,6 +6,8 @@
 
 ## Fields
 
+### `DEFAULTS` (`io.casehub.api.model.improvement.ImprovementConfig`)
+
 ### `budget` (`io.casehub.api.model.improvement.ImprovementBudget`)
 
 ### `caseTemplateId` (`java.lang.String`)
