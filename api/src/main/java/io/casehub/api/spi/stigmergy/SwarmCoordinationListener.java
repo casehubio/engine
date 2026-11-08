@@ -32,15 +32,31 @@ public interface SwarmCoordinationListener {
 
   default void onSwarmInitialised(UUID caseId, SwarmProgress progress) {}
 
+  default void onSwarmInitialised(UUID caseId, UUID swarmId, SwarmProgress progress) {}
+
   default void onRoleChanged(UUID caseId, List<DetectedRole> roles, SwarmProgress progress) {}
+
+  default void onRoleChanged(
+      UUID caseId, UUID swarmId, List<DetectedRole> roles, SwarmProgress progress) {}
 
   default void onTeamChanged(UUID caseId, List<DetectedTeam> teams, SwarmProgress progress) {}
 
+  default void onTeamChanged(
+      UUID caseId, UUID swarmId, List<DetectedTeam> teams, SwarmProgress progress) {}
+
   default void onProgressUpdated(UUID caseId, SwarmProgress progress) {}
+
+  default void onProgressUpdated(UUID caseId, UUID swarmId, SwarmProgress progress) {}
 
   default void onMemberCompleted(UUID caseId, String agentId) {}
 
+  default void onMemberCompleted(UUID caseId, UUID swarmId, String agentId) {}
+
   default void onProvisioningChanged(UUID caseId, int currentSize, int maxSize) {}
 
+  default void onProvisioningChanged(UUID caseId, UUID swarmId, int currentSize, int maxSize) {}
+
   default void onTelemetrySnapshot(UUID caseId, List<SwarmTelemetry> telemetry) {}
+
+  default void onTelemetrySnapshot(UUID caseId, UUID swarmId, List<SwarmTelemetry> telemetry) {}
 }
