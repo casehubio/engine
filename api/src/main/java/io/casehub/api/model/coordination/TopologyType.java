@@ -77,6 +77,16 @@ public enum TopologyType {
         case CONTRACTOR -> DecisionAuthority.LOCAL;
       };
     }
+  },
+  MULTI_SWARM {
+    @Override
+    public DecisionAuthority deriveAuthority(StructuralRole role) {
+      return switch (role) {
+        case INITIATOR -> DecisionAuthority.CENTRAL;
+        case CONTRACTOR -> DecisionAuthority.LOCAL;
+        case PEER -> DecisionAuthority.COORDINATED;
+      };
+    }
   };
 
   public abstract DecisionAuthority deriveAuthority(StructuralRole role);
