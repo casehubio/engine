@@ -45,6 +45,22 @@ public enum PlatformRole {
    */
   SUPERVISOR(StructuralRole.INITIATOR),
 
+  /**
+   * Evaluates, scores, and renders decisions on agent outputs. Coordinates multi-judge voting
+   * protocols (majority, consensus, weighted, threshold) via {@link JudgeBehavior}.
+   *
+   * <p>The behavioral contract is defined by {@link
+   * io.casehub.api.spi.evaluation.EvaluationProtocol}, which provides:
+   *
+   * <ul>
+   *   <li>Single-subject evaluation against criteria
+   *   <li>Multi-candidate scoring and ranking
+   *   <li>Decision rendering with voting strategy
+   * </ul>
+   *
+   * @see JudgeBehavior
+   * @see io.casehub.api.spi.evaluation.EvaluationProtocol
+   */
   JUDGE(StructuralRole.PEER),
   MODERATOR(StructuralRole.PEER);
 
