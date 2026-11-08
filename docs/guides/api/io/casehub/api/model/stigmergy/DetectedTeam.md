@@ -8,7 +8,7 @@
 
 ### `avgAffinity` (`double`)
 
-### `dominantRelations` (`java.util.Set<io.casehub.api.spi.observation.NeighborRelation>`)
+### `dominantRelations` (`java.util.Set<NeighborRelation>`)
 
 ### `memberAgents` (`java.util.Set<java.lang.String>`)
 
@@ -20,7 +20,7 @@
 
 ### `avgAffinity` (`double`)
 
-### `dominantRelations` (`java.util.Set<io.casehub.api.spi.observation.NeighborRelation>`)
+### `dominantRelations` (`java.util.Set<NeighborRelation>`)
 
 ### `memberAgents` (`java.util.Set<java.lang.String>`)
 
@@ -30,13 +30,13 @@
 
 ## Constructors
 
-### `public DetectedTeam(java.lang.String teamId, java.util.Set<java.lang.String> memberAgents, java.util.Set<io.casehub.api.spi.observation.NeighborRelation> dominantRelations, double avgAffinity, int stabilityCount)`
+### `public DetectedTeam(java.lang.String teamId, java.util.Set<java.lang.String> memberAgents, java.util.Set<NeighborRelation> dominantRelations, double avgAffinity, int stabilityCount)`
 
 #### Parameters
 
 - `teamId` (`java.lang.String`)
 - `memberAgents` (`java.util.Set<java.lang.String>`)
-- `dominantRelations` (`java.util.Set<io.casehub.api.spi.observation.NeighborRelation>`)
+- `dominantRelations` (`java.util.Set<NeighborRelation>`)
 - `avgAffinity` (`double`)
 - `stabilityCount` (`int`)
 
@@ -44,7 +44,7 @@
 
 ### `public double avgAffinity()`
 
-### `public java.util.Set<io.casehub.api.spi.observation.NeighborRelation> dominantRelations()`
+### `public java.util.Set<NeighborRelation> dominantRelations()`
 
 ### `public final boolean equals(java.lang.Object o)`
 

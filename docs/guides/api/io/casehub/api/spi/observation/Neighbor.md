@@ -14,7 +14,7 @@
 
 ### `currentStatus` (`io.casehub.api.model.TaskStatus`)
 
-### `relations` (`java.util.Set<io.casehub.api.spi.observation.NeighborRelation>`)
+### `relations` (`java.util.Set<NeighborRelation>`)
 
 ## Record Components
 
@@ -26,11 +26,11 @@
 
 ### `currentStatus` (`io.casehub.api.model.TaskStatus`)
 
-### `relations` (`java.util.Set<io.casehub.api.spi.observation.NeighborRelation>`)
+### `relations` (`java.util.Set<NeighborRelation>`)
 
 ## Constructors
 
-### `public Neighbor(java.lang.String agentId, java.util.Set<java.lang.String> capabilities, io.casehub.api.model.TaskStatus currentStatus, java.lang.String bindingName, java.util.Set<io.casehub.api.spi.observation.NeighborRelation> relations)`
+### `public Neighbor(java.lang.String agentId, java.util.Set<java.lang.String> capabilities, io.casehub.api.model.TaskStatus currentStatus, java.lang.String bindingName, java.util.Set<NeighborRelation> relations)`
 
 #### Parameters
 
@@ -38,7 +38,7 @@
 - `capabilities` (`java.util.Set<java.lang.String>`)
 - `currentStatus` (`io.casehub.api.model.TaskStatus`)
 - `bindingName` (`java.lang.String`)
-- `relations` (`java.util.Set<io.casehub.api.spi.observation.NeighborRelation>`)
+- `relations` (`java.util.Set<NeighborRelation>`)
 
 ## Methods
 
@@ -58,6 +58,6 @@
 
 ### `public final int hashCode()`
 
-### `public java.util.Set<io.casehub.api.spi.observation.NeighborRelation> relations()`
+### `public java.util.Set<NeighborRelation> relations()`
 
 ### `public final java.lang.String toString()`
