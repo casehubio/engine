@@ -23,10 +23,10 @@
 - `name` (`java.lang.String`)
 - `tenancyId` (`java.lang.String`)
 
-### `public abstract io.casehub.api.view.CaseDefinitionPage listDefinitions(java.lang.String tenancyId, java.lang.Integer offset, java.lang.Integer limit)`
+### `public abstract io.casehub.api.view.CaseDefinitionPage listDefinitions(java.lang.String tenancyId, java.util.Optional<java.lang.Integer> offset, java.util.Optional<java.lang.Integer> limit)`
 
 #### Parameters
 
 - `tenancyId` (`java.lang.String`)
-- `offset` (`java.lang.Integer`)
-- `limit` (`java.lang.Integer`)
+- `offset` (`java.util.Optional<java.lang.Integer>`)
+- `limit` (`java.util.Optional<java.lang.Integer>`)
