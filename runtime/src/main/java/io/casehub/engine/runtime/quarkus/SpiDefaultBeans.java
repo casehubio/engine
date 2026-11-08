@@ -27,6 +27,7 @@ import io.casehub.api.spi.RiskClassifier;
 import io.casehub.api.spi.WorkerContextProvider;
 import io.casehub.api.spi.WorkerProvisioner;
 import io.casehub.api.spi.WorkerStatusListener;
+import io.casehub.api.spi.coordination.CoordinationDriver;
 import io.casehub.api.spi.coordination.TopologyProvider;
 import io.casehub.api.spi.judgment.JudgmentEscalator;
 import io.casehub.api.spi.recovery.ErrorClassifier;
@@ -51,6 +52,7 @@ import io.casehub.engine.runtime.context.InMemoryCaseContextStoreFactory;
 import io.casehub.engine.runtime.coordination.CentralisedTopologyProvider;
 import io.casehub.engine.runtime.coordination.NoOpAgentCapabilityGuard;
 import io.casehub.engine.runtime.coordination.NoOpAgentWorkStateNotifier;
+import io.casehub.engine.runtime.coordination.NoOpCoordinationDriver;
 import io.casehub.engine.runtime.engine.ChoreographyLoopControl;
 import io.casehub.engine.runtime.routing.FirstSupportedRoutingStrategy;
 import io.casehub.engine.runtime.routing.NoOpHumanTaskRoutingStrategy;
@@ -305,5 +307,12 @@ public class SpiDefaultBeans {
   @ApplicationScoped
   AgentWorkStateNotifier noOpAgentWorkStateNotifier() {
     return new NoOpAgentWorkStateNotifier();
+  }
+
+  @Produces
+  @DefaultBean
+  @ApplicationScoped
+  CoordinationDriver noOpCoordinationDriver() {
+    return new NoOpCoordinationDriver();
   }
 }
