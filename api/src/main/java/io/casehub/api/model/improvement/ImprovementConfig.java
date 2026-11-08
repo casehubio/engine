@@ -35,8 +35,10 @@ public record ImprovementConfig(
     @Nullable Integer conflictTrivialThreshold,
     @Nullable GatePolicy gatePolicy,
     @Nullable EscalationPolicy escalationPolicy) {
+    public static final ImprovementConfig DEFAULTS = new ImprovementConfig(null, null, null, null, null, null, null, null, null, null, null, null, null);
 
-  public ImprovementConfig(
+
+    public ImprovementConfig(
       @Nullable String signalNamespace,
       @Nullable Integer consensusMinSources,
       @Nullable List<String> enabledCategories,
