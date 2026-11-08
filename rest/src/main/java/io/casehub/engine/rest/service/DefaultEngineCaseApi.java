@@ -20,8 +20,10 @@ import io.casehub.api.model.CaseStatus;
 import io.casehub.api.view.CaseContextPathView;
 import io.casehub.api.view.CaseContextView;
 import io.casehub.api.view.CaseInstanceView;
+import io.casehub.api.view.CaseOverviewView;
 import io.casehub.api.view.CasePage;
 import io.casehub.api.view.CaseStreamEventView;
+import io.casehub.api.view.CaseWithContextView;
 import io.casehub.api.view.GoalEvaluationView;
 import io.casehub.api.view.PlanItemView;
 import io.casehub.api.view.StartCaseRequest;
@@ -29,6 +31,7 @@ import io.casehub.engine.rest.CaseStreamBroadcaster;
 import io.casehub.platform.api.acl.AclAction;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
+
 import java.util.List;
 import java.util.UUID;
 import java.util.concurrent.Flow;
@@ -36,54 +39,79 @@ import java.util.concurrent.Flow;
 @ApplicationScoped
 public class DefaultEngineCaseApi implements EngineCaseApi {
 
-  @Inject CaseService caseService;
-  @Inject CaseStreamBroadcaster caseStreamBroadcaster;
+    @Inject
+    CaseService           caseService;
+    @Inject
+    CaseStreamBroadcaster caseStreamBroadcaster;
+    @Inject
+    EventLogService       eventLogService;
 
-  @Override
-  public CasePage listCases(
-      CaseStatus status,
-      String namespace,
-      String name,
-      String tenancyId,
-      Integer offset,
-      Integer limit) {
-    return caseService.listCases(status, namespace, name, tenancyId, offset, limit);
-  }
 
-  @Override
-  public CaseInstanceView getCaseById(UUID caseId, String tenancyId) {
-    var instance = caseService.requireCaseAccess(caseId, AclAction.READ);
-    return caseService.mapInstance(instance);
-  }
+    @Override
+    public CasePage listCases(
+            CaseStatus status,
+            String namespace,
+            String name,
+            String tenancyId,
+            Integer offset,
+            Integer limit) {
+        return caseService.listCases(status, namespace, name, tenancyId, offset, limit);
+    }
 
-  @Override
-  public CaseInstanceView startCase(StartCaseRequest request, String tenancyId) {
-    return caseService.startCaseAndMap(request, tenancyId);
-  }
+    @Override
+    public CaseInstanceView getCaseById(UUID caseId, String tenancyId) {
+        var instance = caseService.requireCaseAccess(caseId, AclAction.READ);
+        return caseService.mapInstance(instance);
+    }
 
-  @Override
-  public CaseContextView getCaseContext(UUID caseId, String tenancyId) {
-    return caseService.getCaseContext(caseId, tenancyId);
-  }
+    @Override
+    public CaseWithContextView getCaseWithContext(UUID caseId, String tenancyId) {
+        var instance = caseService.requireCaseAccess(caseId, AclAction.READ);
+        var view     = caseService.mapInstance(instance);
+        var context  = caseService.getCaseContext(caseId, tenancyId);
+        return new CaseWithContextView(view, context.context());
+    }
 
-  @Override
-  public CaseContextPathView getCaseContextPath(UUID caseId, String path, String tenancyId) {
-    return caseService.getCaseContextPath(caseId, path, tenancyId);
-  }
+    @Override
+    public CaseOverviewView getCaseOverview(UUID caseId, String tenancyId) {
+        var instance     = caseService.requireCaseAccess(caseId, AclAction.READ);
+        var view         = caseService.mapInstance(instance);
+        var context      = caseService.getCaseContext(caseId, tenancyId);
+        var planItems    = caseService.getPlanItems(caseId, tenancyId);
+        var goals        = caseService.evaluateGoals(caseId, tenancyId);
+        var recentEvents = eventLogService.getEventLog(caseId, tenancyId, null, 20, null, null);
+        return new CaseOverviewView(view, context.context(), planItems, goals, recentEvents);
+    }
 
-  @Override
-  public List<PlanItemView> getPlanItems(UUID caseId, String tenancyId) {
-    return caseService.getPlanItems(caseId, tenancyId);
-  }
 
-  @Override
-  public GoalEvaluationView getGoals(UUID caseId, String tenancyId) {
-    return caseService.evaluateGoals(caseId, tenancyId);
-  }
+    @Override
+    public CaseInstanceView startCase(StartCaseRequest request, String tenancyId) {
+        return caseService.startCaseAndMap(request, tenancyId);
+    }
 
-  @Override
-  public Flow.Publisher<CaseStreamEventView> caseStream(UUID caseId) {
-    caseService.requireCaseAccess(caseId, AclAction.READ);
-    return caseStreamBroadcaster.stream(caseId);
-  }
+    @Override
+    public CaseContextView getCaseContext(UUID caseId, String tenancyId) {
+        return caseService.getCaseContext(caseId, tenancyId);
+    }
+
+    @Override
+    public CaseContextPathView getCaseContextPath(UUID caseId, String path, String tenancyId) {
+        return caseService.getCaseContextPath(caseId, path, tenancyId);
+    }
+
+    @Override
+    public List<PlanItemView> getPlanItems(UUID caseId, String tenancyId) {
+        return caseService.getPlanItems(caseId, tenancyId);
+    }
+
+    @Override
+    public GoalEvaluationView getGoals(UUID caseId, String tenancyId) {
+        return caseService.evaluateGoals(caseId, tenancyId);
+    }
+
+    @Override
+    public Flow.Publisher<CaseStreamEventView> caseStream(UUID caseId) {
+        caseService.requireCaseAccess(caseId, AclAction.READ);
+        return caseStreamBroadcaster.stream(caseId);
+    }
 }
