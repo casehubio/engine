@@ -15,7 +15,7 @@
  */
 package io.casehub.api.model.stigmergy;
 
-import io.casehub.api.spi.observation.NeighborRelation;
+import io.casehub.eidos.api.NeighborRelation;
 import java.util.Set;
 
 public record DetectedTeam(

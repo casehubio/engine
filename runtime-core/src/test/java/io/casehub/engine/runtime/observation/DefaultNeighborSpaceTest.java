@@ -19,7 +19,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import io.casehub.api.model.signal.SignalConfig;
 import io.casehub.api.spi.observation.Neighbor;
-import io.casehub.api.spi.observation.NeighborRelation;
+import io.casehub.eidos.api.NeighborRelation;
 import io.casehub.engine.common.internal.observation.ObservationRegistry;
 import io.casehub.engine.common.internal.signal.SignalRegistry;
 import java.time.Duration;

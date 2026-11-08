@@ -20,6 +20,7 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import io.casehub.api.model.TaskStatus;
+import io.casehub.eidos.api.NeighborRelation;
 import java.util.Set;
 import org.junit.jupiter.api.Test;
 
