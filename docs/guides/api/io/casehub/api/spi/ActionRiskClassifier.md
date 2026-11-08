@@ -7,6 +7,10 @@
 Classifies a worker's planned action to determine whether it may proceed autonomously or must be
 gated for human approval.
 
+<p>This is the classification step in the `io.casehub.api.model.coordination.PlatformRole.SUPERVISOR` pipeline — it decides <em>whether</em>
+gating is needed. The gate itself is managed by `OversightGateService`, which implements
+`io.casehub.api.model.coordination.SupervisorGateBehavior`.
+
 <p>Implementations must be annotated `RiskClassifier` and `@ApplicationScoped`. The
 engine chains all registered implementations — the most restrictive result wins. Multiple
 consumer repos can provide classifiers simultaneously without conflict.

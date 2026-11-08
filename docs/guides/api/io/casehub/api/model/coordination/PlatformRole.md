@@ -4,6 +4,8 @@
 
 **Kind:** `enum`
 
+Intrinsic behavioral contracts — the platform implements specific behavior for these roles.
+
 ## Fields
 
 ### `requiredStructuralRole` (`io.casehub.api.model.coordination.StructuralRole`)
@@ -17,6 +19,15 @@
 ### `MODERATOR` (`io.casehub.api.model.coordination.PlatformRole`)
 
 ### `SUPERVISOR` (`io.casehub.api.model.coordination.PlatformRole`)
+
+Oversees, approves/rejects, gates progression. Implemented at two granularities via `SupervisorGateBehavior`:
+
+<ul>
+  <li>`io.casehub.api.spi.OversightGateService` — worker-action gates for `PlannedAction` approval
+  <li>`ConductorInboxManager` — evolution-pipeline gates for research stage approval
+</ul>
+
+<p>Classification (deciding <em>whether</em> gating is needed) is handled by `io.casehub.api.spi.ActionRiskClassifier`, which precedes the gate.
 
 ## Constructors
 
