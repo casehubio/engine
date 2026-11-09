@@ -213,39 +213,43 @@ public class JpaEventLogRepository implements EventLogRepository {
     return typedQuery.getResultList().stream().map(this::fromEntity).toList();
   }
 
-  @Override
-  @Transactional
-  public List<EventLog> query(EventLogQuery query, String tenancyId) {
-    tcm.setTenantContext(tenancyId);
-    StringBuilder hql =
-        new StringBuilder(
-            "SELECT e FROM EventLogEntity e WHERE e.tenancyId = :tid AND e.caseId = :caseId");
-    java.util.Map<String, Object> params = new java.util.LinkedHashMap<>();
-    params.put("tid", tenancyId);
-    params.put("caseId", query.caseId());
-    if (query.eventTypes() != null && !query.eventTypes().isEmpty()) {
-      hql.append(" AND e.eventType IN :eventTypes");
-      params.put("eventTypes", query.eventTypes());
+    @Override
+    @Transactional
+    public List<EventLog> query(EventLogQuery query, String tenancyId) {
+        tcm.setTenantContext(tenancyId);
+        StringBuilder hql =
+                new StringBuilder(
+                        "SELECT e FROM EventLogEntity e WHERE e.tenancyId = :tid AND e.caseId = :caseId");
+        java.util.Map<String, Object> params = new java.util.LinkedHashMap<>();
+        params.put("tid", tenancyId);
+        params.put("caseId", query.caseId());
+        if (query.eventTypes() != null && !query.eventTypes().isEmpty()) {
+            hql.append(" AND e.eventType IN :eventTypes");
+            params.put("eventTypes", query.eventTypes());
+        }
+        if (query.streamTypes() != null && !query.streamTypes().isEmpty()) {
+            hql.append(" AND e.streamType IN :streamTypes");
+            params.put("streamTypes", query.streamTypes());
+        }
+        if (query.since() != null) {
+            hql.append(" AND e.timestamp > :since");
+            params.put("since", query.since());
+        }
+        hql.append(" ORDER BY e.timestamp ASC");
+        var typedQuery = em.createQuery(hql.toString(), EventLogEntity.class);
+        params.forEach(typedQuery::setParameter);
+        typedQuery.setFirstResult(query.page() * query.size());
+        typedQuery.setMaxResults(query.size());
+        return typedQuery.getResultList().stream().map(this::fromEntity).toList();
     }
-    if (query.streamTypes() != null && !query.streamTypes().isEmpty()) {
-      hql.append(" AND e.streamType IN :streamTypes");
-      params.put("streamTypes", query.streamTypes());
-    }
-    hql.append(" ORDER BY e.timestamp ASC");
-    var typedQuery = em.createQuery(hql.toString(), EventLogEntity.class);
-    params.forEach(typedQuery::setParameter);
-    typedQuery.setFirstResult(query.page() * query.size());
-    typedQuery.setMaxResults(query.size());
-    return typedQuery.getResultList().stream().map(this::fromEntity).toList();
-  }
 
   @Override
   @Transactional
   public long count(EventLogQuery query, String tenancyId) {
     tcm.setTenantContext(tenancyId);
     StringBuilder hql =
-        new StringBuilder(
-            "SELECT COUNT(e) FROM EventLogEntity e WHERE e.tenancyId = :tid AND e.caseId = :caseId");
+            new StringBuilder(
+                    "SELECT COUNT(e) FROM EventLogEntity e WHERE e.tenancyId = :tid AND e.caseId = :caseId");
     java.util.Map<String, Object> params = new java.util.LinkedHashMap<>();
     params.put("tid", tenancyId);
     params.put("caseId", query.caseId());
@@ -256,6 +260,10 @@ public class JpaEventLogRepository implements EventLogRepository {
     if (query.streamTypes() != null && !query.streamTypes().isEmpty()) {
       hql.append(" AND e.streamType IN :streamTypes");
       params.put("streamTypes", query.streamTypes());
+    }
+    if (query.since() != null) {
+      hql.append(" AND e.timestamp > :since");
+      params.put("since", query.since());
     }
     var typedQuery = em.createQuery(hql.toString(), Long.class);
     params.forEach(typedQuery::setParameter);

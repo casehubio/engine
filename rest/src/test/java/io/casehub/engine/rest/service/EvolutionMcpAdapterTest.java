@@ -78,6 +78,6 @@ class EvolutionMcpAdapterTest {
                                       || m.isAnnotationPresent(PlatformMutation.class))
                       .toList();
 
-        assertThat(annotated).hasSize(14);
+        assertThat(annotated).hasSize(15);
     }
 }
