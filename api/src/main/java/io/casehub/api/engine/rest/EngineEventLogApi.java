@@ -23,6 +23,8 @@ import io.casehub.platform.api.mcp.ContextParam;
 import io.casehub.platform.api.mcp.McpDomain;
 import io.casehub.platform.api.mcp.PaginatedResponse;
 import io.casehub.platform.api.mcp.PathParam;
+import io.casehub.platform.api.mcp.McpCursorMap;
+import io.casehub.platform.api.mcp.McpCursorType;
 import io.casehub.platform.api.mcp.PlatformQuery;
 import io.casehub.platform.api.mcp.QueryParam;
 import java.util.List;
@@ -58,4 +60,14 @@ public interface EngineEventLogApi {
             @ContextParam("tenancyId") String tenancyId,
             Integer limit);
 
+
+    @AclCheck(
+            resourceType = EngineResourceTypes.CASE,
+            action = AclAction.READ,
+            resourceIdParam = "caseId")
+    @PlatformQuery("Get events since an ISO-8601 timestamp for a case. Returns events chronologically — use the latest event timestamp as 'since' for incremental polling")
+    EventLogPage getEventsSince(
+            @PathParam UUID caseId,
+            @ContextParam("tenancyId") String tenancyId,
+            @McpCursorMap(McpCursorType.INSTANT) String since);
 }

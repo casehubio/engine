@@ -34,6 +34,9 @@ import io.casehub.platform.api.mcp.McpDomain;
 import io.casehub.platform.api.mcp.PaginatedResponse;
 import io.casehub.platform.api.mcp.PathParam;
 import io.casehub.platform.api.mcp.PlatformMutation;
+import io.casehub.neocortex.corpus.ChangeSet;
+import io.casehub.platform.api.mcp.McpCursorMap;
+import io.casehub.platform.api.mcp.McpCursorType;
 import io.casehub.platform.api.mcp.PlatformQuery;
 import io.casehub.platform.api.mcp.PlatformStream;
 import io.casehub.platform.api.mcp.RestStatus;
@@ -116,6 +119,13 @@ public interface EngineCaseApi {
             resourceIdParam = "caseId")
     @PlatformQuery("Evaluate goals against live case context")
     GoalEvaluationView getGoals(@PathParam UUID caseId, @ContextParam("tenancyId") String tenancyId);
+
+
+    @AclCheck(resourceType = EngineResourceTypes.CASE, action = AclAction.READ)
+    @PlatformQuery("Cases with activity since an ISO-8601 timestamp — status changes, new events. Returns ChangeSet with case paths (cases/{caseId}) and a newCursor for incremental polling")
+    ChangeSet whatChanged(
+            @ContextParam("tenancyId") String tenancyId,
+            @McpCursorMap(McpCursorType.INSTANT) String since);
 
     @AclCheck(
             resourceType = EngineResourceTypes.CASE,

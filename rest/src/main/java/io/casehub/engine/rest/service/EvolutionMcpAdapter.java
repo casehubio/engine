@@ -17,6 +17,7 @@ package io.casehub.engine.rest.service;
 
 import io.casehub.api.acl.AclCheck;
 import io.casehub.api.acl.EngineResourceTypes;
+import io.casehub.neocortex.corpus.ChangeSet;
 import io.casehub.api.model.improvement.ComplianceLevel;
 import io.casehub.api.model.improvement.ImprovementConfig;
 import io.casehub.api.model.improvement.ReadinessReport;
@@ -32,6 +33,8 @@ import io.casehub.platform.api.mcp.ContextParam;
 import io.casehub.platform.api.mcp.McpDomain;
 import io.casehub.platform.api.mcp.PathParam;
 import io.casehub.platform.api.mcp.PlatformMutation;
+import io.casehub.platform.api.mcp.McpCursorMap;
+import io.casehub.platform.api.mcp.McpCursorType;
 import io.casehub.platform.api.mcp.PlatformQuery;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
@@ -224,5 +227,44 @@ public class EvolutionMcpAdapter {
     public List<CategoryDescriptor> getCategories(@PathParam UUID caseId) {
         caseService.requireCaseAccess(caseId, AclAction.READ);
         return delegate.getCategories(caseId);
+    }
+
+    @AclCheck(
+            resourceType = EngineResourceTypes.CASE,
+            action = AclAction.READ,
+            resourceIdParam = "caseId")
+    @PlatformQuery("Evolution changes since an ISO-8601 timestamp — ticks, improvements started/completed, gate decisions. Returns ChangeSet with paths (ticks/{timestamp}, improvements/{id}, gates/{id}) and a newCursor for incremental polling")
+    public ChangeSet whatChanged(
+            @PathParam UUID caseId,
+            @ContextParam("tenancyId") String tenancyId,
+            @McpCursorMap(McpCursorType.INSTANT) String since) {
+        caseService.requireCaseAccess(caseId, AclAction.READ);
+        var sinceInstant = java.time.Instant.parse(since);
+        var ticks        = delegate.getTickHistory(caseId, null);
+        var streams      = delegate.getStreamProgress(caseId, tenancyId);
+        var inbox        = delegate.getInbox(caseId, tenancyId);
+
+        var entries = new java.util.ArrayList<io.casehub.neocortex.corpus.ChangedEntry>();
+        for (var tick : ticks) {
+            if (tick.timestamp().isAfter(sinceInstant)) {
+                entries.add(new io.casehub.neocortex.corpus.ChangedEntry(
+                        "ticks/" + tick.timestamp(), io.casehub.neocortex.corpus.ChangeType.ADDED));
+            }
+        }
+        for (var stream : streams) {
+            if (stream.startedAt() != null && stream.startedAt().isAfter(sinceInstant)) {
+                entries.add(new io.casehub.neocortex.corpus.ChangedEntry(
+                        "improvements/" + stream.improvementCaseId(), io.casehub.neocortex.corpus.ChangeType.ADDED));
+            }
+        }
+        for (var entry : inbox) {
+            if (entry.resolvedAt() != null && entry.resolvedAt().isAfter(sinceInstant)) {
+                entries.add(new io.casehub.neocortex.corpus.ChangedEntry(
+                        "gates/" + entry.id(), io.casehub.neocortex.corpus.ChangeType.MODIFIED));
+            }
+        }
+
+        String newCursor = entries.isEmpty() ? since : java.time.Instant.now().toString();
+        return new ChangeSet(entries, newCursor);
     }
 }

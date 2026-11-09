@@ -31,7 +31,6 @@ import io.casehub.engine.rest.CaseStreamBroadcaster;
 import io.casehub.platform.api.acl.AclAction;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
-
 import java.util.List;
 import java.util.UUID;
 import java.util.concurrent.Flow;
@@ -39,79 +38,100 @@ import java.util.concurrent.Flow;
 @ApplicationScoped
 public class DefaultEngineCaseApi implements EngineCaseApi {
 
-    @Inject
-    CaseService           caseService;
-    @Inject
-    CaseStreamBroadcaster caseStreamBroadcaster;
-    @Inject
-    EventLogService       eventLogService;
+  @Inject CaseService caseService;
+  @Inject CaseStreamBroadcaster caseStreamBroadcaster;
+  @Inject EventLogService eventLogService;
 
+  @Override
+  public CasePage listCases(
+      CaseStatus status,
+      String namespace,
+      String name,
+      String tenancyId,
+      Integer offset,
+      Integer limit) {
+    return caseService.listCases(status, namespace, name, tenancyId, offset, limit);
+  }
 
-    @Override
-    public CasePage listCases(
-            CaseStatus status,
-            String namespace,
-            String name,
-            String tenancyId,
-            Integer offset,
-            Integer limit) {
-        return caseService.listCases(status, namespace, name, tenancyId, offset, limit);
+  @Override
+  public CaseInstanceView getCaseById(UUID caseId, String tenancyId) {
+    var instance = caseService.requireCaseAccess(caseId, AclAction.READ);
+    return caseService.mapInstance(instance);
+  }
+
+  @Override
+  public CaseWithContextView getCaseWithContext(UUID caseId, String tenancyId) {
+    var instance = caseService.requireCaseAccess(caseId, AclAction.READ);
+    var view = caseService.mapInstance(instance);
+    var context = caseService.getCaseContext(caseId, tenancyId);
+    return new CaseWithContextView(view, context.context());
+  }
+
+  @Override
+  public CaseOverviewView getCaseOverview(UUID caseId, String tenancyId) {
+    var instance = caseService.requireCaseAccess(caseId, AclAction.READ);
+    var view = caseService.mapInstance(instance);
+    var context = caseService.getCaseContext(caseId, tenancyId);
+    var planItems = caseService.getPlanItems(caseId, tenancyId);
+    var goals = caseService.evaluateGoals(caseId, tenancyId);
+    var recentEvents = eventLogService.getEventLog(caseId, tenancyId, null, 20, null, null);
+    return new CaseOverviewView(view, context.context(), planItems, goals, recentEvents);
+  }
+
+  @Override
+  public CaseInstanceView startCase(StartCaseRequest request, String tenancyId) {
+    return caseService.startCaseAndMap(request, tenancyId);
+  }
+
+  @Override
+  public CaseContextView getCaseContext(UUID caseId, String tenancyId) {
+    return caseService.getCaseContext(caseId, tenancyId);
+  }
+
+  @Override
+  public CaseContextPathView getCaseContextPath(UUID caseId, String path, String tenancyId) {
+    return caseService.getCaseContextPath(caseId, path, tenancyId);
+  }
+
+  @Override
+  public List<PlanItemView> getPlanItems(UUID caseId, String tenancyId) {
+    return caseService.getPlanItems(caseId, tenancyId);
+  }
+
+  @Override
+  public GoalEvaluationView getGoals(UUID caseId, String tenancyId) {
+    return caseService.evaluateGoals(caseId, tenancyId);
+  }
+
+  @Override
+  public io.casehub.neocortex.corpus.ChangeSet whatChanged(String tenancyId, String since) {
+    var sinceInstant = java.time.Instant.parse(since);
+    var cases = caseService.listCases(null, null, null, tenancyId, 0, 500);
+    var entries = new java.util.ArrayList<io.casehub.neocortex.corpus.ChangedEntry>();
+    java.time.Instant latestActivity = sinceInstant;
+
+    for (var caseView : cases.items()) {
+      var recentEvents = eventLogService.getEventsSince(caseView.caseId(), tenancyId, since);
+      if (!recentEvents.items().isEmpty()) {
+        var changeType =
+            caseView.createdAt() != null && caseView.createdAt().isAfter(sinceInstant)
+                ? io.casehub.neocortex.corpus.ChangeType.ADDED
+                : io.casehub.neocortex.corpus.ChangeType.MODIFIED;
+        entries.add(
+            new io.casehub.neocortex.corpus.ChangedEntry("cases/" + caseView.caseId(), changeType));
+        var lastTs = recentEvents.items().get(recentEvents.items().size() - 1).timestamp();
+        if (lastTs.isAfter(latestActivity)) {
+          latestActivity = lastTs;
+        }
+      }
     }
 
-    @Override
-    public CaseInstanceView getCaseById(UUID caseId, String tenancyId) {
-        var instance = caseService.requireCaseAccess(caseId, AclAction.READ);
-        return caseService.mapInstance(instance);
-    }
+    return new io.casehub.neocortex.corpus.ChangeSet(entries, latestActivity.toString());
+  }
 
-    @Override
-    public CaseWithContextView getCaseWithContext(UUID caseId, String tenancyId) {
-        var instance = caseService.requireCaseAccess(caseId, AclAction.READ);
-        var view     = caseService.mapInstance(instance);
-        var context  = caseService.getCaseContext(caseId, tenancyId);
-        return new CaseWithContextView(view, context.context());
-    }
-
-    @Override
-    public CaseOverviewView getCaseOverview(UUID caseId, String tenancyId) {
-        var instance     = caseService.requireCaseAccess(caseId, AclAction.READ);
-        var view         = caseService.mapInstance(instance);
-        var context      = caseService.getCaseContext(caseId, tenancyId);
-        var planItems    = caseService.getPlanItems(caseId, tenancyId);
-        var goals        = caseService.evaluateGoals(caseId, tenancyId);
-        var recentEvents = eventLogService.getEventLog(caseId, tenancyId, null, 20, null, null);
-        return new CaseOverviewView(view, context.context(), planItems, goals, recentEvents);
-    }
-
-
-    @Override
-    public CaseInstanceView startCase(StartCaseRequest request, String tenancyId) {
-        return caseService.startCaseAndMap(request, tenancyId);
-    }
-
-    @Override
-    public CaseContextView getCaseContext(UUID caseId, String tenancyId) {
-        return caseService.getCaseContext(caseId, tenancyId);
-    }
-
-    @Override
-    public CaseContextPathView getCaseContextPath(UUID caseId, String path, String tenancyId) {
-        return caseService.getCaseContextPath(caseId, path, tenancyId);
-    }
-
-    @Override
-    public List<PlanItemView> getPlanItems(UUID caseId, String tenancyId) {
-        return caseService.getPlanItems(caseId, tenancyId);
-    }
-
-    @Override
-    public GoalEvaluationView getGoals(UUID caseId, String tenancyId) {
-        return caseService.evaluateGoals(caseId, tenancyId);
-    }
-
-    @Override
-    public Flow.Publisher<CaseStreamEventView> caseStream(UUID caseId) {
-        caseService.requireCaseAccess(caseId, AclAction.READ);
-        return caseStreamBroadcaster.stream(caseId);
-    }
+  @Override
+  public Flow.Publisher<CaseStreamEventView> caseStream(UUID caseId) {
+    caseService.requireCaseAccess(caseId, AclAction.READ);
+    return caseStreamBroadcaster.stream(caseId);
+  }
 }

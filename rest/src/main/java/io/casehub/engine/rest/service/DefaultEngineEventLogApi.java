@@ -43,4 +43,9 @@ public class DefaultEngineEventLogApi implements EngineEventLogApi {
         return eventLogService.getEventLog(caseId, tenancyId, null, limit, null, null);
     }
 
+
+    @Override
+    public EventLogPage getEventsSince(UUID caseId, String tenancyId, String since) {
+        return eventLogService.getEventsSince(caseId, tenancyId, since);
+    }
 }
