@@ -15,13 +15,13 @@
  */
 package io.casehub.generator;
 
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.node.ArrayNode;
-import com.fasterxml.jackson.databind.node.ObjectNode;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import tools.jackson.databind.JsonNode;
+import tools.jackson.databind.node.ArrayNode;
+import tools.jackson.databind.node.ObjectNode;
 
 /**
  * Post-processes the victools-generated schema to match the hand-written CaseDefinition.yaml
@@ -119,8 +119,8 @@ final class SchemaPostProcessor {
       return;
     }
     List<String> toRemove = new ArrayList<>();
-    defs.fieldNames()
-        .forEachRemaining(
+    defs.propertyNames()
+        .forEach(
             name -> {
               if (UNWANTED_DEFS.contains(name) || isGenericMapType(name)) {
                 toRemove.add(name);
@@ -228,8 +228,8 @@ final class SchemaPostProcessor {
     }
     List<String> toRemove = new ArrayList<>();
     specProps
-        .fieldNames()
-        .forEachRemaining(
+        .propertyNames()
+        .forEach(
             name -> {
               if (!SPEC_ONLY_PROPERTIES.contains(name)) {
                 toRemove.add(name);
@@ -916,7 +916,7 @@ final class SchemaPostProcessor {
     if (type == null) {
       return;
     }
-    com.fasterxml.jackson.databind.JsonNode propNode = type.path("properties").path(field);
+    tools.jackson.databind.JsonNode propNode = type.path("properties").path(field);
     if (propNode.isMissingNode() || !(propNode instanceof ObjectNode prop)) {
       return;
     }
@@ -1255,7 +1255,7 @@ final class SchemaPostProcessor {
       if (obj.has("$ref") && oldRef.equals(obj.get("$ref").asText())) {
         obj.put("$ref", newRef);
       }
-      obj.fields().forEachRemaining(e -> updateRefs(e.getValue(), oldRef, newRef));
+      obj.properties().forEach(e -> updateRefs(e.getValue(), oldRef, newRef));
     } else if (node.isArray()) {
       node.forEach(child -> updateRefs(child, oldRef, newRef));
     }
@@ -1264,7 +1264,7 @@ final class SchemaPostProcessor {
   // --- Missing $def builders ---
 
   private static ObjectNode newObject() {
-    return new ObjectNode(com.fasterxml.jackson.databind.node.JsonNodeFactory.instance);
+    return new ObjectNode(tools.jackson.databind.node.JsonNodeFactory.instance);
   }
 
   private static ObjectNode buildGoalExpression() {
@@ -1289,7 +1289,7 @@ final class SchemaPostProcessor {
   private static ObjectNode buildCaseDefinitionSpec(ObjectNode rootSchema) {
     JsonNode inlineSpec = rootSchema.path("properties").path("spec");
     if (!inlineSpec.isMissingNode() && inlineSpec.isObject()) {
-      return inlineSpec.deepCopy();
+      return (ObjectNode) inlineSpec.deepCopy();
     }
     ObjectNode n = newObject();
     n.put("type", "object");

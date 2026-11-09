@@ -16,8 +16,6 @@
 package io.casehub.generator.module;
 
 import com.fasterxml.classmate.ResolvedType;
-import com.fasterxml.jackson.databind.node.ArrayNode;
-import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.github.victools.jsonschema.generator.CustomDefinition;
 import com.github.victools.jsonschema.generator.Module;
 import com.github.victools.jsonschema.generator.SchemaGenerationContext;
@@ -27,6 +25,8 @@ import io.casehub.api.model.ContextChangeTrigger;
 import io.casehub.api.model.ScheduleTrigger;
 import io.casehub.api.model.ScopeActivatedTrigger;
 import io.casehub.api.model.Trigger;
+import tools.jackson.databind.node.ArrayNode;
+import tools.jackson.databind.node.ObjectNode;
 
 /**
  * Generates schemas for {@link Trigger} and all its sub-types. The parent Trigger uses a

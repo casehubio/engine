@@ -15,11 +15,11 @@
  */
 package io.casehub.generator.module;
 
-import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.github.victools.jsonschema.generator.CustomDefinition;
 import com.github.victools.jsonschema.generator.Module;
 import com.github.victools.jsonschema.generator.SchemaGeneratorConfigBuilder;
 import io.casehub.worker.api.Worker;
+import tools.jackson.databind.node.ObjectNode;
 
 /**
  * Replaces the default Worker schema with the YAML-convention structure. Worker is an extension

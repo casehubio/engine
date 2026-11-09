@@ -17,25 +17,26 @@ package io.casehub.generator;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.node.ObjectNode;
-import com.fasterxml.jackson.dataformat.yaml.YAMLFactory;
-import com.fasterxml.jackson.dataformat.yaml.YAMLGenerator;
 import com.github.victools.jsonschema.generator.Option;
 import com.github.victools.jsonschema.generator.OptionPreset;
 import com.github.victools.jsonschema.generator.SchemaGenerator;
 import com.github.victools.jsonschema.generator.SchemaGeneratorConfigBuilder;
 import com.github.victools.jsonschema.generator.SchemaVersion;
-import com.github.victools.jsonschema.module.jackson.JacksonModule;
 import com.github.victools.jsonschema.module.jackson.JacksonOption;
+import com.github.victools.jsonschema.module.jackson.JacksonSchemaModule;
 import com.github.victools.jsonschema.module.jakarta.validation.JakartaValidationModule;
 import com.github.victools.jsonschema.module.jakarta.validation.JakartaValidationOption;
 import io.casehub.api.model.AdaptationConfig;
 import io.casehub.schema.generator.module.SealedHierarchyModule;
 import io.casehub.schema.generator.module.ShorthandModule;
 import java.io.IOException;
+import java.io.UncheckedIOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Map;
+import tools.jackson.databind.node.ObjectNode;
+import tools.jackson.dataformat.yaml.YAMLMapper;
+import tools.jackson.dataformat.yaml.YAMLWriteFeature;
 
 public class CaseHubSchemaGenerator {
 
@@ -52,7 +53,7 @@ public class CaseHubSchemaGenerator {
         new JakartaValidationModule(
             JakartaValidationOption.INCLUDE_PATTERN_EXPRESSIONS,
             JakartaValidationOption.NOT_NULLABLE_FIELD_IS_REQUIRED));
-    configBuilder.with(new JacksonModule(JacksonOption.RESPECT_JSONPROPERTY_ORDER));
+    configBuilder.with(new JacksonSchemaModule(JacksonOption.RESPECT_JSONPROPERTY_ORDER));
 
     configBuilder.with(new io.casehub.schema.generator.module.EnumInliningModule());
     configBuilder.with(new io.casehub.generator.module.WorkerSchemaModule());
@@ -75,19 +76,24 @@ public class CaseHubSchemaGenerator {
   }
 
   public JsonNode generate(Class<?> rootType) {
-    ObjectNode schema = (ObjectNode) schemaGenerator.generateSchema(rootType);
-    SchemaPostProcessor.process(schema);
-    return schema;
+    var generated = schemaGenerator.generateSchema(rootType);
+    SchemaPostProcessor.process((ObjectNode) generated);
+    try {
+      return new ObjectMapper().readTree(generated.toString());
+    } catch (IOException e) {
+      throw new UncheckedIOException("Failed to convert schema", e);
+    }
   }
 
   public void generateToYaml(Class<?> rootType, Path output) throws IOException {
-    JsonNode schema = generate(rootType);
-    ObjectMapper yamlMapper =
-        new ObjectMapper(
-            new YAMLFactory()
-                .disable(YAMLGenerator.Feature.WRITE_DOC_START_MARKER)
-                .enable(YAMLGenerator.Feature.MINIMIZE_QUOTES));
+    var generated = schemaGenerator.generateSchema(rootType);
+    SchemaPostProcessor.process((ObjectNode) generated);
+    YAMLMapper yamlMapper =
+        YAMLMapper.builder()
+            .disable(YAMLWriteFeature.WRITE_DOC_START_MARKER)
+            .enable(YAMLWriteFeature.MINIMIZE_QUOTES)
+            .build();
     Files.createDirectories(output.getParent());
-    yamlMapper.writerWithDefaultPrettyPrinter().writeValue(output.toFile(), schema);
+    yamlMapper.writerWithDefaultPrettyPrinter().writeValue(output.toFile(), generated);
   }
 }

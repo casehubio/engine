@@ -15,12 +15,12 @@
  */
 package io.casehub.generator.module;
 
-import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.github.victools.jsonschema.generator.Module;
 import com.github.victools.jsonschema.generator.SchemaGeneratorConfigBuilder;
 import io.casehub.api.model.CaseCompletion;
 import io.casehub.worker.api.Worker;
 import java.util.Set;
+import tools.jackson.databind.node.ObjectNode;
 
 /**
  * Adds {@code unevaluatedProperties: false} to all object type schemas, matching the existing YAML
