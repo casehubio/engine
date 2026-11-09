@@ -79,3 +79,10 @@
 
 - `request` (`io.casehub.api.view.StartCaseRequest`)
 - `tenancyId` (`java.lang.String`)
+
+### `public abstract ChangeSet whatChanged(java.lang.String tenancyId, java.lang.String since)`
+
+#### Parameters
+
+- `tenancyId` (`java.lang.String`)
+- `since` (`java.lang.String`)
