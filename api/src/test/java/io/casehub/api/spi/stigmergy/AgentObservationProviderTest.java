@@ -15,7 +15,7 @@
  */
 package io.casehub.api.spi.stigmergy;
 
-import static org.junit.jupiter.api.Assertions.*;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import io.casehub.api.model.signal.PerceivedSignal;
 import io.casehub.api.spi.observation.Observation;
