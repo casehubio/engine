@@ -15,12 +15,12 @@
  */
 package io.casehub.generator.module;
 
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.github.victools.jsonschema.generator.Module;
 import com.github.victools.jsonschema.generator.SchemaGeneratorConfigBuilder;
 import io.casehub.api.model.CaseDefinition;
 import java.util.Set;
+import tools.jackson.databind.JsonNode;
+import tools.jackson.databind.node.ObjectNode;
 
 /**
  * Post-processes the CaseDefinition schema to nest spec-level properties under a {@code spec}
@@ -89,7 +89,7 @@ public class SpecNestingModule implements Module {
               ObjectNode specProperties = specSchema.putObject("properties");
 
               var fieldNames = new java.util.ArrayList<String>();
-              rootProperties.fieldNames().forEachRemaining(fieldNames::add);
+              fieldNames.addAll(rootProperties.propertyNames());
 
               for (String fieldName : fieldNames) {
                 if (!ROOT_PROPERTIES.contains(fieldName)) {

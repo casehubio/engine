@@ -15,9 +15,9 @@
  */
 package io.casehub.generator;
 
-import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.github.victools.jsonschema.generator.SchemaGeneratorConfig;
 import io.casehub.schema.generator.module.ShorthandDefinition;
+import tools.jackson.databind.node.ObjectNode;
 
 final class AdaptationShorthand {
 

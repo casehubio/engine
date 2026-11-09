@@ -15,12 +15,12 @@
  */
 package io.casehub.generator.module;
 
-import com.fasterxml.jackson.databind.node.ArrayNode;
-import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.github.victools.jsonschema.generator.CustomDefinition;
 import com.github.victools.jsonschema.generator.Module;
 import com.github.victools.jsonschema.generator.SchemaGeneratorConfigBuilder;
 import io.casehub.platform.api.expression.ExpressionEvaluator;
+import tools.jackson.databind.node.ArrayNode;
+import tools.jackson.databind.node.ObjectNode;
 
 /**
  * Maps {@link ExpressionEvaluator} to the ExpressionOrOverride schema pattern: either a plain

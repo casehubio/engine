@@ -14,7 +14,7 @@
 
     <properties>
         <maven.deploy.skip>true</maven.deploy.skip>
-        <version.victools.jsonschema>4.38.0</version.victools.jsonschema>
+        <version.victools.jsonschema>5.0.0</version.victools.jsonschema>
     </properties>
 
     <dependencies>
@@ -30,6 +30,12 @@
         <dependency>
             <groupId>io.casehub</groupId>
             <artifactId>casehub-platform-schema-generator</artifactId>
+            <exclusions>
+                <exclusion>
+                    <groupId>com.github.victools</groupId>
+                    <artifactId>*</artifactId>
+                </exclusion>
+            </exclusions>
         </dependency>
         <dependency>
             <groupId>com.github.victools</groupId>
@@ -47,8 +53,9 @@
             <version>${version.victools.jsonschema}</version>
         </dependency>
         <dependency>
-            <groupId>com.fasterxml.jackson.dataformat</groupId>
+            <groupId>tools.jackson.dataformat</groupId>
             <artifactId>jackson-dataformat-yaml</artifactId>
+            <version>3.0.3</version>
         </dependency>
         <dependency>
             <groupId>io.casehub</groupId>

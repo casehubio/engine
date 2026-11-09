@@ -15,12 +15,12 @@
  */
 package io.casehub.generator.module;
 
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.node.ArrayNode;
-import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.github.victools.jsonschema.generator.Module;
 import com.github.victools.jsonschema.generator.SchemaGeneratorConfigBuilder;
 import io.casehub.api.model.Binding;
+import tools.jackson.databind.JsonNode;
+import tools.jackson.databind.node.ArrayNode;
+import tools.jackson.databind.node.ObjectNode;
 
 /**
  * Transforms the Binding schema to use flat named-property oneOf for target types instead of a
