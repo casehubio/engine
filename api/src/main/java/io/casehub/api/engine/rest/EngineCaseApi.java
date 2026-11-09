@@ -28,109 +28,114 @@ import io.casehub.api.view.CaseWithContextView;
 import io.casehub.api.view.GoalEvaluationView;
 import io.casehub.api.view.PlanItemView;
 import io.casehub.api.view.StartCaseRequest;
+import io.casehub.neocortex.corpus.ChangeSet;
 import io.casehub.platform.api.acl.AclAction;
 import io.casehub.platform.api.mcp.ContextParam;
+import io.casehub.platform.api.mcp.McpCursorMap;
+import io.casehub.platform.api.mcp.McpCursorType;
 import io.casehub.platform.api.mcp.McpDomain;
 import io.casehub.platform.api.mcp.PaginatedResponse;
 import io.casehub.platform.api.mcp.PathParam;
 import io.casehub.platform.api.mcp.PlatformMutation;
-import io.casehub.neocortex.corpus.ChangeSet;
-import io.casehub.platform.api.mcp.McpCursorMap;
-import io.casehub.platform.api.mcp.McpCursorType;
 import io.casehub.platform.api.mcp.PlatformQuery;
 import io.casehub.platform.api.mcp.PlatformStream;
 import io.casehub.platform.api.mcp.RestStatus;
-
 import java.util.List;
 import java.util.UUID;
 import java.util.concurrent.Flow;
 
 @McpDomain(
-        value = "engine/cases",
-        app = "engine",
-        summary = "CMMN case instances — start, query, complete, reactivate")
+    value = "engine/cases",
+    app = "engine",
+    summary = "CMMN case instances — start, query, complete, reactivate")
 public interface EngineCaseApi {
 
-    @AclCheck(resourceType = EngineResourceTypes.CASE, action = AclAction.READ)
-    @PlatformQuery("List case instances with optional filtering. status: STARTING, RUNNING, WAITING, SUSPENDED, COMPLETED, FAULTED, CANCELLED, COMPENSATING, COMPENSATED, COMPENSATION_FAULTED")
-    @PaginatedResponse
-    CasePage listCases(
-            CaseStatus status,
-            String namespace,
-            String name,
-            @ContextParam("tenancyId") String tenancyId,
-            Integer offset,
-            Integer limit);
+  @AclCheck(resourceType = EngineResourceTypes.CASE, action = AclAction.READ)
+  @PlatformQuery(
+      "List case instances with optional filtering. status: STARTING, RUNNING, WAITING, SUSPENDED, COMPLETED, FAULTED, CANCELLED, COMPENSATING, COMPENSATED, COMPENSATION_FAULTED. query: text search on namespace and name")
+  @PaginatedResponse
+  CasePage listCases(
+      CaseStatus status,
+      String namespace,
+      String name,
+      @ContextParam("tenancyId") String tenancyId,
+      java.util.Optional<Integer> offset,
+      java.util.Optional<Integer> limit,
+      java.util.Optional<String> query);
 
-    @AclCheck(
-            resourceType = EngineResourceTypes.CASE,
-            action = AclAction.READ,
-            resourceIdParam = "caseId")
-    @PlatformQuery("Get a case instance by ID")
-    CaseInstanceView getCaseById(@PathParam UUID caseId, @ContextParam("tenancyId") String tenancyId);
+  @AclCheck(
+      resourceType = EngineResourceTypes.CASE,
+      action = AclAction.READ,
+      resourceIdParam = "caseId")
+  @PlatformQuery("Get a case instance by ID")
+  CaseInstanceView getCaseById(@PathParam UUID caseId, @ContextParam("tenancyId") String tenancyId);
 
-    @AclCheck(
-            resourceType = EngineResourceTypes.CASE,
-            action = AclAction.READ,
-            resourceIdParam = "caseId")
-    @PlatformQuery("Get a case instance with its full context in one call — combines getCaseById and getCaseContext")
-    CaseWithContextView getCaseWithContext(@PathParam UUID caseId, @ContextParam("tenancyId") String tenancyId);
+  @AclCheck(
+      resourceType = EngineResourceTypes.CASE,
+      action = AclAction.READ,
+      resourceIdParam = "caseId")
+  @PlatformQuery(
+      "Get a case instance with its full context in one call — combines getCaseById and getCaseContext")
+  CaseWithContextView getCaseWithContext(
+      @PathParam UUID caseId, @ContextParam("tenancyId") String tenancyId);
 
-    @AclCheck(
-            resourceType = EngineResourceTypes.CASE,
-            action = AclAction.READ,
-            resourceIdParam = "caseId")
-    @PlatformQuery("Get a complete case overview in one call — instance metadata, context, plan items, goals, and the 20 most recent events")
-    CaseOverviewView getCaseOverview(@PathParam UUID caseId, @ContextParam("tenancyId") String tenancyId);
+  @AclCheck(
+      resourceType = EngineResourceTypes.CASE,
+      action = AclAction.READ,
+      resourceIdParam = "caseId")
+  @PlatformQuery(
+      "Get a complete case overview in one call — instance metadata, context, plan items, goals, and the 20 most recent events")
+  CaseOverviewView getCaseOverview(
+      @PathParam UUID caseId, @ContextParam("tenancyId") String tenancyId);
 
+  @AclCheck(resourceType = EngineResourceTypes.CASE_DEFINITION, action = AclAction.WRITE)
+  @PlatformMutation(
+      "Start a new case instance. Request fields: namespace, name, version (identify the definition), context (optional Map of initial case data)")
+  @RestStatus(201)
+  CaseInstanceView startCase(StartCaseRequest request, @ContextParam("tenancyId") String tenancyId);
 
-    @AclCheck(resourceType = EngineResourceTypes.CASE_DEFINITION, action = AclAction.WRITE)
-    @PlatformMutation("Start a new case instance. Request fields: namespace, name, version (identify the definition), context (optional Map of initial case data)")
-    @RestStatus(201)
-    CaseInstanceView startCase(StartCaseRequest request, @ContextParam("tenancyId") String tenancyId);
+  @AclCheck(
+      resourceType = EngineResourceTypes.CASE,
+      action = AclAction.READ,
+      resourceIdParam = "caseId")
+  @PlatformQuery("Get full case context as JSON")
+  CaseContextView getCaseContext(
+      @PathParam UUID caseId, @ContextParam("tenancyId") String tenancyId);
 
-    @AclCheck(
-            resourceType = EngineResourceTypes.CASE,
-            action = AclAction.READ,
-            resourceIdParam = "caseId")
-    @PlatformQuery("Get full case context as JSON")
-    CaseContextView getCaseContext(
-            @PathParam UUID caseId, @ContextParam("tenancyId") String tenancyId);
+  @AclCheck(
+      resourceType = EngineResourceTypes.CASE,
+      action = AclAction.READ,
+      resourceIdParam = "caseId")
+  @PlatformQuery("Get case context at a specific path")
+  CaseContextPathView getCaseContextPath(
+      @PathParam UUID caseId, String path, @ContextParam("tenancyId") String tenancyId);
 
-    @AclCheck(
-            resourceType = EngineResourceTypes.CASE,
-            action = AclAction.READ,
-            resourceIdParam = "caseId")
-    @PlatformQuery("Get case context at a specific path")
-    CaseContextPathView getCaseContextPath(
-            @PathParam UUID caseId, String path, @ContextParam("tenancyId") String tenancyId);
+  @AclCheck(
+      resourceType = EngineResourceTypes.CASE,
+      action = AclAction.READ,
+      resourceIdParam = "caseId")
+  @PlatformQuery("Get plan items for a case")
+  List<PlanItemView> getPlanItems(
+      @PathParam UUID caseId, @ContextParam("tenancyId") String tenancyId);
 
-    @AclCheck(
-            resourceType = EngineResourceTypes.CASE,
-            action = AclAction.READ,
-            resourceIdParam = "caseId")
-    @PlatformQuery("Get plan items for a case")
-    List<PlanItemView> getPlanItems(
-            @PathParam UUID caseId, @ContextParam("tenancyId") String tenancyId);
+  @AclCheck(
+      resourceType = EngineResourceTypes.CASE,
+      action = AclAction.READ,
+      resourceIdParam = "caseId")
+  @PlatformQuery("Evaluate goals against live case context")
+  GoalEvaluationView getGoals(@PathParam UUID caseId, @ContextParam("tenancyId") String tenancyId);
 
-    @AclCheck(
-            resourceType = EngineResourceTypes.CASE,
-            action = AclAction.READ,
-            resourceIdParam = "caseId")
-    @PlatformQuery("Evaluate goals against live case context")
-    GoalEvaluationView getGoals(@PathParam UUID caseId, @ContextParam("tenancyId") String tenancyId);
+  @AclCheck(resourceType = EngineResourceTypes.CASE, action = AclAction.READ)
+  @PlatformQuery(
+      "Cases with activity since an ISO-8601 timestamp — status changes, new events. Returns ChangeSet with case paths (cases/{caseId}) and a newCursor for incremental polling")
+  ChangeSet whatChanged(
+      @ContextParam("tenancyId") String tenancyId,
+      @McpCursorMap(McpCursorType.INSTANT) String since);
 
-
-    @AclCheck(resourceType = EngineResourceTypes.CASE, action = AclAction.READ)
-    @PlatformQuery("Cases with activity since an ISO-8601 timestamp — status changes, new events. Returns ChangeSet with case paths (cases/{caseId}) and a newCursor for incremental polling")
-    ChangeSet whatChanged(
-            @ContextParam("tenancyId") String tenancyId,
-            @McpCursorMap(McpCursorType.INSTANT) String since);
-
-    @AclCheck(
-            resourceType = EngineResourceTypes.CASE,
-            action = AclAction.READ,
-            resourceIdParam = "caseId")
-    @PlatformStream("Live case event stream")
-    Flow.Publisher<CaseStreamEventView> caseStream(@PathParam UUID caseId);
+  @AclCheck(
+      resourceType = EngineResourceTypes.CASE,
+      action = AclAction.READ,
+      resourceIdParam = "caseId")
+  @PlatformStream("Live case event stream")
+  Flow.Publisher<CaseStreamEventView> caseStream(@PathParam UUID caseId);
 }

@@ -33,11 +33,13 @@ public final class CaseInstanceQuery {
   private final CaseStatus status;
   private final int page;
   private final int size;
+  private final String query;
 
   private CaseInstanceQuery(Builder b) {
     this.namespace = b.namespace;
     this.name = b.name;
     this.status = b.status;
+    this.query = b.query;
     this.page = Math.max(0, b.page);
     this.size = Math.min(MAX_SIZE, Math.max(1, b.size));
   }
@@ -70,6 +72,10 @@ public final class CaseInstanceQuery {
     return size;
   }
 
+  public String query() {
+    return query;
+  }
+
   public static final class Builder {
 
     private String namespace;
@@ -77,6 +83,7 @@ public final class CaseInstanceQuery {
     private CaseStatus status;
     private int page = 0;
     private int size = DEFAULT_SIZE;
+    private String query;
 
     private Builder() {}
 
@@ -102,6 +109,11 @@ public final class CaseInstanceQuery {
 
     public Builder size(int size) {
       this.size = size;
+      return this;
+    }
+
+    public Builder query(String query) {
+      this.query = query;
       return this;
     }
 

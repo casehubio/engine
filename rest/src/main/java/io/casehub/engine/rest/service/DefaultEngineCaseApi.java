@@ -48,9 +48,17 @@ public class DefaultEngineCaseApi implements EngineCaseApi {
       String namespace,
       String name,
       String tenancyId,
-      Integer offset,
-      Integer limit) {
-    return caseService.listCases(status, namespace, name, tenancyId, offset, limit);
+      java.util.Optional<Integer> offset,
+      java.util.Optional<Integer> limit,
+      java.util.Optional<String> query) {
+    return caseService.listCases(
+        status,
+        namespace,
+        name,
+        tenancyId,
+        offset.orElse(null),
+        limit.orElse(null),
+        query.orElse(null));
   }
 
   @Override
@@ -106,7 +114,7 @@ public class DefaultEngineCaseApi implements EngineCaseApi {
   @Override
   public io.casehub.neocortex.corpus.ChangeSet whatChanged(String tenancyId, String since) {
     var sinceInstant = java.time.Instant.parse(since);
-    var cases = caseService.listCases(null, null, null, tenancyId, 0, 500);
+    var cases = caseService.listCases(null, null, null, tenancyId, 0, 500, null);
     var entries = new java.util.ArrayList<io.casehub.neocortex.corpus.ChangedEntry>();
     java.time.Instant latestActivity = sinceInstant;
 

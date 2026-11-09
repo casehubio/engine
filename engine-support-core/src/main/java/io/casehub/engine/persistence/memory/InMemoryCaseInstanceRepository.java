@@ -190,6 +190,20 @@ public class InMemoryCaseInstanceRepository
                 var meta = i.getCaseMetaModel();
                 return meta != null && query.name().equals(meta.getName());
               })
+          .filter(
+              i -> {
+                if (query.query() == null) {
+                  return true;
+                }
+                var meta = i.getCaseMetaModel();
+                if (meta == null) {
+                  return false;
+                }
+                String q = query.query().toLowerCase();
+                return (meta.getNamespace() != null
+                        && meta.getNamespace().toLowerCase().contains(q))
+                    || (meta.getName() != null && meta.getName().toLowerCase().contains(q));
+              })
           .skip((long) query.page() * query.size())
           .limit(query.size())
           .toList();
