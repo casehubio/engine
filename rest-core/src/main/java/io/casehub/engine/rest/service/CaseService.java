@@ -158,21 +158,23 @@ public class CaseService {
       String name,
       String tenancyId,
       Integer offset,
-      Integer limit) {
+      Integer limit,
+      String query) {
     int page = offset != null ? offset : 0;
     int size = limit != null ? limit : 20;
-    var query =
+    var q =
         CaseInstanceQuery.builder()
             .status(status)
             .namespace(namespace)
             .name(name)
+            .query(query)
             .page(page)
             .size(size)
             .build();
     String resolvedTenancyId = tenancyId != null ? tenancyId : currentPrincipal.tenancyId();
     String actorId = currentPrincipal.actorId();
     var items =
-        instanceRepository.query(query, resolvedTenancyId).stream()
+        instanceRepository.query(q, resolvedTenancyId).stream()
             .filter(
                 ci ->
                     accessControlProvider.canAccess(

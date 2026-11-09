@@ -234,6 +234,10 @@ public class JpaCaseInstanceRepository implements CaseInstanceRepository {
       hql.append(" AND ci.caseMetaModel.name = :name");
       params.put("name", query.name());
     }
+    if (query.query() != null) {
+      hql.append(" AND (ci.caseMetaModel.namespace LIKE :q OR ci.caseMetaModel.name LIKE :q)");
+      params.put("q", "%" + query.query() + "%");
+    }
     var typedQuery = em.createQuery(hql.toString(), CaseInstanceEntity.class);
     params.forEach(typedQuery::setParameter);
     typedQuery.setFirstResult(query.page() * query.size());
@@ -260,6 +264,10 @@ public class JpaCaseInstanceRepository implements CaseInstanceRepository {
     if (query.name() != null) {
       hql.append(" AND ci.caseMetaModel.name = :name");
       params.put("name", query.name());
+    }
+    if (query.query() != null) {
+      hql.append(" AND (ci.caseMetaModel.namespace LIKE :q OR ci.caseMetaModel.name LIKE :q)");
+      params.put("q", "%" + query.query() + "%");
     }
     var typedQuery = em.createQuery(hql.toString(), Long.class);
     params.forEach(typedQuery::setParameter);

@@ -31,21 +31,21 @@ public class DefaultEngineEventLogApi implements EngineEventLogApi {
   public EventLogPage getEventLog(
       UUID caseId,
       String tenancyId,
-      Integer offset,
-      Integer limit,
+      java.util.Optional<Integer> offset,
+      java.util.Optional<Integer> limit,
       List<String> eventTypes,
       List<String> streamTypes) {
-    return eventLogService.getEventLog(caseId, tenancyId, offset, limit, eventTypes, streamTypes);
+    return eventLogService.getEventLog(
+        caseId, tenancyId, offset.orElse(null), limit.orElse(null), eventTypes, streamTypes);
   }
 
-    @Override
-    public EventLogPage getLatestEvents(UUID caseId, String tenancyId, Integer limit) {
-        return eventLogService.getEventLog(caseId, tenancyId, null, limit, null, null);
-    }
+  @Override
+  public EventLogPage getLatestEvents(UUID caseId, String tenancyId, Integer limit) {
+    return eventLogService.getEventLog(caseId, tenancyId, null, limit, null, null);
+  }
 
-
-    @Override
-    public EventLogPage getEventsSince(UUID caseId, String tenancyId, String since) {
-        return eventLogService.getEventsSince(caseId, tenancyId, since);
-    }
+  @Override
+  public EventLogPage getEventsSince(UUID caseId, String tenancyId, String since) {
+    return eventLogService.getEventsSince(caseId, tenancyId, since);
+  }
 }

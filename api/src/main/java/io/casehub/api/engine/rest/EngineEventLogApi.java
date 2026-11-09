@@ -20,11 +20,11 @@ import io.casehub.api.acl.EngineResourceTypes;
 import io.casehub.api.view.EventLogPage;
 import io.casehub.platform.api.acl.AclAction;
 import io.casehub.platform.api.mcp.ContextParam;
+import io.casehub.platform.api.mcp.McpCursorMap;
+import io.casehub.platform.api.mcp.McpCursorType;
 import io.casehub.platform.api.mcp.McpDomain;
 import io.casehub.platform.api.mcp.PaginatedResponse;
 import io.casehub.platform.api.mcp.PathParam;
-import io.casehub.platform.api.mcp.McpCursorMap;
-import io.casehub.platform.api.mcp.McpCursorType;
 import io.casehub.platform.api.mcp.PlatformQuery;
 import io.casehub.platform.api.mcp.QueryParam;
 import java.util.List;
@@ -36,38 +36,38 @@ import java.util.UUID;
     summary = "Case event log — audit trail of all case actions")
 public interface EngineEventLogApi {
 
-    @AclCheck(
-            resourceType = EngineResourceTypes.CASE,
-            action = AclAction.READ,
-            resourceIdParam = "caseId")
-    @PlatformQuery("Get paginated and filtered event log for a case. eventTypes: CASE_STARTED, CASE_COMPLETED, TASK_CREATED, TASK_COMPLETED, WORKER_EXECUTION_STARTED, WORKER_EXECUTION_COMPLETED, SIGNAL_RECEIVED, GOAL_REACHED, AGENT_DISPATCHED, AGENT_COMPLETED, etc. (120+ types — use partial match for filtering)")
-    @PaginatedResponse
-    EventLogPage getEventLog(
-            @PathParam UUID caseId,
-            @ContextParam("tenancyId") String tenancyId,
-            Integer offset,
-            Integer limit,
-            @QueryParam("eventTypes") List<String> eventTypes,
-            @QueryParam("streamTypes") List<String> streamTypes);
+  @AclCheck(
+      resourceType = EngineResourceTypes.CASE,
+      action = AclAction.READ,
+      resourceIdParam = "caseId")
+  @PlatformQuery(
+      "Get paginated and filtered event log for a case. eventTypes: CASE_STARTED, CASE_COMPLETED, TASK_CREATED, TASK_COMPLETED, WORKER_EXECUTION_STARTED, WORKER_EXECUTION_COMPLETED, SIGNAL_RECEIVED, GOAL_REACHED, AGENT_DISPATCHED, AGENT_COMPLETED, etc. (120+ types — use partial match for filtering)")
+  @PaginatedResponse
+  EventLogPage getEventLog(
+      @PathParam UUID caseId,
+      @ContextParam("tenancyId") String tenancyId,
+      java.util.Optional<Integer> offset,
+      java.util.Optional<Integer> limit,
+      @QueryParam("eventTypes") List<String> eventTypes,
+      @QueryParam("streamTypes") List<String> streamTypes);
 
-    @AclCheck(
-            resourceType = EngineResourceTypes.CASE,
-            action = AclAction.READ,
-            resourceIdParam = "caseId")
-    @PlatformQuery("Get the most recent events for a case. Shortcut for getEventLog with no filters — returns the latest N events")
-    EventLogPage getLatestEvents(
-            @PathParam UUID caseId,
-            @ContextParam("tenancyId") String tenancyId,
-            Integer limit);
+  @AclCheck(
+      resourceType = EngineResourceTypes.CASE,
+      action = AclAction.READ,
+      resourceIdParam = "caseId")
+  @PlatformQuery(
+      "Get the most recent events for a case. Shortcut for getEventLog with no filters — returns the latest N events")
+  EventLogPage getLatestEvents(
+      @PathParam UUID caseId, @ContextParam("tenancyId") String tenancyId, Integer limit);
 
-
-    @AclCheck(
-            resourceType = EngineResourceTypes.CASE,
-            action = AclAction.READ,
-            resourceIdParam = "caseId")
-    @PlatformQuery("Get events since an ISO-8601 timestamp for a case. Returns events chronologically — use the latest event timestamp as 'since' for incremental polling")
-    EventLogPage getEventsSince(
-            @PathParam UUID caseId,
-            @ContextParam("tenancyId") String tenancyId,
-            @McpCursorMap(McpCursorType.INSTANT) String since);
+  @AclCheck(
+      resourceType = EngineResourceTypes.CASE,
+      action = AclAction.READ,
+      resourceIdParam = "caseId")
+  @PlatformQuery(
+      "Get events since an ISO-8601 timestamp for a case. Returns events chronologically — use the latest event timestamp as 'since' for incremental polling")
+  EventLogPage getEventsSince(
+      @PathParam UUID caseId,
+      @ContextParam("tenancyId") String tenancyId,
+      @McpCursorMap(McpCursorType.INSTANT) String since);
 }

@@ -27,56 +27,59 @@ import io.casehub.engine.rest.ExecutionStateBroadcaster;
 import io.casehub.platform.api.acl.AclAction;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
-
 import java.util.List;
 import java.util.UUID;
 import java.util.concurrent.Flow;
 
 @ApplicationScoped
 public class DefaultEnginePlanApi implements EnginePlanApi {
-    @Inject
-    CaseService caseService;
+  @Inject CaseService caseService;
 
-    @Inject
-    PlanService               planService;
-    @Inject
-    ExecutionStateBroadcaster executionStateBroadcaster;
-    @Inject
-    ObjectMapper              objectMapper;
+  @Inject PlanService planService;
+  @Inject ExecutionStateBroadcaster executionStateBroadcaster;
+  @Inject ObjectMapper objectMapper;
 
-    @Override
-    public PlanModelView getPlanModel(UUID caseId, String tenancyId) {
-        return planService.getPlanModel(caseId, tenancyId);
-    }
+  @Override
+  public PlanModelView getPlanModel(UUID caseId, String tenancyId) {
+    return planService.getPlanModel(caseId, tenancyId);
+  }
 
-    @Override
-    public List<PlanItemDefinitionSnapshot> getPlanDefinitions(UUID caseId, String tenancyId) {
-        return planService.getPlanDefinitions(caseId, tenancyId);
-    }
+  @Override
+  public List<PlanItemDefinitionSnapshot> getPlanDefinitions(UUID caseId, String tenancyId) {
+    return planService.getPlanDefinitions(caseId, tenancyId);
+  }
 
-    @Override
-    public DecompositionSnapshot getDecomposition(UUID caseId, String tenancyId) {
-        return planService.getDecomposition(caseId, tenancyId);
-    }
+  @Override
+  public DecompositionSnapshot getDecomposition(UUID caseId, String tenancyId) {
+    return planService.getDecomposition(caseId, tenancyId);
+  }
 
-    @Override
-    public DagPlanSnapshot getDagPlan(UUID caseId, String tenancyId) {
-        return planService.getDagPlan(caseId, tenancyId);
-    }
+  @Override
+  public DagPlanSnapshot getDagPlan(UUID caseId, String tenancyId) {
+    return planService.getDagPlan(caseId, tenancyId);
+  }
 
-    @Override
-    public DagResultView getDagResult(UUID caseId, String tenancyId) {
-        return planService.getDagResult(caseId, tenancyId);
-    }
+  @Override
+  public DagResultView getDagResult(UUID caseId, String tenancyId) {
+    return planService.getDagResult(caseId, tenancyId);
+  }
 
-    @Override
-    public ExecutionStateView getExecutionState(UUID caseId, String tenancyId) {
-        return planService.getExecutionState(caseId, tenancyId);
-    }
+  @Override
+  public ExecutionStateView getExecutionState(UUID caseId, String tenancyId) {
+    return planService.getExecutionState(caseId, tenancyId);
+  }
 
-    @Override
-    public Flow.Publisher<ExecutionStateView> executionStateStream(UUID caseId) {
-        caseService.requireCaseAccess(caseId, AclAction.READ);
-        return executionStateBroadcaster.stream(caseId).map(PlanViewMapper::toExecutionStateView);
-    }
+  @Override
+  public io.casehub.engine.plan.snapshot.PlanOverviewView getPlanOverview(
+      UUID caseId, String tenancyId) {
+    var model = planService.getPlanModel(caseId, tenancyId);
+    var execution = planService.getExecutionState(caseId, tenancyId);
+    return new io.casehub.engine.plan.snapshot.PlanOverviewView(model, execution);
+  }
+
+  @Override
+  public Flow.Publisher<ExecutionStateView> executionStateStream(UUID caseId) {
+    caseService.requireCaseAccess(caseId, AclAction.READ);
+    return executionStateBroadcaster.stream(caseId).map(PlanViewMapper::toExecutionStateView);
+  }
 }
