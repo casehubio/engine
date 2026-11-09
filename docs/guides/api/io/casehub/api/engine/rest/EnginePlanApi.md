@@ -53,3 +53,10 @@
 
 - `caseId` (`java.util.UUID`)
 - `tenancyId` (`java.lang.String`)
+
+### `public abstract io.casehub.engine.plan.snapshot.PlanOverviewView getPlanOverview(java.util.UUID caseId, java.lang.String tenancyId)`
+
+#### Parameters
+
+- `caseId` (`java.util.UUID`)
+- `tenancyId` (`java.lang.String`)

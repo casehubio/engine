@@ -62,7 +62,7 @@
 - `caseId` (`java.util.UUID`)
 - `tenancyId` (`java.lang.String`)
 
-### `public abstract io.casehub.api.view.CasePage listCases(io.casehub.api.model.CaseStatus status, java.lang.String namespace, java.lang.String name, java.lang.String tenancyId, java.lang.Integer offset, java.lang.Integer limit)`
+### `public abstract io.casehub.api.view.CasePage listCases(io.casehub.api.model.CaseStatus status, java.lang.String namespace, java.lang.String name, java.lang.String tenancyId, java.util.Optional<java.lang.Integer> offset, java.util.Optional<java.lang.Integer> limit, java.util.Optional<java.lang.String> query)`
 
 #### Parameters
 
@@ -70,8 +70,9 @@
 - `namespace` (`java.lang.String`)
 - `name` (`java.lang.String`)
 - `tenancyId` (`java.lang.String`)
-- `offset` (`java.lang.Integer`)
-- `limit` (`java.lang.Integer`)
+- `offset` (`java.util.Optional<java.lang.Integer>`)
+- `limit` (`java.util.Optional<java.lang.Integer>`)
+- `query` (`java.util.Optional<java.lang.String>`)
 
 ### `public abstract io.casehub.api.view.CaseInstanceView startCase(io.casehub.api.view.StartCaseRequest request, java.lang.String tenancyId)`
 
