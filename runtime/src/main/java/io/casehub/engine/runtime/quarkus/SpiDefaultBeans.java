@@ -80,6 +80,8 @@ import io.casehub.engine.runtime.worker.NoOpRecoveryCoordinator;
 import io.casehub.engine.runtime.worker.NoOpVocabularyRegistry;
 import io.casehub.engine.runtime.worker.NoOpWorkerProvisioner;
 import io.casehub.engine.runtime.worker.NoOpWorkerStatusListener;
+import io.casehub.neocortex.mindmap.MindMapStore;
+import io.casehub.neocortex.mindmap.intelligence.InformationGapDetector;
 import io.casehub.platform.api.identity.CurrentPrincipal;
 import io.quarkus.arc.DefaultBean;
 import jakarta.enterprise.context.ApplicationScoped;
@@ -96,257 +98,259 @@ import jakarta.enterprise.inject.Produces;
 @ApplicationScoped
 public class SpiDefaultBeans {
 
-    // --- Worker lifecycle SPIs ---
+  // --- Worker lifecycle SPIs ---
 
-    @Produces
-    @DefaultBean
-    @ApplicationScoped
-    CaseChannelProvider noOpCaseChannelProvider() {
-        return new NoOpCaseChannelProvider();
-    }
+  @Produces
+  @DefaultBean
+  @ApplicationScoped
+  CaseChannelProvider noOpCaseChannelProvider() {
+    return new NoOpCaseChannelProvider();
+  }
 
-    @Produces
-    @DefaultBean
-    @ApplicationScoped
-    WorkerStatusListener noOpWorkerStatusListener() {
-        return new NoOpWorkerStatusListener();
-    }
+  @Produces
+  @DefaultBean
+  @ApplicationScoped
+  WorkerStatusListener noOpWorkerStatusListener() {
+    return new NoOpWorkerStatusListener();
+  }
 
-    @Produces
-    @DefaultBean
-    @ApplicationScoped
-    WorkerProvisioner noOpWorkerProvisioner() {
-        return new NoOpWorkerProvisioner();
-    }
+  @Produces
+  @DefaultBean
+  @ApplicationScoped
+  WorkerProvisioner noOpWorkerProvisioner() {
+    return new NoOpWorkerProvisioner();
+  }
 
-    @Produces
-    @DefaultBean
-    @ApplicationScoped
-    WorkerContextProvider emptyWorkerContextProvider(
-            CaseChannelProvider caseChannelProvider, CurrentPrincipal currentPrincipal) {
-        return new EmptyWorkerContextProvider(caseChannelProvider, currentPrincipal);
-    }
+  @Produces
+  @DefaultBean
+  @ApplicationScoped
+  WorkerContextProvider emptyWorkerContextProvider(
+      CaseChannelProvider caseChannelProvider, CurrentPrincipal currentPrincipal) {
+    return new EmptyWorkerContextProvider(caseChannelProvider, currentPrincipal);
+  }
 
-    // --- Routing and dispatch SPIs ---
+  // --- Routing and dispatch SPIs ---
 
-    @Produces
-    @DefaultBean
-    @ApplicationScoped
-    DispatchBudget noOpDispatchBudget() {
-        return new NoOpDispatchBudget();
-    }
+  @Produces
+  @DefaultBean
+  @ApplicationScoped
+  DispatchBudget noOpDispatchBudget() {
+    return new NoOpDispatchBudget();
+  }
 
-    @Produces
-    @DefaultBean
-    @ApplicationScoped
-    WorkerExecutionRoutingStrategy firstSupportedRoutingStrategy() {
-        return new FirstSupportedRoutingStrategy();
-    }
+  @Produces
+  @DefaultBean
+  @ApplicationScoped
+  WorkerExecutionRoutingStrategy firstSupportedRoutingStrategy() {
+    return new FirstSupportedRoutingStrategy();
+  }
 
-    @Produces
-    @DefaultBean
-    @ApplicationScoped
-    WorkloadDataProvider noOpWorkloadDataProvider() {
-        return new NoOpWorkloadDataProvider();
-    }
+  @Produces
+  @DefaultBean
+  @ApplicationScoped
+  WorkloadDataProvider noOpWorkloadDataProvider() {
+    return new NoOpWorkloadDataProvider();
+  }
 
-    @Produces
-    @DefaultBean
-    @ApplicationScoped
-    HumanTaskRoutingStrategy noOpHumanTaskRoutingStrategy() {
-        return new NoOpHumanTaskRoutingStrategy();
-    }
+  @Produces
+  @DefaultBean
+  @ApplicationScoped
+  HumanTaskRoutingStrategy noOpHumanTaskRoutingStrategy() {
+    return new NoOpHumanTaskRoutingStrategy();
+  }
 
-    @Produces
-    @DefaultBean
-    @ApplicationScoped
-    ImplementationRoutingStrategy noOpImplementationRoutingStrategy() {
-        return new NoOpImplementationRoutingStrategy();
-    }
+  @Produces
+  @DefaultBean
+  @ApplicationScoped
+  ImplementationRoutingStrategy noOpImplementationRoutingStrategy() {
+    return new NoOpImplementationRoutingStrategy();
+  }
 
-    @Produces
-    @DefaultBean
-    @ApplicationScoped
-    AgentRoutingStrategy composableAgentRoutingStrategy(
-            Instance<RoutingSignalProvider> signalProviders) {
-        return new ComposableAgentRoutingStrategy(
-                new RoutingSignalAssembler(signalProviders.stream().toList()));
-    }
+  @Produces
+  @DefaultBean
+  @ApplicationScoped
+  AgentRoutingStrategy composableAgentRoutingStrategy(
+      Instance<RoutingSignalProvider> signalProviders) {
+    return new ComposableAgentRoutingStrategy(
+        new RoutingSignalAssembler(signalProviders.stream().toList()));
+  }
 
-    // --- Failure handling and recovery SPIs ---
+  // --- Failure handling and recovery SPIs ---
 
-    @Produces
-    @DefaultBean
-    @ApplicationScoped
-    ActionRiskClassifier chainedActionRiskClassifier(
-            @RiskClassifier Instance<ActionRiskClassifier> classifiers) {
-        return new ChainedActionRiskClassifier(classifiers.stream().toList());
-    }
+  @Produces
+  @DefaultBean
+  @ApplicationScoped
+  ActionRiskClassifier chainedActionRiskClassifier(
+      @RiskClassifier Instance<ActionRiskClassifier> classifiers) {
+    return new ChainedActionRiskClassifier(classifiers.stream().toList());
+  }
 
-    @Produces
-    @DefaultBean
-    @ApplicationScoped
-    FailureClassifier defaultFailureClassifier() {
-        return new DefaultFailureClassifier();
-    }
+  @Produces
+  @DefaultBean
+  @ApplicationScoped
+  FailureClassifier defaultFailureClassifier() {
+    return new DefaultFailureClassifier();
+  }
 
-    @Produces
-    @DefaultBean
-    @ApplicationScoped
-    ErrorClassifier defaultErrorClassifier() {
-        return new DefaultErrorClassifier();
-    }
+  @Produces
+  @DefaultBean
+  @ApplicationScoped
+  ErrorClassifier defaultErrorClassifier() {
+    return new DefaultErrorClassifier();
+  }
 
-    @Produces
-    @DefaultBean
-    @ApplicationScoped
-    RecoveryCoordinator noOpRecoveryCoordinator() {
-        return new NoOpRecoveryCoordinator();
-    }
+  @Produces
+  @DefaultBean
+  @ApplicationScoped
+  RecoveryCoordinator noOpRecoveryCoordinator() {
+    return new NoOpRecoveryCoordinator();
+  }
 
-    // --- Eidos SPIs ---
+  // --- Eidos SPIs ---
 
-    @Produces
-    @DefaultBean
-    @ApplicationScoped
-    CapabilityHealth noOpCapabilityHealth() {
-        return new NoOpCapabilityHealth();
-    }
+  @Produces
+  @DefaultBean
+  @ApplicationScoped
+  CapabilityHealth noOpCapabilityHealth() {
+    return new NoOpCapabilityHealth();
+  }
 
-    @Produces
-    @DefaultBean
-    @ApplicationScoped
-    VocabularyRegistry noOpVocabularyRegistry() {
-        return new NoOpVocabularyRegistry();
-    }
+  @Produces
+  @DefaultBean
+  @ApplicationScoped
+  VocabularyRegistry noOpVocabularyRegistry() {
+    return new NoOpVocabularyRegistry();
+  }
 
-    @Produces
-    @DefaultBean
-    @ApplicationScoped
-    AgentRegistry noOpAgentRegistry() {
-        return new NoOpAgentRegistry();
-    }
+  @Produces
+  @DefaultBean
+  @ApplicationScoped
+  AgentRegistry noOpAgentRegistry() {
+    return new NoOpAgentRegistry();
+  }
 
-    // --- Context ---
+  // --- Context ---
 
-    @Produces
-    @DefaultBean
-    @ApplicationScoped
-    CaseContextStoreFactory inMemoryCaseContextStoreFactory() {
-        return InMemoryCaseContextStoreFactory.INSTANCE;
-    }
+  @Produces
+  @DefaultBean
+  @ApplicationScoped
+  CaseContextStoreFactory inMemoryCaseContextStoreFactory() {
+    return InMemoryCaseContextStoreFactory.INSTANCE;
+  }
 
-    // --- Loop control ---
+  // --- Loop control ---
 
-    @Produces
-    @DefaultBean
-    @ApplicationScoped
-    LoopControl choreographyLoopControl() {
-        return new ChoreographyLoopControl();
-    }
+  @Produces
+  @DefaultBean
+  @ApplicationScoped
+  LoopControl choreographyLoopControl() {
+    return new ChoreographyLoopControl();
+  }
 
-    // --- Planning SPIs ---
+  // --- Planning SPIs ---
 
-    @Produces
-    @DefaultBean
-    @ApplicationScoped
-    PlanItemStore noOpPlanItemStore() {
-        return new NoOpPlanItemStore();
-    }
+  @Produces
+  @DefaultBean
+  @ApplicationScoped
+  PlanItemStore noOpPlanItemStore() {
+    return new NoOpPlanItemStore();
+  }
 
-    @Produces
-    @DefaultBean
-    @ApplicationScoped
-    PlanAdaptationEvaluator noOpPlanAdaptationEvaluator() {
-        return new NoOpPlanAdaptationEvaluator();
-    }
+  @Produces
+  @DefaultBean
+  @ApplicationScoped
+  PlanAdaptationEvaluator noOpPlanAdaptationEvaluator() {
+    return new NoOpPlanAdaptationEvaluator();
+  }
 
-    @Produces
-    @DefaultBean
-    @ApplicationScoped
-    GoalDecomposer noOpGoalDecomposer() {
-        return new NoOpGoalDecomposer();
-    }
+  @Produces
+  @DefaultBean
+  @ApplicationScoped
+  GoalDecomposer noOpGoalDecomposer() {
+    return new NoOpGoalDecomposer();
+  }
 
-    @Produces
-    @DefaultBean
-    @ApplicationScoped
-    CompoundLockRegistry compoundLockRegistry() {
-        return new CompoundLockRegistry();
-    }
+  @Produces
+  @DefaultBean
+  @ApplicationScoped
+  CompoundLockRegistry compoundLockRegistry() {
+    return new CompoundLockRegistry();
+  }
 
-    // --- Judgment SPIs ---
+  // --- Judgment SPIs ---
 
-    @Produces
-    @DefaultBean
-    @ApplicationScoped
-    JudgmentEscalator defaultJudgmentEscalator() {
-        return new DefaultJudgmentEscalator();
-    }
+  @Produces
+  @DefaultBean
+  @ApplicationScoped
+  JudgmentEscalator defaultJudgmentEscalator() {
+    return new DefaultJudgmentEscalator();
+  }
 
-    // --- Evolution SPIs ---
+  // --- Evolution SPIs ---
 
-    @Produces
-    @DefaultBean
-    @ApplicationScoped
-    io.casehub.api.spi.improvement.EngineEvolutionApi noOpEngineEvolutionApi() {
-        return new io.casehub.engine.runtime.worker.NoOpEngineEvolutionApi();
-    }
+  @Produces
+  @DefaultBean
+  @ApplicationScoped
+  io.casehub.api.spi.improvement.EngineEvolutionApi noOpEngineEvolutionApi() {
+    return new io.casehub.engine.runtime.worker.NoOpEngineEvolutionApi();
+  }
 
-    // --- Coordination SPIs ---
+  // --- Coordination SPIs ---
 
-    @Produces
-    @DefaultBean
-    @ApplicationScoped
-    AgentCapabilityGuard noOpAgentCapabilityGuard() {
-        return new NoOpAgentCapabilityGuard();
-    }
+  @Produces
+  @DefaultBean
+  @ApplicationScoped
+  AgentCapabilityGuard noOpAgentCapabilityGuard() {
+    return new NoOpAgentCapabilityGuard();
+  }
 
-    @Produces
-    @DefaultBean
-    @ApplicationScoped
-    TopologyProvider centralisedTopologyProvider() {
-        return new CentralisedTopologyProvider();
-    }
+  @Produces
+  @DefaultBean
+  @ApplicationScoped
+  TopologyProvider centralisedTopologyProvider() {
+    return new CentralisedTopologyProvider();
+  }
 
-    @Produces
-    @DefaultBean
-    @ApplicationScoped
-    AgentWorkStateNotifier noOpAgentWorkStateNotifier() {
-        return new NoOpAgentWorkStateNotifier();
-    }
+  @Produces
+  @DefaultBean
+  @ApplicationScoped
+  AgentWorkStateNotifier noOpAgentWorkStateNotifier() {
+    return new NoOpAgentWorkStateNotifier();
+  }
 
-    @Produces
-    @DefaultBean
-    @ApplicationScoped
-    CoordinationDriver noOpCoordinationDriver() {
-        return new NoOpCoordinationDriver();
-    }
+  @Produces
+  @DefaultBean
+  @ApplicationScoped
+  CoordinationDriver noOpCoordinationDriver() {
+    return new NoOpCoordinationDriver();
+  }
 
-    @Produces
-    @DefaultBean
-    @ApplicationScoped
-    AgentObservationProvider defaultAgentObservationProvider(
-            SignalRegistry signalRegistry,
-            ObservationRegistry observationRegistry,
-            Instance<StigmergyCoordinator> coordinator) {
-        return new DefaultAgentObservationProvider(
-                signalRegistry, observationRegistry,
-                coordinator.isResolvable() ? coordinator.get() : null);
-    }
+  @Produces
+  @DefaultBean
+  @ApplicationScoped
+  AgentObservationProvider defaultAgentObservationProvider(
+      SignalRegistry signalRegistry,
+      ObservationRegistry observationRegistry,
+      Instance<StigmergyCoordinator> coordinator) {
+    return new DefaultAgentObservationProvider(
+        signalRegistry, observationRegistry, coordinator.isResolvable() ? coordinator.get() : null);
+  }
 
-    @Produces
-    @DefaultBean
-    @ApplicationScoped
-    AgentWriteBack defaultAgentWriteBack(
-            SignalRegistry signalRegistry,
-            ObservationRegistry observationRegistry,
-            Instance<StigmergyCoordinator> coordinator) {
-        return new DefaultAgentWriteBack(
-                signalRegistry, observationRegistry,
-                coordinator.isResolvable() ? coordinator.get() : null);
-    }
+  @Produces
+  @DefaultBean
+  @ApplicationScoped
+  AgentWriteBack defaultAgentWriteBack(
+      SignalRegistry signalRegistry,
+      ObservationRegistry observationRegistry,
+      Instance<StigmergyCoordinator> coordinator) {
+    return new DefaultAgentWriteBack(
+        signalRegistry, observationRegistry, coordinator.isResolvable() ? coordinator.get() : null);
+  }
 
-
-
+  @Produces
+  @DefaultBean
+  @ApplicationScoped
+  InformationGapDetector defaultInformationGapDetector(MindMapStore store) {
+    return new InformationGapDetector(store);
+  }
 }
