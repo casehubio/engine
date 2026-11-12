@@ -80,7 +80,6 @@ public class EngineStrategyResolver implements StrategyResolver {
       @Any Instance<io.casehub.engine.plan.adaptation.OptimizationStrategy> optimizationStrategies,
       @Any Instance<io.casehub.engine.plan.adaptation.AdaptationTrigger> adaptationTriggers,
       @Any Instance<io.casehub.api.spi.judgment.JudgmentVerifier> judgmentVerifiers,
-      @Any Instance<io.casehub.api.spi.judgment.JudgmentEscalator> judgmentEscalators,
       @Any Instance<NamedStrategy> allStrategies) {
     this();
     registerStrategies(agentStrategies);
@@ -103,7 +102,6 @@ public class EngineStrategyResolver implements StrategyResolver {
     registerStrategies(optimizationStrategies);
     registerStrategies(adaptationTriggers);
     registerStrategies(judgmentVerifiers);
-    registerStrategies(judgmentEscalators);
     registerRemainingStrategies(allStrategies);
 
     org.jboss.logging.Logger.getLogger(EngineStrategyResolver.class)

@@ -26,7 +26,7 @@ import io.casehub.api.model.HumanRoutingConfig;
 import io.casehub.api.model.JudgmentTarget;
 import io.casehub.api.spi.routing.CandidateSetSpec;
 import io.casehub.api.spi.routing.JqCandidateSetStrategy;
-import io.casehub.engine.common.spi.JudgmentScheduleRequest;
+import io.casehub.engine.common.spi.HumanTaskScheduleRequest;
 import io.quarkus.test.junit.QuarkusTest;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
@@ -63,16 +63,16 @@ class HumanTaskTargetDispatchTest {
 
     await()
         .atMost(5, TimeUnit.SECONDS)
-        .untilAsserted(() -> assertThat(RecordingJudgmentScheduler.events).isNotEmpty());
+        .untilAsserted(() -> assertThat(RecordingHumanTaskScheduler.events).isNotEmpty());
 
-    JudgmentScheduleRequest event = RecordingJudgmentScheduler.events.get(0);
+    HumanTaskScheduleRequest event = RecordingHumanTaskScheduler.events.get(0);
     assertThat(event.resolvedTitle()).isEqualTo("IRB Review — PROTO-42");
     assertThat(event.resolvedScope()).isEqualTo("site-london");
   }
 
   @BeforeEach
   void reset() {
-    RecordingJudgmentScheduler.events.clear();
+    RecordingHumanTaskScheduler.events.clear();
   }
 
   @Test
@@ -81,15 +81,13 @@ class HumanTaskTargetDispatchTest {
 
     await()
         .atMost(5, TimeUnit.SECONDS)
-        .untilAsserted(() -> assertThat(RecordingJudgmentScheduler.events).isNotEmpty());
+        .untilAsserted(() -> assertThat(RecordingHumanTaskScheduler.events).isNotEmpty());
 
-    JudgmentScheduleRequest event = RecordingJudgmentScheduler.events.get(0);
+    HumanTaskScheduleRequest event = RecordingHumanTaskScheduler.events.get(0);
     assertThat(event.caseId()).isEqualTo(caseId);
     assertThat(event.bindingName()).isEqualTo("review-binding");
-    assertThat(event.target()).isNotNull();
-    assertThat(event.target().routingConfig()).isInstanceOf(HumanRoutingConfig.class);
-    assertThat(((HumanRoutingConfig) event.target().routingConfig()).templateRef())
-        .isEqualTo("irb-review-template");
+    assertThat(event.target()).isInstanceOf(HumanTaskTarget.class);
+    assertThat(event.target().templateRef()).isEqualTo("irb-review-template");
     // inputMapping "{ applicantId: .applicantId }" evaluated: applicantId should be "A-42"
     assertThat(event.inputData()).containsEntry("applicantId", "A-42");
   }
@@ -103,9 +101,9 @@ class HumanTaskTargetDispatchTest {
 
     await()
         .atMost(5, TimeUnit.SECONDS)
-        .untilAsserted(() -> assertThat(RecordingJudgmentScheduler.events).isNotEmpty());
+        .untilAsserted(() -> assertThat(RecordingHumanTaskScheduler.events).isNotEmpty());
 
-    JudgmentScheduleRequest event = RecordingJudgmentScheduler.events.get(0);
+    HumanTaskScheduleRequest event = RecordingHumanTaskScheduler.events.get(0);
     assertThat(event.resolvedCandidateGroups()).containsExactlyInAnyOrder("irb-committee");
     assertThat(event.resolvedCandidateUsers()).isNull();
   }
@@ -119,9 +117,9 @@ class HumanTaskTargetDispatchTest {
 
     await()
         .atMost(5, TimeUnit.SECONDS)
-        .untilAsserted(() -> assertThat(RecordingJudgmentScheduler.events).isNotEmpty());
+        .untilAsserted(() -> assertThat(RecordingHumanTaskScheduler.events).isNotEmpty());
 
-    JudgmentScheduleRequest event = RecordingJudgmentScheduler.events.get(0);
+    HumanTaskScheduleRequest event = RecordingHumanTaskScheduler.events.get(0);
     assertThat(event.resolvedCandidateGroups()).containsExactly("not-an-array");
   }
 
@@ -137,9 +135,9 @@ class HumanTaskTargetDispatchTest {
 
     await()
         .atMost(5, TimeUnit.SECONDS)
-        .untilAsserted(() -> assertThat(RecordingJudgmentScheduler.events).isNotEmpty());
+        .untilAsserted(() -> assertThat(RecordingHumanTaskScheduler.events).isNotEmpty());
 
-    JudgmentScheduleRequest event = RecordingJudgmentScheduler.events.get(0);
+    HumanTaskScheduleRequest event = RecordingHumanTaskScheduler.events.get(0);
     assertThat(event.resolvedCandidateGroups()).containsExactly("wrong");
     assertThat(event.resolvedCandidateUsers()).containsExactly("user-1");
   }
@@ -180,14 +178,9 @@ class HumanTaskTargetDispatchTest {
           JudgmentTarget.builder()
               .prompt("IRB Review")
               .title("IRB Review")
-              .human(
-                  new HumanRoutingConfig(
-                      null,
-                      new CandidateSetSpec.Inline(
-                          new JqCandidateSetStrategy(".irb.candidateGroups")),
-                      null,
-                      null,
-                      null))
+              .human(new HumanRoutingConfig(null,
+                  new CandidateSetSpec.Inline(new JqCandidateSetStrategy(".irb.candidateGroups")),
+                  null, null, null))
               .build();
 
       return CaseDefinition.builder()
@@ -213,13 +206,9 @@ class HumanTaskTargetDispatchTest {
           JudgmentTarget.builder()
               .prompt("Bad Groups")
               .title("Bad Groups")
-              .human(
-                  new HumanRoutingConfig(
-                      null,
-                      new CandidateSetSpec.Inline(new JqCandidateSetStrategy(".routing")),
-                      null,
-                      null,
-                      null))
+              .human(new HumanRoutingConfig(null,
+                  new CandidateSetSpec.Inline(new JqCandidateSetStrategy(".routing")),
+                  null, null, null))
               .build();
 
       return CaseDefinition.builder()
@@ -245,13 +234,10 @@ class HumanTaskTargetDispatchTest {
           JudgmentTarget.builder()
               .prompt("Conjunction")
               .title("Conjunction")
-              .human(
-                  new HumanRoutingConfig(
-                      null,
-                      new CandidateSetSpec.Inline(new JqCandidateSetStrategy(".groups")),
-                      new CandidateSetSpec.Inline(new JqCandidateSetStrategy(".users")),
-                      null,
-                      null))
+              .human(new HumanRoutingConfig(null,
+                  new CandidateSetSpec.Inline(new JqCandidateSetStrategy(".groups")),
+                  new CandidateSetSpec.Inline(new JqCandidateSetStrategy(".users")),
+                  null, null))
               .build();
 
       return CaseDefinition.builder()

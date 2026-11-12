@@ -24,7 +24,7 @@ import io.casehub.api.model.CaseDefinition;
 import io.casehub.api.model.ContextChangeTrigger;
 import io.casehub.api.model.HumanRoutingConfig;
 import io.casehub.api.model.JudgmentTarget;
-import io.casehub.engine.common.spi.JudgmentScheduleRequest;
+import io.casehub.engine.common.spi.HumanTaskScheduleRequest;
 import io.quarkus.test.junit.QuarkusTest;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
@@ -41,7 +41,7 @@ class HumanTaskTypedContextTest {
 
   @BeforeEach
   void reset() {
-    RecordingJudgmentScheduler.events.clear();
+    RecordingHumanTaskScheduler.events.clear();
   }
 
   @Test
@@ -50,9 +50,9 @@ class HumanTaskTypedContextTest {
 
     await()
         .atMost(5, TimeUnit.SECONDS)
-        .untilAsserted(() -> assertThat(RecordingJudgmentScheduler.events).isNotEmpty());
+        .untilAsserted(() -> assertThat(RecordingHumanTaskScheduler.events).isNotEmpty());
 
-    JudgmentScheduleRequest event = RecordingJudgmentScheduler.events.get(0);
+    HumanTaskScheduleRequest event = RecordingHumanTaskScheduler.events.get(0);
     assertThat(event.payloadTypeName()).isEqualTo(PayloadPojo.class.getName());
     assertThat(event.resolutionTypeName()).isEqualTo(ResolutionPojo.class.getName());
     assertThat(event.inputData()).containsEntry("amount", 100);
@@ -65,9 +65,9 @@ class HumanTaskTypedContextTest {
 
     await()
         .atMost(5, TimeUnit.SECONDS)
-        .untilAsserted(() -> assertThat(RecordingJudgmentScheduler.events).isNotEmpty());
+        .untilAsserted(() -> assertThat(RecordingHumanTaskScheduler.events).isNotEmpty());
 
-    JudgmentScheduleRequest event = RecordingJudgmentScheduler.events.get(0);
+    HumanTaskScheduleRequest event = RecordingHumanTaskScheduler.events.get(0);
     assertThat(event.payloadTypeName()).isNotNull();
     assertThat(event.resolutionTypeName()).isNotNull();
   }
@@ -83,7 +83,7 @@ class HumanTaskTypedContextTest {
       Thread.currentThread().interrupt();
     }
 
-    assertThat(RecordingJudgmentScheduler.events).isEmpty();
+    assertThat(RecordingHumanTaskScheduler.events).isEmpty();
   }
 
   public record PayloadPojo(int amount, String currency) {}
