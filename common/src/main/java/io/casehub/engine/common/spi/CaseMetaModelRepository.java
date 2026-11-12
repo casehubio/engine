@@ -16,11 +16,13 @@
 package io.casehub.engine.common.spi;
 
 import io.casehub.engine.common.internal.model.CaseMetaModel;
-import io.smallrye.mutiny.Uni;
 
 /**
- * Storage provider for {@link CaseMetaModel} definitions. tenancyId is explicit — case definitions
- * are per-tenant.
+ * Blocking SPI for {@link CaseMetaModel} definition persistence.
+ *
+ * <p>tenancyId is explicit — case definitions are per-tenant.
+ *
+ * @see ReactiveCaseMetaModelRepository
  */
 public interface CaseMetaModelRepository {
 
@@ -28,11 +30,11 @@ public interface CaseMetaModelRepository {
    * Find a registered case type by its natural key within the given tenant. Returns {@code null} if
    * not found.
    */
-  Uni<CaseMetaModel> findByKey(String namespace, String name, String version, String tenancyId);
+  CaseMetaModel findByKey(String namespace, String name, String version, String tenancyId);
 
   /**
    * Persist a new case meta model scoped to tenancyId. Sets {@code metaModel.id} and {@code
    * metaModel.createdAt} on completion.
    */
-  Uni<CaseMetaModel> save(CaseMetaModel metaModel, String tenancyId);
+  CaseMetaModel save(CaseMetaModel metaModel, String tenancyId);
 }
