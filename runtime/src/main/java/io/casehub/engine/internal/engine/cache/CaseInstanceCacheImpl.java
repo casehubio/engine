@@ -24,8 +24,7 @@ import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 
 @ApplicationScoped
-public class CaseInstanceCacheImpl
-    implements CaseInstanceCache, io.casehub.engine.common.spi.Resettable {
+public class CaseInstanceCacheImpl implements CaseInstanceCache {
 
   private final Map<UUID, CaseInstance> cache = new ConcurrentHashMap<>();
 
@@ -48,10 +47,5 @@ public class CaseInstanceCacheImpl
   /** Returns a snapshot of all currently cached CaseInstances for timeout scanning. */
   public List<CaseInstance> getAll() {
     return List.copyOf(cache.values());
-  }
-
-  @Override
-  public void reset() {
-    cache.clear();
   }
 }

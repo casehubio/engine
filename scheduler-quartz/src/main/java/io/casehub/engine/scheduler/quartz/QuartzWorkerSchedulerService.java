@@ -28,7 +28,7 @@ import org.quartz.SchedulerException;
 import org.quartz.Trigger;
 
 @ApplicationScoped
-class QuartzWorkerSchedulerService implements io.casehub.engine.common.spi.Resettable {
+class QuartzWorkerSchedulerService {
 
   @Inject Scheduler quartz;
 
@@ -94,15 +94,6 @@ class QuartzWorkerSchedulerService implements io.casehub.engine.common.spi.Reset
       }
       original.addSuppressed(e);
       throw original;
-    }
-  }
-
-  @Override
-  public void reset() {
-    try {
-      quartz.clear();
-    } catch (SchedulerException e) {
-      throw new RuntimeException("Failed to clear Quartz scheduler", e);
     }
   }
 }

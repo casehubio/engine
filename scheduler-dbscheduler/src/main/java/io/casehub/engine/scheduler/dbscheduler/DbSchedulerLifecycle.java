@@ -42,7 +42,7 @@ import org.h2.jdbcx.JdbcDataSource;
 import org.jboss.logging.Logger;
 
 @ApplicationScoped
-public class DbSchedulerLifecycle implements io.casehub.engine.common.spi.Resettable {
+public class DbSchedulerLifecycle {
 
   private static final Logger LOG = Logger.getLogger(DbSchedulerLifecycle.class);
 
@@ -148,19 +148,6 @@ public class DbSchedulerLifecycle implements io.casehub.engine.common.spi.Resett
       case MILESTONE_SLA_TIMEOUT -> TASK_MILESTONE_SLA;
       case SIGNAL_TRIGGER -> TASK_SIGNAL_TRIGGER;
     };
-  }
-
-  @Override
-  public void reset() {
-    if (dataSource == null) {
-      return;
-    }
-    try (Connection conn = dataSource.getConnection();
-        Statement stmt = conn.createStatement()) {
-      stmt.execute("DELETE FROM scheduled_tasks");
-    } catch (SQLException e) {
-      throw new RuntimeException("Failed to clear db-scheduler tasks", e);
-    }
   }
 
   private void createTasks() {

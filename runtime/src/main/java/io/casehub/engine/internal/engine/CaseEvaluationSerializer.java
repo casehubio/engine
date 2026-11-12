@@ -36,7 +36,7 @@ import org.jboss.logging.Logger;
  * <p>Refs casehubio/engine#771, #646.
  */
 @ApplicationScoped
-public class CaseEvaluationSerializer implements io.casehub.engine.common.spi.Resettable {
+public class CaseEvaluationSerializer {
 
   private static final Logger LOG = Logger.getLogger(CaseEvaluationSerializer.class);
 
@@ -68,11 +68,6 @@ public class CaseEvaluationSerializer implements io.casehub.engine.common.spi.Re
 
   public void evict(UUID caseId) {
     gates.remove(caseId);
-  }
-
-  @Override
-  public void reset() {
-    gates.clear();
   }
 
   private void drainPending(UUID caseId, CaseGate gate) {

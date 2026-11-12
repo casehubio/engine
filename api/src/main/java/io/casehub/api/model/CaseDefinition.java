@@ -35,90 +35,74 @@ import java.util.Set;
 
 public class CaseDefinition {
 
-  @com.fasterxml.jackson.annotation.JsonPropertyDescription("The CaseHub's namespace.")
   private final String namespace;
-
-  @com.fasterxml.jackson.annotation.JsonPropertyDescription("The CaseHub's name.")
   private final String name;
-
-  @com.fasterxml.jackson.annotation.JsonPropertyDescription(
-      "The version of the DSL used by the CaseHub.")
   private String dsl;
-
-  @com.fasterxml.jackson.annotation.JsonPropertyDescription("The CaseHub's semantic version.")
   private final String version;
-
-  @com.fasterxml.jackson.annotation.JsonPropertyDescription("The CaseHub's title.")
   private String title;
-
-  @com.fasterxml.jackson.annotation.JsonPropertyDescription("The CaseHub's Markdown summary.")
   private String summary;
-
-  @com.fasterxml.jackson.annotation.JsonPropertyDescription(
-      "Declares external dependencies (secrets, config maps) required by this Case definition.")
   private Use use;
-
-  @com.fasterxml.jackson.annotation.JsonPropertyDescription(
-      "Static domain knowledge injected into the semantic layer at case start.")
+  private final List<Capability> capabilities;
+  private final List<Worker> workers;
+  private final List<Binding> bindings;
+  private final List<Milestone> milestones;
+  private final List<Goal> goals;
+  private CaseCompletion completion;
   private Map<String, Object> semanticData;
-
-  @com.fasterxml.jackson.annotation.JsonPropertyDescription(
-      "Episodic memory configuration for this case definition.")
   private EpisodicMemoryConfig episodicMemoryConfig;
-
-  @com.fasterxml.jackson.annotation.JsonPropertyDescription(
-      "User-defined layer names for this case definition.")
   private List<String> layerNames;
-
   private Map<String, AgentDescriptor> agentDescriptors = Map.of();
-  private final CaseDefinitionSpec spec;
+  private String planningStrategy;
+  private String agentRouting;
+  private String implementationRouting;
+  private String humanTaskRouting;
+  private List<io.casehub.api.model.routing.ContextConstraint> humanTaskContextConstraints =
+      List.of();
+  private io.casehub.api.model.routing.WorkloadConstraint humanTaskWorkloadConstraint;
 
-  @com.fasterxml.jackson.annotation.JsonPropertyDescription(
-      "Behavioral type classifications — hierarchical path strings via Path.parse().")
+  private String candidateMatching;
+  private String decompositionStrategy;
+  private Integer maxDecompositionDepth;
+  private Integer maxAdaptations;
+
   private Set<Path> types = Set.of();
-
-  @com.fasterxml.jackson.annotation.JsonPropertyDescription(
-      "Operational classification labels — hierarchical path strings via Path.parse().")
   private Set<Path> labels = Set.of();
-
+  private CbrConfig cbrConfig;
   private io.casehub.api.context.ContextBridge<?> defaultWorkerBridge;
-
-  @com.fasterxml.jackson.annotation.JsonPropertyDescription("Context store factory strategy ID.")
   private String contextStoreFactory;
-
-  @com.fasterxml.jackson.annotation.JsonPropertyDescription(
-      "Fully qualified class name for the typed context bridge. Enables typed POJO context instead of Map<String, Object>.")
-  private String contextType;
-
-  @com.fasterxml.jackson.annotation.JsonPropertyDescription(
-      "Default expression language for this definition. Default: \"jq\".")
-  private String expressionLang;
-
-  @com.fasterxml.jackson.annotation.JsonPropertyDescription(
-      "Typed signal declarations for this case definition.")
   private List<SignalType<?>> signals = List.of();
-
-  @com.fasterxml.jackson.annotation.JsonPropertyDescription(
-      "Label evaluation rules for case queue management.")
   private List<LabelRule> labelRules = List.of();
-
-  @com.fasterxml.jackson.annotation.JsonPropertyDescription(
-      "Inbound connector message to typed case signal mappings.")
   private List<InboundSignalMapping> inboundMappings = List.of();
+  private Map<String, Double> routingSignalWeights;
+  private Map<String, CognitiveDemand> cognitiveDemands = Map.of();
+  private Map<AclAction, List<String>> authorization;
+  private Map<String, String> workerServiceAccountIds;
+  private io.casehub.api.spi.QuorumConfig defaultQuorum;
+  private ReflectionTriggerConfig reflectionTrigger;
+  private MemoryRetrievalConfig memoryRetrieval;
+  private AdaptationConfig adaptationConfig;
+  private io.casehub.engine.plan.PlanningConstraints planningConstraints;
+  private io.casehub.engine.plan.monitoring.MonitoringConfig monitoringConfig;
+  private io.casehub.engine.plan.PortfolioConfig portfolioConfig;
+
+  private List<ChannelDeclaration> channels = List.of();
+  private List<io.casehub.engine.plan.goap.GoapAction> goapActions;
+  private Map<String, Set<String>> goalToEffectKeys;
+  private RecoveryPolicy recoveryPolicy;
 
   public CaseDefinition(String namespace, String name, String version) {
     this.namespace = namespace;
     this.name = name;
     this.version = version;
-    this.spec = new CaseDefinitionSpec();
+    this.capabilities = new ArrayList<>();
+    this.bindings = new ArrayList<>();
+    this.milestones = new ArrayList<>();
+    this.goals = new ArrayList<>();
+    this.workers = new ArrayList<>();
   }
 
   public String getVersion() {
     return version;
-  }
-
-  public CaseDefinitionSpec getSpec() {
-    return spec;
   }
 
   public String getDsl() {
@@ -162,19 +146,19 @@ public class CaseDefinition {
   }
 
   public List<Capability> getCapabilities() {
-    return spec.getCapabilities();
+    return capabilities;
   }
 
   public List<Worker> getWorkers() {
-    return spec.getWorkers();
+    return workers;
   }
 
   public List<Binding> getBindings() {
-    return spec.getBindings();
+    return bindings;
   }
 
   public java.util.List<Binding> findBindingsByCapability(String capabilityName) {
-    return spec.getBindings().stream()
+    return bindings.stream()
         .filter(
             b ->
                 b.target() instanceof CapabilityTarget ct
@@ -183,19 +167,19 @@ public class CaseDefinition {
   }
 
   public List<Milestone> getMilestones() {
-    return spec.getMilestones();
+    return milestones;
   }
 
   public List<Goal> getGoals() {
-    return spec.getGoals();
+    return goals;
   }
 
   public CaseCompletion getCompletion() {
-    return spec.getCompletion();
+    return completion;
   }
 
   public void setCompletion(CaseCompletion completion) {
-    spec.setCompletion(completion);
+    this.completion = completion;
   }
 
   public Map<String, Object> getSemanticData() {
@@ -231,85 +215,85 @@ public class CaseDefinition {
   }
 
   public String getPlanningStrategy() {
-    return spec.getPlanningStrategy();
+    return planningStrategy;
   }
 
   public void setPlanningStrategy(String planningStrategy) {
-    spec.setPlanningStrategy(planningStrategy);
+    this.planningStrategy = planningStrategy;
   }
 
   public String getAgentRouting() {
-    return spec.getAgentRouting();
+    return agentRouting;
   }
 
   public void setAgentRouting(String agentRouting) {
-    spec.setAgentRouting(agentRouting);
+    this.agentRouting = agentRouting;
   }
 
   public String getImplementationRouting() {
-    return spec.getImplementationRouting();
+    return implementationRouting;
   }
 
   public void setImplementationRouting(String implementationRouting) {
-    spec.setImplementationRouting(implementationRouting);
+    this.implementationRouting = implementationRouting;
   }
 
   public String getHumanTaskRouting() {
-    return spec.getHumanTaskRouting();
+    return humanTaskRouting;
   }
 
   public void setHumanTaskRouting(String humanTaskRouting) {
-    spec.setHumanTaskRouting(humanTaskRouting);
+    this.humanTaskRouting = humanTaskRouting;
   }
 
   public List<io.casehub.api.model.routing.ContextConstraint> getHumanTaskContextConstraints() {
-    return spec.getHumanTaskContextConstraints();
+    return humanTaskContextConstraints;
   }
 
   public void setHumanTaskContextConstraints(
       List<io.casehub.api.model.routing.ContextConstraint> constraints) {
-    spec.setHumanTaskContextConstraints(constraints);
+    this.humanTaskContextConstraints = constraints != null ? List.copyOf(constraints) : List.of();
   }
 
   public io.casehub.api.model.routing.WorkloadConstraint getHumanTaskWorkloadConstraint() {
-    return spec.getHumanTaskWorkloadConstraint();
+    return humanTaskWorkloadConstraint;
   }
 
   public void setHumanTaskWorkloadConstraint(
       io.casehub.api.model.routing.WorkloadConstraint constraint) {
-    spec.setHumanTaskWorkloadConstraint(constraint);
+    this.humanTaskWorkloadConstraint = constraint;
   }
 
   public String getCandidateMatching() {
-    return spec.getCandidateMatching();
+    return candidateMatching;
   }
 
   public void setCandidateMatching(String candidateMatching) {
-    spec.setCandidateMatching(candidateMatching);
+    this.candidateMatching = candidateMatching;
   }
 
   public String getDecompositionStrategy() {
-    return spec.getDecompositionStrategy();
+    return decompositionStrategy;
   }
 
   public void setDecompositionStrategy(String decompositionStrategy) {
-    spec.setDecompositionStrategy(decompositionStrategy);
+    this.decompositionStrategy = decompositionStrategy;
   }
 
   public Integer getMaxDecompositionDepth() {
-    return spec.getMaxDecompositionDepth();
+    return maxDecompositionDepth;
   }
 
   public void setMaxDecompositionDepth(Integer maxDecompositionDepth) {
-    spec.setMaxDecompositionDepth(maxDecompositionDepth);
+    this.maxDecompositionDepth = maxDecompositionDepth;
   }
 
   public Integer getMaxAdaptations() {
-    return spec.getMaxAdaptations();
+    return maxAdaptations;
   }
 
   public void setMaxAdaptations(Integer maxAdaptations) {
-    spec.setMaxAdaptations(maxAdaptations);
+    this.maxAdaptations = maxAdaptations;
   }
 
   public Set<Path> getTypes() {
@@ -329,11 +313,11 @@ public class CaseDefinition {
   }
 
   public CbrConfig getCbrConfig() {
-    return spec.getCbrConfig();
+    return cbrConfig;
   }
 
   public void setCbrConfig(CbrConfig cbrConfig) {
-    spec.setCbrConfig(cbrConfig);
+    this.cbrConfig = cbrConfig;
   }
 
   public io.casehub.api.context.ContextBridge<?> getDefaultWorkerBridge() {
@@ -350,22 +334,6 @@ public class CaseDefinition {
 
   public void setContextStoreFactory(String contextStoreFactory) {
     this.contextStoreFactory = contextStoreFactory;
-  }
-
-  public String getContextType() {
-    return contextType;
-  }
-
-  public void setContextType(String contextType) {
-    this.contextType = contextType;
-  }
-
-  public String getExpressionLang() {
-    return expressionLang;
-  }
-
-  public void setExpressionLang(String expressionLang) {
-    this.expressionLang = expressionLang;
   }
 
   public List<SignalType<?>> getSignals() {
@@ -393,129 +361,129 @@ public class CaseDefinition {
   }
 
   public Map<String, Double> getRoutingSignalWeights() {
-    return spec.getRoutingSignalWeights();
+    return routingSignalWeights;
   }
 
   public void setRoutingSignalWeights(Map<String, Double> routingSignalWeights) {
-    spec.setRoutingSignalWeights(routingSignalWeights);
+    this.routingSignalWeights = routingSignalWeights;
   }
 
   public CognitiveDemand getCognitiveDemand(String capabilityName) {
-    return spec.getCognitiveDemand(capabilityName);
+    return cognitiveDemands.get(capabilityName);
   }
 
   public void setCognitiveDemands(Map<String, CognitiveDemand> cognitiveDemands) {
-    spec.setCognitiveDemands(cognitiveDemands);
+    this.cognitiveDemands = cognitiveDemands != null ? Map.copyOf(cognitiveDemands) : Map.of();
   }
 
   public Map<AclAction, List<String>> getAuthorization() {
-    return spec.getAuthorization();
+    return authorization;
   }
 
   public void setAuthorization(Map<AclAction, List<String>> authorization) {
-    spec.setAuthorization(authorization);
+    this.authorization = authorization;
   }
 
   public String getWorkerServiceAccountId(String workerName) {
-    return spec.getWorkerServiceAccountId(workerName);
+    return workerServiceAccountIds != null ? workerServiceAccountIds.get(workerName) : null;
   }
 
   public Map<String, String> getWorkerServiceAccountIds() {
-    return spec.getWorkerServiceAccountIds();
+    return workerServiceAccountIds;
   }
 
   public void setWorkerServiceAccountIds(Map<String, String> workerServiceAccountIds) {
-    spec.setWorkerServiceAccountIds(workerServiceAccountIds);
+    this.workerServiceAccountIds = workerServiceAccountIds;
   }
 
   public io.casehub.api.spi.QuorumConfig getDefaultQuorum() {
-    return spec.getDefaultQuorum();
+    return defaultQuorum;
   }
 
   public void setDefaultQuorum(io.casehub.api.spi.QuorumConfig defaultQuorum) {
-    spec.setDefaultQuorum(defaultQuorum);
+    this.defaultQuorum = defaultQuorum;
   }
 
   public ReflectionTriggerConfig getReflectionTrigger() {
-    return spec.getReflectionTrigger();
+    return reflectionTrigger;
   }
 
   public void setReflectionTrigger(ReflectionTriggerConfig reflectionTrigger) {
-    spec.setReflectionTrigger(reflectionTrigger);
+    this.reflectionTrigger = reflectionTrigger;
   }
 
   public MemoryRetrievalConfig getMemoryRetrieval() {
-    return spec.getMemoryRetrieval();
+    return memoryRetrieval;
   }
 
   public void setMemoryRetrieval(MemoryRetrievalConfig memoryRetrieval) {
-    spec.setMemoryRetrieval(memoryRetrieval);
+    this.memoryRetrieval = memoryRetrieval;
   }
 
   public AdaptationConfig getAdaptationConfig() {
-    return spec.getAdaptationConfig();
+    return adaptationConfig;
   }
 
   public void setAdaptationConfig(AdaptationConfig adaptationConfig) {
-    spec.setAdaptationConfig(adaptationConfig);
+    this.adaptationConfig = adaptationConfig;
   }
 
   public io.casehub.engine.plan.PlanningConstraints getPlanningConstraints() {
-    return spec.getPlanningConstraints();
+    return planningConstraints;
   }
 
   public void setPlanningConstraints(
       io.casehub.engine.plan.PlanningConstraints planningConstraints) {
-    spec.setPlanningConstraints(planningConstraints);
+    this.planningConstraints = planningConstraints;
   }
 
   public io.casehub.engine.plan.monitoring.MonitoringConfig getMonitoringConfig() {
-    return spec.getMonitoringConfig();
+    return monitoringConfig;
   }
 
   public void setMonitoringConfig(
       io.casehub.engine.plan.monitoring.MonitoringConfig monitoringConfig) {
-    spec.setMonitoringConfig(monitoringConfig);
+    this.monitoringConfig = monitoringConfig;
   }
 
   public io.casehub.engine.plan.PortfolioConfig getPortfolioConfig() {
-    return spec.getPortfolioConfig();
+    return portfolioConfig;
   }
 
   public void setPortfolioConfig(io.casehub.engine.plan.PortfolioConfig portfolioConfig) {
-    spec.setPortfolioConfig(portfolioConfig);
+    this.portfolioConfig = portfolioConfig;
   }
 
   public List<ChannelDeclaration> getChannels() {
-    return spec.getChannels();
+    return channels;
   }
 
   public void setChannels(List<ChannelDeclaration> channels) {
-    spec.setChannels(channels);
+    this.channels = channels != null ? List.copyOf(channels) : List.of();
   }
 
   public List<io.casehub.engine.plan.goap.GoapAction> getGoapActions() {
-    return spec.getGoapActions();
+    return goapActions != null ? goapActions : List.of();
   }
 
   public void setGoapActions(List<io.casehub.engine.plan.goap.GoapAction> goapActions) {
-    spec.setGoapActions(goapActions);
+    this.goapActions = goapActions != null ? List.copyOf(goapActions) : null;
   }
 
   public Map<String, Set<String>> getGoalToEffectKeys() {
-    return spec.getGoalToEffectKeys();
+    return goalToEffectKeys != null ? goalToEffectKeys : Map.of();
   }
 
   public void setGoalToEffectKeys(Map<String, Set<String>> goalToEffectKeys) {
-    spec.setGoalToEffectKeys(goalToEffectKeys);
+    this.goalToEffectKeys = goalToEffectKeys;
   }
 
   public RecoveryPolicy getRecoveryPolicy() {
-    return spec.getRecoveryPolicy();
+    return recoveryPolicy;
   }
 
   public void setRecoveryPolicy(RecoveryPolicy recoveryPolicy) {
-    spec.setRecoveryPolicy(recoveryPolicy);
+    this.recoveryPolicy = recoveryPolicy;
   }
 
   public static Builder builder() {
@@ -557,9 +525,6 @@ public class CaseDefinition {
     private CbrConfig cbrConfig;
     private io.casehub.api.context.ContextBridge<?> defaultWorkerBridge;
     private String contextStoreFactory;
-    private String contextType;
-    private String expressionLang;
-
     private List<SignalType<?>> signals = new java.util.ArrayList<>();
     private List<LabelRule> labelRules = new ArrayList<>();
     private List<InboundSignalMapping> inboundMappings;
@@ -807,16 +772,6 @@ public class CaseDefinition {
       return this;
     }
 
-    public Builder contextType(String contextType) {
-      this.contextType = contextType;
-      return this;
-    }
-
-    public Builder expressionLang(String expressionLang) {
-      this.expressionLang = expressionLang;
-      return this;
-    }
-
     public Builder signal(SignalType<?> signal) {
       this.signals.add(signal);
       return this;
@@ -949,19 +904,19 @@ public class CaseDefinition {
       caseHubDefinition.setTitle(title);
       caseHubDefinition.setSummary(summary);
       if (capabilities != null) {
-        caseHubDefinition.getCapabilities().addAll(capabilities);
+        caseHubDefinition.capabilities.addAll(capabilities);
       }
       if (workers != null) {
-        caseHubDefinition.getWorkers().addAll(workers);
+        caseHubDefinition.workers.addAll(workers);
       }
       if (bindings != null) {
-        caseHubDefinition.getBindings().addAll(bindings);
+        caseHubDefinition.bindings.addAll(bindings);
       }
       if (milestones != null) {
-        caseHubDefinition.getMilestones().addAll(milestones);
+        caseHubDefinition.milestones.addAll(milestones);
       }
       if (goals != null) {
-        caseHubDefinition.getGoals().addAll(goals);
+        caseHubDefinition.goals.addAll(goals);
       }
       caseHubDefinition.setCompletion(completion);
       caseHubDefinition.setSemanticData(semanticData);
@@ -983,8 +938,6 @@ public class CaseDefinition {
       caseHubDefinition.setCbrConfig(cbrConfig);
       caseHubDefinition.setDefaultWorkerBridge(defaultWorkerBridge);
       caseHubDefinition.setContextStoreFactory(contextStoreFactory);
-      caseHubDefinition.setContextType(contextType);
-      caseHubDefinition.setExpressionLang(expressionLang);
       caseHubDefinition.setAdaptationConfig(adaptationConfig);
       caseHubDefinition.setChannels(channels);
       caseHubDefinition.setGoapActions(this.goapActions);
