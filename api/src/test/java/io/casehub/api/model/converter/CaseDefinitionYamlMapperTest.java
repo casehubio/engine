@@ -3092,4 +3092,240 @@ class CaseDefinitionYamlMapperTest {
 
     assertThat(def.getPlanningConstraints().costBudgets()).isEmpty();
   }
+
+  @org.junit.jupiter.api.Test
+  void parsesGoapActionsFromSpec() throws Exception {
+    var yaml =
+        """
+                name: test
+                namespace: io.casehub.test
+                version: "1.0"
+                spec:
+                  goapActions:
+                    - name: verify
+                      preconditions:
+                        dataLoaded: true
+                      effects:
+                        verified: true
+                      cost: 2.5
+                    - name: load
+                      effects:
+                        dataLoaded: true
+                      cost: 1.0
+                      benefit: 0.5
+                      softPreconditions:
+                        cacheWarmed: true
+                  capabilities:
+                    - name: analysis
+                """;
+    var def = CaseDefinitionYamlMapper.load(new java.io.ByteArrayInputStream(yaml.getBytes()));
+
+    assertThat(def.getGoapActions()).hasSize(2);
+    var verify = def.getGoapActions().get(0);
+    assertThat(verify.name()).isEqualTo("verify");
+    assertThat(verify.preconditions()).containsEntry("dataLoaded", true);
+    assertThat(verify.effects()).containsEntry("verified", true);
+    assertThat(verify.cost()).isEqualTo(2.5);
+
+    var load = def.getGoapActions().get(1);
+    assertThat(load.name()).isEqualTo("load");
+    assertThat(load.benefit()).isEqualTo(0.5);
+    assertThat(load.softPreconditions()).containsEntry("cacheWarmed", true);
+  }
+
+  @org.junit.jupiter.api.Test
+  void parsesWorkerServiceAccountIdsFromSpec() throws Exception {
+    var yaml =
+        """
+                name: test
+                namespace: io.casehub.test
+                version: "1.0"
+                spec:
+                  workerServiceAccountIds:
+                    analyser: sa-analyser-prod
+                    reviewer: sa-reviewer-prod
+                  capabilities:
+                    - name: analysis
+                """;
+    var def = CaseDefinitionYamlMapper.load(new java.io.ByteArrayInputStream(yaml.getBytes()));
+
+    assertThat(def.getWorkerServiceAccountIds())
+        .containsEntry("analyser", "sa-analyser-prod")
+        .containsEntry("reviewer", "sa-reviewer-prod");
+  }
+
+  @org.junit.jupiter.api.Test
+  void parsesHumanTaskWorkloadConstraintFromSpec() throws Exception {
+    var yaml =
+        """
+                name: test
+                namespace: io.casehub.test
+                version: "1.0"
+                spec:
+                  humanTaskWorkloadConstraint:
+                    maxActiveTaskCount: 5
+                    loadBalanceWeight: 0.7
+                  capabilities:
+                    - name: analysis
+                """;
+    var def = CaseDefinitionYamlMapper.load(new java.io.ByteArrayInputStream(yaml.getBytes()));
+
+    assertThat(def.getHumanTaskWorkloadConstraint()).isNotNull();
+    assertThat(def.getHumanTaskWorkloadConstraint().maxActiveTaskCount()).isEqualTo(5);
+    assertThat(def.getHumanTaskWorkloadConstraint().loadBalanceWeight()).isEqualTo(0.7);
+  }
+
+  @org.junit.jupiter.api.Test
+  void parsesHumanTaskContextConstraintsFromSpec() throws Exception {
+    var yaml =
+        """
+                name: test
+                namespace: io.casehub.test
+                version: "1.0"
+                spec:
+                  humanTaskContextConstraints:
+                    - when: ".priority == \\"high\\""
+                      effect:
+                        preferGroups: [ senior-reviewers ]
+                      weight: 0.8
+                    - when: ".region == \\"eu\\""
+                      effect:
+                        excludeGroups: [ us-only-team ]
+                  capabilities:
+                    - name: analysis
+                """;
+    var def = CaseDefinitionYamlMapper.load(new java.io.ByteArrayInputStream(yaml.getBytes()));
+
+    assertThat(def.getHumanTaskContextConstraints()).hasSize(2);
+    var first = def.getHumanTaskContextConstraints().get(0);
+    assertThat(first.weight()).isEqualTo(0.8);
+    assertThat(first.effect())
+        .isInstanceOf(io.casehub.api.model.routing.ContextConstraint.Prefer.class);
+    var prefer = (io.casehub.api.model.routing.ContextConstraint.Prefer) first.effect();
+    assertThat(prefer.groups()).contains("senior-reviewers");
+
+    var second = def.getHumanTaskContextConstraints().get(1);
+    assertThat(second.effect())
+        .isInstanceOf(io.casehub.api.model.routing.ContextConstraint.Exclude.class);
+  }
+
+  @org.junit.jupiter.api.Test
+  void parsesGoapFieldsFromPerWorkerShorthand() throws Exception {
+    var yaml =
+        """
+                name: test
+                namespace: io.casehub.test
+                version: "1.0"
+                spec:
+                  capabilities:
+                    - name: verify
+                    - name: load
+                  workers:
+                    - name: verifier
+                      capabilities: [ verify ]
+                      cost: 2.5
+                      effect:
+                        verified: true
+                      softDependency:
+                        - dataLoaded
+                    - name: loader
+                      capabilities: [ load ]
+                      cost: 1.0
+                      effect:
+                        dataLoaded: true
+                  bindings:
+                    - name: verify-trigger
+                      capability: verify
+                      on:
+                        contextChange: {}
+                    - name: load-trigger
+                      capability: load
+                      on:
+                        contextChange: {}
+                """;
+    var def = CaseDefinitionYamlMapper.load(new java.io.ByteArrayInputStream(yaml.getBytes()));
+
+    assertThat(def.getGoapActions()).hasSize(2);
+
+    var verifyAction =
+        def.getGoapActions().stream()
+            .filter(a -> a.name().equals("verify"))
+            .findFirst()
+            .orElseThrow();
+    assertThat(verifyAction.cost()).isEqualTo(2.5);
+    assertThat(verifyAction.effects()).containsEntry("verified", true);
+    assertThat(verifyAction.softPreconditions()).containsEntry("dataLoaded", true);
+
+    var loadAction =
+        def.getGoapActions().stream()
+            .filter(a -> a.name().equals("load"))
+            .findFirst()
+            .orElseThrow();
+    assertThat(loadAction.cost()).isEqualTo(1.0);
+    assertThat(loadAction.effects()).containsEntry("dataLoaded", true);
+  }
+
+  @org.junit.jupiter.api.Test
+  void perWorkerGoapMergesWithExplicitGoapActions() throws Exception {
+    var yaml =
+        """
+                name: test
+                namespace: io.casehub.test
+                version: "1.0"
+                spec:
+                  goapActions:
+                    - name: explicit-action
+                      effects:
+                        explicitDone: true
+                      cost: 3.0
+                  capabilities:
+                    - name: verify
+                  workers:
+                    - name: verifier
+                      capabilities: [ verify ]
+                      cost: 1.5
+                      effect:
+                        verified: true
+                  bindings:
+                    - name: verify-trigger
+                      capability: verify
+                      on:
+                        contextChange: {}
+                """;
+    var def = CaseDefinitionYamlMapper.load(new java.io.ByteArrayInputStream(yaml.getBytes()));
+
+    assertThat(def.getGoapActions()).hasSize(2);
+    assertThat(def.getGoapActions().stream().map(a -> a.name()).toList())
+        .containsExactlyInAnyOrder("explicit-action", "verify");
+  }
+
+  @org.junit.jupiter.api.Test
+  void perWorkerEffectOnly_createsGoapActionWithDefaultCost() throws Exception {
+    var yaml =
+        """
+                name: test
+                namespace: io.casehub.test
+                version: "1.0"
+                spec:
+                  capabilities:
+                    - name: scan
+                  workers:
+                    - name: scanner
+                      capabilities: [ scan ]
+                      effect:
+                        scanned: true
+                  bindings:
+                    - name: scan-trigger
+                      capability: scan
+                      on:
+                        contextChange: {}
+                """;
+    var def = CaseDefinitionYamlMapper.load(new java.io.ByteArrayInputStream(yaml.getBytes()));
+
+    assertThat(def.getGoapActions()).hasSize(1);
+    var action = def.getGoapActions().get(0);
+    assertThat(action.name()).isEqualTo("scan");
+    assertThat(action.cost()).isEqualTo(1.0);
+    assertThat(action.effects()).containsEntry("scanned", true);
+  }
 }

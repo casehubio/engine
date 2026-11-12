@@ -29,7 +29,6 @@ import io.casehub.api.model.CapabilityTarget;
 import io.casehub.api.model.CaseDefinition;
 import io.casehub.api.model.CaseStatus;
 import io.casehub.api.model.CognitiveDemand;
-import io.casehub.api.model.CompoundDeclaration;
 import io.casehub.api.model.EpisodicMemoryConfig;
 import io.casehub.api.model.ExecutionMode;
 import io.casehub.api.model.Goal;
@@ -60,15 +59,6 @@ import io.casehub.api.model.WorkerFunctions;
 import io.casehub.api.model.evaluator.JQExpressionEvaluator;
 import io.casehub.api.model.evaluator.TypedMvelExpressionEvaluator;
 import io.casehub.api.spi.WorkerFunctionProviderRegistry;
-import io.casehub.eidos.api.AgentCapability;
-import io.casehub.eidos.api.AgentConstraint;
-import io.casehub.eidos.api.AgentDescriptor;
-import io.casehub.eidos.api.AgentDisposition;
-import io.casehub.eidos.api.AgentGoal;
-import io.casehub.eidos.api.ConstraintSeverity;
-import io.casehub.eidos.api.GoalPriority;
-import io.casehub.eidos.api.Visibility;
-import io.casehub.engine.plan.goap.GoapAction;
 import io.casehub.platform.api.acl.AclAction;
 import io.casehub.platform.api.expression.CompiledExpression;
 import io.casehub.platform.api.expression.ExpressionEvaluator;
@@ -356,7 +346,9 @@ public final class CaseDefinitionYamlMapper {
 
     if (contextClass != null) {
       def.setDefaultWorkerBridge(new JacksonPojoBridge<>(contextClass));
+      def.setContextType(schema.getContextType());
     }
+    def.setExpressionLang(expressionLang);
 
     // semanticData — free-form object; read directly from raw JsonNode to avoid empty generated
     // class
@@ -621,21 +613,40 @@ public final class CaseDefinitionYamlMapper {
       // Add all to definition
       def.getWorkers().addAll(builtWorkers.values());
 
-      // Parse agentDescriptor blocks from raw worker nodes
-      if (rawWorkers != null) {
-        final Map<String, AgentDescriptor> descriptors = new LinkedHashMap<>();
-        for (int di = 0; di < rawWorkers.size(); di++) {
-          final JsonNode rawWorkerNode = rawWorkers.get(di);
-          if (rawWorkerNode.has("agentDescriptor")) {
-            final String workerName = rawWorkerNode.get("name").asText();
-            descriptors.put(
-                workerName,
-                convertAgentDescriptor(rawWorkerNode.get("agentDescriptor"), workerName));
+      // Per-worker GOAP shorthand: cost, effect, softDependency → GoapAction
+      var workerGoapActions = new java.util.ArrayList<io.casehub.engine.plan.goap.GoapAction>();
+      for (int wi = 0; rawWorkers != null && wi < rawWorkers.size(); wi++) {
+        JsonNode rawW = rawWorkers.get(wi);
+        if (rawW == null) continue;
+        boolean hasEffect = rawW.has("effect") && rawW.get("effect").isObject();
+        boolean hasCost = rawW.has("cost");
+        boolean hasSoftDep = rawW.has("softDependency") && rawW.get("softDependency").isArray();
+        if (hasEffect || hasCost) {
+          String capName =
+              schema.getSpec().getWorkers().get(wi).getCapabilities() != null
+                      && !schema.getSpec().getWorkers().get(wi).getCapabilities().isEmpty()
+                  ? schema.getSpec().getWorkers().get(wi).getCapabilities().get(0)
+                  : schema.getSpec().getWorkers().get(wi).getName();
+          Map<String, Boolean> effects = parseBooleanMap(rawW.get("effect"));
+          double cost = rawW.has("cost") ? rawW.get("cost").asDouble() : 1.0;
+          Map<String, Boolean> softPrec = Map.of();
+          if (hasSoftDep) {
+            var sp = new java.util.LinkedHashMap<String, Boolean>();
+            rawW.get("softDependency").forEach(e -> sp.put(e.asText(), true));
+            softPrec = Map.copyOf(sp);
           }
+          workerGoapActions.add(
+              new io.casehub.engine.plan.goap.GoapAction(
+                  capName, Map.of(), effects, cost, 0, softPrec));
         }
-        if (!descriptors.isEmpty()) {
-          def.setAgentDescriptors(descriptors);
-        }
+      }
+      if (!workerGoapActions.isEmpty()) {
+        var existing =
+            def.getGoapActions() != null
+                ? new java.util.ArrayList<>(def.getGoapActions())
+                : new java.util.ArrayList<io.casehub.engine.plan.goap.GoapAction>();
+        existing.addAll(workerGoapActions);
+        def.setGoapActions(existing);
       }
     }
 
@@ -1209,83 +1220,95 @@ public final class CaseDefinitionYamlMapper {
               delegates.isEmpty() ? null : delegates, timeouts.isEmpty() ? null : timeouts));
     }
 
-    // GOAP actions — convert schema GoapActionDef to engine GoapAction
-    if (schema.getSpec() != null && schema.getSpec().getActions() != null) {
-      final List<io.casehub.model.GoapActionDef> schemaActions = schema.getSpec().getActions();
-      if (!schemaActions.isEmpty()) {
-        final List<GoapAction> goapActions = new ArrayList<>(schemaActions.size());
-        for (final io.casehub.model.GoapActionDef sa : schemaActions) {
-          final Map<String, Boolean> preconditions =
-              sa.getPreconditions() != null
-                  ? new LinkedHashMap<>(sa.getPreconditions().getAdditionalProperties())
-                  : Map.of();
-          final Map<String, Boolean> effects =
-              sa.getEffects() != null
-                  ? new LinkedHashMap<>(sa.getEffects().getAdditionalProperties())
-                  : Map.of();
-          final Map<String, Boolean> softPreconditions =
-              sa.getSoftPreconditions() != null
-                  ? new LinkedHashMap<>(sa.getSoftPreconditions().getAdditionalProperties())
-                  : Map.of();
-          final double cost = sa.getCost() != null ? sa.getCost() : 1.0;
-          final double benefit = sa.getBenefit() != null ? sa.getBenefit() : 0.0;
-          goapActions.add(
-              new GoapAction(
-                  sa.getName(), preconditions, effects, cost, benefit, softPreconditions, null));
-        }
-        def.setGoapActions(goapActions);
+    // goapActions — spec-level GOAP action declarations
+    final JsonNode goapNode = specNode != null ? specNode.get("goapActions") : null;
+    if (goapNode != null && goapNode.isArray()) {
+      var actions = new java.util.ArrayList<io.casehub.engine.plan.goap.GoapAction>();
+      for (JsonNode actionNode : goapNode) {
+        String actionName = actionNode.has("name") ? actionNode.get("name").asText() : null;
+        Map<String, Boolean> preconditions = parseBooleanMap(actionNode.get("preconditions"));
+        Map<String, Boolean> effects = parseBooleanMap(actionNode.get("effects"));
+        double cost = actionNode.has("cost") ? actionNode.get("cost").asDouble() : 1.0;
+        double benefit = actionNode.has("benefit") ? actionNode.get("benefit").asDouble() : 0;
+        Map<String, Boolean> softPreconditions =
+            parseBooleanMap(actionNode.get("softPreconditions"));
+        actions.add(
+            new io.casehub.engine.plan.goap.GoapAction(
+                actionName, preconditions, effects, cost, benefit, softPreconditions));
       }
+      var merged =
+          def.getGoapActions() != null
+              ? new java.util.ArrayList<>(def.getGoapActions())
+              : new java.util.ArrayList<io.casehub.engine.plan.goap.GoapAction>();
+      merged.addAll(actions);
+      def.setGoapActions(merged);
     }
 
-    // Compounds — convert schema CompoundDef to CompoundDeclaration
-    if (schema.getSpec() != null && schema.getSpec().getCompounds() != null) {
-      final List<io.casehub.model.CompoundDef> schemaCompounds = schema.getSpec().getCompounds();
-      if (!schemaCompounds.isEmpty()) {
-        final JsonNode compoundsNode =
-            specNode != null && specNode.has("compounds") ? specNode.get("compounds") : null;
-        final List<CompoundDeclaration> compounds = new ArrayList<>(schemaCompounds.size());
-        for (int ci = 0; ci < schemaCompounds.size(); ci++) {
-          final io.casehub.model.CompoundDef sc = schemaCompounds.get(ci);
-          final JsonNode rawCompound =
-              compoundsNode != null && ci < compoundsNode.size() ? compoundsNode.get(ci) : null;
+    // goalToEffectKeys — maps goal names to sets of GOAP effect keys
+    final JsonNode gtekNode = specNode != null ? specNode.get("goalToEffectKeys") : null;
+    if (gtekNode != null && gtekNode.isObject()) {
+      var goalToEffects = new java.util.LinkedHashMap<String, Set<String>>();
+      gtekNode
+          .fields()
+          .forEachRemaining(
+              e -> {
+                var keys = new java.util.LinkedHashSet<String>();
+                if (e.getValue().isArray()) {
+                  e.getValue().forEach(v -> keys.add(v.asText()));
+                }
+                goalToEffects.put(e.getKey(), Set.copyOf(keys));
+              });
+      def.setGoalToEffectKeys(Map.copyOf(goalToEffects));
+    }
 
-          final Map<String, Participation> scopedBindings = new LinkedHashMap<>();
-          if (sc.getScopedBindings() != null) {
-            sc.getScopedBindings()
-                .getAdditionalProperties()
-                .forEach((k, v) -> scopedBindings.put(k, Participation.valueOf(v.value())));
-          }
+    // workerServiceAccountIds — map of worker name to service account ID
+    final JsonNode wsaiNode = specNode != null ? specNode.get("workerServiceAccountIds") : null;
+    if (wsaiNode != null && wsaiNode.isObject()) {
+      var ids = new LinkedHashMap<String, String>();
+      wsaiNode.fields().forEachRemaining(e -> ids.put(e.getKey(), e.getValue().asText()));
+      def.setWorkerServiceAccountIds(Map.copyOf(ids));
+    }
 
-          final ExpressionEvaluator entryCondition =
-              rawCompound != null && rawCompound.has("entryCondition")
-                  ? resolveExpression(
-                      rawCompound.get("entryCondition"), effectiveRegistry, expressionLang)
-                  : null;
-          final ExpressionEvaluator exitCondition =
-              rawCompound != null && rawCompound.has("exitCondition")
-                  ? resolveExpression(
-                      rawCompound.get("exitCondition"), effectiveRegistry, expressionLang)
-                  : null;
-
-          final String completionSemantics =
-              sc.getCompletionSemantics() != null ? sc.getCompletionSemantics() : "all";
-          final String dispatchMode =
-              sc.getDispatchMode() != null ? sc.getDispatchMode().value() : "CHOREOGRAPHED";
-          final boolean repeatable = sc.getRepeatable() != null && sc.getRepeatable();
-
-          compounds.add(
-              new CompoundDeclaration(
-                  sc.getName(),
-                  completionSemantics,
-                  dispatchMode,
-                  scopedBindings,
-                  entryCondition,
-                  exitCondition,
-                  repeatable,
-                  sc.getPlanningStrategy()));
-        }
-        def.setCompounds(compounds);
+    // humanTaskWorkloadConstraint — workload-based candidate filtering
+    final JsonNode wlcNode = specNode != null ? specNode.get("humanTaskWorkloadConstraint") : null;
+    if (wlcNode != null && wlcNode.isObject()) {
+      var builder = io.casehub.api.model.routing.WorkloadConstraint.builder();
+      if (wlcNode.has("maxActiveTaskCount")) {
+        builder.maxActiveTaskCount(wlcNode.get("maxActiveTaskCount").asInt());
       }
+      if (wlcNode.has("loadBalanceWeight")) {
+        builder.loadBalanceWeight(wlcNode.get("loadBalanceWeight").asDouble());
+      }
+      def.setHumanTaskWorkloadConstraint(builder.build());
+    }
+
+    // humanTaskContextConstraints — declarative candidate filtering and scoring
+    final JsonNode htccNode = specNode != null ? specNode.get("humanTaskContextConstraints") : null;
+    if (htccNode != null && htccNode.isArray()) {
+      var constraints = new java.util.ArrayList<io.casehub.api.model.routing.ContextConstraint>();
+      for (JsonNode constraintNode : htccNode) {
+        var ccBuilder = io.casehub.api.model.routing.ContextConstraint.builder();
+        if (constraintNode.has("when")) {
+          ccBuilder.when(resolveExpression(constraintNode.get("when"), registry, expressionLang));
+        }
+        if (constraintNode.has("weight")) {
+          ccBuilder.weight(constraintNode.get("weight").asDouble());
+        }
+        JsonNode effectNode = constraintNode.get("effect");
+        if (effectNode != null && effectNode.isObject()) {
+          if (effectNode.has("preferGroups") || effectNode.has("preferUsers")) {
+            Set<String> groups = parseStringSet(effectNode.get("preferGroups"));
+            Set<String> users = parseStringSet(effectNode.get("preferUsers"));
+            ccBuilder.prefer(groups, users);
+          } else if (effectNode.has("excludeGroups") || effectNode.has("excludeUsers")) {
+            Set<String> groups = parseStringSet(effectNode.get("excludeGroups"));
+            Set<String> users = parseStringSet(effectNode.get("excludeUsers"));
+            ccBuilder.exclude(groups, users);
+          }
+        }
+        constraints.add(ccBuilder.build());
+      }
+      def.setHumanTaskContextConstraints(constraints);
     }
 
     return def;
@@ -1315,6 +1338,24 @@ public final class CaseDefinitionYamlMapper {
     throw new IllegalArgumentException(
         "Expression must be a string or single-key map {lang: expr}, got: "
             + rawValue.getNodeType());
+  }
+
+  private static Map<String, Boolean> parseBooleanMap(JsonNode node) {
+    if (node == null || !node.isObject()) {
+      return Map.of();
+    }
+    var map = new java.util.LinkedHashMap<String, Boolean>();
+    node.fields().forEachRemaining(e -> map.put(e.getKey(), e.getValue().asBoolean()));
+    return Map.copyOf(map);
+  }
+
+  private static Set<String> parseStringSet(JsonNode node) {
+    if (node == null || !node.isArray()) {
+      return Set.of();
+    }
+    var set = new java.util.LinkedHashSet<String>();
+    node.forEach(e -> set.add(e.asText()));
+    return Set.copyOf(set);
   }
 
   private static CompiledExpression<Map<String, Object>, Boolean> toCompiledBooleanExpression(
@@ -1898,104 +1939,6 @@ public final class CaseDefinitionYamlMapper {
             : BackoffStrategy.FIXED;
     final RetryPolicy retries = new RetryPolicy(sr.getMaxAttempts(), sr.getDelayMs(), strategy);
     return new ExecutionPolicy(schema.getTimeoutMs(), retries);
-  }
-
-  private static AgentDescriptor convertAgentDescriptor(
-      final JsonNode node, final String workerName) {
-    final var builder = AgentDescriptor.builder();
-    builder.agentId(node.has("agentId") ? node.get("agentId").asText() : workerName);
-    builder.name(node.has("name") ? node.get("name").asText() : workerName);
-    builder.slot(node.has("slot") ? node.get("slot").asText() : workerName);
-    builder.tenancyId(node.has("tenancyId") ? node.get("tenancyId").asText() : "default");
-
-    if (node.has("briefing")) builder.briefing(node.get("briefing").asText());
-    if (node.has("version")) builder.version(node.get("version").asText());
-    if (node.has("provider")) builder.provider(node.get("provider").asText());
-    if (node.has("modelFamily")) builder.modelFamily(node.get("modelFamily").asText());
-    if (node.has("modelVersion")) builder.modelVersion(node.get("modelVersion").asText());
-    if (node.has("jurisdiction")) builder.jurisdiction(node.get("jurisdiction").asText());
-    if (node.has("dataHandlingPolicy"))
-      builder.dataHandlingPolicy(node.get("dataHandlingPolicy").asText());
-
-    if (node.has("goals") && node.get("goals").isArray()) {
-      final List<AgentGoal> goals = new ArrayList<>();
-      for (final JsonNode gn : node.get("goals")) {
-        final String priority = gn.has("priority") ? gn.get("priority").asText() : "PRIMARY";
-        final String visibility = gn.has("visibility") ? gn.get("visibility").asText() : "PUBLIC";
-        final List<String> capRefs = new ArrayList<>();
-        if (gn.has("capabilities") && gn.get("capabilities").isArray()) {
-          gn.get("capabilities").forEach(c -> capRefs.add(c.asText()));
-        }
-        Map<String, String> attrs = null;
-        if (gn.has("attributes") && gn.get("attributes").isObject()) {
-          attrs = new LinkedHashMap<>();
-          final var it = gn.get("attributes").fields();
-          while (it.hasNext()) {
-            final var entry = it.next();
-            attrs.put(entry.getKey(), entry.getValue().asText());
-          }
-        }
-        goals.add(
-            new AgentGoal(
-                gn.get("name").asText(),
-                gn.has("description") ? gn.get("description").asText() : gn.get("name").asText(),
-                GoalPriority.valueOf(priority),
-                Visibility.valueOf(visibility),
-                capRefs,
-                attrs));
-      }
-      builder.goals(goals);
-    }
-
-    if (node.has("constraints") && node.get("constraints").isArray()) {
-      final List<AgentConstraint> constraints = new ArrayList<>();
-      for (final JsonNode cn : node.get("constraints")) {
-        constraints.add(
-            new AgentConstraint(
-                cn.get("name").asText(),
-                cn.has("description") ? cn.get("description").asText() : cn.get("name").asText(),
-                cn.has("visibility")
-                    ? Visibility.valueOf(cn.get("visibility").asText())
-                    : Visibility.PUBLIC,
-                cn.has("severity")
-                    ? ConstraintSeverity.valueOf(cn.get("severity").asText())
-                    : ConstraintSeverity.HARD));
-      }
-      builder.constraints(constraints);
-    }
-
-    if (node.has("disposition") && node.get("disposition").isObject()) {
-      final JsonNode dn = node.get("disposition");
-      final var db = AgentDisposition.builder();
-      if (dn.has("socialOrient")) db.socialOrient(dn.get("socialOrient").asText());
-      if (dn.has("ruleFollowing")) db.ruleFollowing(dn.get("ruleFollowing").asText());
-      if (dn.has("riskAppetite")) db.riskAppetite(dn.get("riskAppetite").asText());
-      if (dn.has("autonomy")) db.autonomy(dn.get("autonomy").asText());
-      if (dn.has("conflictMode")) db.conflictMode(dn.get("conflictMode").asText());
-      if (dn.has("delegation")) db.delegation(dn.get("delegation").asBoolean());
-      builder.disposition(db.build());
-    }
-
-    if (node.has("capabilities") && node.get("capabilities").isArray()) {
-      final List<AgentCapability> caps = new ArrayList<>();
-      for (final JsonNode cn : node.get("capabilities")) {
-        final var cb = AgentCapability.builder();
-        cb.name(cn.get("name").asText());
-        if (cn.has("description")) cb.description(cn.get("description").asText());
-        if (cn.has("qualityHint")) cb.qualityHint(cn.get("qualityHint").asDouble());
-        if (cn.has("latencyHintP50Ms")) cb.latencyHintP50Ms(cn.get("latencyHintP50Ms").asLong());
-        if (cn.has("costHint")) cb.costHint(cn.get("costHint").asText());
-        if (cn.has("tags") && cn.get("tags").isArray()) {
-          final List<String> tags = new ArrayList<>();
-          cn.get("tags").forEach(t -> tags.add(t.asText()));
-          cb.tags(tags);
-        }
-        caps.add(cb.build());
-      }
-      builder.capabilities(caps);
-    }
-
-    return builder.build();
   }
 
   @SuppressWarnings("unchecked")
