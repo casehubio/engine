@@ -16,6 +16,7 @@
 package io.casehub.blackboard.handler;
 
 import io.casehub.blackboard.event.BlackboardEventBusAddresses;
+import io.casehub.blackboard.event.PlanItemCompletedEvent;
 import io.casehub.blackboard.event.SubCaseExecutionCompleted;
 import io.casehub.blackboard.plan.CasePlanModel;
 import io.casehub.blackboard.plan.PlanItem;
@@ -23,7 +24,6 @@ import io.casehub.blackboard.registry.BlackboardRegistry;
 import io.casehub.engine.common.internal.event.EventBusAddresses;
 import io.casehub.engine.common.internal.event.WorkflowExecutionCompleted;
 import io.casehub.engine.common.internal.model.PlanItemStatus;
-import io.casehub.engine.common.spi.event.PlanItemCompletedEvent;
 import io.quarkus.vertx.ConsumeEvent;
 import io.vertx.mutiny.core.eventbus.EventBus;
 import jakarta.enterprise.context.ApplicationScoped;

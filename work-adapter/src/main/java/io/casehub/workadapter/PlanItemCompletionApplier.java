@@ -32,12 +32,10 @@ import io.casehub.engine.common.internal.jq.JQEvaluator;
 import io.casehub.engine.common.internal.jq.ValidationResult;
 import io.casehub.engine.common.internal.model.CaseInstance;
 import io.casehub.engine.common.spi.CrossTenantCaseInstanceRepository;
-import io.casehub.engine.common.spi.event.PlanItemRejectedEvent;
 import io.casehub.work.runtime.model.WorkItem;
 import io.casehub.work.runtime.model.WorkItemStatus;
 import io.vertx.mutiny.core.eventbus.EventBus;
 import jakarta.enterprise.context.ApplicationScoped;
-import jakarta.enterprise.event.Event;
 import jakarta.inject.Inject;
 import jakarta.transaction.Transactional;
 import java.time.Duration;
@@ -65,7 +63,6 @@ public class PlanItemCompletionApplier {
   @Inject CrossTenantCaseInstanceRepository caseInstanceRepository;
   @Inject EventBus eventBus;
   @Inject JQEvaluator jqEvaluator;
-  @Inject Event<PlanItemRejectedEvent> planItemRejectedEvents;
 
   /**
    * Applies the terminal WorkItemStatus to the PlanItem, runs outputMapping if configured, loads
@@ -98,13 +95,6 @@ public class PlanItemCompletionApplier {
     }
 
     applyOutputMapping(item, workItem, instance);
-
-    if (status == WorkItemStatus.REJECTED) {
-      String bindingName = item.getBindingName();
-      planItemRejectedEvents.fireAsync(
-          new PlanItemRejectedEvent(caseId, planItemId, bindingName, instance.tenancyId));
-    }
-
     eventBus.publish(
         EventBusAddresses.CONTEXT_CHANGED,
         new CaseContextChangedEvent(
