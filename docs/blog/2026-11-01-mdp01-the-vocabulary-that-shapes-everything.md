@@ -2,7 +2,7 @@
 layout: post
 title: "The Vocabulary That Shapes Everything"
 date: 2026-11-01
-entry_type: article
+entry_type: note
 subtype: diary
 projects: [casehubio/engine]
 tags: [coordination, multi-agent, vocabulary, design, fipa]

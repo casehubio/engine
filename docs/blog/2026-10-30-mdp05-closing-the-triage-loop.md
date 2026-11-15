@@ -2,7 +2,7 @@
 layout: post
 title: "Closing the triage loop — when recovery decisions actually take effect"
 date: 2026-10-30
-entry_type: article
+entry_type: note
 subtype: diary
 projects: [casehubio/engine]
 tags: [recovery, triage, playbook, workflow, resilience]

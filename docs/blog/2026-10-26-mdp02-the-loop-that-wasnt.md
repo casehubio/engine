@@ -2,7 +2,7 @@
 layout: post
 title: "The Loop That Wasn't"
 date: 2026-10-26
-entry_type: article
+entry_type: note
 subtype: diary
 projects: [casehubio/engine]
 tags: [evolution, self-improvement, architecture, safety]

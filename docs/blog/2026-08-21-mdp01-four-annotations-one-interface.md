@@ -2,7 +2,7 @@
 layout: post
 title: "Four Annotation Layers, One Interface"
 date: 2026-08-21
-entry_type: article
+entry_type: note
 subtype: diary
 projects: [casehub-engine]
 tags: [annotations, composition, eidos, work, ledger, examples]

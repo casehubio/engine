@@ -2,7 +2,7 @@
 layout: post
 title: "The Bridge Nobody Built"
 date: 2026-10-31
-entry_type: article
+entry_type: note
 subtype: diary
 projects: [casehubio/engine, casehubio/agency, casehubio/eidos, casehubio/qhorus]
 tags: [integration, architecture, multi-repo, spi, swarm, hive-mind]

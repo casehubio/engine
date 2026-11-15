@@ -2,7 +2,7 @@
 layout: post
 title: "From Vocabulary to Enforcement"
 date: 2026-11-02
-entry_type: article
+entry_type: note
 subtype: diary
 projects: [casehubio/engine]
 tags: [coordination, multi-agent, enforcement, spi, compiler-driven-design]

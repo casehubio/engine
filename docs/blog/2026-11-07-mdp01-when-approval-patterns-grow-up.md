@@ -2,7 +2,7 @@
 layout: post
 title: "When Approval Patterns Grow Up"
 date: 2026-11-07
-entry_type: article
+entry_type: note
 subtype: diary
 projects: [casehubio/engine]
 tags: [coordination, multi-agent, behavioral-contracts, spi, role-bridging]

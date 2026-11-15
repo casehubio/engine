@@ -2,7 +2,7 @@
 layout: post
 title: "The Policy Between Detection and Declaration"
 date: 2026-11-07
-entry_type: article
+entry_type: note
 subtype: diary
 projects: [casehubio/engine]
 tags: [agency, coordination, stigmergy, role-bridging, topology]

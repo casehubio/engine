@@ -2,7 +2,7 @@
 layout: post
 title: "Ants Don't Need a Manager"
 date: 2026-10-26
-entry_type: article
+entry_type: note
 subtype: diary
 projects: [casehubio/engine]
 tags: [hive-mind, stigmergy, swarm, self-organization, signals, coordination]

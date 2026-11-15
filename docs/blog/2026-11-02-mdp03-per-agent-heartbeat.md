@@ -2,7 +2,7 @@
 layout: post
 title: "Giving Each Agent a Heartbeat"
 date: 2026-11-02
-entry_type: article
+entry_type: note
 subtype: diary
 projects: [casehubio/engine]
 tags: [multi-agent, lifecycle, spi, state-machine, coordination, stigmergy]

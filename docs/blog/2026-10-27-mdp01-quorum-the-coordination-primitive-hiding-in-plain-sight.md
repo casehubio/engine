@@ -2,7 +2,7 @@
 layout: post
 title: "Quorum: The Coordination Primitive Hiding in Plain Sight"
 date: 2026-10-27
-entry_type: article
+entry_type: note
 subtype: diary
 projects: [casehubio/engine]
 tags: [coordination, dsl, planning, quorum, design]

@@ -2,7 +2,7 @@
 layout: post
 title: "The Playbook That Replaces the Coordinator"
 date: 2026-11-02
-entry_type: article
+entry_type: note
 subtype: diary
 projects: [casehubio/agency]
 tags: [multi-agent, coordination, decision-loop, playbook, architecture, stigmergy]

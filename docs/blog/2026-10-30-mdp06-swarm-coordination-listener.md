@@ -2,7 +2,7 @@
 layout: post
 title: "Why Your Swarm Needs a Nervous System"
 date: 2026-10-30
-entry_type: article
+entry_type: note
 subtype: diary
 projects: [casehubio/engine]
 tags: [stigmergy, swarm, spi, architecture, agency]

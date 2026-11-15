@@ -2,7 +2,7 @@
 layout: post
 title: "Six Topologies, One Primitive"
 date: 2026-11-03
-entry_type: article
+entry_type: note
 subtype: diary
 projects: [casehubio/agency]
 tags: [coordination, topology, spi-design, multi-agent, decision-loop, graduated-autonomy, architecture]

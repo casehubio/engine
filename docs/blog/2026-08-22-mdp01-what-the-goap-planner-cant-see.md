@@ -2,7 +2,7 @@
 layout: post
 title: "GOAP in a Case Engine: What Six Integration Tests Teach About Planning Under Uncertainty"
 date: 2026-08-22
-entry_type: article
+entry_type: note
 subtype: diary
 projects: [casehub-engine]
 tags: [goap, planning, adaptive, integration-testing, a-star]
