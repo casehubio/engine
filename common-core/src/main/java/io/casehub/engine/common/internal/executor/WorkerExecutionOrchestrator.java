@@ -270,9 +270,16 @@ public class WorkerExecutionOrchestrator {
 
       Map<String, Object> inputDataForContext =
           OBJECT_MAPPER.convertValue(eventLog.getPayload(), Map.class);
-      ExecutionPolicy effectivePolicy = executionConfig.withEffectiveTimeout(worker.executionPolicy());
-      Worker effectiveWorker = new Worker(worker.name(), worker.capabilities(),
-          worker.function(), effectivePolicy, worker.description(), worker.definitionRef());
+      ExecutionPolicy effectivePolicy =
+          executionConfig.withEffectiveTimeout(worker.executionPolicy());
+      Worker effectiveWorker =
+          new Worker(
+              worker.name(),
+              worker.capabilities(),
+              worker.function(),
+              effectivePolicy,
+              worker.description(),
+              worker.definitionRef());
 
       WorkerContext baseContext =
           workerContextProvider.buildContext(

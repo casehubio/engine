@@ -30,11 +30,11 @@ import io.casehub.worker.api.Worker;
  */
 public interface WorkerExecutor {
 
-    HandlerResult execute(
-            Worker worker,
-            Capability capability,
-            Object inputData,
-            WorkerContext context,
-            String outputProjection,
-            ExecutionMetadata metadata);
+  HandlerResult execute(
+      Worker worker,
+      Capability capability,
+      Object inputData,
+      WorkerContext context,
+      String outputProjection,
+      ExecutionMetadata metadata);
 }

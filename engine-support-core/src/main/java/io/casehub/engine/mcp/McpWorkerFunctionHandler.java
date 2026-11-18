@@ -20,6 +20,8 @@ import io.casehub.api.model.WorkerContext;
 import io.casehub.engine.common.internal.executor.ExecutionMetadata;
 import io.casehub.engine.common.internal.executor.HandlerResult;
 import io.casehub.engine.common.internal.executor.WorkerFunctionHandler;
+import io.casehub.worker.api.Capability;
+import io.casehub.worker.api.Worker;
 import io.casehub.worker.api.WorkerFunction;
 import io.casehub.worker.api.WorkerResult;
 import io.modelcontextprotocol.client.McpSyncClient;
@@ -58,12 +60,16 @@ public class McpWorkerFunctionHandler implements WorkerFunctionHandler {
   @Override
   @SuppressWarnings("unchecked")
   public HandlerResult execute(
-      final WorkerFunction<?, ?> function,
+      final Worker worker,
+      final Capability capability,
       final Object inputData,
       final WorkerContext context,
-      final int timeoutMs,
       final ExecutionMetadata metadata) {
-    final McpWorkerFunction mcp = (McpWorkerFunction) function;
+    final McpWorkerFunction mcp = (McpWorkerFunction) worker.function();
+    final int timeoutMs =
+        worker.executionPolicy().timeoutMs() != null
+            ? worker.executionPolicy().timeoutMs()
+            : 30_000;
     final Map<String, Object> input =
         inputData instanceof Map ? (Map<String, Object>) inputData : Map.of();
 

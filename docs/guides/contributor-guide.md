@@ -153,7 +153,7 @@ WorkerScheduleEvent
 
 **Worker model:** Workers return `WorkerResult` (not `Map`). `WorkerScope` is a BiFunction parameter (not ThreadLocal) — cast to `WorkerRuntime` for engine-specific methods. `WorkerRuntime` provides domain-organized facets: `signals()` → `SignalSpace`, `interests()` → `InterestSpace`, `neighbors()` → `NeighborSpace`, `rules()` → `RuleSpace`. `WorkerFunction.None` models external workers with no in-process function — use `Worker.Builder.noFunction()`.
 
-**Handler pipeline:** `DefaultWorkerExecutor` iterates `Instance<WorkerFunctionHandler>`, finds the first handler that `supports()` the function, delegates execution. Built-in handlers: `SyncAgentWorkerFunctionHandler` (runtime), `FlowWorkerFunctionHandler` (flow), `A2AWorkerFunctionHandler` (a2a), `McpWorkerFunctionHandler` (mcp), `ReActWorkerFunctionHandler` (react), `PatternWorkerFunctionHandler` (blocks-engine-adapter). All return `HandlerResult` (result + protocol metadata).
+**Handler pipeline:** `DefaultWorkerExecutor` iterates `Instance<WorkerFunctionHandler>`, finds the first handler that `supports()` the function, delegates execution. Built-in handlers: `SyncWorkerFunctionHandler` (runtime, delegates to `casehub-worker` executor), `AgentWorkerFunctionHandler` (runtime), `PersistentWorkerFunctionHandler` (runtime), `FlowWorkerFunctionHandler` (flow), `A2AWorkerFunctionHandler` (a2a), `McpWorkerFunctionHandler` (mcp), `ReActWorkerFunctionHandler` (react), `PatternWorkerFunctionHandler` (blocks-engine-adapter). All return `HandlerResult` (result + protocol metadata).
 
 ### Concurrency Budget
 

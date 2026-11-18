@@ -32,6 +32,8 @@ import io.casehub.platform.agent.react.ToolUseConfig;
 import io.casehub.platform.agent.react.ToolUseListener;
 import io.casehub.platform.agent.react.ToolUseLoop;
 import io.casehub.platform.agent.react.ToolUseResult;
+import io.casehub.worker.api.Capability;
+import io.casehub.worker.api.Worker;
 import io.casehub.worker.api.WorkerFunction;
 import io.casehub.worker.api.WorkerResult;
 import java.time.Duration;
@@ -72,13 +74,17 @@ public class ReActWorkerFunctionHandler implements WorkerFunctionHandler {
 
   @Override
   public HandlerResult execute(
-      WorkerFunction<?, ?> function,
+      Worker worker,
+      Capability capability,
       Object inputData,
       WorkerContext context,
-      int timeoutMs,
       ExecutionMetadata metadata) {
 
-    var reactFn = (ReActWorkerFunction) function;
+    var reactFn = (ReActWorkerFunction) worker.function();
+    int timeoutMs =
+        worker.executionPolicy().timeoutMs() != null
+            ? worker.executionPolicy().timeoutMs()
+            : 30_000;
     var future = executor.submit(() -> executeLoop(reactFn, inputData, context, metadata));
 
     try {

@@ -34,11 +34,15 @@ import io.casehub.api.model.WorkerContext;
 import io.casehub.api.spi.event.EventDispatcher;
 import io.casehub.engine.common.internal.executor.ExecutionMetadata;
 import io.casehub.engine.runtime.executor.WorkerRuntimeFactory;
+import io.casehub.platform.api.governance.ExecutionPolicy;
 import io.casehub.worker.api.Capability;
+import io.casehub.worker.api.Worker;
+import io.casehub.worker.api.WorkerFunction;
 import io.casehub.worker.api.WorkerOutcome;
 import io.casehub.worker.api.WorkerResult;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.Executors;
 import org.junit.jupiter.api.BeforeEach;
@@ -109,7 +113,8 @@ class ReActWorkerFunctionHandlerTest {
     when(context.caseId()).thenReturn(UUID.randomUUID());
     var metadata = new ExecutionMetadata("analyst", null, null, null, null);
 
-    var result = handler.execute(fn, Map.of("query", "test"), context, 30000, metadata);
+    var result =
+        handler.execute(reactWorker(fn), REACT_CAP, Map.of("query", "test"), context, metadata);
 
     assertThat(result.result().outcome()).isInstanceOf(WorkerOutcome.Success.class);
     assertThat(result.result().output()).isNotNull();
@@ -144,7 +149,11 @@ class ReActWorkerFunctionHandlerTest {
 
     var result =
         handler.execute(
-            fn, Map.of(), context, 30000, new ExecutionMetadata("w", null, null, null, null));
+            reactWorker(fn),
+            REACT_CAP,
+            Map.of(),
+            context,
+            new ExecutionMetadata("w", null, null, null, null));
 
     assertThat(result.result().outcome()).isInstanceOf(WorkerOutcome.Success.class);
     verify(runtime, never()).execute(any(String.class), any());
@@ -171,7 +180,11 @@ class ReActWorkerFunctionHandlerTest {
 
     var result =
         handler.execute(
-            fn, Map.of(), context, 30000, new ExecutionMetadata("w", null, null, null, null));
+            reactWorker(fn),
+            REACT_CAP,
+            Map.of(),
+            context,
+            new ExecutionMetadata("w", null, null, null, null));
 
     assertThat(result.result().outcome()).isInstanceOf(WorkerOutcome.Expired.class);
     assertThat(result.protocolMetadata()).containsEntry("reactExpiredReason", "maxCycles");
@@ -209,7 +222,11 @@ class ReActWorkerFunctionHandlerTest {
 
     var result =
         handler.execute(
-            fn, Map.of(), context, 30000, new ExecutionMetadata("w", null, null, null, null));
+            reactWorker(fn),
+            REACT_CAP,
+            Map.of(),
+            context,
+            new ExecutionMetadata("w", null, null, null, null));
 
     assertThat(result.result().outcome()).isInstanceOf(WorkerOutcome.Success.class);
     verify(runtime, never()).execute(any(String.class), any());
@@ -230,7 +247,11 @@ class ReActWorkerFunctionHandlerTest {
 
     var result =
         handler.execute(
-            fn, Map.of(), context, 30000, new ExecutionMetadata("w", null, null, null, null));
+            reactWorker(fn),
+            REACT_CAP,
+            Map.of(),
+            context,
+            new ExecutionMetadata("w", null, null, null, null));
 
     assertThat(result.result().outcome()).isInstanceOf(WorkerOutcome.Failed.class);
   }
@@ -254,10 +275,21 @@ class ReActWorkerFunctionHandlerTest {
 
     var result =
         handler.execute(
-            fn, Map.of(), context, 30000, new ExecutionMetadata("w", null, null, null, null));
+            reactWorker(fn),
+            REACT_CAP,
+            Map.of(),
+            context,
+            new ExecutionMetadata("w", null, null, null, null));
 
     assertThat(result.protocolMetadata()).containsEntry("reactTotalInputTokens", 100L);
     assertThat(result.protocolMetadata()).containsEntry("reactTotalOutputTokens", 50L);
     assertThat(result.protocolMetadata()).containsEntry("reactCycleCount", 0);
   }
+
+  private static Worker reactWorker(WorkerFunction<?, ?> fn) {
+    return new Worker(
+        "react-test", Set.of("cap"), fn, new ExecutionPolicy(30000, null, null), null, null);
+  }
+
+  private static final Capability REACT_CAP = Capability.of("cap", "{}", "{}");
 }

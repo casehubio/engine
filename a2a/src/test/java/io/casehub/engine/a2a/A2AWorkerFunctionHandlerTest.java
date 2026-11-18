@@ -22,10 +22,14 @@ import io.casehub.api.model.WorkerContext;
 import io.casehub.engine.common.internal.auth.AuthConfig;
 import io.casehub.engine.common.internal.executor.ExecutionMetadata;
 import io.casehub.engine.common.internal.executor.HandlerResult;
+import io.casehub.platform.api.governance.ExecutionPolicy;
+import io.casehub.worker.api.Capability;
+import io.casehub.worker.api.Worker;
 import io.casehub.worker.api.WorkerFunction;
 import io.casehub.worker.api.WorkerOutcome;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.Executors;
 import okhttp3.mockwebserver.MockResponse;
@@ -262,7 +266,7 @@ class A2AWorkerFunctionHandlerTest {
     var context = new WorkerContext("Test task", UUID.randomUUID(), null, null, null, null);
     var metadata = new ExecutionMetadata("test-worker", "hash-abc");
     HandlerResult result =
-        smallHandler.execute(fn, Map.of("input", "data"), context, 30000, metadata);
+        smallHandler.execute(a2aWorker(fn), A2A_CAP, Map.of("input", "data"), context, metadata);
 
     assertThat(result.result().outcome()).isInstanceOf(WorkerOutcome.Failed.class);
   }
@@ -284,7 +288,7 @@ class A2AWorkerFunctionHandlerTest {
     var context = new WorkerContext("Test task", UUID.randomUUID(), null, null, null, null);
     var metadata = new ExecutionMetadata("test-worker", "hash-abc");
     HandlerResult result =
-        smallHandler.execute(fn, Map.of("input", "data"), context, 30000, metadata);
+        smallHandler.execute(a2aWorker(fn), A2A_CAP, Map.of("input", "data"), context, metadata);
 
     assertThat(result.result().outcome()).isInstanceOf(WorkerOutcome.Failed.class);
   }
@@ -322,6 +326,13 @@ class A2AWorkerFunctionHandlerTest {
     var fn = new A2AWorkerFunction(endpoint, null, streaming, AuthConfig.NONE);
     var context = new WorkerContext("Test task", UUID.randomUUID(), null, null, null, null);
     var metadata = new ExecutionMetadata("test-worker", "hash-abc");
-    return handler.execute(fn, Map.of("input", "data"), context, 30000, metadata);
+    return handler.execute(a2aWorker(fn), A2A_CAP, Map.of("input", "data"), context, metadata);
   }
+
+  private static Worker a2aWorker(WorkerFunction<?, ?> fn) {
+    return new Worker(
+        "a2a-test", Set.of("cap"), fn, new ExecutionPolicy(30000, null, null), null, null);
+  }
+
+  private static final Capability A2A_CAP = Capability.of("cap", "{}", "{}");
 }

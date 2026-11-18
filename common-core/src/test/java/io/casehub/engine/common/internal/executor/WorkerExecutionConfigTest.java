@@ -17,6 +17,7 @@ package io.casehub.engine.common.internal.executor;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import io.casehub.platform.api.governance.ExecutionPolicy;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
@@ -60,5 +61,22 @@ class WorkerExecutionConfigTest {
     int effectiveTimeout = config.getEffectiveTimeout(largeTimeout);
 
     assertThat(effectiveTimeout).isEqualTo(largeTimeout);
+  }
+
+  @Test
+  void withEffectiveTimeout_applies_default_when_null() {
+    var c = new WorkerExecutionConfig(30000);
+    ExecutionPolicy policy = new ExecutionPolicy(null, null, null);
+    ExecutionPolicy effective = c.withEffectiveTimeout(policy);
+    assertThat(effective.timeoutMs()).isEqualTo(30000);
+    assertThat(effective.retries()).isNull();
+  }
+
+  @Test
+  void withEffectiveTimeout_preserves_explicit_timeout() {
+    var c = new WorkerExecutionConfig(30000);
+    ExecutionPolicy policy = new ExecutionPolicy(5000, null, null);
+    ExecutionPolicy effective = c.withEffectiveTimeout(policy);
+    assertThat(effective.timeoutMs()).isEqualTo(5000);
   }
 }

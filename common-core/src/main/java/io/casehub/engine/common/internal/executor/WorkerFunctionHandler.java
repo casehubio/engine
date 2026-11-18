@@ -22,8 +22,13 @@ import io.casehub.worker.api.WorkerFunction;
 
 /**
  * Engine-internal SPI for pluggable worker function execution. Implementations pattern-match on
- * {@link WorkerFunction} subclasses and handle the dispatch and lifecycle (timeout, context
- * set/clear).
+ * {@link WorkerFunction} subclasses and handle the dispatch lifecycle.
+ *
+ * <p>Timeout enforcement is handler-specific — delegating handlers (e.g. {@code
+ * SyncWorkerFunctionHandler}) rely on the worker executor's Guard; others enforce directly via
+ * {@code future.get()}. Handlers receive a {@link Worker} with an enriched {@link
+ * io.casehub.platform.api.governance.ExecutionPolicy} from the orchestrator — the timeout is always
+ * concrete (never null) in production paths.
  *
  * <p>Output schema evaluation is a cross-cutting concern owned by the composite executor (not the
  * handler).
@@ -31,16 +36,16 @@ import io.casehub.worker.api.WorkerFunction;
  * <p>Handlers are complementary, not competing alternatives — implementations are
  * {@code @ApplicationScoped} (not {@code @DefaultBean}).
  *
- * <p>Refs casehubio/engine#567.
+ * <p>Refs casehubio/engine#567, casehubio/engine#726.
  */
 public interface WorkerFunctionHandler {
 
-  boolean supports(WorkerFunction<?, ?> function);
+    boolean supports(WorkerFunction<?, ?> function);
 
-  HandlerResult execute(
-      Worker worker,
-      Capability capability,
-      Object inputData,
-      WorkerContext context,
-      ExecutionMetadata metadata);
+    HandlerResult execute(
+            Worker worker,
+            Capability capability,
+            Object inputData,
+            WorkerContext context,
+            ExecutionMetadata metadata);
 }

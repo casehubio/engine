@@ -22,7 +22,9 @@ import io.casehub.api.model.WorkerContext;
 import io.casehub.engine.common.internal.event.EventBusAddresses;
 import io.casehub.engine.common.internal.event.WorkflowExecutionCompleted;
 import io.casehub.engine.common.internal.executor.ExecutionMetadata;
+import io.casehub.engine.common.internal.executor.HandlerResult;
 import io.casehub.engine.common.internal.executor.WorkerFunctionHandler;
+import io.casehub.worker.api.Capability;
 import io.casehub.engine.common.internal.jq.JQEvaluator;
 import io.casehub.engine.common.internal.model.CaseInstance;
 import io.casehub.engine.common.internal.worker.scope.ScopedWorkerRegistry;
@@ -67,14 +69,14 @@ public class PersistentWorkerFunctionHandler implements WorkerFunctionHandler {
 
   @SuppressWarnings("unchecked")
   @Override
-  public io.casehub.engine.common.internal.executor.HandlerResult execute(
-      WorkerFunction<?, ?> function,
+  public HandlerResult execute(
+      Worker worker,
+      Capability capability,
       Object inputData,
       WorkerContext context,
-      int timeoutMs,
       ExecutionMetadata metadata) {
 
-    var persistent = (WorkerFunction.Persistent<?>) function;
+    var persistent = (WorkerFunction.Persistent<?>) worker.function();
 
     var session =
         scopedWorkerRegistry

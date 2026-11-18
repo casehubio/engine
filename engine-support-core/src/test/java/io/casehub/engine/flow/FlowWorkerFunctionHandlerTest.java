@@ -29,9 +29,12 @@ import io.casehub.api.model.StepStatus;
 import io.casehub.api.model.WorkerContext;
 import io.casehub.engine.common.internal.executor.ExecutionMetadata;
 import io.casehub.engine.common.spi.recovery.TriageModificationProvider;
+import io.casehub.platform.api.governance.ExecutionPolicy;
 import io.casehub.platform.compiler.CompilationResult;
 import io.casehub.platform.compiler.CoordinationSpec;
 import io.casehub.platform.compiler.SourceMap;
+import io.casehub.worker.api.Capability;
+import io.casehub.worker.api.Worker;
 import io.casehub.worker.api.WorkerFunction;
 import io.serverlessworkflow.api.types.Document;
 import io.serverlessworkflow.api.types.SetTask;
@@ -47,6 +50,7 @@ import java.time.Duration;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
 import org.junit.jupiter.api.BeforeEach;
@@ -125,7 +129,11 @@ class FlowWorkerFunctionHandlerTest {
 
     try {
       handlerWithRealRegistry.execute(
-          new FlowWorkerFunction(mock(Workflow.class)), Map.of(), context, 60000, metadata);
+          flowWorker(new FlowWorkerFunction(mock(Workflow.class)), 60000),
+          CAP,
+          Map.of(),
+          context,
+          metadata);
       throw new AssertionError("Should have thrown");
     } catch (PlaybookExecutionException e) {
       assertThat(e.getExecutionResult()).isNotNull();
@@ -160,7 +168,11 @@ class FlowWorkerFunctionHandlerTest {
 
     var result =
         handlerWithRealRegistry.execute(
-            new FlowWorkerFunction(mock(Workflow.class)), Map.of(), context, 60000, metadata);
+            flowWorker(new FlowWorkerFunction(mock(Workflow.class)), 60000),
+            CAP,
+            Map.of(),
+            context,
+            metadata);
 
     assertThat(result.executionResult()).isNotNull();
     assertThat(result.executionResult())
@@ -192,7 +204,11 @@ class FlowWorkerFunctionHandlerTest {
 
     try {
       handler.execute(
-          new FlowWorkerFunction(mock(Workflow.class)), Map.of(), context, 60000, metadata);
+          flowWorker(new FlowWorkerFunction(mock(Workflow.class)), 60000),
+          CAP,
+          Map.of(),
+          context,
+          metadata);
       throw new AssertionError("Should have thrown PlaybookExecutionException");
     } catch (PlaybookExecutionException e) {
       assertThat(e.getExecutionResult()).isInstanceOf(PlaybookExecutionResult.PartialSuccess.class);
@@ -222,7 +238,11 @@ class FlowWorkerFunctionHandlerTest {
 
     final var handlerResult =
         handler.execute(
-            new FlowWorkerFunction(mock(Workflow.class)), Map.of(), context, 60000, metadata);
+            flowWorker(new FlowWorkerFunction(mock(Workflow.class)), 60000),
+            CAP,
+            Map.of(),
+            context,
+            metadata);
 
     assertThat((java.util.Map<String, Object>) handlerResult.result().output())
         .containsEntry("result", "done");
@@ -248,7 +268,11 @@ class FlowWorkerFunctionHandlerTest {
 
     try {
       handler.execute(
-          new FlowWorkerFunction(mock(Workflow.class)), Map.of(), context, 60000, metadata);
+          flowWorker(new FlowWorkerFunction(mock(Workflow.class)), 60000),
+          CAP,
+          Map.of(),
+          context,
+          metadata);
     } catch (Exception ignored) {
     }
 
@@ -271,7 +295,11 @@ class FlowWorkerFunctionHandlerTest {
 
     try {
       handler.execute(
-          new FlowWorkerFunction(mock(Workflow.class)), Map.of(), context, 60000, metadata);
+          flowWorker(new FlowWorkerFunction(mock(Workflow.class)), 60000),
+          CAP,
+          Map.of(),
+          context,
+          metadata);
       throw new AssertionError("Should have thrown");
     } catch (RuntimeException e) {
       assertThat(e).hasMessageContaining("sync exception from start()");
@@ -299,7 +327,11 @@ class FlowWorkerFunctionHandlerTest {
 
     final var handlerResult =
         handler.execute(
-            new FlowWorkerFunction(mock(Workflow.class)), Map.of(), context, 60000, metadata);
+            flowWorker(new FlowWorkerFunction(mock(Workflow.class)), 60000),
+            CAP,
+            Map.of(),
+            context,
+            metadata);
 
     assertThat((java.util.Map<String, Object>) handlerResult.result().output())
         .containsEntry("data", "value");
@@ -326,6 +358,18 @@ class FlowWorkerFunctionHandlerTest {
     when(inst.isResolvable()).thenReturn(false);
     return inst;
   }
+
+  private static Worker flowWorker(WorkerFunction<?, ?> function, int timeoutMs) {
+    return new Worker(
+        "flow-test",
+        Set.of("cap"),
+        function,
+        new ExecutionPolicy(timeoutMs, null, null),
+        null,
+        null);
+  }
+
+  private static final Capability CAP = Capability.of("cap", "{}", "{}");
 
   @SuppressWarnings("unchecked")
   private static Instance<TriageModificationProvider> withProvider(TriageModificationProvider p) {
@@ -363,7 +407,7 @@ class FlowWorkerFunctionHandlerTest {
     final ExecutionMetadata metadata = new ExecutionMetadata("worker-D", "hash-3");
 
     final io.casehub.worker.api.WorkerResult result =
-        handler.execute(function, input, context, 60000, metadata).result();
+        handler.execute(flowWorker(function, 60000), CAP, input, context, metadata).result();
 
     assertThat((java.util.Map<String, Object>) result.output()).containsEntry("result", "done");
     assertThat(result.outcome()).isInstanceOf(io.casehub.worker.api.WorkerOutcome.Success.class);
@@ -399,7 +443,7 @@ class FlowWorkerFunctionHandlerTest {
             List.of());
     var metadata = new ExecutionMetadata("worker-1", "hash-1", "binding-a", null);
 
-    handler.execute(function, Map.of("key", "val"), context, 5000, metadata);
+    handler.execute(flowWorker(function, 5000), CAP, Map.of("key", "val"), context, metadata);
 
     verify(app).workflowDefinition(eq(wf));
   }
@@ -446,7 +490,7 @@ class FlowWorkerFunctionHandlerTest {
             List.of());
     var metadata = new ExecutionMetadata("worker-1", "hash-1", "binding-a", null);
 
-    modHandler.execute(function, Map.of("key", "val"), context, 5000, metadata);
+    modHandler.execute(flowWorker(function, 5000), CAP, Map.of("key", "val"), context, metadata);
 
     verify(provider).getModifications(caseId, "binding-a");
   }
@@ -481,7 +525,7 @@ class FlowWorkerFunctionHandlerTest {
             List.of());
     var metadata = new ExecutionMetadata("worker-1", "hash-1", "binding-a", null);
 
-    modHandler.execute(function, Map.of(), context, 5000, metadata);
+    modHandler.execute(flowWorker(function, 5000), CAP, Map.of(), context, metadata);
 
     verify(provider, org.mockito.Mockito.never()).getModifications(any(), any());
   }

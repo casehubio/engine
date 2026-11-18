@@ -23,7 +23,9 @@ import io.casehub.engine.common.internal.executor.ExecutionMetadata;
 import io.casehub.engine.common.internal.executor.HandlerResult;
 import io.casehub.engine.common.internal.executor.WorkerFunctionHandler;
 import io.casehub.engine.common.spi.recovery.TriageModificationProvider;
+import io.casehub.worker.api.Capability;
 import io.casehub.worker.api.PlannedAction;
+import io.casehub.worker.api.Worker;
 import io.casehub.worker.api.WorkerFunction;
 import io.casehub.worker.api.WorkerResult;
 import io.serverlessworkflow.api.types.Workflow;
@@ -80,12 +82,16 @@ public class FlowWorkerFunctionHandler implements WorkerFunctionHandler {
   @SuppressWarnings("unchecked")
   @Override
   public HandlerResult execute(
-      final WorkerFunction<?, ?> function,
+      final Worker worker,
+      final Capability capability,
       final Object inputData,
       final WorkerContext context,
-      final int timeoutMs,
       final ExecutionMetadata metadata) {
-    final SWFWorkerFunction swf = (SWFWorkerFunction) function;
+    final SWFWorkerFunction swf = (SWFWorkerFunction) worker.function();
+    final int timeoutMs =
+        worker.executionPolicy().timeoutMs() != null
+            ? worker.executionPolicy().timeoutMs()
+            : 30_000;
     final Map<String, Object> mapInput = (Map<String, Object>) inputData;
 
     Workflow effectiveWorkflow = swf.workflow();

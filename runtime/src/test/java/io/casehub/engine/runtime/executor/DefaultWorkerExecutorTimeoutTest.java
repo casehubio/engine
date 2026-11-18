@@ -20,12 +20,16 @@ import static org.assertj.core.api.Assertions.assertThat;
 import io.casehub.api.model.WorkerContext;
 import io.casehub.engine.common.internal.executor.ExecutionMetadata;
 import io.casehub.engine.common.internal.executor.WorkerExecutor;
+import io.casehub.platform.api.governance.ExecutionPolicy;
+import io.casehub.worker.api.Capability;
+import io.casehub.worker.api.Worker;
 import io.casehub.worker.api.WorkerFunction;
 import io.casehub.worker.api.WorkerOutcome;
 import io.casehub.worker.api.WorkerResult;
 import io.quarkus.test.junit.QuarkusTest;
 import jakarta.inject.Inject;
 import java.util.Map;
+import java.util.Set;
 import java.util.UUID;
 import org.junit.jupiter.api.Test;
 
@@ -58,18 +62,27 @@ class DefaultWorkerExecutorTimeoutTest {
             io.casehub.api.context.PropagationContext.createRoot(),
             null);
 
+    Worker worker =
+        new Worker(
+            "test-worker",
+            Set.of("cap"),
+            slowWorker,
+            new ExecutionPolicy(200, null, null),
+            null,
+            null);
+    Capability capability = Capability.of("cap", "{}", "{}");
     var handlerResult =
         workerExecutor.execute(
-            slowWorker,
+            worker,
+            capability,
             Map.of(),
             context,
-            200, // 200ms timeout — worker sleeps 5s
             null,
             new ExecutionMetadata("test-worker", "hash-1"));
 
     WorkerResult<?> result = handlerResult.result();
     assertThat(result.outcome()).isInstanceOf(WorkerOutcome.Expired.class);
-    assertThat(((WorkerOutcome.Expired<?>) result.outcome()).reason()).contains("200ms");
+    assertThat(((WorkerOutcome.Expired<?>) result.outcome()).reason()).contains("timed out");
     assertThat(result.output()).isNull();
   }
 }

@@ -24,6 +24,9 @@ import static org.mockito.Mockito.when;
 import io.casehub.api.model.WorkerContext;
 import io.casehub.engine.common.internal.executor.ExecutionMetadata;
 import io.casehub.engine.common.internal.executor.HandlerResult;
+import io.casehub.platform.api.governance.ExecutionPolicy;
+import io.casehub.worker.api.Capability;
+import io.casehub.worker.api.Worker;
 import io.casehub.worker.api.WorkerFunction;
 import io.casehub.worker.api.WorkerOutcome;
 import io.modelcontextprotocol.client.McpSyncClient;
@@ -32,6 +35,7 @@ import io.modelcontextprotocol.spec.McpSchema.TextContent;
 import java.io.IOException;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.Executors;
 import org.junit.jupiter.api.BeforeEach;
@@ -153,6 +157,10 @@ class McpWorkerFunctionHandlerTest {
     var fn = new McpWorkerFunction(transport, toolName);
     var context = new WorkerContext("Test task", UUID.randomUUID(), null, null, null, null);
     var metadata = new ExecutionMetadata("test-worker", "hash-abc");
-    return handler.execute(fn, Map.of("input", "data"), context, 30000, metadata);
+    Worker worker =
+        new Worker(
+            "mcp-test", Set.of("cap"), fn, new ExecutionPolicy(30000, null, null), null, null);
+    Capability capability = Capability.of("cap", "{}", "{}");
+    return handler.execute(worker, capability, Map.of("input", "data"), context, metadata);
   }
 }

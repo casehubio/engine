@@ -29,11 +29,8 @@ public class WorkerExecutionConfig {
     return workerTimeoutMs != null ? workerTimeoutMs : defaultTimeoutMs;
   }
 
-    public ExecutionPolicy withEffectiveTimeout(ExecutionPolicy policy) {
-        return new ExecutionPolicy(
-                getEffectiveTimeout(policy.timeoutMs()),
-                policy.retries(),
-                policy.circuitBreaker());
-    }
-
+  public ExecutionPolicy withEffectiveTimeout(ExecutionPolicy policy) {
+    return new ExecutionPolicy(
+        getEffectiveTimeout(policy.timeoutMs()), policy.retries(), policy.circuitBreaker());
+  }
 }

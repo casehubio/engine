@@ -24,6 +24,10 @@ import static org.mockito.Mockito.when;
 
 import io.casehub.api.model.WorkerContext;
 import io.casehub.engine.common.internal.executor.ExecutionMetadata;
+import io.casehub.platform.api.governance.ExecutionPolicy;
+import io.casehub.worker.api.Capability;
+import io.casehub.worker.api.Worker;
+import io.casehub.worker.api.WorkerFunction;
 import io.serverlessworkflow.api.types.Workflow;
 import io.serverlessworkflow.impl.WorkflowApplication;
 import io.serverlessworkflow.impl.WorkflowDefinition;
@@ -31,6 +35,7 @@ import io.serverlessworkflow.impl.WorkflowInstance;
 import io.serverlessworkflow.impl.WorkflowModel;
 import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
 import org.junit.jupiter.api.BeforeEach;
@@ -71,12 +76,17 @@ class FlowWorkerExecutorTest {
     when(wfInstance.start()).thenReturn(CompletableFuture.completedFuture(model));
     stubApp(wfInstance);
 
+    WorkerFunction<?, ?> fn = new FlowWorkerFunction(mock(Workflow.class));
+    Worker worker =
+        new Worker(
+            "flow-test", Set.of("cap"), fn, new ExecutionPolicy(5000, null, null), null, null);
+    Capability capability = Capability.of("cap", "{}", "{}");
     var handlerResult =
         handler.execute(
-            new FlowWorkerFunction(mock(Workflow.class)),
+            worker,
+            capability,
             Map.of(),
             testContext(caseId),
-            5000,
             new ExecutionMetadata("worker-A", "hash-1"));
 
     assertThat((java.util.Map<String, Object>) handlerResult.result().output())
@@ -97,11 +107,16 @@ class FlowWorkerExecutorTest {
     stubApp(wfInstance);
 
     try {
+      WorkerFunction<?, ?> fn2 = new FlowWorkerFunction(mock(Workflow.class));
+      Worker worker2 =
+          new Worker(
+              "flow-test", Set.of("cap"), fn2, new ExecutionPolicy(5000, null, null), null, null);
+      Capability cap2 = Capability.of("cap", "{}", "{}");
       handler.execute(
-          new FlowWorkerFunction(mock(Workflow.class)),
+          worker2,
+          cap2,
           Map.of(),
           testContext(caseId),
-          5000,
           new ExecutionMetadata("worker-B", "hash-2"));
     } catch (Exception ignored) {
     }
