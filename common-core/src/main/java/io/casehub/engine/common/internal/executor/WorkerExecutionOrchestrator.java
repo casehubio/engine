@@ -40,6 +40,7 @@ import io.casehub.engine.common.spi.CrossTenantEventLogRepository;
 import io.casehub.engine.common.spi.EventLogRepository;
 import io.casehub.engine.common.spi.event.CaseLifecycleEvent;
 import io.casehub.engine.common.spi.recovery.WorkerExecutionRecoveryService;
+import io.casehub.platform.api.governance.ExecutionPolicy;
 import io.casehub.worker.api.Capability;
 import io.casehub.worker.api.Exchange;
 import io.casehub.worker.api.ExchangeAwareFunction;
@@ -269,7 +270,9 @@ public class WorkerExecutionOrchestrator {
 
       Map<String, Object> inputDataForContext =
           OBJECT_MAPPER.convertValue(eventLog.getPayload(), Map.class);
-      int timeoutMs = executionConfig.getEffectiveTimeout(worker.executionPolicy().timeoutMs());
+      ExecutionPolicy effectivePolicy = executionConfig.withEffectiveTimeout(worker.executionPolicy());
+      Worker effectiveWorker = new Worker(worker.name(), worker.capabilities(),
+          worker.function(), effectivePolicy, worker.description(), worker.definitionRef());
 
       WorkerContext baseContext =
           workerContextProvider.buildContext(
@@ -308,10 +311,10 @@ public class WorkerExecutionOrchestrator {
 
       HandlerResult handlerResult =
           workerExecutor.execute(
-              worker.function(),
+              effectiveWorker,
+              capability,
               typedInput,
               workerContext,
-              timeoutMs,
               capability.outputProjection(),
               metadata);
 

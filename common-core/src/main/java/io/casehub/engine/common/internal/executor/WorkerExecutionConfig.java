@@ -15,6 +15,8 @@
  */
 package io.casehub.engine.common.internal.executor;
 
+import io.casehub.platform.api.governance.ExecutionPolicy;
+
 public class WorkerExecutionConfig {
 
   private final int defaultTimeoutMs;
@@ -26,4 +28,12 @@ public class WorkerExecutionConfig {
   public int getEffectiveTimeout(Integer workerTimeoutMs) {
     return workerTimeoutMs != null ? workerTimeoutMs : defaultTimeoutMs;
   }
+
+    public ExecutionPolicy withEffectiveTimeout(ExecutionPolicy policy) {
+        return new ExecutionPolicy(
+                getEffectiveTimeout(policy.timeoutMs()),
+                policy.retries(),
+                policy.circuitBreaker());
+    }
+
 }
