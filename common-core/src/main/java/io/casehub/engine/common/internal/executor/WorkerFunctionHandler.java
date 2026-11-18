@@ -16,6 +16,8 @@
 package io.casehub.engine.common.internal.executor;
 
 import io.casehub.api.model.WorkerContext;
+import io.casehub.worker.api.Capability;
+import io.casehub.worker.api.Worker;
 import io.casehub.worker.api.WorkerFunction;
 
 /**
@@ -36,9 +38,9 @@ public interface WorkerFunctionHandler {
   boolean supports(WorkerFunction<?, ?> function);
 
   HandlerResult execute(
-      WorkerFunction<?, ?> function,
+      Worker worker,
+      Capability capability,
       Object inputData,
       WorkerContext context,
-      int timeoutMs,
       ExecutionMetadata metadata);
 }

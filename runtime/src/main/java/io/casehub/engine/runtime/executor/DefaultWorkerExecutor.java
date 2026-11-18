@@ -25,14 +25,16 @@ import io.casehub.engine.common.internal.executor.ExecutionMetadata;
 import io.casehub.engine.common.internal.executor.HandlerResult;
 import io.casehub.engine.common.internal.executor.WorkerExecutor;
 import io.casehub.engine.common.internal.executor.WorkerFunctionHandler;
-import io.casehub.worker.api.WorkerFunction;
+import io.casehub.worker.api.Capability;
+import io.casehub.worker.api.Worker;
 import io.casehub.worker.api.WorkerResult;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.enterprise.inject.Instance;
 import jakarta.inject.Inject;
+import org.jboss.logging.Logger;
+
 import java.util.List;
 import java.util.Map;
-import org.jboss.logging.Logger;
 
 /**
  * Engine's own worker executor — composite that dispatches to pluggable {@link
@@ -60,25 +62,25 @@ public class DefaultWorkerExecutor implements WorkerExecutor {
     this.expressionEngineRegistry = expressionEngineRegistry;
   }
 
-  @Override
-  public HandlerResult execute(
-      WorkerFunction<?, ?> function,
-      Object inputData,
-      WorkerContext context,
-      int timeoutMs,
-      String outputProjection,
-      ExecutionMetadata metadata) {
+    @Override
+    public HandlerResult execute(
+            Worker worker,
+            Capability capability,
+            Object inputData,
+            WorkerContext context,
+            String outputProjection,
+            ExecutionMetadata metadata) {
 
-    for (WorkerFunctionHandler handler : handlers) {
-      if (handler.supports(function)) {
-        HandlerResult handlerResult =
-            handler.execute(function, inputData, context, timeoutMs, metadata);
-        WorkerResult<?> result = applyOutputSchema(handlerResult.result(), outputProjection);
-        return new HandlerResult(result, handlerResult.protocolMetadata());
-      }
+        for (WorkerFunctionHandler handler : handlers) {
+            if (handler.supports(worker.function())) {
+                HandlerResult handlerResult =
+                        handler.execute(worker, capability, inputData, context, metadata);
+                WorkerResult<?> result = applyOutputSchema(handlerResult.result(), outputProjection);
+                return new HandlerResult(result, handlerResult.protocolMetadata());
+            }
+        }
+        throw new UnsupportedOperationException("No handler for: " + worker.function().getClass().getName());
     }
-    throw new UnsupportedOperationException("No handler for: " + function.getClass().getName());
-  }
 
   @SuppressWarnings({"unchecked", "rawtypes"})
   private WorkerResult<?> applyOutputSchema(WorkerResult<?> result, String outputSchema) {

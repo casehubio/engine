@@ -16,7 +16,8 @@
 package io.casehub.engine.common.internal.executor;
 
 import io.casehub.api.model.WorkerContext;
-import io.casehub.worker.api.WorkerFunction;
+import io.casehub.worker.api.Capability;
+import io.casehub.worker.api.Worker;
 
 /**
  * Abstracts <em>how</em> to run a worker function — independent of any scheduler. Called by
@@ -29,11 +30,11 @@ import io.casehub.worker.api.WorkerFunction;
  */
 public interface WorkerExecutor {
 
-  HandlerResult execute(
-      WorkerFunction<?, ?> function,
-      Object inputData,
-      WorkerContext context,
-      int timeoutMs,
-      String outputProjection,
-      ExecutionMetadata metadata);
+    HandlerResult execute(
+            Worker worker,
+            Capability capability,
+            Object inputData,
+            WorkerContext context,
+            String outputProjection,
+            ExecutionMetadata metadata);
 }
