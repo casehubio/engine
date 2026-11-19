@@ -28,10 +28,12 @@ import io.casehub.engine.common.internal.executor.WorkerFunctionHandler;
 import io.casehub.engine.common.internal.worker.scope.ScopedWorkerRegistry;
 import io.casehub.engine.common.internal.worker.scope.ScopedWorkerSession;
 import io.casehub.platform.api.governance.ExecutionPolicy;
+import io.casehub.platform.api.governance.RetryPolicy;
 import io.casehub.worker.api.Capability;
 import io.casehub.worker.api.Exchange;
 import io.casehub.worker.api.Worker;
 import io.casehub.worker.api.WorkerFunction;
+import io.casehub.worker.api.WorkerOutcome;
 import io.casehub.worker.api.WorkerResult;
 import io.smallrye.mutiny.Uni;
 import java.util.Map;
@@ -48,11 +50,13 @@ class SyncWorkerFunctionHandlerTest {
   private ScopedWorkerRegistry registry;
   private AtomicReference<Map<String, Object>> capturedAccState;
   private AtomicReference<Worker> capturedWorker;
+  private AtomicReference<Capability> capturedCapability;
 
   @BeforeEach
   void setUp() {
     capturedAccState = new AtomicReference<>();
     capturedWorker = new AtomicReference<>();
+    capturedCapability = new AtomicReference<>();
     WorkerRuntimeFactory mockFactory =
         new WorkerRuntimeFactory(null, null, null, null, null, null, null, null, null, null) {
           @Override
@@ -71,6 +75,7 @@ class SyncWorkerFunctionHandlerTest {
     io.casehub.worker.runtime.WorkerExecutor mockExecutor =
         (worker, capability, input) -> {
           capturedWorker.set(worker);
+          capturedCapability.set(capability);
           if (worker.function() instanceof WorkerFunction.Sync sync) {
             WorkerResult result =
                 (WorkerResult) ((java.util.function.BiFunction) sync.fn()).apply(input, null);
@@ -88,7 +93,18 @@ class SyncWorkerFunctionHandlerTest {
         };
 
     registry = new ScopedWorkerRegistry();
-    handler = new SyncWorkerFunctionHandler(mockExecutor, mockFactory, registry);
+    this.mockFactory = mockFactory;
+    handler = newHandler(mockExecutor);
+  }
+
+  private WorkerRuntimeFactory mockFactory;
+
+  private WorkerFunctionHandler newHandler(io.casehub.worker.runtime.WorkerExecutor executor) {
+    return new SyncWorkerFunctionHandler(
+        executor,
+        mockFactory,
+        registry,
+        java.util.concurrent.Executors.newVirtualThreadPerTaskExecutor());
   }
 
   @Test
@@ -145,6 +161,141 @@ class SyncWorkerFunctionHandlerTest {
 
     assertThat(runtimeRef.get()).isNotNull();
     assertThat(runtimeRef.get()).isInstanceOf(io.casehub.api.engine.WorkerRuntime.class);
+  }
+
+  @Test
+  void jq_projections_are_not_forwarded_to_worker_executor_as_schemas() {
+    var sync =
+        new WorkerFunction.Sync<>(
+            Map.class, Map.class, (input, scope) -> WorkerResult.of(Map.of("result", "ok")));
+    Worker worker =
+        new Worker(
+            "test-worker", Set.of("cap"), sync, new ExecutionPolicy(5000, null, null), null, null);
+    // Engine capabilities carry JQ projections; the worker executor parses these fields as
+    // JSON Schema and rejects them ("Malformed JSON Schema").
+    Capability capability =
+        new Capability(
+            "cap",
+            "{ cbrExperiences: .cbrExperiences }",
+            "{ cbrPathAdvice: . }",
+            "advises on the investigation path");
+
+    WorkerResult<?> result =
+        handler
+            .execute(
+                worker,
+                capability,
+                Map.of("cbrExperiences", "none"),
+                testContext(),
+                new ExecutionMetadata("test-worker", "hash"))
+            .result();
+
+    assertThat(result.output()).isEqualTo(Map.of("result", "ok"));
+    assertThat(capturedCapability.get().name()).isEqualTo("cap");
+    assertThat(capturedCapability.get().description())
+        .isEqualTo("advises on the investigation path");
+    assertThat(capturedCapability.get().inputProjection()).isEqualTo("{}");
+    assertThat(capturedCapability.get().outputProjection()).isEqualTo("{}");
+  }
+
+  @Test
+  void worker_exception_propagates_although_executor_converts_it_to_failed_result() {
+    // casehub-worker's executor recovers every failure into WorkerResult.failed(...). The engine
+    // retry path (WORKER_EXECUTION_FAILED, rescheduling, FAULTED) only runs when the handler
+    // throws.
+    @SuppressWarnings({"unchecked", "rawtypes"})
+    io.casehub.worker.runtime.WorkerExecutor recoveringExecutor =
+        (worker, capability, input) -> {
+          var sync = (WorkerFunction.Sync) worker.function();
+          try {
+            return Uni.createFrom()
+                .item(
+                    (WorkerResult) ((java.util.function.BiFunction) sync.fn()).apply(input, null));
+          } catch (RuntimeException e) {
+            return Uni.createFrom().item(WorkerResult.failed(e.getMessage()));
+          }
+        };
+    WorkerFunctionHandler recoveringHandler = newHandler(recoveringExecutor);
+    var sync =
+        new WorkerFunction.Sync<Map, Map>(
+            Map.class,
+            Map.class,
+            (input, scope) -> {
+              throw new IllegalStateException("Simulated permanent failure");
+            });
+    Worker worker =
+        new Worker(
+            "test-worker", Set.of("cap"), sync, new ExecutionPolicy(5000, null, null), null, null);
+
+    assertThatThrownBy(
+            () ->
+                recoveringHandler.execute(
+                    worker,
+                    Capability.of("cap", "{}", "{}"),
+                    Map.of(),
+                    testContext(),
+                    new ExecutionMetadata("test-worker", "hash")))
+        .isInstanceOf(IllegalStateException.class)
+        .hasMessage("Simulated permanent failure");
+  }
+
+  @Test
+  void worker_executor_does_not_retry_engine_owns_retries() {
+    var sync =
+        new WorkerFunction.Sync<>(
+            Map.class, Map.class, (input, scope) -> WorkerResult.of(Map.of("result", "ok")));
+    Worker worker =
+        new Worker(
+            "test-worker",
+            Set.of("cap"),
+            sync,
+            new ExecutionPolicy(5000, new RetryPolicy(3, 100)),
+            null,
+            null);
+
+    handler.execute(
+        worker,
+        Capability.of("cap", "{}", "{}"),
+        Map.of(),
+        testContext(),
+        new ExecutionMetadata("test-worker", "hash"));
+
+    assertThat(capturedWorker.get().executionPolicy().retries()).isNull();
+    assertThat(capturedWorker.get().executionPolicy().timeoutMs()).isEqualTo(5000);
+  }
+
+  @Test
+  void slow_worker_expires_after_timeout_without_waiting_for_it() {
+    var sync =
+        new WorkerFunction.Sync<>(
+            Map.class,
+            Map.class,
+            (input, scope) -> {
+              try {
+                Thread.sleep(5000);
+              } catch (InterruptedException e) {
+                Thread.currentThread().interrupt();
+              }
+              return WorkerResult.of(Map.of("result", "too-late"));
+            });
+    Worker worker =
+        new Worker(
+            "test-worker", Set.of("cap"), sync, new ExecutionPolicy(200, null, null), null, null);
+
+    long start = System.nanoTime();
+    WorkerResult<?> result =
+        handler
+            .execute(
+                worker,
+                Capability.of("cap", "{}", "{}"),
+                Map.of(),
+                testContext(),
+                new ExecutionMetadata("test-worker", "hash"))
+            .result();
+    long elapsedMs = java.util.concurrent.TimeUnit.NANOSECONDS.toMillis(System.nanoTime() - start);
+
+    assertThat(result.outcome()).isInstanceOf(WorkerOutcome.Expired.class);
+    assertThat(elapsedMs).isLessThan(2000);
   }
 
   @Test
