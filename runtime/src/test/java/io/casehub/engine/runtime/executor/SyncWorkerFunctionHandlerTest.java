@@ -23,6 +23,7 @@ import io.casehub.api.model.LifecycleScope;
 import io.casehub.api.model.Participation;
 import io.casehub.api.model.WorkerContext;
 import io.casehub.engine.common.internal.executor.ExecutionMetadata;
+import io.casehub.engine.common.internal.executor.WorkerExecutionConfig;
 import io.casehub.engine.common.internal.executor.WorkerFunctionHandler;
 import io.casehub.engine.common.internal.worker.scope.ScopedWorkerRegistry;
 import io.casehub.engine.common.internal.worker.scope.ScopedWorkerSession;
@@ -46,10 +47,12 @@ class SyncWorkerFunctionHandlerTest {
   private WorkerFunctionHandler handler;
   private ScopedWorkerRegistry registry;
   private AtomicReference<Map<String, Object>> capturedAccState;
+  private AtomicReference<Worker> capturedWorker;
 
   @BeforeEach
   void setUp() {
     capturedAccState = new AtomicReference<>();
+    capturedWorker = new AtomicReference<>();
     WorkerRuntimeFactory mockFactory =
         new WorkerRuntimeFactory(null, null, null, null, null, null, null, null, null, null) {
           @Override
@@ -67,6 +70,7 @@ class SyncWorkerFunctionHandlerTest {
     @SuppressWarnings({"unchecked", "rawtypes"})
     io.casehub.worker.runtime.WorkerExecutor mockExecutor =
         (worker, capability, input) -> {
+          capturedWorker.set(worker);
           if (worker.function() instanceof WorkerFunction.Sync sync) {
             WorkerResult result =
                 (WorkerResult) ((java.util.function.BiFunction) sync.fn()).apply(input, null);
@@ -197,6 +201,37 @@ class SyncWorkerFunctionHandlerTest {
     assertThat(output.body()).isEqualTo("processed: raw-data");
     assertThat(output.headers()).containsEntry("correlationId", "abc");
     assertThat(output.headers()).containsEntry("step", "done");
+  }
+
+  @Test
+  void default_timeout_enrichment_reaches_platform_executor() {
+    int defaultTimeout = 30000;
+    var config = new WorkerExecutionConfig(defaultTimeout);
+
+    var sync =
+        new WorkerFunction.Sync<>(
+            Map.class, Map.class, (input, scope) -> WorkerResult.of(Map.of("done", true)));
+    Worker worker =
+        new Worker(
+            "test-worker", Set.of("cap"), sync, new ExecutionPolicy(null, null, null), null, null);
+
+    ExecutionPolicy effectivePolicy = config.withEffectiveTimeout(worker.executionPolicy());
+    Worker enrichedWorker =
+        new Worker(
+            worker.name(),
+            worker.capabilities(),
+            worker.function(),
+            effectivePolicy,
+            worker.description(),
+            worker.definitionRef());
+
+    Capability capability = Capability.of("cap", "{}", "{}");
+
+    handler.execute(
+        enrichedWorker, capability, Map.of(), testContext(), new ExecutionMetadata("w1", "h1"));
+
+    assertThat(enrichedWorker.executionPolicy().timeoutMs()).isEqualTo(defaultTimeout);
+    assertThat(capturedWorker.get().executionPolicy().timeoutMs()).isEqualTo(defaultTimeout);
   }
 
   @Test
