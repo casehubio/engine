@@ -16,26 +16,32 @@
 package io.casehub.engine.runtime.bootstrap;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 
 import io.casehub.api.model.CaseDefinition;
 import io.casehub.engine.common.spi.CaseDefinitionRegistry;
+import io.casehub.yaml.jackson.YamlMappers;
 import java.io.ByteArrayInputStream;
 import java.nio.charset.StandardCharsets;
 import java.util.Set;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
-import org.mockito.InjectMocks;
-import org.mockito.Mock;
-import org.mockito.junit.jupiter.MockitoExtension;
 
-@ExtendWith(MockitoExtension.class)
 class CaseYamlRegistrarTest {
 
-  @Mock CaseDefinitionRegistry caseDefinitionRegistry;
-  @InjectMocks CaseYamlRegistrar registrar;
+  CaseYamlRegistrar registrar;
+  CaseDefinitionRegistry caseDefinitionRegistry;
+
+  @BeforeEach
+  void setUp() {
+    registrar = new CaseYamlRegistrar();
+    caseDefinitionRegistry = mock(CaseDefinitionRegistry.class);
+    registrar.caseDefinitionRegistry = caseDefinitionRegistry;
+    registrar.objectMapper = YamlMappers.create();
+  }
 
   @Test
   void sectionKey() {

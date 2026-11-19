@@ -140,7 +140,7 @@ public class YamlCaseHub extends CaseHub {
     }
   }
 
-  static String deriveConventionPath(String basePath) {
+  public static String deriveConventionPath(String basePath) {
     int dot = basePath.lastIndexOf('.');
     if (dot < 0) return basePath + "-overrides";
     return basePath.substring(0, dot) + "-overrides" + basePath.substring(dot);
