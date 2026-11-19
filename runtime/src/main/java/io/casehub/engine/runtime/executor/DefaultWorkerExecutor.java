@@ -67,14 +67,14 @@ public class DefaultWorkerExecutor implements WorkerExecutor {
       Capability capability,
       Object inputData,
       WorkerContext context,
-      String outputProjection,
       ExecutionMetadata metadata) {
 
     for (WorkerFunctionHandler handler : handlers) {
       if (handler.supports(worker.function())) {
         HandlerResult handlerResult =
             handler.execute(worker, capability, inputData, context, metadata);
-        WorkerResult<?> result = applyOutputSchema(handlerResult.result(), outputProjection);
+        WorkerResult<?> result =
+            applyOutputSchema(handlerResult.result(), capability.outputProjection());
         return new HandlerResult(result, handlerResult.protocolMetadata());
       }
     }

@@ -73,12 +73,7 @@ class DefaultWorkerExecutorTimeoutTest {
     Capability capability = Capability.of("cap", "{}", "{}");
     var handlerResult =
         workerExecutor.execute(
-            worker,
-            capability,
-            Map.of(),
-            context,
-            null,
-            new ExecutionMetadata("test-worker", "hash-1"));
+            worker, capability, Map.of(), context, new ExecutionMetadata("test-worker", "hash-1"));
 
     WorkerResult<?> result = handlerResult.result();
     assertThat(result.outcome()).isInstanceOf(WorkerOutcome.Expired.class);

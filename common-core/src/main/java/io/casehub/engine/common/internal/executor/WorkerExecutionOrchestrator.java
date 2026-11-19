@@ -317,13 +317,7 @@ public class WorkerExecutionOrchestrator {
       }
 
       HandlerResult handlerResult =
-          workerExecutor.execute(
-              effectiveWorker,
-              capability,
-              typedInput,
-              workerContext,
-              capability.outputProjection(),
-              metadata);
+          workerExecutor.execute(effectiveWorker, capability, typedInput, workerContext, metadata);
 
       WorkerResult<?> workerResult = handlerResult.result();
       Map<String, Object> output = toMap(workerResult.output());

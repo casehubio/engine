@@ -35,6 +35,5 @@ public interface WorkerExecutor {
       Capability capability,
       Object inputData,
       WorkerContext context,
-      String outputProjection,
       ExecutionMetadata metadata);
 }
