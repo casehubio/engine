@@ -2,7 +2,7 @@
 # pre-push hook: mechanical squash candidate check
 # Installed by git-squash skill. Blocks obvious policy violations before push.
 # Run /git-squash for the full AI-assisted analysis.
-# Bypass with: git push --no-verify
+# Run /git-squash for the full AI-assisted analysis before pushing.
 
 remote="$1"
 
@@ -56,8 +56,8 @@ while read local_ref local_sha remote_ref remote_sha; do
     printf "║  Commits in push:    %-36s║\n" "$total"
     printf "║  Squash candidates:  %-36s║\n" "$candidates"
     echo "║                                                          ║"
-    echo "║  Run /git-squash to clean history, or --no-verify        ║"
-    echo "║  if history is already clean.                            ║"
+    echo "║  Run /git-squash to clean history before pushing.          ║"
+    echo "║                                                          ║"
     echo "╚══════════════════════════════════════════════════════════╝"
     echo ""
     exit 1
