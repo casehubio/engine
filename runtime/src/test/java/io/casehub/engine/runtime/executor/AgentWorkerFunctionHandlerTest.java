@@ -191,6 +191,149 @@ class AgentWorkerFunctionHandlerTest {
     assertThat(((WorkerOutcome.Expired) result.outcome()).reason()).contains("200ms");
   }
 
+  @Test
+  @SuppressWarnings("unchecked")
+  void executes_deferred_agent_resolves_from_registry() {
+    io.casehub.eidos.api.AgentDescriptor descriptor =
+        io.casehub.eidos.api.AgentDescriptor.builder()
+            .agentId("agent-1")
+            .name("Test Agent")
+            .slot("test-slot")
+            .tenancyId("t1")
+            .build();
+
+    io.casehub.eidos.api.AgentRegistry registry =
+        new io.casehub.eidos.api.AgentRegistry() {
+          @Override
+          public void register(io.casehub.eidos.api.AgentDescriptor d) {}
+
+          @Override
+          public java.util.Optional<io.casehub.eidos.api.AgentDescriptor> findById(
+              String agentId, String tenancyId) {
+            return java.util.Optional.empty();
+          }
+
+          @Override
+          public java.util.List<io.casehub.eidos.api.AgentMatch> find(
+              io.casehub.eidos.api.AgentQuery query) {
+            if ("test-slot".equals(query.slot())) {
+              return java.util.List.of(new io.casehub.eidos.api.AgentMatch(descriptor, null));
+            }
+            return java.util.List.of();
+          }
+        };
+
+    io.casehub.eidos.api.SystemPromptRenderer renderer =
+        (desc, ctx) ->
+            new io.casehub.eidos.api.SystemPromptRenderer.RenderedPrompt(
+                "You are a test agent",
+                io.casehub.eidos.api.SystemPromptRenderer.RenderFormat.MARKDOWN,
+                "h1",
+                "h2",
+                false);
+
+    AgentProvider agentProvider = stubAgentProvider("{\"result\": \"resolved\"}");
+
+    var deferredHandler =
+        new AgentWorkerFunctionHandler(
+            Executors.newVirtualThreadPerTaskExecutor(), registry, renderer, agentProvider);
+
+    var config = new io.casehub.api.model.ai.AgentSlotConfig("test-slot", null, null, null, null);
+    var agentFunction = AgentWorkerFunction.ofSlot(config);
+
+    Worker worker =
+        new Worker(
+            "agent-w",
+            Set.of("cap"),
+            agentFunction,
+            new io.casehub.platform.api.governance.ExecutionPolicy(5000, null, null),
+            null,
+            null);
+
+    HandlerResult result =
+        deferredHandler.execute(
+            worker,
+            io.casehub.worker.api.Capability.of("cap", "{}", "{}"),
+            Map.of("input", "data"),
+            testContext(),
+            new ExecutionMetadata("agent-w", "hash", null, null, "t1"));
+
+    assertThat((Map<String, Object>) result.result().output()).containsEntry("result", "resolved");
+  }
+
+  @Test
+  void deferred_agent_missing_slot_returns_failed() {
+    io.casehub.eidos.api.AgentRegistry registry =
+        new io.casehub.eidos.api.AgentRegistry() {
+          @Override
+          public void register(io.casehub.eidos.api.AgentDescriptor d) {}
+
+          @Override
+          public java.util.Optional<io.casehub.eidos.api.AgentDescriptor> findById(
+              String agentId, String tenancyId) {
+            return java.util.Optional.empty();
+          }
+
+          @Override
+          public java.util.List<io.casehub.eidos.api.AgentMatch> find(
+              io.casehub.eidos.api.AgentQuery query) {
+            return java.util.List.of();
+          }
+        };
+
+    io.casehub.eidos.api.SystemPromptRenderer renderer =
+        (desc, ctx) ->
+            new io.casehub.eidos.api.SystemPromptRenderer.RenderedPrompt(
+                "", io.casehub.eidos.api.SystemPromptRenderer.RenderFormat.MARKDOWN, "", "", false);
+    AgentProvider agentProvider = stubAgentProvider("{}");
+
+    var deferredHandler =
+        new AgentWorkerFunctionHandler(
+            Executors.newVirtualThreadPerTaskExecutor(), registry, renderer, agentProvider);
+
+    var config =
+        new io.casehub.api.model.ai.AgentSlotConfig("nonexistent-slot", null, null, null, null);
+    var agentFunction = AgentWorkerFunction.ofSlot(config);
+
+    Worker worker =
+        new Worker(
+            "agent-w",
+            Set.of("cap"),
+            agentFunction,
+            new io.casehub.platform.api.governance.ExecutionPolicy(5000, null, null),
+            null,
+            null);
+
+    HandlerResult result =
+        deferredHandler.execute(
+            worker,
+            io.casehub.worker.api.Capability.of("cap", "{}", "{}"),
+            Map.of(),
+            testContext(),
+            new ExecutionMetadata("agent-w", "hash", null, null, "t1"));
+
+    assertThat(result.result().outcome()).isInstanceOf(WorkerOutcome.Failed.class);
+  }
+
+  private AgentProvider stubAgentProvider(String jsonResponse) {
+    return new AgentProvider() {
+      @Override
+      public io.smallrye.mutiny.Multi<AgentEvent> invoke(AgentSessionConfig config) {
+        return io.smallrye.mutiny.Multi.createFrom()
+            .items(
+                new AgentEvent.TextDelta(jsonResponse),
+                new AgentEvent.InvocationComplete(
+                    0, 0, 0, 0, 0, null, 0L, 0L, null, 0, false, null, null));
+      }
+
+      @Override
+      public io.casehub.platform.agent.AgentSession openSession(
+          io.casehub.platform.agent.AgentSessionInit init) {
+        throw new UnsupportedOperationException();
+      }
+    };
+  }
+
   private WorkerContext testContext() {
     return new WorkerContext(
         "test-worker",
