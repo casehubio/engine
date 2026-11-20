@@ -440,18 +440,46 @@ class CaseDefinitionYamlMapperTest {
               capabilities:
                 - analyze
               agent:
-                systemPrompt: "You are an analyzer"
+                slot: "test-analyst"
                 inputProjection: "{ text: .text }"
                 outputProjection: "{ result: .result }"
-                model:
-                  openai:
-                    apiKey: "test-key"
-                    modelName: "gpt-4"
-                    temperature: 0.7
         """;
 
+    io.casehub.api.spi.WorkerFunctionProvider agentProvider =
+        new io.casehub.api.spi.WorkerFunctionProvider() {
+          @Override
+          public boolean handles(com.fasterxml.jackson.databind.JsonNode rawWorkerNode) {
+            return rawWorkerNode.has("agent") && rawWorkerNode.get("agent").has("slot");
+          }
+
+          @Override
+          public io.casehub.worker.api.WorkerFunction<?, ?> create(
+              com.fasterxml.jackson.databind.JsonNode rawWorkerNode) {
+            var agentNode = rawWorkerNode.get("agent");
+            return AgentWorkerFunction.ofSlot(
+                new io.casehub.api.model.ai.AgentSlotConfig(
+                    agentNode.get("slot").asText(),
+                    agentNode.has("model") ? agentNode.get("model").asText() : null,
+                    null,
+                    agentNode.has("inputProjection")
+                        ? agentNode.get("inputProjection").asText()
+                        : null,
+                    agentNode.has("outputProjection")
+                        ? agentNode.get("outputProjection").asText()
+                        : null));
+          }
+        };
+    io.casehub.api.spi.WorkerFunctionProviderRegistry providerRegistry =
+        rawWorkerNode -> {
+          if (agentProvider.handles(rawWorkerNode)) {
+            return agentProvider.create(rawWorkerNode);
+          }
+          return null;
+        };
     InputStream is = new ByteArrayInputStream(yaml.getBytes(StandardCharsets.UTF_8));
-    CaseDefinition def = CaseDefinitionYamlMapper.load(is);
+    CaseDefinition def =
+        CaseDefinitionYamlMapper.load(
+            is, io.casehub.yaml.jackson.YamlMappers.create(), null, providerRegistry, null);
 
     assertThat(def.getCapabilities()).hasSize(1);
     Capability cap = def.getCapabilities().get(0);
@@ -465,6 +493,9 @@ class CaseDefinitionYamlMapperTest {
     assertThat(worker.function()).isNotNull();
 
     assertThat(worker.function()).isInstanceOf(AgentWorkerFunction.class);
+    AgentWorkerFunction agentFn = (AgentWorkerFunction) worker.function();
+    assertThat(agentFn.isDeferred()).isTrue();
+    assertThat(agentFn.slotConfig().slot()).isEqualTo("test-analyst");
   }
 
   @Test

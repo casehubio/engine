@@ -225,9 +225,13 @@ types:
   YamlAgent:
     record: YamlAgent
     extra:
+      - { name: slot, type: String }
       - { name: model, type: JsonNode }
       - { name: modelName, type: String }
       - { name: systemPrompt, type: String }
+      - { name: userMessage, type: String }
+      - { name: inputProjection, type: String }
+      - { name: outputProjection, type: String }
       - { name: inputSchema, type: String }
       - { name: outputSchema, type: String }
       - { name: responseSchema, type: String }

@@ -17,21 +17,9 @@ spec:
       capabilities:
         - analyzeSentiment
       agent:
-        systemPrompt: |
-          You are a sentiment analyzer. Analyze the input text and classify it as:
-          - POSITIVE: for positive sentiment
-          - NEGATIVE: for negative sentiment
-          - NEUTRAL: for neutral sentiment
-
-          Return only JSON with a single field "sentiment".
+        slot: "sentiment-analyst"
         inputProjection: "{ text: .text }"
         outputProjection: "{ sentiment: .sentiment }"
-        model:
-          openai:
-            apiKey: "your-openai-api-key-here"
-            modelName: "gpt-4"
-            temperature: 0.3
-            maxTokens: 100
       executionPolicy:
         timeoutMs: 60000
         retries:

@@ -19,7 +19,6 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.casehub.api.context.JacksonPojoBridge;
 import io.casehub.api.engine.ExpressionEngineRegistry;
-import io.casehub.api.model.AgentWorkerFunction;
 import io.casehub.api.model.Binding;
 import io.casehub.api.model.BindingRequires;
 import io.casehub.api.model.CapabilityTarget;
@@ -548,9 +547,7 @@ public final class YamlCaseDefinitionConverter {
 
         WorkerFunction<?, ?> function = providers.createFunction(rawWorker);
         if (function == null) {
-          if (yw.agent() != null) {
-            function = buildAgentFunction(yw, agentProvider);
-          } else if (yw.contextType() != null) {
+          if (yw.contextType() != null) {
             function = buildTypedSyncFunction(yw);
           } else {
             function = WorkerFunction.NONE;
@@ -612,20 +609,6 @@ public final class YamlCaseDefinitionConverter {
 
     applyGoapShorthand(yamlWorkers, def);
     applyAgentDescriptors(yamlWorkers, def);
-  }
-
-  private static WorkerFunction<?, ?> buildAgentFunction(
-      YamlWorker yw, io.casehub.platform.agent.AgentProvider agentProvider) {
-    try {
-      JsonNode agentNode = MAPPER.valueToTree(yw.agent());
-      var invoker = AgentConverter.toWorkerInvoker(agentNode, agentProvider);
-      return new AgentWorkerFunction(invoker);
-    } catch (Exception e) {
-      LOG.warnf(
-          "Worker '%s': agent conversion failed, falling back to NONE — %s",
-          yw.name(), e.getMessage());
-      return WorkerFunction.NONE;
-    }
   }
 
   private static WorkerFunction<?, ?> buildTypedSyncFunction(YamlWorker yw) {
