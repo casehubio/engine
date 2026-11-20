@@ -15,6 +15,7 @@
  */
 package io.casehub.engine.common.internal.routing;
 
+import io.casehub.api.model.AgentTaskTarget;
 import io.casehub.api.model.Binding;
 import io.casehub.api.model.CapabilityTarget;
 import io.casehub.api.model.CaseDefinition;
@@ -46,6 +47,7 @@ public final class BindingExecutorResolver {
       case SubCaseTarget st -> ExecutorRef.of("unknown");
       case JudgmentTarget jt -> ExecutorRef.of("unknown");
       case SignalTarget st -> ExecutorRef.of("signal");
+      case AgentTaskTarget at -> ExecutorRef.of(at.capability());
       case ExtensionTarget et -> ExecutorRef.of("unknown");
       default -> ExecutorRef.of("unknown");
     };

@@ -15,6 +15,7 @@
  */
 package io.casehub.engine.graphql;
 
+import io.casehub.api.model.AgentTaskTarget;
 import io.casehub.api.model.Binding;
 import io.casehub.api.model.BindingTarget;
 import io.casehub.api.model.CapabilityTarget;
@@ -58,6 +59,7 @@ public final class CompensationGraphProjection {
       case SubCaseTarget ignored -> "sub-case";
       case HumanTaskTarget ignored -> "human-task";
       case SignalTarget ignored -> "signal";
+      case AgentTaskTarget ignored -> "agent-task";
       case ExtensionTarget ignored -> "extension";
     };
   }

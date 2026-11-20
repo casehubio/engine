@@ -17,6 +17,7 @@ package io.casehub.engine.rest.service;
 
 import io.casehub.api.acl.EngineResourceTypes;
 import io.casehub.api.engine.EntityNotFoundException;
+import io.casehub.api.model.AgentTaskTarget;
 import io.casehub.api.model.Binding;
 import io.casehub.api.model.BindingTarget;
 import io.casehub.api.model.CapabilityTarget;
@@ -86,6 +87,7 @@ public class CaseDefinitionService {
       case SubCaseTarget ignored -> "subCase";
       case JudgmentTarget ignored -> "judgment";
       case SignalTarget ignored -> "signal";
+      case AgentTaskTarget ignored -> "agentTask";
       case HumanTaskTarget ignored -> "humanTask";
       case ExtensionTarget ignored -> "extension";
     };
@@ -96,6 +98,7 @@ public class CaseDefinitionService {
       case CapabilityTarget ct -> ct.capability().name();
       case SubCaseTarget st -> st.subCase().name();
       case JudgmentTarget jt -> jt.title();
+      case AgentTaskTarget at -> at.capability();
       case SignalTarget ignored -> null;
       case HumanTaskTarget ignored -> null;
       case ExtensionTarget ignored -> null;

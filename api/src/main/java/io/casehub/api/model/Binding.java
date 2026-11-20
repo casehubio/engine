@@ -538,6 +538,11 @@ public class Binding {
       return this;
     }
 
+    public Builder agentTask(AgentTaskTarget agentTask) {
+      this.target = agentTask;
+      return this;
+    }
+
     /** Sets a {@link SignalTarget} from a payload map. */
     public Builder signal(Map<String, Object> payload) {
       this.target = new SignalTarget(payload);

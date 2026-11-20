@@ -30,4 +30,5 @@ public sealed interface BindingTarget
         HumanTaskTarget,
         JudgmentTarget,
         SignalTarget,
+        AgentTaskTarget,
         ExtensionTarget {}

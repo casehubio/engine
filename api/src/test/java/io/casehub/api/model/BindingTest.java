@@ -72,6 +72,8 @@ class BindingTest {
     assertThat(capTarget).isInstanceOf(CapabilityTarget.class);
     assertThat(scTarget).isInstanceOf(SubCaseTarget.class);
     assertThat(jtTarget).isInstanceOf(JudgmentTarget.class);
+    AgentTaskTarget agentTask = AgentTaskTarget.builder().capability("test").build();
+    assertThat(agentTask).isInstanceOf(BindingTarget.class);
     assertThat(new ExtensionTarget() {}).isInstanceOf(BindingTarget.class);
     assertThat(CapabilityTarget.class.isSealed()).isFalse();
   }
