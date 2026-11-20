@@ -24,6 +24,7 @@ import io.casehub.api.model.CaseDefinition;
 import io.casehub.engine.common.spi.CaseDefinitionRegistry;
 import io.casehub.yaml.jackson.YamlMappers;
 import java.io.ByteArrayInputStream;
+import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
 import java.util.Set;
 import org.junit.jupiter.api.BeforeEach;
@@ -88,6 +89,23 @@ class CaseYamlRegistrarTest {
     assertThat(def.getName()).isEqualTo("test-case");
     assertThat(def.getNamespace()).isEqualTo("test");
     assertThat(def.getVersion()).isEqualTo("1.0.0");
+  }
+
+  @Test
+  void register_overlayMergesIntoBase() {
+    InputStream base =
+        Thread.currentThread()
+            .getContextClassLoader()
+            .getResourceAsStream("casehub/overlay-base.yaml");
+
+    registrar.register("casehub/overlay-base.yaml", base);
+
+    var captor = ArgumentCaptor.forClass(CaseDefinition.class);
+    verify(caseDefinitionRegistry).registerCaseDefinition(captor.capture());
+
+    CaseDefinition def = captor.getValue();
+    assertThat(def.getName()).isEqualTo("overlay-test");
+    assertThat(def.getVersion()).isEqualTo("2.0.0");
   }
 
   @Test
