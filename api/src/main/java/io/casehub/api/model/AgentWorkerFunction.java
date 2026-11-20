@@ -15,23 +15,39 @@
  */
 package io.casehub.api.model;
 
+import io.casehub.api.model.ai.AgentSlotConfig;
 import io.casehub.api.model.ai.WorkerAgentInvoker;
 import io.casehub.worker.api.WorkerFunction;
+import java.util.Map;
+import java.util.Objects;
 
 @SuppressWarnings("unchecked")
-public record AgentWorkerFunction(WorkerAgentInvoker invoker)
-    implements WorkerFunction<java.util.Map<String, Object>, java.util.Map<String, Object>> {
-  public AgentWorkerFunction {
-    java.util.Objects.requireNonNull(invoker);
+public record AgentWorkerFunction(WorkerAgentInvoker invoker, AgentSlotConfig slotConfig)
+    implements WorkerFunction<Map<String, Object>, Map<String, Object>> {
+
+  public AgentWorkerFunction(WorkerAgentInvoker invoker) {
+    this(Objects.requireNonNull(invoker), null);
+  }
+
+  public static AgentWorkerFunction eager(WorkerAgentInvoker invoker) {
+    return new AgentWorkerFunction(Objects.requireNonNull(invoker), null);
+  }
+
+  public static AgentWorkerFunction ofSlot(AgentSlotConfig slotConfig) {
+    return new AgentWorkerFunction(null, Objects.requireNonNull(slotConfig));
+  }
+
+  public boolean isDeferred() {
+    return slotConfig != null;
   }
 
   @Override
-  public Class<java.util.Map<String, Object>> inputType() {
-    return (Class) java.util.Map.class;
+  public Class<Map<String, Object>> inputType() {
+    return (Class) Map.class;
   }
 
   @Override
-  public Class<java.util.Map<String, Object>> outputType() {
-    return (Class) java.util.Map.class;
+  public Class<Map<String, Object>> outputType() {
+    return (Class) Map.class;
   }
 }

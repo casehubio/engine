@@ -40,14 +40,13 @@ public final class EventLogQuery {
   private final int size;
   private final java.time.Instant since;
 
-
   private EventLogQuery(Builder b) {
-    this.caseId      = Objects.requireNonNull(b.caseId, "caseId is required");
-    this.eventTypes  = b.eventTypes;
+    this.caseId = Objects.requireNonNull(b.caseId, "caseId is required");
+    this.eventTypes = b.eventTypes;
     this.streamTypes = b.streamTypes;
-    this.page        = Math.max(0, b.page);
-    this.size        = Math.min(MAX_SIZE, Math.max(1, b.size));
-    this.since       = b.since;
+    this.page = Math.max(0, b.page);
+    this.size = Math.min(MAX_SIZE, Math.max(1, b.size));
+    this.since = b.since;
   }
 
   public static Builder builder(UUID caseId) {
@@ -78,7 +77,6 @@ public final class EventLogQuery {
     return since;
   }
 
-
   public static final class Builder {
 
     private final UUID caseId;
@@ -87,7 +85,6 @@ public final class EventLogQuery {
     private int page = 0;
     private int size = DEFAULT_SIZE;
     private java.time.Instant since;
-
 
     Builder(UUID caseId) {
       this.caseId = caseId;
@@ -117,7 +114,6 @@ public final class EventLogQuery {
       this.since = since;
       return this;
     }
-
 
     public EventLogQuery build() {
       return new EventLogQuery(this);

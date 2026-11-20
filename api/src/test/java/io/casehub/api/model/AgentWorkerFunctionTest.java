@@ -46,6 +46,45 @@ class AgentWorkerFunctionTest {
     assertThrows(NullPointerException.class, () -> new AgentWorkerFunction(null));
   }
 
+  @Test
+  void ofSlot_createsDeferred() {
+    var config =
+        new io.casehub.api.model.ai.AgentSlotConfig("sentiment-analyst", null, null, null, null);
+    var fn = AgentWorkerFunction.ofSlot(config);
+    assertInstanceOf(WorkerFunction.class, fn);
+    org.junit.jupiter.api.Assertions.assertTrue(fn.isDeferred());
+    org.junit.jupiter.api.Assertions.assertEquals(config, fn.slotConfig());
+    org.junit.jupiter.api.Assertions.assertNull(fn.invoker());
+  }
+
+  @Test
+  void eager_createsImmediate() {
+    var fn = AgentWorkerFunction.eager(testInvoker());
+    org.junit.jupiter.api.Assertions.assertFalse(fn.isDeferred());
+    org.junit.jupiter.api.Assertions.assertNotNull(fn.invoker());
+    org.junit.jupiter.api.Assertions.assertNull(fn.slotConfig());
+  }
+
+  @Test
+  void slotConfig_withOverrides() {
+    var config =
+        new io.casehub.api.model.ai.AgentSlotConfig(
+            "my-slot", "claude-sonnet-5-5", "Analyse: {{text}}", ".input", ".output");
+    org.junit.jupiter.api.Assertions.assertEquals("my-slot", config.slot());
+    org.junit.jupiter.api.Assertions.assertEquals("claude-sonnet-5-5", config.model());
+    org.junit.jupiter.api.Assertions.assertEquals(
+        "Analyse: {{text}}", config.userMessageTemplate());
+    org.junit.jupiter.api.Assertions.assertEquals(".input", config.inputProjection());
+    org.junit.jupiter.api.Assertions.assertEquals(".output", config.outputProjection());
+  }
+
+  @Test
+  void ofSlot_nullSlot_throws() {
+    assertThrows(
+        NullPointerException.class,
+        () -> new io.casehub.api.model.ai.AgentSlotConfig(null, null, null, null, null));
+  }
+
   private WorkerAgentInvoker testInvoker() {
     AgentProvider stubProvider =
         new AgentProvider() {

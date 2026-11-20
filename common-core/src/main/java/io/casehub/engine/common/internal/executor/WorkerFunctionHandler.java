@@ -40,12 +40,12 @@ import io.casehub.worker.api.WorkerFunction;
  */
 public interface WorkerFunctionHandler {
 
-    boolean supports(WorkerFunction<?, ?> function);
+  boolean supports(WorkerFunction<?, ?> function);
 
-    HandlerResult execute(
-            Worker worker,
-            Capability capability,
-            Object inputData,
-            WorkerContext context,
-            ExecutionMetadata metadata);
+  HandlerResult execute(
+      Worker worker,
+      Capability capability,
+      Object inputData,
+      WorkerContext context,
+      ExecutionMetadata metadata);
 }
