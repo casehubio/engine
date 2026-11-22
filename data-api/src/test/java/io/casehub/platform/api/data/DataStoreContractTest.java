@@ -238,6 +238,42 @@ public abstract class DataStoreContractTest {
   }
 
   @Test
+  void delete_nonExistent_throws() {
+    DataCollection col = dataStore().collection("test");
+    assertThatThrownBy(() -> col.delete("nonexistent", testContext()))
+        .isInstanceOf(RecordNotFoundException.class);
+  }
+
+  @Test
+  void search_matchesTextInFields() {
+    DataCollection col = dataStore().collection("test");
+    col.insert(record("name", "Alice Smith"), testContext());
+    col.insert(record("name", "Bob Jones"), testContext());
+    col.insert(record("name", "Charlie Smith"), testContext());
+
+    assertThat(col.search("Smith", testContext())).hasSize(2);
+    assertThat(col.search("jones", testContext())).hasSize(1);
+    assertThat(col.search("nobody", testContext())).isEmpty();
+  }
+
+  @Test
+  void merge_deep_removesNullFields() {
+    DataCollection col = dataStore().collection("test");
+    String id = col.insert(record("name", "Alice", "age", "30", "city", "NYC"), testContext());
+
+    ObjectNode changes = MAPPER.createObjectNode();
+    changes.put("name", "Bob");
+    changes.putNull("city");
+
+    col.update(id, changes, OptionalInt.empty(), MergeStrategy.RFC_7396, testContext());
+
+    ObjectNode result = col.get(id, testContext()).orElseThrow();
+    assertThat(result.get("name").asText()).isEqualTo("Bob");
+    assertThat(result.get("age").asText()).isEqualTo("30");
+    assertThat(result.has("city")).isFalse();
+  }
+
+  @Test
   void merge_shallow() {
     DataCollection col = dataStore().collection("test");
     String id = col.insert(record("name", "Alice", "age", "30"), testContext());
