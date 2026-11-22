@@ -39,13 +39,6 @@ hand-coded deserializers and post-processor.
 - `yamlWorkers` (`java.util.List<YamlWorker>`)
 - `def` (`io.casehub.api.model.CaseDefinition`)
 
-### `private static WorkerFunction<?,?> buildAgentFunction(YamlWorker yw, io.casehub.platform.agent.AgentProvider agentProvider)`
-
-#### Parameters
-
-- `yw` (`YamlWorker`)
-- `agentProvider` (`io.casehub.platform.agent.AgentProvider`)
-
 ### `private static WorkerFunction<?,?> buildTypedSyncFunction(YamlWorker yw)`
 
 #### Parameters
