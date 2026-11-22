@@ -107,6 +107,7 @@
         <module>persistence-spring-jpa</module>
         <module>data-api</module>
         <module>data-sqlite</module>
+        <module>persistence-datastore</module>
         <module>runtime-core</module>
         <module>runtime</module>
         <module>runtime-spring</module>
