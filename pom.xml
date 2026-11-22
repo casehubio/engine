@@ -105,6 +105,7 @@
         <module>persistence-jpa-common</module>
         <module>persistence-hibernate</module>
         <module>persistence-spring-jpa</module>
+        <module>data-api</module>
         <module>runtime-core</module>
         <module>runtime</module>
         <module>runtime-spring</module>
