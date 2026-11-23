@@ -15,9 +15,9 @@
  */
 package io.casehub.engine.flow;
 
-import static io.serverlessworkflow.fluent.func.FuncWorkflowBuilder.workflow;
-import static io.serverlessworkflow.fluent.func.dsl.FuncDSL.agent;
-import static io.serverlessworkflow.fluent.func.dsl.FuncDSL.get;
+import static io.quarkiverse.flow.dsl.FlowDSL.agent;
+import static io.quarkiverse.flow.dsl.FlowDSL.get;
+import static io.quarkiverse.flow.dsl.FlowWorkflowBuilder.workflow;
 
 import io.casehub.api.engine.CaseHub;
 import io.casehub.api.model.Binding;
