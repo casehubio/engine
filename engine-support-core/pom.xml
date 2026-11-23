@@ -123,11 +123,14 @@
             <groupId>io.casehub</groupId>
             <artifactId>casehub-connectors-core</artifactId>
         </dependency>
-        <!-- Quarkus Flow for flow module -->
+        <!-- Serverless Workflow SDK (direct, not quarkus-flow extension) -->
         <dependency>
-            <groupId>io.quarkiverse.flow</groupId>
-            <artifactId>quarkus-flow</artifactId>
-            <version>${version.quarkus.flow}</version>
+            <groupId>io.serverlessworkflow</groupId>
+            <artifactId>serverlessworkflow-impl-core</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>io.serverlessworkflow</groupId>
+            <artifactId>serverlessworkflow-api</artifactId>
         </dependency>
         <!-- CloudEvent types for work-cloudevent + inbound -->
         <dependency>
