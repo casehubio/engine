@@ -241,6 +241,8 @@ class AgentWorkerFunctionHandlerTest {
             renderer,
             agentProvider,
             null,
+            null,
+            null,
             null);
 
     var config =
@@ -300,6 +302,8 @@ class AgentWorkerFunctionHandlerTest {
             registry,
             renderer,
             agentProvider,
+            null,
+            null,
             null,
             null);
 
@@ -364,6 +368,8 @@ class AgentWorkerFunctionHandlerTest {
             renderer,
             agentProvider,
             selector,
+            null,
+            null,
             null);
 
     var config =
@@ -410,6 +416,8 @@ class AgentWorkerFunctionHandlerTest {
             renderer,
             stubAgentProvider("{}"),
             selector,
+            null,
+            null,
             null);
 
     var config =
@@ -459,6 +467,8 @@ class AgentWorkerFunctionHandlerTest {
             renderer,
             stubAgentProvider("{}"),
             selector,
+            null,
+            null,
             null);
 
     var config =
@@ -542,6 +552,118 @@ class AgentWorkerFunctionHandlerTest {
 
   private WorkerAgentInvoker testInvoker() {
     return stubInvoker("{\"result\": \"ok\"}");
+  }
+
+  @Test
+  void guard_blocked_returnsFailed() {
+    io.casehub.api.spi.WorkerExecutionGuard blockAll = (workerId, caseId) -> true;
+    var guardedHandler =
+        new AgentWorkerFunctionHandler(
+            Executors.newVirtualThreadPerTaskExecutor(),
+            null,
+            null,
+            null,
+            null,
+            null,
+            blockAll,
+            null);
+
+    Worker worker =
+        new Worker(
+            "agent-w",
+            Set.of("cap"),
+            new AgentWorkerFunction(testInvoker()),
+            new ExecutionPolicy(5000, null, null),
+            null,
+            null);
+
+    HandlerResult result =
+        guardedHandler.execute(
+            worker,
+            Capability.of("cap", "{}", "{}"),
+            Map.of("input", "data"),
+            testContext(),
+            new ExecutionMetadata("agent-w", "hash2"));
+
+    assertThat(result.result().outcome()).isInstanceOf(WorkerOutcome.Failed.class);
+    assertThat(((WorkerOutcome.Failed) result.result().outcome()).reason())
+        .contains("blocked by execution guard");
+  }
+
+  @Test
+  void guard_notBlocked_proceeds() {
+    io.casehub.api.spi.WorkerExecutionGuard allowAll = (workerId, caseId) -> false;
+    var guardedHandler =
+        new AgentWorkerFunctionHandler(
+            Executors.newVirtualThreadPerTaskExecutor(),
+            null,
+            null,
+            null,
+            null,
+            null,
+            allowAll,
+            null);
+
+    Worker worker =
+        new Worker(
+            "agent-w",
+            Set.of("cap"),
+            new AgentWorkerFunction(stubInvoker("{\"result\": \"ok\"}")),
+            new ExecutionPolicy(5000, null, null),
+            null,
+            null);
+
+    HandlerResult result =
+        guardedHandler.execute(
+            worker,
+            Capability.of("cap", "{}", "{}"),
+            Map.of("input", "data"),
+            testContext(),
+            new ExecutionMetadata("agent-w", "hash2"));
+
+    assertThat(result.result().outcome()).isInstanceOf(WorkerOutcome.Success.class);
+  }
+
+  @Test
+  @SuppressWarnings("unchecked")
+  void timer_records_execution() {
+    io.micrometer.core.instrument.simple.SimpleMeterRegistry registry =
+        new io.micrometer.core.instrument.simple.SimpleMeterRegistry();
+    var timedHandler =
+        new AgentWorkerFunctionHandler(
+            Executors.newVirtualThreadPerTaskExecutor(),
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            registry);
+
+    Worker worker =
+        new Worker(
+            "timed-agent",
+            Set.of("cap"),
+            new AgentWorkerFunction(stubInvoker("{\"result\": \"ok\"}")),
+            new ExecutionPolicy(5000, null, null),
+            null,
+            null);
+
+    timedHandler.execute(
+        worker,
+        Capability.of("cap", "{}", "{}"),
+        Map.of("input", "data"),
+        testContext(),
+        new ExecutionMetadata("timed-agent", "hash2"));
+
+    io.micrometer.core.instrument.Timer timer =
+        registry
+            .find("casehub.agent.execution")
+            .tag("worker", "timed-agent")
+            .tag("mode", "eager")
+            .timer();
+    assertThat(timer).isNotNull();
+    assertThat(timer.count()).isEqualTo(1);
   }
 
   private WorkerAgentInvoker stubInvoker(String jsonResponse) {

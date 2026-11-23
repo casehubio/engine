@@ -20,6 +20,7 @@ import io.casehub.api.model.AgentWorkerFunction;
 import io.casehub.api.model.WorkerContext;
 import io.casehub.api.model.ai.DeferredAgentConfig;
 import io.casehub.api.model.ai.WorkerAgentInvoker;
+import io.casehub.api.spi.WorkerExecutionGuard;
 import io.casehub.eidos.api.AgentDescriptor;
 import io.casehub.eidos.api.AgentPromptContext;
 import io.casehub.eidos.api.AgentQuery;
@@ -37,10 +38,13 @@ import io.casehub.worker.api.Capability;
 import io.casehub.worker.api.Worker;
 import io.casehub.worker.api.WorkerFunction;
 import io.casehub.worker.api.WorkerResult;
+import io.micrometer.core.instrument.MeterRegistry;
+import io.micrometer.core.instrument.Timer;
 import io.quarkus.virtual.threads.VirtualThreads;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
 import java.util.Map;
+import java.util.UUID;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Future;
@@ -74,6 +78,8 @@ public class AgentWorkerFunctionHandler implements WorkerFunctionHandler {
   private final AgentProvider agentProvider;
   private final AgentSelector agentSelector;
   private final ExpressionEngineRegistry expressionEngineRegistry;
+  private final WorkerExecutionGuard workerExecutionGuard;
+  private final MeterRegistry meterRegistry;
 
   @Inject
   public AgentWorkerFunctionHandler(
@@ -82,17 +88,21 @@ public class AgentWorkerFunctionHandler implements WorkerFunctionHandler {
       SystemPromptRenderer systemPromptRenderer,
       AgentProvider agentProvider,
       AgentSelector agentSelector,
-      ExpressionEngineRegistry expressionEngineRegistry) {
+      ExpressionEngineRegistry expressionEngineRegistry,
+      WorkerExecutionGuard workerExecutionGuard,
+      MeterRegistry meterRegistry) {
     this.virtualThreads = virtualThreads;
     this.agentRegistry = agentRegistry;
     this.systemPromptRenderer = systemPromptRenderer;
     this.agentProvider = agentProvider;
     this.agentSelector = agentSelector;
     this.expressionEngineRegistry = expressionEngineRegistry;
+    this.workerExecutionGuard = workerExecutionGuard;
+    this.meterRegistry = meterRegistry;
   }
 
   public AgentWorkerFunctionHandler(ExecutorService virtualThreads) {
-    this(virtualThreads, null, null, null, null, null);
+    this(virtualThreads, null, null, null, null, null, null, null);
   }
 
   @Override
@@ -109,16 +119,41 @@ public class AgentWorkerFunctionHandler implements WorkerFunctionHandler {
       WorkerContext context,
       ExecutionMetadata metadata) {
 
-    AgentWorkerFunction agent = (AgentWorkerFunction) worker.function();
-
-    if (agent.isDeferred()) {
-      return switch (agent.deferredConfig()) {
-        case DeferredAgentConfig.SlotConfig sc -> executeBySlot(sc, worker, inputData, metadata);
-        case DeferredAgentConfig.CapabilityConfig cc ->
-            executeByCapability(cc, worker, inputData, metadata);
-      };
+    UUID caseId = context != null ? context.caseId() : null;
+    if (workerExecutionGuard != null
+        && caseId != null
+        && workerExecutionGuard.isBlocked(worker.name(), caseId)) {
+      return new HandlerResult(
+          WorkerResult.failed("Agent blocked by execution guard: " + worker.name()));
     }
-    return executeWithInvoker(agent.invoker(), worker, inputData);
+
+    Timer.Sample sample = meterRegistry != null ? Timer.start(meterRegistry) : null;
+    String mode = "eager";
+    try {
+      AgentWorkerFunction agent = (AgentWorkerFunction) worker.function();
+
+      if (agent.isDeferred()) {
+        return switch (agent.deferredConfig()) {
+          case DeferredAgentConfig.SlotConfig sc -> {
+            mode = "slot";
+            yield executeBySlot(sc, worker, inputData, metadata);
+          }
+          case DeferredAgentConfig.CapabilityConfig cc -> {
+            mode = "capability";
+            yield executeByCapability(cc, worker, inputData, metadata);
+          }
+        };
+      }
+      return executeWithInvoker(agent.invoker(), worker, inputData);
+    } finally {
+      if (sample != null) {
+        sample.stop(
+            Timer.builder("casehub.agent.execution")
+                .tag("worker", worker.name())
+                .tag("mode", mode)
+                .register(meterRegistry));
+      }
+    }
   }
 
   private HandlerResult executeBySlot(

@@ -123,8 +123,7 @@ public class SlotAgentWorkerCdiWiringTest {
             () -> {
               var instance = caseInstanceCache.get(caseId);
               assertThat(instance).isNotNull();
-              assertThat(instance.getState())
-                  .isIn(CaseStatus.COMPLETED, CaseStatus.RUNNING, CaseStatus.FAULTED);
+              assertThat(instance.getState()).isIn(CaseStatus.COMPLETED, CaseStatus.RUNNING);
             });
   }
 }
