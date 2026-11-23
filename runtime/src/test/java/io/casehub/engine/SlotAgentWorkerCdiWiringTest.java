@@ -49,7 +49,9 @@ import io.casehub.worker.api.Capability;
 import io.casehub.worker.api.Worker;
 import io.quarkus.test.junit.QuarkusTest;
 import io.smallrye.mutiny.Multi;
+import jakarta.annotation.Priority;
 import jakarta.enterprise.context.ApplicationScoped;
+import jakarta.enterprise.inject.Alternative;
 import jakarta.inject.Inject;
 import java.util.List;
 import java.util.Map;
@@ -75,6 +77,7 @@ public class SlotAgentWorkerCdiWiringTest {
       io.casehub.platform.api.identity.TenancyConstants.DEFAULT_TENANT_ID;
 
   @Inject TestSlotAgentRegistry agentRegistry;
+
   @Inject SlotTestCaseHub caseHub;
   @Inject CaseInstanceCache caseInstanceCache;
 
@@ -125,6 +128,8 @@ public class SlotAgentWorkerCdiWiringTest {
 
   // ── CDI beans required for AgentWorkerFunctionHandler slot dispatch ──────
 
+  @Alternative
+  @Priority(2)
   @ApplicationScoped
   public static class TestSlotAgentRegistry implements AgentRegistry {
     private final ConcurrentHashMap<String, AgentDescriptor> descriptors =
