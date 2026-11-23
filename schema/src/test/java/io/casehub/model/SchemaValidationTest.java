@@ -20,10 +20,9 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.networknt.schema.JsonSchema;
-import com.networknt.schema.JsonSchemaFactory;
-import com.networknt.schema.SpecVersion;
-import com.networknt.schema.ValidationMessage;
+import com.networknt.schema.Schema;
+import com.networknt.schema.SchemaRegistry;
+import com.networknt.schema.SpecificationVersion;
 import io.casehub.yaml.jackson.YamlMappers;
 import java.io.IOException;
 import java.io.InputStream;
@@ -46,7 +45,7 @@ class SchemaValidationTest {
               com.fasterxml.jackson.databind.DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES,
               false);
   private static final ObjectMapper JSON_MAPPER = new ObjectMapper();
-  private static JsonSchema schema;
+  private static Schema schema;
 
   @BeforeAll
   static void loadSchema() throws IOException {
@@ -56,8 +55,9 @@ class SchemaValidationTest {
             .getResourceAsStream("schema/CaseDefinition.yaml")) {
       JsonNode schemaNode = YAML_MAPPER.readTree(is);
       JsonNode schemaAsJson = JSON_MAPPER.readTree(JSON_MAPPER.writeValueAsString(schemaNode));
-      JsonSchemaFactory factory = JsonSchemaFactory.getInstance(SpecVersion.VersionFlag.V202012);
-      schema = factory.getSchema(schemaAsJson);
+      SchemaRegistry registry =
+          SchemaRegistry.withDefaultDialect(SpecificationVersion.DRAFT_2020_12);
+      schema = registry.getSchema(schemaAsJson);
     }
   }
 
@@ -75,7 +75,7 @@ class SchemaValidationTest {
   void exampleYaml_validatesAgainstSchema(Path yamlFile) throws IOException {
     JsonNode yamlNode = YAML_MAPPER.readTree(Files.readString(yamlFile));
     JsonNode jsonNode = JSON_MAPPER.readTree(JSON_MAPPER.writeValueAsString(yamlNode));
-    Set<ValidationMessage> errors = schema.validate(jsonNode);
+    var errors = schema.validate(jsonNode);
     assertTrue(
         errors.isEmpty(),
         () -> "Schema validation failed for " + yamlFile.getFileName() + ":\n" + errors);
@@ -95,7 +95,7 @@ class SchemaValidationTest {
   void standaloneYaml_validatesAgainstSchema(Path yamlFile) throws IOException {
     JsonNode yamlNode = YAML_MAPPER.readTree(Files.readString(yamlFile));
     JsonNode jsonNode = JSON_MAPPER.readTree(JSON_MAPPER.writeValueAsString(yamlNode));
-    Set<ValidationMessage> errors = schema.validate(jsonNode);
+    var errors = schema.validate(jsonNode);
     assertTrue(
         errors.isEmpty(),
         () -> "Schema validation failed for " + yamlFile.getFileName() + ":\n" + errors);

@@ -19,16 +19,14 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.networknt.schema.JsonSchema;
-import com.networknt.schema.JsonSchemaFactory;
-import com.networknt.schema.SpecVersion;
-import com.networknt.schema.ValidationMessage;
+import com.networknt.schema.Schema;
+import com.networknt.schema.SchemaRegistry;
+import com.networknt.schema.SpecificationVersion;
 import io.casehub.api.model.CaseDefinition;
 import io.casehub.yaml.jackson.YamlMappers;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.util.Set;
 import java.util.stream.Stream;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -38,14 +36,14 @@ class GeneratedSchemaValidationTest {
 
   private static final ObjectMapper YAML = YamlMappers.create();
   private static final ObjectMapper JSON = new ObjectMapper();
-  private static JsonSchema generatedSchema;
+  private static Schema generatedSchema;
 
   @BeforeAll
   static void generateSchema() {
     JsonNode schema = new CaseHubSchemaGenerator().generate(CaseDefinition.class);
     JsonNode schemaAsJson = JSON.convertValue(schema, JsonNode.class);
-    JsonSchemaFactory factory = JsonSchemaFactory.getInstance(SpecVersion.VersionFlag.V202012);
-    generatedSchema = factory.getSchema(schemaAsJson);
+    SchemaRegistry registry = SchemaRegistry.withDefaultDialect(SpecificationVersion.DRAFT_2020_12);
+    generatedSchema = registry.getSchema(schemaAsJson);
   }
 
   static Stream<Path> exampleFiles() throws IOException {
@@ -62,7 +60,7 @@ class GeneratedSchemaValidationTest {
   void existingYamlExamples_validateAgainstGeneratedSchema(Path yamlFile) throws IOException {
     JsonNode yamlNode = YAML.readTree(Files.readString(yamlFile));
     JsonNode jsonNode = JSON.readTree(JSON.writeValueAsString(yamlNode));
-    Set<ValidationMessage> errors = generatedSchema.validate(jsonNode);
+    var errors = generatedSchema.validate(jsonNode);
     assertTrue(
         errors.isEmpty(),
         () -> "Generated schema validation failed for " + yamlFile.getFileName() + ":\n" + errors);
