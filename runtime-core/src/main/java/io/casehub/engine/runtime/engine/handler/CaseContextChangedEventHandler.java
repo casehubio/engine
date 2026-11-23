@@ -66,6 +66,7 @@ import io.casehub.engine.common.internal.event.WorkerScheduleEvent;
 import io.casehub.engine.common.internal.jq.JQEvaluator;
 import io.casehub.engine.common.internal.model.CaseInstance;
 import io.casehub.engine.common.internal.model.CaseMetaModel;
+import io.casehub.engine.common.internal.routing.SyntheticAgentTaskWorker;
 import io.casehub.engine.common.internal.utils.EngineMappers;
 import io.casehub.engine.common.internal.worker.scope.ScopedWorkerRegistry;
 import io.casehub.engine.common.spi.CaseDefinitionRegistry;
@@ -529,10 +530,22 @@ public class CaseContextChangedEventHandler {
       case io.casehub.api.model.HumanTaskTarget ignored ->
           LOG.warnf(
               "Deprecated HumanTaskTarget on binding '%s' — use JudgmentTarget", binding.getName());
-      case io.casehub.api.model.AgentTaskTarget ignored ->
-          LOG.warnf(
-              "AgentTaskTarget dispatch on binding '%s' — handled via synthetic worker",
-              binding.getName());
+      case io.casehub.api.model.AgentTaskTarget at -> {
+        Worker syntheticWorker = SyntheticAgentTaskWorker.create(binding.getName(), at);
+        if (caseDefinition.getWorkers().stream()
+            .noneMatch(w -> w.name().equals(syntheticWorker.name()))) {
+          caseDefinition.getWorkers().add(syntheticWorker);
+        }
+        scheduleWorker(
+            caseInstance,
+            caseDefinition.getWorkers(),
+            binding,
+            Capability.of(at.capability(), ".", "."),
+            syntheticWorker.name(),
+            signalId,
+            experiences,
+            activationSnapshot);
+      }
     }
   }
 
