@@ -667,7 +667,6 @@ class AgentWorkerFunctionHandlerTest {
   }
 
   @Test
-  @SuppressWarnings("unchecked")
   void executeByCapability_evaluatorTransforms_appliedViaRegistry() {
     io.casehub.eidos.api.AgentDescriptor descriptor =
         io.casehub.eidos.api.AgentDescriptor.builder()
@@ -693,24 +692,7 @@ class AgentWorkerFunctionHandlerTest {
             new io.casehub.eidos.api.AgentSelection.Selected(
                 candidates.get(0).descriptor(), null, 1.0, "ok");
 
-    var capturedConfig = new java.util.concurrent.atomic.AtomicReference<AgentSessionConfig>();
-    AgentProvider capturingProvider =
-        new AgentProvider() {
-          @Override
-          public Multi<AgentEvent> invoke(AgentSessionConfig config) {
-            capturedConfig.set(config);
-            return Multi.createFrom()
-                .items(
-                    new AgentEvent.TextDelta("{\"transformed\": true}"),
-                    new AgentEvent.InvocationComplete(
-                        0, 0, 0, 0, 0, null, 0L, 0L, null, 0, false, null, null));
-          }
-
-          @Override
-          public AgentSession openSession(AgentSessionInit init) {
-            throw new UnsupportedOperationException();
-          }
-        };
+    AgentProvider capturingProvider = stubAgentProvider("{\"transformed\": true}");
 
     io.casehub.platform.api.expression.ExpressionEvaluator inputEval =
         new io.casehub.platform.api.expression.ExpressionEvaluator() {
@@ -819,7 +801,6 @@ class AgentWorkerFunctionHandlerTest {
   }
 
   @Test
-  @SuppressWarnings("unchecked")
   void executeByCapability_modelOverride_usesConfigModel() {
     io.casehub.eidos.api.AgentDescriptor descriptor =
         io.casehub.eidos.api.AgentDescriptor.builder()
@@ -900,6 +881,89 @@ class AgentWorkerFunctionHandlerTest {
     assertThat(capturedConfig.get().model())
         .as("Config model should override descriptor modelFamily")
         .isEqualTo("claude-opus-4-6");
+  }
+
+  @Test
+  void executeByCapability_nullModel_fallsBackToDescriptorModelFamily() {
+    io.casehub.eidos.api.AgentDescriptor descriptor =
+        io.casehub.eidos.api.AgentDescriptor.builder()
+            .agentId("agent-fallback-1")
+            .name("Fallback Agent")
+            .slot("fallback-slot")
+            .tenancyId("t1")
+            .modelFamily("claude-sonnet-5-5")
+            .build();
+
+    io.casehub.eidos.api.AgentRegistry registry = stubRegistry(descriptor, "fallback-cap", null);
+
+    io.casehub.eidos.api.SystemPromptRenderer renderer =
+        (desc, ctx) ->
+            new io.casehub.eidos.api.SystemPromptRenderer.RenderedPrompt(
+                "system",
+                io.casehub.eidos.api.SystemPromptRenderer.RenderFormat.MARKDOWN,
+                "",
+                "",
+                false);
+
+    io.casehub.eidos.api.AgentSelector selector =
+        (candidates, context) ->
+            new io.casehub.eidos.api.AgentSelection.Selected(
+                candidates.get(0).descriptor(), null, 1.0, "ok");
+
+    var capturedConfig = new java.util.concurrent.atomic.AtomicReference<AgentSessionConfig>();
+    AgentProvider capturingProvider =
+        new AgentProvider() {
+          @Override
+          public Multi<AgentEvent> invoke(AgentSessionConfig config) {
+            capturedConfig.set(config);
+            return Multi.createFrom()
+                .items(
+                    new AgentEvent.TextDelta("{\"result\": \"ok\"}"),
+                    new AgentEvent.InvocationComplete(
+                        0, 0, 0, 0, 0, null, 0L, 0L, null, 0, false, null, null));
+          }
+
+          @Override
+          public AgentSession openSession(AgentSessionInit init) {
+            throw new UnsupportedOperationException();
+          }
+        };
+
+    var handler =
+        new AgentWorkerFunctionHandler(
+            Executors.newVirtualThreadPerTaskExecutor(),
+            registry,
+            renderer,
+            capturingProvider,
+            selector,
+            null,
+            null,
+            null);
+
+    var config =
+        new io.casehub.api.model.ai.DeferredAgentConfig.CapabilityConfig(
+            "fallback-cap", null, null, null, null);
+    var function = AgentWorkerFunction.ofCapability(config);
+    Worker worker =
+        new Worker(
+            "__agent-task__fallback",
+            Set.of(),
+            function,
+            new ExecutionPolicy(5000, null, null),
+            null,
+            null);
+
+    handler.execute(
+        worker,
+        Capability.of("cap", "{}", "{}"),
+        Map.of("key", "val"),
+        testContext(),
+        new ExecutionMetadata("w", "h", null, null, "t1"));
+
+    assertThat(capturedConfig.get()).isNotNull();
+    assertThat(capturedConfig.get().model())
+        .as("Null config model should fall back to descriptor modelFamily")
+        .isEqualTo("claude-sonnet-5-5");
   }
 
   private WorkerAgentInvoker stubInvoker(String jsonResponse) {
