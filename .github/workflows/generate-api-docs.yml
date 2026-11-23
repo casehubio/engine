@@ -11,6 +11,7 @@ permissions:
 
 jobs:
   generate:
+    if: github.repository_owner == 'casehubio'
     uses: casehubio/parent/.github/workflows/generate-api-docs.yml@main
     secrets: inherit
 
