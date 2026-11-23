@@ -1,4 +1,4 @@
-# io.casehub.api.model.ai.AgentSlotConfig
+# io.casehub.api.model.ai.DeferredAgentConfig.SlotConfig
 
 **Package:** `io.casehub.api.model.ai`
 
@@ -30,7 +30,7 @@
 
 ## Constructors
 
-### `public AgentSlotConfig(java.lang.String slot, java.lang.String model, java.lang.String userMessageTemplate, java.lang.String inputProjection, java.lang.String outputProjection)`
+### `public SlotConfig(java.lang.String slot, java.lang.String model, java.lang.String userMessageTemplate, java.lang.String inputProjection, java.lang.String outputProjection)`
 
 #### Parameters
 

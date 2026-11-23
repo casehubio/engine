@@ -12,6 +12,8 @@
 
 ### `inputMapping` (`ExpressionEvaluator`)
 
+### `model` (`java.lang.String`)
+
 ### `outputMapping` (`ExpressionEvaluator`)
 
 ## Constructors
@@ -31,5 +33,7 @@
 ### `public java.lang.String domain()`
 
 ### `public ExpressionEvaluator inputMapping()`
+
+### `public java.lang.String model()`
 
 ### `public ExpressionEvaluator outputMapping()`

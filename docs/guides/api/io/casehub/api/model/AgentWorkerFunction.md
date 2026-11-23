@@ -6,15 +6,15 @@
 
 ## Fields
 
-### `invoker` (`io.casehub.api.model.ai.WorkerAgentInvoker`)
+### `deferredConfig` (`io.casehub.api.model.ai.DeferredAgentConfig`)
 
-### `slotConfig` (`io.casehub.api.model.ai.AgentSlotConfig`)
+### `invoker` (`io.casehub.api.model.ai.WorkerAgentInvoker`)
 
 ## Record Components
 
-### `invoker` (`io.casehub.api.model.ai.WorkerAgentInvoker`)
+### `deferredConfig` (`io.casehub.api.model.ai.DeferredAgentConfig`)
 
-### `slotConfig` (`io.casehub.api.model.ai.AgentSlotConfig`)
+### `invoker` (`io.casehub.api.model.ai.WorkerAgentInvoker`)
 
 ## Constructors
 
@@ -24,14 +24,16 @@
 
 - `invoker` (`io.casehub.api.model.ai.WorkerAgentInvoker`)
 
-### `public AgentWorkerFunction(io.casehub.api.model.ai.WorkerAgentInvoker invoker, io.casehub.api.model.ai.AgentSlotConfig slotConfig)`
+### `public AgentWorkerFunction(io.casehub.api.model.ai.WorkerAgentInvoker invoker, io.casehub.api.model.ai.DeferredAgentConfig deferredConfig)`
 
 #### Parameters
 
 - `invoker` (`io.casehub.api.model.ai.WorkerAgentInvoker`)
-- `slotConfig` (`io.casehub.api.model.ai.AgentSlotConfig`)
+- `deferredConfig` (`io.casehub.api.model.ai.DeferredAgentConfig`)
 
 ## Methods
+
+### `public io.casehub.api.model.ai.DeferredAgentConfig deferredConfig()`
 
 ### `public static io.casehub.api.model.AgentWorkerFunction eager(io.casehub.api.model.ai.WorkerAgentInvoker invoker)`
 
@@ -53,14 +55,18 @@
 
 ### `public boolean isDeferred()`
 
-### `public static io.casehub.api.model.AgentWorkerFunction ofSlot(io.casehub.api.model.ai.AgentSlotConfig slotConfig)`
+### `public static io.casehub.api.model.AgentWorkerFunction ofCapability(io.casehub.api.model.ai.DeferredAgentConfig.CapabilityConfig config)`
 
 #### Parameters
 
-- `slotConfig` (`io.casehub.api.model.ai.AgentSlotConfig`)
+- `config` (`io.casehub.api.model.ai.DeferredAgentConfig.CapabilityConfig`)
+
+### `public static io.casehub.api.model.AgentWorkerFunction ofSlot(io.casehub.api.model.ai.DeferredAgentConfig.SlotConfig config)`
+
+#### Parameters
+
+- `config` (`io.casehub.api.model.ai.DeferredAgentConfig.SlotConfig`)
 
 ### `public java.lang.Class<java.util.Map<java.lang.String,java.lang.Object>> outputType()`
-
-### `public io.casehub.api.model.ai.AgentSlotConfig slotConfig()`
 
 ### `public final java.lang.String toString()`
