@@ -173,6 +173,72 @@ public final class RecordEmitter {
     return false;
   }
 
+  private static final Set<String> JAVA_KEYWORDS =
+      Set.of(
+          "abstract",
+          "assert",
+          "boolean",
+          "break",
+          "byte",
+          "case",
+          "catch",
+          "char",
+          "class",
+          "const",
+          "continue",
+          "default",
+          "do",
+          "double",
+          "else",
+          "enum",
+          "extends",
+          "final",
+          "finally",
+          "float",
+          "for",
+          "goto",
+          "if",
+          "implements",
+          "import",
+          "instanceof",
+          "int",
+          "interface",
+          "long",
+          "native",
+          "new",
+          "package",
+          "private",
+          "protected",
+          "public",
+          "return",
+          "short",
+          "static",
+          "strictfp",
+          "super",
+          "switch",
+          "synchronized",
+          "this",
+          "throw",
+          "throws",
+          "transient",
+          "try",
+          "void",
+          "volatile",
+          "while",
+          "var",
+          "yield",
+          "record",
+          "sealed",
+          "permits",
+          "non-sealed",
+          "true",
+          "false",
+          "null");
+
+  private static boolean isJavaKeyword(String name) {
+    return JAVA_KEYWORDS.contains(name);
+  }
+
   private static String resolveJavaType(SchemaField field, RecordMapping mapping) {
     if (field.isArray()) {
       if (field.refTarget() != null) {
@@ -229,6 +295,8 @@ public final class RecordEmitter {
     }
     if (override.property() != null) {
       annotations.add("@JsonProperty(\"" + override.property() + "\")");
+    } else if (!schemaName.equals(fieldName) && isJavaKeyword(schemaName)) {
+      annotations.add("@JsonProperty(\"" + schemaName + "\")");
     }
 
     return annotations.isEmpty() ? null : String.join(" ", annotations);

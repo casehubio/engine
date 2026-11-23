@@ -113,6 +113,80 @@ class RecordEmitterTest {
   }
 
   @Test
+  void autoEmitsJsonPropertyForRenamedField() {
+    var schemaType =
+        new SchemaType(
+            "AutoProp", List.of(new SchemaField("do", "ref", false, false, "JsonNode", null)));
+    var typeMapping =
+        new TypeMapping(
+            "YamlAutoProp",
+            null,
+            Map.of("do", new FieldOverride("doBlock", "JsonNode", null, null, null, null, null)),
+            List.of());
+
+    String source = RecordEmitter.emit(schemaType, typeMapping, MAPPING);
+
+    assertTrue(
+        source.contains("@JsonProperty(\"do\") JsonNode doBlock"),
+        "renamed field should auto-emit @JsonProperty with schema name");
+  }
+
+  @Test
+  void noAutoJsonPropertyWhenNamesMatch() {
+    var schemaType = new SchemaType("NoAuto", List.of(new SchemaField("name", "string")));
+    var typeMapping = new TypeMapping("YamlNoAuto", null, Map.of(), List.of());
+
+    String source = RecordEmitter.emit(schemaType, typeMapping, MAPPING);
+
+    assertFalse(source.contains("@JsonProperty"), "non-renamed field should not get @JsonProperty");
+  }
+
+  @Test
+  void explicitPropertyOverridesAutoEmit() {
+    var schemaType =
+        new SchemaType(
+            "ExplProp", List.of(new SchemaField("do", "ref", false, false, "JsonNode", null)));
+    var typeMapping =
+        new TypeMapping(
+            "YamlExplProp",
+            null,
+            Map.of(
+                "do",
+                new FieldOverride("doBlock", "JsonNode", null, null, "customName", null, null)),
+            List.of());
+
+    String source = RecordEmitter.emit(schemaType, typeMapping, MAPPING);
+
+    assertTrue(
+        source.contains("@JsonProperty(\"customName\")"), "explicit property should be used");
+    assertFalse(
+        source.contains("@JsonProperty(\"do\")"),
+        "auto-emit should not duplicate when explicit property is set");
+  }
+
+  @Test
+  void noAutoJsonPropertyForNonKeywordRename() {
+    var schemaType =
+        new SchemaType(
+            "DslRename",
+            List.of(new SchemaField("defaultQuorum", "ref", false, false, "JsonNode", null)));
+    var typeMapping =
+        new TypeMapping(
+            "YamlDslRename",
+            null,
+            Map.of(
+                "defaultQuorum",
+                new FieldOverride("quorum", "JsonNode", null, null, null, null, null)),
+            List.of());
+
+    String source = RecordEmitter.emit(schemaType, typeMapping, MAPPING);
+
+    assertFalse(
+        source.contains("@JsonProperty"),
+        "non-keyword rename should not auto-emit @JsonProperty — rename is intentional DSL simplification");
+  }
+
+  @Test
   void emitsExtraFields() {
     var schemaType = new SchemaType("Parent", List.of(new SchemaField("name", "string")));
     var typeMapping =
