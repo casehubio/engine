@@ -10,7 +10,13 @@
 
 ## Constructors
 
-### `public CaseHub()`
+### `protected CaseHub()`
+
+### `protected CaseHub(io.casehub.api.engine.CaseHubRuntime runtime)`
+
+#### Parameters
+
+- `runtime` (`io.casehub.api.engine.CaseHubRuntime`)
 
 ## Methods
 
