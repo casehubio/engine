@@ -16,6 +16,7 @@
 package io.casehub.engine.runtime.scheduler;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import io.casehub.api.model.AgentTaskTarget;
 import io.casehub.api.model.Binding;
 import io.casehub.api.model.CapabilityTarget;
 import io.casehub.api.model.CaseDefinition;
@@ -24,6 +25,7 @@ import io.casehub.api.model.ScheduleTrigger;
 import io.casehub.api.model.SignalTarget;
 import io.casehub.api.model.SubCaseTarget;
 import io.casehub.engine.common.internal.model.CaseInstance;
+import io.casehub.engine.common.internal.routing.SyntheticAgentTaskWorker;
 import io.casehub.engine.common.internal.scheduler.JobIdentifier;
 import io.casehub.engine.common.internal.scheduler.JobType;
 import io.casehub.engine.common.internal.scheduler.ScheduleStrategy;
@@ -100,8 +102,20 @@ public class SchedulerService {
             LOG.warnf("Schedule binding '%s' has Extension target — skipping", binding.getName());
         case io.casehub.api.model.HumanTaskTarget ignored ->
             LOG.warnf("Schedule binding '%s' has HumanTask target — skipping", binding.getName());
-        case io.casehub.api.model.AgentTaskTarget ignored ->
-            LOG.warnf("Schedule binding '%s' has AgentTask target — skipping", binding.getName());
+        case AgentTaskTarget at -> {
+          Worker syntheticWorker = SyntheticAgentTaskWorker.create(binding.getName(), at);
+          List<Worker> defWorkers = definition.getWorkers();
+          synchronized (defWorkers) {
+            if (defWorkers.stream().noneMatch(w -> w.name().equals(syntheticWorker.name()))) {
+              defWorkers.add(syntheticWorker);
+            }
+          }
+          if (binding.getWhen() != null) {
+            scheduleConditionalWorker(caseInstance.getUuid(), binding, trigger, syntheticWorker);
+          } else {
+            scheduleWorker(caseInstance.getUuid(), binding, trigger, syntheticWorker);
+          }
+        }
       }
     }
   }
@@ -228,9 +242,7 @@ public class SchedulerService {
       case io.casehub.api.model.HumanTaskTarget ignored ->
           throw new IllegalStateException(
               "createJobData called with HumanTaskTarget binding '" + binding.getName() + "'");
-      case io.casehub.api.model.AgentTaskTarget ignored ->
-          throw new IllegalStateException(
-              "createJobData called with AgentTaskTarget binding '" + binding.getName() + "'");
+      case AgentTaskTarget at -> data.put("capabilityName", at.capability());
     }
     data.put("workerName", worker.name());
     return data;
