@@ -197,9 +197,17 @@ class GoalFormationIntegrationTest {
           Map.entry("casehub.engine.goal.revision.enabled", "false"),
           Map.entry("casehub.engine.goal.formation.strategy", "llm"));
     }
+
+    @Override
+    public java.util.Set<Class<?>> getEnabledAlternatives() {
+      return java.util.Set.of(
+          TestAgentProvider.class,
+          GoalRevisionIntegrationTest.TestAgentRegistry.class,
+          GoalRevisionIntegrationTest.TestGoalEvolution.class,
+          GoalRevisionIntegrationTest.TestGoalSignalStore.class);
+    }
   }
 
-  @jakarta.annotation.Priority(100)
   @jakarta.enterprise.inject.Alternative
   @ApplicationScoped
   public static class TestAgentProvider implements AgentProvider {

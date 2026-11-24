@@ -42,11 +42,9 @@ import io.casehub.eidos.api.SystemPromptRenderer;
 import io.casehub.engine.common.spi.cache.CaseInstanceCache;
 import io.casehub.platform.agent.AgentEvent;
 import io.casehub.platform.agent.AgentProvider;
-import io.casehub.platform.agent.AgentSession;
-import io.casehub.platform.agent.AgentSessionConfig;
-import io.casehub.platform.agent.AgentSessionInit;
 import io.casehub.worker.api.Capability;
 import io.casehub.worker.api.Worker;
+import io.quarkus.test.InjectMock;
 import io.quarkus.test.junit.QuarkusTest;
 import io.smallrye.mutiny.Multi;
 import jakarta.annotation.Priority;
@@ -59,9 +57,9 @@ import java.util.Optional;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicReference;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.mockito.Mockito;
 
 /**
  * Integration test verifying CDI wiring of the slot-based agent worker dispatch path:
@@ -78,11 +76,13 @@ public class SlotAgentWorkerCdiWiringTest {
 
   @Inject TestSlotAgentRegistry agentRegistry;
 
+  @InjectMock AgentProvider agentProvider;
+
   @Inject SlotTestCaseHub caseHub;
   @Inject CaseInstanceCache caseInstanceCache;
 
   @BeforeEach
-  void registerAgent() {
+  void setUp() {
     AgentDescriptor descriptor =
         AgentDescriptor.builder()
             .agentId("agent-sentiment")
@@ -91,6 +91,14 @@ public class SlotAgentWorkerCdiWiringTest {
             .tenancyId(TENANCY_ID)
             .build();
     agentRegistry.register(descriptor);
+
+    Mockito.when(agentProvider.invoke(Mockito.any()))
+        .thenReturn(
+            Multi.createFrom()
+                .items(
+                    new AgentEvent.TextDelta("{\"sentiment\": \"POSITIVE\"}"),
+                    new AgentEvent.InvocationComplete(
+                        0, 0, 0, 0, 0, null, 0L, 0L, null, 0, false, null, null)));
   }
 
   @Test
@@ -219,27 +227,6 @@ public class SlotAgentWorkerCdiWiringTest {
           "",
           "",
           false);
-    }
-  }
-
-  @ApplicationScoped
-  public static class StubAgentProvider implements AgentProvider {
-
-    static final AtomicReference<AgentSessionConfig> lastConfig = new AtomicReference<>();
-
-    @Override
-    public Multi<AgentEvent> invoke(AgentSessionConfig config) {
-      lastConfig.set(config);
-      return Multi.createFrom()
-          .items(
-              new AgentEvent.TextDelta("{\"sentiment\": \"POSITIVE\"}"),
-              new AgentEvent.InvocationComplete(
-                  0, 0, 0, 0, 0, null, 0L, 0L, null, 0, false, null, null));
-    }
-
-    @Override
-    public AgentSession openSession(AgentSessionInit init) {
-      throw new UnsupportedOperationException();
     }
   }
 

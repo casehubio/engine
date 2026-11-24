@@ -45,7 +45,6 @@ import io.casehub.worker.api.WorkerResult;
 import io.quarkus.test.junit.QuarkusTest;
 import io.quarkus.test.junit.QuarkusTestProfile;
 import io.quarkus.test.junit.TestProfile;
-import jakarta.annotation.Priority;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.enterprise.inject.Alternative;
 import jakarta.inject.Inject;
@@ -164,21 +163,27 @@ class GoalRevisionIntegrationTest {
           "casehub.goal-revision.enabled", "true",
           "casehub.goal-revision.min-outcomes", "3");
     }
+
+    @Override
+    public java.util.Set<Class<?>> getEnabledAlternatives() {
+      return java.util.Set.of(
+          TestGoalSignalStore.class,
+          TestGoalEvolution.class,
+          TestAgentRegistry.class,
+          GoalFormationIntegrationTest.TestAgentProvider.class);
+    }
   }
 
   @Alternative
-  @Priority(100)
   @ApplicationScoped
   public static class TestGoalSignalStore extends InMemoryGoalSignalStore
       implements GoalSignalStore {}
 
   @Alternative
-  @Priority(100)
   @ApplicationScoped
   public static class TestGoalEvolution extends DefaultGoalEvolution implements GoalEvolution {}
 
   @Alternative
-  @Priority(100)
   @ApplicationScoped
   public static class TestAgentRegistry implements AgentRegistry {
     private final ConcurrentHashMap<String, AgentDescriptor> descriptors =
