@@ -532,13 +532,15 @@ public class CaseContextChangedEventHandler {
               "Deprecated HumanTaskTarget on binding '%s' — use JudgmentTarget", binding.getName());
       case io.casehub.api.model.AgentTaskTarget at -> {
         Worker syntheticWorker = SyntheticAgentTaskWorker.create(binding.getName(), at);
-        if (caseDefinition.getWorkers().stream()
-            .noneMatch(w -> w.name().equals(syntheticWorker.name()))) {
-          caseDefinition.getWorkers().add(syntheticWorker);
+        List<Worker> defWorkers = caseDefinition.getWorkers();
+        synchronized (defWorkers) {
+          if (defWorkers.stream().noneMatch(w -> w.name().equals(syntheticWorker.name()))) {
+            defWorkers.add(syntheticWorker);
+          }
         }
         scheduleWorker(
             caseInstance,
-            caseDefinition.getWorkers(),
+            defWorkers,
             binding,
             Capability.of(at.capability(), ".", "."),
             syntheticWorker.name(),
