@@ -21,6 +21,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SerializationFeature;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import io.casehub.api.engine.CaseHub;
+import io.casehub.api.engine.CaseHubRuntime;
 import io.casehub.api.engine.ExpressionEngineRegistry;
 import io.casehub.api.model.Binding;
 import io.casehub.api.model.CaseDefinition;
@@ -89,6 +90,9 @@ public class DefaultCaseDefinitionRegistry implements CaseDefinitionRegistry {
   @Inject CurrentPrincipal currentPrincipal;
   @Inject Instance<VocabularyRegistry> vocabularyRegistry;
 
+  @Inject CaseHubRegistry caseHubRegistry;
+  @Inject CaseHubRuntime caseHubRuntime;
+
   private static ObjectMapper createMetadataMapper() {
     ObjectMapper mapper = new ObjectMapper();
     mapper.registerModule(new JavaTimeModule());
@@ -125,6 +129,7 @@ public class DefaultCaseDefinitionRegistry implements CaseDefinitionRegistry {
 
       for (CaseHub hub : caseHubInstance) {
         registerCaseDefinitionLocked(hub.getDefinition());
+        caseHubRegistry.register(hub.getDefinition().getName(), hub);
       }
     } finally {
       registryLock.writeLock().unlock();
@@ -189,7 +194,20 @@ public class DefaultCaseDefinitionRegistry implements CaseDefinitionRegistry {
   @Override
   public CaseMetaModel registerCaseDefinition(CaseDefinition model) {
     try {
-      return registerCaseDefinitionBlocking(model);
+      CaseMetaModel metaModel = registerCaseDefinitionBlocking(model);
+      if (caseHubRegistry.get(model.getName()).isEmpty()) {
+        CaseHub hub =
+            new CaseHub(caseHubRuntime) {
+              private final CaseDefinition def = model;
+
+              @Override
+              public CaseDefinition getDefinition() {
+                return def;
+              }
+            };
+        caseHubRegistry.register(model.getName(), hub);
+      }
+      return metaModel;
     } catch (IllegalArgumentException e) {
       LOG.errorf("Case definition '%s' rejected: %s", model.getName(), e.getMessage());
       throw e;

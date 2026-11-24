@@ -30,6 +30,8 @@ import org.junit.jupiter.api.Test;
 @QuarkusTest
 class DefaultCaseDefinitionRegistryTest {
 
+  @Inject CaseHubRegistry caseHubRegistry;
+
   @Inject DefaultCaseDefinitionRegistry registry;
 
   @Test
@@ -277,5 +279,52 @@ class DefaultCaseDefinitionRegistryTest {
 
     List<CaseDefinition> result = registry.findByLabel(Path.of("ancestor-label-test"));
     assertThat(result).hasSize(1);
+  }
+
+  @Test
+  void registerCaseDefinition_autoCreatesCaseHubInRegistry() {
+    CaseDefinition def =
+        CaseDefinition.builder()
+            .namespace("test-auto-hub")
+            .name("auto-hub-case")
+            .version("1.0")
+            .build();
+
+    registry.registerCaseDefinition(def);
+
+    assertThat(caseHubRegistry.get("auto-hub-case"))
+        .as("registerCaseDefinition should auto-create a CaseHub entry")
+        .isPresent();
+    assertThat(caseHubRegistry.get("auto-hub-case").get().getDefinition())
+        .as("auto-created CaseHub should return the registered definition")
+        .isSameAs(def);
+  }
+
+  @Test
+  void registerCaseDefinition_doesNotOverwriteExplicitCaseHub() {
+    // The startup path registers explicit CaseHub beans first.
+    // If a definition is then registered again (e.g. by CaseYamlRegistrar),
+    // the explicit CaseHub should be preserved, not overwritten.
+    CaseDefinition def =
+        CaseDefinition.builder()
+            .namespace("test-explicit-hub")
+            .name("explicit-hub-case")
+            .version("1.0")
+            .build();
+
+    // Simulate explicit CaseHub registration (as registerKnownDefinitions does)
+    io.casehub.api.engine.CaseHub explicitHub =
+        new io.casehub.api.engine.CaseHub() {
+          @Override
+          public CaseDefinition getDefinition() {
+            return def;
+          }
+        };
+    caseHubRegistry.register("explicit-hub-case", explicitHub);
+    registry.registerCaseDefinition(def);
+
+    assertThat(caseHubRegistry.get("explicit-hub-case").get())
+        .as("explicit CaseHub should not be overwritten by auto-creation")
+        .isSameAs(explicitHub);
   }
 }

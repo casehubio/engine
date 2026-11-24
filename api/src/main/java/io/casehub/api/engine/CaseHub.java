@@ -23,6 +23,12 @@ public abstract class CaseHub {
 
   @Inject CaseHubRuntime runtime;
 
+  protected CaseHub() {}
+
+  protected CaseHub(CaseHubRuntime runtime) {
+    this.runtime = runtime;
+  }
+
   public abstract CaseDefinition getDefinition();
 
   public UUID startCase() {
