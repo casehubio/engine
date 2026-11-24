@@ -20,6 +20,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.networknt.schema.Error;
 import com.networknt.schema.Schema;
 import com.networknt.schema.SchemaRegistry;
 import com.networknt.schema.SpecificationVersion;
@@ -30,7 +31,6 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Set;
 import java.util.stream.Stream;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
@@ -136,7 +136,7 @@ class SchemaValidationTest {
   void testFixtureYaml_validatesAgainstSchema(Path yamlFile) throws IOException {
     JsonNode yamlNode = YAML_MAPPER.readTree(Files.readString(yamlFile));
     JsonNode jsonNode = JSON_MAPPER.readTree(JSON_MAPPER.writeValueAsString(yamlNode));
-    Set<ValidationMessage> errors = schema.validate(jsonNode);
+    List<Error> errors = schema.validate(jsonNode);
     assertTrue(
         errors.isEmpty(),
         () -> "Schema validation failed for " + yamlFile.getFileName() + ":\n" + errors);
@@ -162,7 +162,7 @@ class SchemaValidationTest {
 
     JsonNode yamlNode = YAML_MAPPER.readTree(yaml);
     JsonNode jsonNode = JSON_MAPPER.readTree(JSON_MAPPER.writeValueAsString(yamlNode));
-    Set<ValidationMessage> errors = schema.validate(jsonNode);
+    List<Error> errors = schema.validate(jsonNode);
     assertTrue(errors.isEmpty(), () -> "Validation errors: " + errors);
   }
 
@@ -180,7 +180,7 @@ class SchemaValidationTest {
 
     JsonNode yamlNode = YAML_MAPPER.readTree(yaml);
     JsonNode jsonNode = JSON_MAPPER.readTree(JSON_MAPPER.writeValueAsString(yamlNode));
-    Set<ValidationMessage> errors = schema.validate(jsonNode);
+    List<Error> errors = schema.validate(jsonNode);
     assertTrue(
         errors.stream().anyMatch(e -> e.getMessage().contains("bogusField")),
         () -> "Expected rejection of unknown root property 'bogusField', got: " + errors);
@@ -207,7 +207,7 @@ class SchemaValidationTest {
 
     JsonNode yamlNode = YAML_MAPPER.readTree(yaml);
     JsonNode jsonNode = JSON_MAPPER.readTree(JSON_MAPPER.writeValueAsString(yamlNode));
-    Set<ValidationMessage> errors = schema.validate(jsonNode);
+    List<Error> errors = schema.validate(jsonNode);
     assertTrue(
         errors.stream().anyMatch(e -> e.getMessage().contains("totallyBogus")),
         () -> "Expected rejection of unknown binding property 'totallyBogus', got: " + errors);
@@ -240,7 +240,7 @@ class SchemaValidationTest {
 
     JsonNode yamlNode = YAML_MAPPER.readTree(yaml);
     JsonNode jsonNode = JSON_MAPPER.readTree(JSON_MAPPER.writeValueAsString(yamlNode));
-    Set<ValidationMessage> errors = schema.validate(jsonNode);
+    List<Error> errors = schema.validate(jsonNode);
     assertTrue(
         errors.isEmpty(),
         () ->
@@ -281,7 +281,7 @@ class SchemaValidationTest {
 
     JsonNode yamlNode = YAML_MAPPER.readTree(yaml);
     JsonNode jsonNode = JSON_MAPPER.readTree(JSON_MAPPER.writeValueAsString(yamlNode));
-    Set<ValidationMessage> errors = schema.validate(jsonNode);
+    List<Error> errors = schema.validate(jsonNode);
     assertTrue(errors.isEmpty(), () -> "Routing config should validate, got: " + errors);
   }
 
@@ -300,7 +300,7 @@ class SchemaValidationTest {
 
     JsonNode yamlNode = YAML_MAPPER.readTree(yaml);
     JsonNode jsonNode = JSON_MAPPER.readTree(JSON_MAPPER.writeValueAsString(yamlNode));
-    Set<ValidationMessage> errors = schema.validate(jsonNode);
+    List<Error> errors = schema.validate(jsonNode);
     assertTrue(errors.isEmpty(), () -> "Context block should validate, got: " + errors);
   }
 
@@ -322,7 +322,7 @@ class SchemaValidationTest {
 
     JsonNode yamlNode = YAML_MAPPER.readTree(yaml);
     JsonNode jsonNode = JSON_MAPPER.readTree(JSON_MAPPER.writeValueAsString(yamlNode));
-    Set<ValidationMessage> errors = schema.validate(jsonNode);
+    List<Error> errors = schema.validate(jsonNode);
     assertTrue(errors.isEmpty(), () -> "Label rules should validate, got: " + errors);
   }
 
@@ -347,7 +347,7 @@ class SchemaValidationTest {
 
     JsonNode yamlNode = YAML_MAPPER.readTree(yaml);
     JsonNode jsonNode = JSON_MAPPER.readTree(JSON_MAPPER.writeValueAsString(yamlNode));
-    Set<ValidationMessage> errors = schema.validate(jsonNode);
+    List<Error> errors = schema.validate(jsonNode);
     assertTrue(errors.isEmpty(), () -> "Inbound mappings should validate, got: " + errors);
   }
 
@@ -377,7 +377,7 @@ class SchemaValidationTest {
 
     JsonNode yamlNode = YAML_MAPPER.readTree(yaml);
     JsonNode jsonNode = JSON_MAPPER.readTree(JSON_MAPPER.writeValueAsString(yamlNode));
-    Set<ValidationMessage> errors = schema.validate(jsonNode);
+    List<Error> errors = schema.validate(jsonNode);
     assertTrue(errors.isEmpty(), () -> "Typed worker should validate, got: " + errors);
   }
 
@@ -434,7 +434,7 @@ class SchemaValidationTest {
 
     JsonNode yamlNode = YAML_MAPPER.readTree(yaml);
     JsonNode jsonNode = JSON_MAPPER.readTree(JSON_MAPPER.writeValueAsString(yamlNode));
-    Set<ValidationMessage> errors = schema.validate(jsonNode);
+    List<Error> errors = schema.validate(jsonNode);
     assertTrue(errors.isEmpty(), () -> "CBR with cbrType should validate, got: " + errors);
   }
 
