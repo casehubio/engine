@@ -27,6 +27,13 @@ public class PersistenceDataStoreBeans {
 
   @Produces
   @DefaultBean
+  @jakarta.inject.Singleton
+  DataStore inMemoryDataStore() {
+    return new io.casehub.platform.api.data.memory.InMemoryDataStore();
+  }
+
+  @Produces
+  @DefaultBean
   @ApplicationScoped
   CaseInstanceRepository dataStoreCaseInstanceRepository(DataStore dataStore) {
     return new DataStoreCaseInstanceRepository(dataStore);
