@@ -27,20 +27,34 @@ public class AgentWorkerFunctionProvider implements WorkerFunctionProvider {
 
   @Override
   public boolean handles(JsonNode rawWorkerNode) {
-    return rawWorkerNode.has("agent") && rawWorkerNode.get("agent").has("slot");
+    if (!rawWorkerNode.has("agent")) {
+      return false;
+    }
+    JsonNode agentNode = rawWorkerNode.get("agent");
+    return agentNode.has("slot") || agentNode.has("capability");
   }
 
   @Override
   public WorkerFunction<?, ?> create(JsonNode rawWorkerNode) {
     JsonNode agentNode = rawWorkerNode.get("agent");
-    String slot = agentNode.get("slot").asText();
-    String model = textOrNull(agentNode, "model");
-    String userMessage = textOrNull(agentNode, "userMessage");
-    String inputProjection = textOrNull(agentNode, "inputProjection");
-    String outputProjection = textOrNull(agentNode, "outputProjection");
-    return AgentWorkerFunction.ofSlot(
-        new DeferredAgentConfig.SlotConfig(
-            slot, model, userMessage, inputProjection, outputProjection));
+    if (agentNode.has("slot")) {
+      String slot = agentNode.get("slot").asText();
+      String model = textOrNull(agentNode, "model");
+      String userMessage = textOrNull(agentNode, "userMessage");
+      String inputProjection = textOrNull(agentNode, "inputProjection");
+      String outputProjection = textOrNull(agentNode, "outputProjection");
+      return AgentWorkerFunction.ofSlot(
+          new DeferredAgentConfig.SlotConfig(
+              slot, model, userMessage, inputProjection, outputProjection));
+    }
+    if (agentNode.has("capability")) {
+      String capability = agentNode.get("capability").asText();
+      String domain = textOrNull(agentNode, "domain");
+      String model = textOrNull(agentNode, "model");
+      return AgentWorkerFunction.ofCapability(
+          new DeferredAgentConfig.CapabilityConfig(capability, domain, model, null, null));
+    }
+    throw new IllegalArgumentException("agent: block requires 'slot' or 'capability'");
   }
 
   private static String textOrNull(JsonNode node, String field) {

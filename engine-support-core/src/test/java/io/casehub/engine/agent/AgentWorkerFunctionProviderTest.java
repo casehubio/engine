@@ -131,4 +131,69 @@ class AgentWorkerFunctionProviderTest {
                 .outputProjection())
         .isEqualTo(".sentiment");
   }
+
+  @Test
+  void handles_capabilityBased_returnsTrue() throws Exception {
+    var node =
+        yaml.readTree(
+            """
+                        name: classifier
+                        agent:
+                          capability: text-classification
+                          domain: support
+                        """);
+    assertThat(provider.handles(node)).isTrue();
+  }
+
+  @Test
+  void create_capabilityBased_returnsCapabilityFunction() throws Exception {
+    var node =
+        yaml.readTree(
+            """
+                        name: classifier
+                        agent:
+                          capability: text-classification
+                          domain: support
+                          model: claude-sonnet
+                        """);
+    var function = (AgentWorkerFunction) provider.create(node);
+    assertThat(function.isDeferred()).isTrue();
+    assertThat(function.deferredConfig())
+        .isInstanceOf(io.casehub.api.model.ai.DeferredAgentConfig.CapabilityConfig.class);
+    var cc =
+        (io.casehub.api.model.ai.DeferredAgentConfig.CapabilityConfig) function.deferredConfig();
+    assertThat(cc.capability()).isEqualTo("text-classification");
+    assertThat(cc.domain()).isEqualTo("support");
+    assertThat(cc.model()).isEqualTo("claude-sonnet");
+  }
+
+  @Test
+  void create_capabilityBased_optionalFieldsNullable() throws Exception {
+    var node =
+        yaml.readTree(
+            """
+                        name: summariser
+                        agent:
+                          capability: summarise
+                        """);
+    var function = (AgentWorkerFunction) provider.create(node);
+    var cc =
+        (io.casehub.api.model.ai.DeferredAgentConfig.CapabilityConfig) function.deferredConfig();
+    assertThat(cc.capability()).isEqualTo("summarise");
+    assertThat(cc.domain()).isNull();
+    assertThat(cc.model()).isNull();
+  }
+
+  @Test
+  void create_noSlotOrCapability_throws() throws Exception {
+    var node =
+        yaml.readTree(
+            """
+                        name: bad-agent
+                        agent:
+                          model: gpt-4o
+                        """);
+    org.assertj.core.api.Assertions.assertThatThrownBy(() -> provider.create(node))
+        .isInstanceOf(IllegalArgumentException.class);
+  }
 }
