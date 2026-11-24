@@ -19,12 +19,8 @@ import io.casehub.eidos.api.AgentMatch;
 import io.casehub.eidos.api.AgentSelection;
 import io.casehub.eidos.api.AgentSelector;
 import io.casehub.eidos.api.SelectionContext;
-import io.quarkus.arc.DefaultBean;
-import jakarta.enterprise.context.ApplicationScoped;
 import java.util.List;
 
-@DefaultBean
-@ApplicationScoped
 public class NoOpAgentSelector implements AgentSelector {
 
   @Override
