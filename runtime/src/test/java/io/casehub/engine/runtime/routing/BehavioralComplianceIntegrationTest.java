@@ -147,7 +147,7 @@ class BehavioralComplianceIntegrationTest {
   // ── Recording BehavioralSignalStore ──
 
   @Alternative
-  @Priority(1)
+  @Priority(100)
   @ApplicationScoped
   public static class RecordingSignalStore implements BehavioralSignalStore {
 

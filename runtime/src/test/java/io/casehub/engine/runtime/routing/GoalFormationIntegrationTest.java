@@ -199,7 +199,7 @@ class GoalFormationIntegrationTest {
     }
   }
 
-  @jakarta.annotation.Priority(1)
+  @jakarta.annotation.Priority(100)
   @jakarta.enterprise.inject.Alternative
   @ApplicationScoped
   public static class TestAgentProvider implements AgentProvider {
