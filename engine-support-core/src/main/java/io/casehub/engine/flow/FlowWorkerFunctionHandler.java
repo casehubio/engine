@@ -49,6 +49,7 @@ import java.util.function.Function;
  * <p>Plain {@code @ApplicationScoped} (no {@code @DefaultBean}) — when {@code casehub-engine-flow}
  * is on the classpath, this handler is discovered automatically.
  */
+@jakarta.enterprise.context.ApplicationScoped
 public class FlowWorkerFunctionHandler implements WorkerFunctionHandler {
 
   private final WorkflowApplication app;
@@ -56,10 +57,11 @@ public class FlowWorkerFunctionHandler implements WorkerFunctionHandler {
   private final ExecutorService virtualThreads;
   private final Instance<TriageModificationProvider> triageModProvider;
 
+  @jakarta.inject.Inject
   public FlowWorkerFunctionHandler(
       final WorkflowApplication app,
       final FlowExecutionRegistry registry,
-      final ExecutorService virtualThreads,
+      @io.quarkus.virtual.threads.VirtualThreads final ExecutorService virtualThreads,
       final Instance<TriageModificationProvider> triageModProvider) {
     this.app = app;
     this.registry = registry;

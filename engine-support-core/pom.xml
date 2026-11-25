@@ -132,6 +132,18 @@
             <groupId>io.serverlessworkflow</groupId>
             <artifactId>serverlessworkflow-api</artifactId>
         </dependency>
+        <dependency>
+            <groupId>io.serverlessworkflow</groupId>
+            <artifactId>serverlessworkflow-impl-model</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>io.serverlessworkflow</groupId>
+            <artifactId>serverlessworkflow-impl-http</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>io.serverlessworkflow</groupId>
+            <artifactId>serverlessworkflow-impl-jq</artifactId>
+        </dependency>
         <!-- CloudEvent types for work-cloudevent + inbound -->
         <dependency>
             <groupId>io.cloudevents</groupId>

@@ -148,6 +148,7 @@ public final class CaseDefinitionYamlMapper {
         deserializeYaml(expandedNode, moduleMapper);
     return YamlCaseDefinitionConverter.convert(
         yaml,
+        expandedNode,
         registry != null ? registry : JQ_ONLY,
         providerRegistry != null ? providerRegistry : EMPTY_PROVIDERS,
         agentProvider);
@@ -195,6 +196,7 @@ public final class CaseDefinitionYamlMapper {
         deserializeYaml(expandedNode, moduleMapper);
     return YamlCaseDefinitionConverter.convert(
         yaml,
+        expandedNode,
         registry != null ? registry : JQ_ONLY,
         providerRegistry != null ? providerRegistry : EMPTY_PROVIDERS,
         agentProvider);
@@ -233,6 +235,7 @@ public final class CaseDefinitionYamlMapper {
         deserializeYaml(expandedNode, moduleMapper);
     return YamlCaseDefinitionConverter.convert(
         yaml,
+        expandedNode,
         registry != null ? registry : JQ_ONLY,
         providerRegistry != null ? providerRegistry : EMPTY_PROVIDERS,
         agentProvider);

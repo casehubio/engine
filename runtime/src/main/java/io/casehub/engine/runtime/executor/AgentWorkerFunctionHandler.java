@@ -294,6 +294,11 @@ public class AgentWorkerFunctionHandler implements WorkerFunctionHandler {
       return new HandlerResult(WorkerResult.expired("Agent timed out after " + timeoutMs + "ms"));
     } catch (ExecutionException e) {
       Throwable cause = e.getCause();
+      java.util.logging.Logger.getLogger(AgentWorkerFunctionHandler.class.getName())
+          .log(
+              java.util.logging.Level.SEVERE,
+              "Agent invocation failed for worker " + worker.name(),
+              cause);
       if (cause instanceof RuntimeException re) {
         throw re;
       }

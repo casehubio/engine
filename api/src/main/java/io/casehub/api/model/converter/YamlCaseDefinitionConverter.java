@@ -168,6 +168,15 @@ public final class YamlCaseDefinitionConverter {
       ExpressionEngineRegistry registry,
       WorkerFunctionProviderRegistry providers,
       io.casehub.platform.agent.AgentProvider agentProvider) {
+    return convert(yaml, null, registry, providers, agentProvider);
+  }
+
+  public static CaseDefinition convert(
+      YamlCaseDefinition yaml,
+      JsonNode rawYamlNode,
+      ExpressionEngineRegistry registry,
+      WorkerFunctionProviderRegistry providers,
+      io.casehub.platform.agent.AgentProvider agentProvider) {
     CaseDefinition def = new CaseDefinition(yaml.namespace(), yaml.name(), yaml.version());
 
     convertTopLevel(yaml, def);
@@ -181,7 +190,7 @@ public final class YamlCaseDefinitionConverter {
         yaml.spec() != null && !yaml.spec().workers().isEmpty()
             ? yaml.spec().workers()
             : yaml.workers();
-    convertWorkers(effectiveWorkers, def, providers, agentProvider);
+    convertWorkers(effectiveWorkers, rawYamlNode, def, providers, agentProvider);
 
     List<YamlBinding> effectiveBindings =
         yaml.spec() != null && !yaml.spec().bindings().isEmpty()
@@ -496,6 +505,7 @@ public final class YamlCaseDefinitionConverter {
 
   private static void convertWorkers(
       List<YamlWorker> yamlWorkers,
+      JsonNode rawYamlNode,
       CaseDefinition def,
       WorkerFunctionProviderRegistry providers,
       io.casehub.platform.agent.AgentProvider agentProvider) {
@@ -528,7 +538,7 @@ public final class YamlCaseDefinitionConverter {
       for (YamlWorker yw : yamlWorkers) {
         if (yw.name() == null || sequenceWorkerNames.contains(yw.name())) continue;
 
-        JsonNode rawWorker = MAPPER.valueToTree(yw);
+        JsonNode rawWorker = resolveRawWorker(yw, rawYamlNode);
 
         List<DiscoveredWorker> discovered = providers.discoverWorkers(rawWorker);
         if (!discovered.isEmpty()) {
@@ -609,6 +619,23 @@ public final class YamlCaseDefinitionConverter {
 
     applyGoapShorthand(yamlWorkers, def);
     applyAgentDescriptors(yamlWorkers, def);
+  }
+
+  private static JsonNode resolveRawWorker(YamlWorker yw, JsonNode rawYamlNode) {
+    if (rawYamlNode != null && yw.name() != null) {
+      JsonNode workersNode = rawYamlNode.at("/spec/workers");
+      if (workersNode.isMissingNode()) {
+        workersNode = rawYamlNode.at("/workers");
+      }
+      if (workersNode.isArray()) {
+        for (JsonNode wn : workersNode) {
+          if (wn.has("name") && yw.name().equals(wn.get("name").asText())) {
+            return wn;
+          }
+        }
+      }
+    }
+    return MAPPER.valueToTree(yw);
   }
 
   private static WorkerFunction<?, ?> buildTypedSyncFunction(YamlWorker yw) {

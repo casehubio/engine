@@ -31,13 +31,14 @@ import io.serverlessworkflow.api.types.Workflow;
  * node, a default document is injected (DSL 1.0.0, generated namespace/name/version) — same pattern
  * as the deleted {@code WorkerMarshaller.Deserializer}.
  */
+@jakarta.enterprise.context.ApplicationScoped
 public class FlowWorkerFunctionProvider implements WorkerFunctionProvider {
 
   private static final ObjectMapper MAPPER = new ObjectMapper();
 
   @Override
   public boolean handles(final JsonNode rawWorkerNode) {
-    return rawWorkerNode.has("do");
+    return rawWorkerNode.has("do") && !rawWorkerNode.get("do").isNull();
   }
 
   @Override
