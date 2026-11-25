@@ -45,6 +45,16 @@ hand-coded deserializers and post-processor.
 
 - `yw` (`YamlWorker`)
 
+### `public static io.casehub.api.model.CaseDefinition convert(YamlCaseDefinition yaml, JsonNode rawYamlNode, io.casehub.api.engine.ExpressionEngineRegistry registry, io.casehub.api.spi.WorkerFunctionProviderRegistry providers, io.casehub.platform.agent.AgentProvider agentProvider)`
+
+#### Parameters
+
+- `yaml` (`YamlCaseDefinition`)
+- `rawYamlNode` (`JsonNode`)
+- `registry` (`io.casehub.api.engine.ExpressionEngineRegistry`)
+- `providers` (`io.casehub.api.spi.WorkerFunctionProviderRegistry`)
+- `agentProvider` (`io.casehub.platform.agent.AgentProvider`)
+
 ### `public static io.casehub.api.model.CaseDefinition convert(YamlCaseDefinition yaml, io.casehub.api.engine.ExpressionEngineRegistry registry, io.casehub.api.spi.WorkerFunctionProviderRegistry providers, io.casehub.platform.agent.AgentProvider agentProvider)`
 
 #### Parameters
@@ -254,11 +264,12 @@ hand-coded deserializers and post-processor.
 - `yaml` (`YamlCaseDefinition`)
 - `def` (`io.casehub.api.model.CaseDefinition`)
 
-### `private static void convertWorkers(java.util.List<YamlWorker> yamlWorkers, io.casehub.api.model.CaseDefinition def, io.casehub.api.spi.WorkerFunctionProviderRegistry providers, io.casehub.platform.agent.AgentProvider agentProvider)`
+### `private static void convertWorkers(java.util.List<YamlWorker> yamlWorkers, JsonNode rawYamlNode, io.casehub.api.model.CaseDefinition def, io.casehub.api.spi.WorkerFunctionProviderRegistry providers, io.casehub.platform.agent.AgentProvider agentProvider)`
 
 #### Parameters
 
 - `yamlWorkers` (`java.util.List<YamlWorker>`)
+- `rawYamlNode` (`JsonNode`)
 - `def` (`io.casehub.api.model.CaseDefinition`)
 - `providers` (`io.casehub.api.spi.WorkerFunctionProviderRegistry`)
 - `agentProvider` (`io.casehub.platform.agent.AgentProvider`)
@@ -280,6 +291,13 @@ hand-coded deserializers and post-processor.
 #### Parameters
 
 - `node` (`JsonNode`)
+
+### `private static JsonNode resolveRawWorker(YamlWorker yw, JsonNode rawYamlNode)`
+
+#### Parameters
+
+- `yw` (`YamlWorker`)
+- `rawYamlNode` (`JsonNode`)
 
 ### `private static void resolveTarget(YamlBinding yb, io.casehub.api.model.Binding.Builder builder, java.util.Map<java.lang.String,io.casehub.api.model.CapabilityTarget> capTargetMap)`
 
