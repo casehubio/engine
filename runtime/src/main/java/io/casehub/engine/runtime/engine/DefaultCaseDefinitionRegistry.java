@@ -194,20 +194,7 @@ public class DefaultCaseDefinitionRegistry implements CaseDefinitionRegistry {
   @Override
   public CaseMetaModel registerCaseDefinition(CaseDefinition model) {
     try {
-      CaseMetaModel metaModel = registerCaseDefinitionBlocking(model);
-      if (caseHubRegistry.get(model.getName()).isEmpty()) {
-        CaseHub hub =
-            new CaseHub(caseHubRuntime) {
-              private final CaseDefinition def = model;
-
-              @Override
-              public CaseDefinition getDefinition() {
-                return def;
-              }
-            };
-        caseHubRegistry.register(model.getName(), hub);
-      }
-      return metaModel;
+      return registerCaseDefinitionBlocking(model);
     } catch (IllegalArgumentException e) {
       LOG.errorf("Case definition '%s' rejected: %s", model.getName(), e.getMessage());
       throw e;
