@@ -21,7 +21,6 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SerializationFeature;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import io.casehub.api.engine.CaseHub;
-import io.casehub.api.engine.CaseHubRuntime;
 import io.casehub.api.engine.ExpressionEngineRegistry;
 import io.casehub.api.model.Binding;
 import io.casehub.api.model.CaseDefinition;
@@ -91,7 +90,6 @@ public class DefaultCaseDefinitionRegistry implements CaseDefinitionRegistry {
   @Inject Instance<VocabularyRegistry> vocabularyRegistry;
 
   @Inject CaseHubRegistry caseHubRegistry;
-  @Inject CaseHubRuntime caseHubRuntime;
 
   private static ObjectMapper createMetadataMapper() {
     ObjectMapper mapper = new ObjectMapper();
