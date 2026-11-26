@@ -15,11 +15,14 @@
  */
 package io.casehub.engine.flow.quarkus;
 
+import io.casehub.eidos.api.AgentRegistry;
+import io.casehub.eidos.api.SystemPromptRenderer;
 import io.casehub.engine.common.internal.judgment.JudgmentNodeExecutor;
 import io.casehub.engine.common.spi.EventLogRepository;
 import io.casehub.engine.common.spi.WorkOrchestrator;
 import io.casehub.engine.common.spi.cache.CaseInstanceCache;
 import io.casehub.engine.flow.CallableDispatchRegistry;
+import io.casehub.engine.flow.CasehubAgentDispatch;
 import io.casehub.engine.flow.CasehubDispatch;
 import io.casehub.engine.flow.CasehubFlowContext;
 import io.casehub.engine.flow.CasehubJudgment;
@@ -27,6 +30,7 @@ import io.casehub.engine.flow.FlowExecutionRegistry;
 import io.casehub.engine.flow.FlowWorkerFunctionHandler;
 import io.casehub.engine.flow.FlowWorkerFunctionProvider;
 import io.casehub.engine.flow.PlaybookExecutionListener;
+import io.casehub.platform.agent.AgentProvider;
 import io.quarkus.virtual.threads.VirtualThreads;
 import io.serverlessworkflow.impl.WorkflowApplication;
 import jakarta.enterprise.context.ApplicationScoped;
@@ -95,5 +99,28 @@ public class FlowBeans {
             java.util.concurrent.Executors.newVirtualThreadPerTaskExecutor());
     judgment.register();
     return judgment;
+  }
+
+  @Produces
+  @ApplicationScoped
+  CasehubAgentDispatch casehubAgentDispatch(
+      AgentRegistry agentRegistry,
+      SystemPromptRenderer systemPromptRenderer,
+      AgentProvider agentProvider,
+      FlowExecutionRegistry executionRegistry,
+      CaseInstanceCache caseInstanceCache,
+      CallableDispatchRegistry dispatchRegistry,
+      @VirtualThreads ExecutorService virtualThreads) {
+    CasehubAgentDispatch agentDispatch =
+        new CasehubAgentDispatch(
+            agentRegistry,
+            systemPromptRenderer,
+            agentProvider,
+            executionRegistry,
+            caseInstanceCache,
+            dispatchRegistry,
+            virtualThreads);
+    agentDispatch.register();
+    return agentDispatch;
   }
 }
